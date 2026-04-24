@@ -1,0 +1,9 @@
+node_modules/
+*.pkpass
+*.p12
+*.cer
+test-signed.pkpass
+data/
+.env
+.DS_Store
+certs/
