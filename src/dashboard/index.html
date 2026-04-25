@@ -435,6 +435,141 @@
             margin-bottom: 16px;
         }
 
+        .member-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+
+        .member-card:hover {
+            border-color: var(--accent-teal);
+            box-shadow: 0 4px 12px rgba(0, 212, 170, 0.1);
+        }
+
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .member-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--bg-primary);
+        }
+
+        .member-avatar.fondatore { background: #CCFF00; }
+        .member-avatar.socio { background: var(--accent-teal); }
+        .member-avatar.staff { background: var(--accent-purple); }
+        .member-avatar.gold { background: #FFD700; }
+        .member-avatar.silver { background: #C0C0C0; }
+
+        .member-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .member-level {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .member-points {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .points-display {
+            text-align: right;
+        }
+
+        .points-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #CCFF00;
+        }
+
+        .points-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .points-btn {
+            padding: 8px 16px;
+            background: var(--accent-teal);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .points-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+        }
+
+        .member-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .member-action-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .member-action-btn:hover {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--accent-teal);
+            color: var(--bg-primary);
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         @media (max-width: 768px) {
             .layout {
                 grid-template-columns: 1fr;
@@ -462,11 +597,12 @@
 <body>
     <div class="layout">
         <div class="sidebar">
-            <div class="logo">◆ Nudj</div>
+            <div class="logo">â Nudj</div>
 
             <div class="nav-section">
                 <div class="nav-label">Dashboard</div>
                 <div class="nav-item active" onclick="switchSection('overview')">Overview</div>
+                <div class="nav-item" onclick="switchSection('members')">Membri</div>
                 <div class="nav-item" onclick="switchSection('create-pass')">Crea Pass</div>
                 <div class="nav-item" onclick="switchSection('recent-passes')">Pass Recenti</div>
                 <div class="nav-item" onclick="switchSection('templates')">Template</div>
@@ -492,6 +628,38 @@
                     <div class="section-title">Overview</div>
                     <div class="stats-grid" id="statsGrid">
                         <div class="loading">Caricamento statistiche...</div>
+                    </div>
+                </div>
+
+                <!-- Members Section -->
+                <div id="members" class="section">
+                    <div class="section-title">Membri</div>
+                    <div id="membersContent" class="loading">Caricamento membri...</div>
+                </div>
+
+                <!-- Points Modal -->
+                <div id="pointsModal" class="modal">
+                    <div class="modal-content">
+                        <button class="modal-close" onclick="closePointsModal()">&times;</button>
+                        <div class="modal-header" id="pointsModalTitle">Aggiungi Punti</div>
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                                <button class="button" onclick="addQuickPoints(10)" style="background: #00D4AA;">+10 Partita</button>
+                                <button class="button" onclick="addQuickPoints(5)" style="background: #7C3AED;">+5 Visita</button>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Punti personalizzati</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="number" id="customPoints" placeholder="es. 25" style="flex: 1;">
+                                    <button class="button" onclick="addCustomPoints()">Aggiungi</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Motivo (opzionale)</label>
+                                <input type="text" id="pointsReason" placeholder="es. Torneo interno, Evento speciale...">
+                            </div>
+                        </div>
+                        <div id="pointsHistory" style="margin-top: 16px;"></div>
                     </div>
                 </div>
 
@@ -581,6 +749,7 @@
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             event.target.classList.add('active');
 
+            if (sectionId === 'members') loadMembers();
             if (sectionId === 'recent-passes') loadRecentPasses();
             if (sectionId === 'templates') loadTemplates();
         }
@@ -847,9 +1016,9 @@
                                     <td>${new Date(p.created_at).toLocaleDateString('it-IT')}</td>
                                     <td>
                                         <div class="action-buttons">
-                                            <button class="action-btn" onclick="window.location.href='${p.download_url}'">↓</button>
+                                            <button class="action-btn" onclick="window.location.href='${p.download_url}'">â</button>
                                             <button class="action-btn" onclick="showQRModal('${p.landing_url}')">QR</button>
-                                            <button class="action-btn" onclick="copyLink('${p.landing_url}')">⧉</button>
+                                            <button class="action-btn" onclick="copyLink('${p.landing_url}')">â§</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -895,6 +1064,152 @@
                 alert('Link copiato!');
             });
         }
+
+        // ===== Members Management =====
+        let currentMembers = [];
+        let selectedMemberPass = null;
+
+        async function loadMembers() {
+            if (!currentBrandId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/passes?brand_id=${currentBrandId}`);
+                const passes = await res.json();
+
+                // Filter only passes that have a member field
+                currentMembers = passes.filter(p => p.field_values && p.field_values.member);
+
+                if (currentMembers.length === 0) {
+                    document.getElementById('membersContent').innerHTML = '<p style="color: var(--text-secondary);">Nessun membro trovato per questa brand.</p>';
+                    return;
+                }
+
+                const membersHtml = currentMembers.map(p => {
+                    const name = p.field_values.member || 'Senza Nome';
+                    const livello = (p.field_values.livello || 'Socio').toLowerCase();
+                    const punti = parseInt(p.field_values.punti) || 0;
+                    const initial = name.charAt(0).toUpperCase();
+
+                    return `
+                        <div class="member-card">
+                            <div class="member-info">
+                                <div class="member-avatar ${livello}">${initial}</div>
+                                <div>
+                                    <div class="member-name">${name}</div>
+                                    <div class="member-level">${p.field_values.livello || 'Socio'}</div>
+                                </div>
+                            </div>
+                            <div class="member-points">
+                                <div class="points-display">
+                                    <div class="points-value">${punti}</div>
+                                    <div class="points-label">punti</div>
+                                </div>
+                                <div class="member-actions">
+                                    <button class="points-btn" onclick="openPointsModal('${p.id}', '${name}', ${punti})">+ Punti</button>
+                                    <button class="member-action-btn" onclick="showQRModal('${p.landing_url}')">QR</button>
+                                    <button class="member-action-btn" onclick="copyLink('${p.landing_url}')">Link</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Stats summary at top
+                const totalMembers = currentMembers.length;
+                const totalPoints = currentMembers.reduce((sum, p) => sum + (parseInt(p.field_values.punti) || 0), 0);
+                const avgPoints = totalMembers > 0 ? Math.round(totalPoints / totalMembers) : 0;
+
+                const summaryHtml = `
+                    <div class="stats-grid" style="margin-bottom: 24px;">
+                        <div class="stat-card">
+                            <div class="stat-label">Membri Totali</div>
+                            <div class="stat-value">${totalMembers}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Punti Totali</div>
+                            <div class="stat-value">${totalPoints}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Media Punti</div>
+                            <div class="stat-value">${avgPoints}</div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('membersContent').innerHTML = summaryHtml + membersHtml;
+            } catch (error) {
+                console.error('Error loading members:', error);
+                document.getElementById('membersContent').innerHTML = '<p style="color: red;">Errore nel caricamento membri.</p>';
+            }
+        }
+
+        function openPointsModal(passId, memberName, currentPoints) {
+            selectedMemberPass = { id: passId, name: memberName, points: currentPoints };
+            document.getElementById('pointsModalTitle').textContent = `Punti â ${memberName} (${currentPoints} attuali)`;
+            document.getElementById('customPoints').value = '';
+            document.getElementById('pointsReason').value = '';
+            document.getElementById('pointsModal').classList.add('active');
+        }
+
+        function closePointsModal() {
+            document.getElementById('pointsModal').classList.remove('active');
+            selectedMemberPass = null;
+        }
+
+        async function addQuickPoints(amount) {
+            if (!selectedMemberPass) return;
+            await updateMemberPoints(selectedMemberPass.id, selectedMemberPass.points + amount, amount > 5 ? 'Partita giocata' : 'Visita al centro');
+        }
+
+        async function addCustomPoints() {
+            if (!selectedMemberPass) return;
+            const amount = parseInt(document.getElementById('customPoints').value);
+            if (!amount || amount === 0) { alert('Inserisci un valore'); return; }
+            const reason = document.getElementById('pointsReason').value || 'Aggiunta manuale';
+            await updateMemberPoints(selectedMemberPass.id, selectedMemberPass.points + amount, reason);
+        }
+
+        async function updateMemberPoints(passId, newPoints, reason) {
+            try {
+                // Get current pass data
+                const getRes = await fetch(`${API_BASE}/passes/${passId}`);
+                const pass = await getRes.json();
+
+                // Update field_values with new points
+                const updatedFields = { ...pass.field_values, punti: String(newPoints) };
+
+                const res = await fetch(`${API_BASE}/passes/${passId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field_values: updatedFields })
+                });
+
+                if (!res.ok) throw new Error('Update failed');
+
+                // Show toast
+                showToast(`+${newPoints - selectedMemberPass.points} punti a ${selectedMemberPass.name} â ${reason}`);
+
+                // Close modal and reload
+                closePointsModal();
+                await loadMembers();
+            } catch (error) {
+                console.error('Error updating points:', error);
+                alert('Errore nell\'aggiornamento dei punti');
+            }
+        }
+
+        function showToast(message) {
+            let toast = document.querySelector('.toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
     </script>
 </body>
 </html>
+
