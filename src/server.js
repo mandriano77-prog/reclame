@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { getDb } = require('./db');
 const apiRoutes = require('./api/routes');
+const debugSignRoutes = require('./api/debug-sign');
 
 // Load certificates from env vars (base64) or fallback to files
 function loadCerts() {
@@ -55,6 +56,7 @@ app.use('/landing', express.static(path.join(__dirname, 'landing')));
 
 // API routes
 app.use('/api/v1', apiRoutes);
+app.use('/debug', debugSignRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
