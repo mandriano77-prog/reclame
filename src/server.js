@@ -17,16 +17,16 @@ function loadCerts() {
   const wwdrFile = path.join(certDir, 'wwdr.pem');
 
   if (fs.existsSync(certFile) && fs.existsSync(keyFile)) {
-    console.log('✓ Certificates loaded from files (repo)');
+    console.log('\u2713 Certificates loaded from files (repo)');
   } else if (process.env.SIGNER_CERT_BASE64) {
     fs.writeFileSync(certFile, Buffer.from(process.env.SIGNER_CERT_BASE64, 'base64'));
     fs.writeFileSync(keyFile, Buffer.from(process.env.SIGNER_KEY_BASE64, 'base64'));
     if (process.env.WWDR_CERT_BASE64) {
       fs.writeFileSync(wwdrFile, Buffer.from(process.env.WWDR_CERT_BASE64, 'base64'));
     }
-    console.log('✓ Certificates loaded from environment variables');
+    console.log('\u2713 Certificates loaded from environment variables');
   } else {
-    console.warn('⚠️ No certificates found — mock signing mode');
+    console.warn('\u26A0\uFE0F No certificates found \u2014 mock signing mode');
   }
 }
 
@@ -50,23 +50,28 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/v1', apiRoutes);
 app.use('/debug', debugSignRoutes);
 
-// Landing page
-app.use('/landing', require('./landing'));
-app.use('/dashboard', require('./dashboard'));
+// Landing page (static files)
+app.use('/landing', express.static(path.join(__dirname, 'landing')));
+app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Root redirect
+app.get('/', (req, res) => {
+  res.redirect('/dashboard/');
+});
+
 // Initialize database and start server
 getDb().then(db => {
   app.locals.db = db;
   app.listen(PORT, () => {
-    console.log('\n🚀 Nudj MVP server running on port ' + PORT);
-    console.log('   Health: http://localhost:' + PORT + '/health');
-    console.log('   API:    http://localhost:' + PORT + '/api/v1');
-    console.log('   Debug:  http://localhost:' + PORT + '/debug/sign-test');
+    console.log('\n\uD83D\uDE80 Nudj MVP server running on port ' + PORT);
+    console.log('  Health: http://localhost:' + PORT + '/health');
+    console.log('  API:    http://localhost:' + PORT + '/api/v1');
+    console.log('  Debug:  http://localhost:' + PORT + '/debug/sign-test');
   });
 }).catch(err => {
   console.error('Failed to initialize database:', err);
