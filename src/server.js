@@ -7,18 +7,24 @@ const { getDb } = require('./db');
 const apiRoutes = require('./api/routes');
 const debugSignRoutes = require('./api/debug-sign');
 
-// Load certificates from env vars (base64) or fallback to files
+// Load certificates: prefer FILE-BASED certs (from repo), fallback to env vars
 function loadCerts() {
   const certDir = path.join(__dirname, '..', 'certs');
   if (!fs.existsSync(certDir)) fs.mkdirSync(certDir, { recursive: true });
 
-  if (process.env.SIGNER_CERT_BASE64) {
-    fs.writeFileSync(path.join(certDir, 'signerCert.pem'), Buffer.from(process.env.SIGNER_CERT_BASE64, 'base64'));
-    fs.writeFileSync(path.join(certDir, 'signerKey.pem'), Buffer.from(process.env.SIGNER_KEY_BASE64, 'base64'));
-    fs.writeFileSync(path.join(certDir, 'wwdr.pem'), Buffer.from(process.env.WWDR_CERT_BASE64, 'base64'));
-    console.log('✓ Certificates loaded from environment');
-  } else if (fs.existsSync(path.join(certDir, 'signerCert.pem'))) {
-    console.log('✓ Certificates loaded from files');
+  const certFile = path.join(certDir, 'signerCert.pem');
+  const keyFile = path.join(certDir, 'signerKey.pem');
+  const wwdrFile = path.join(certDir, 'wwdr.pem');
+
+  if (fs.existsSync(certFile) && fs.existsSync(keyFile)) {
+    console.log('✓ Certificates loaded from files (repo)');
+  } else if (process.env.SIGNER_CERT_BASE64) {
+    fs.writeFileSync(certFile, Buffer.from(process.env.SIGNER_CERT_BASE64, 'base64'));
+    fs.writeFileSync(keyFile, Buffer.from(process.env.SIGNER_KEY_BASE64, 'base64'));
+    if (process.env.WWDR_CERT_BASE64) {
+      fs.writeFileSync(wwdrFile, Buffer.from(process.env.WWDR_CERT_BASE64, 'base64'));
+    }
+    console.log('✓ Certificates loaded from environment variables');
   } else {
     console.warn('⚠️ No certificates found — mock signing mode');
   }
@@ -38,58 +44,31 @@ app.use(cors());
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Static files
-app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
-app.use('/landing', express.static(path.join(__dirname, 'landing')));
-
-// Ensure database is initialized
-(async () => {
-  try {
-    await getDb();
-    console.log('✓ Database initialized');
-  } catch (error) {
-    console.error('Failed to initialize database:', error);
-    process.exit(1);
-  }
-})();
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // API routes
 app.use('/api/v1', apiRoutes);
 app.use('/debug', debugSignRoutes);
+
+// Landing page
+app.use('/landing', require('./landing'));
+app.use('/dashboard', require('./dashboard'));
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Root redirect
-app.get('/', (req, res) => {
-  res.redirect('/dashboard/');
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
-
-// Error handler middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error'
+// Initialize database and start server
+getDb().then(db => {
+  app.locals.db = db;
+  app.listen(PORT, () => {
+    console.log('\n🚀 Nudj MVP server running on port ' + PORT);
+    console.log('   Health: http://localhost:' + PORT + '/health');
+    console.log('   API:    http://localhost:' + PORT + '/api/v1');
+    console.log('   Debug:  http://localhost:' + PORT + '/debug/sign-test');
   });
+}).catch(err => {
+  console.error('Failed to initialize database:', err);
+  process.exit(1);
 });
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n╔═══════════════════════════════════════╗`);
-  console.log(`║  Nudj MVP Server Started              ║`);
-  console.log(`╠═══════════════════════════════════════╣`);
-  console.log(`║  Server: http://localhost:${PORT}${' '.repeat(PORT.toString().length > 4 ? 0 : 4 - PORT.toString().length)}║`);
-  console.log(`║  API:    http://localhost:${PORT}/api/v1${'  '.repeat(PORT.toString().length > 4 ? 0 : 1)} ║`);
-  console.log(`║  Dashboard: http://localhost:${PORT}/dashboard/ ║`);
-  console.log(`╚═══════════════════════════════════════╝\n`);
-});
-
-module.exports = app;
