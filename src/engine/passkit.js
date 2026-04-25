@@ -315,63 +315,76 @@ function cleanPem(pemString) {
 }
 
 /**
- * Sign the manifest using openssl smime (Apple-compatible PKCS7 detached signature).
- * Falls back to node-forge if openssl is not available.
+ * Sign the manifest using node-forge (pure JavaScript PKCS7 detached signature).
+ * No external openssl binary dependency — works on any platform.
  */
 function signManifest(manifestJson, certPath, keyPath, wwdrPath) {
   // Check if certificate files exist
   const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
   if (!hasCerts) {
-    console.warn('â ï¸ MOCK MODE: pass not signed (install Apple certificate to enable)');
+    console.warn('⚠️ MOCK MODE: pass not signed (install Apple certificate to enable)');
     return Buffer.from('UNSIGNED_MOCK_SIGNATURE');
   }
 
   try {
-    // Create temp directory for clean certs and manifest
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pkpass-'));
-    const manifestPath = path.join(tmpDir, 'manifest.json');
-    const signaturePath = path.join(tmpDir, 'signature');
-    const cleanCertPath = path.join(tmpDir, 'cert.pem');
-    const cleanKeyPath = path.join(tmpDir, 'key.pem');
-    const cleanWwdrPath = path.join(tmpDir, 'wwdr.pem');
+    // Read and clean PEM files
+    const certPem = cleanPem(fs.readFileSync(certPath, 'utf8'));
+    const keyPem = cleanPem(fs.readFileSync(keyPath, 'utf8'));
 
-    // Write manifest
-    fs.writeFileSync(manifestPath, manifestJson, 'utf8');
+    // Parse certificate and key with node-forge
+    const signerCert = forge.pki.certificateFromPem(certPem);
+    const signerKey = forge.pki.privateKeyFromPem(keyPem);
 
-    // Clean and write certificates (strip Bag Attributes from Keychain exports)
-    fs.writeFileSync(cleanCertPath, cleanPem(fs.readFileSync(certPath, 'utf8')));
-    fs.writeFileSync(cleanKeyPath, cleanPem(fs.readFileSync(keyPath, 'utf8')));
+    // Create PKCS7 signed data
+    const p7 = forge.pkcs7.createSignedData();
+    p7.content = forge.util.createBuffer(manifestJson, 'utf8');
 
-    // Build openssl command
-    let opensslCmd = `openssl smime -sign -binary -in "${manifestPath}" -out "${signaturePath}" -outform DER -signer "${cleanCertPath}" -inkey "${cleanKeyPath}"`;
+    // Add signer certificate
+    p7.addCertificate(signerCert);
 
+    // Add WWDR intermediate certificate if available
     if (wwdrPath && fs.existsSync(wwdrPath)) {
-      fs.writeFileSync(cleanWwdrPath, cleanPem(fs.readFileSync(wwdrPath, 'utf8')));
-      opensslCmd += ` -certfile "${cleanWwdrPath}"`;
+      const wwdrPem = cleanPem(fs.readFileSync(wwdrPath, 'utf8'));
+      const wwdrCert = forge.pki.certificateFromPem(wwdrPem);
+      p7.addCertificate(wwdrCert);
     }
 
-    // Execute openssl
-    execSync(opensslCmd, { stdio: 'pipe' });
+    // Add signer
+    p7.addSigner({
+      key: signerKey,
+      certificate: signerCert,
+      digestAlgorithm: forge.pki.oids.sha256,
+      authenticatedAttributes: [
+        {
+          type: forge.pki.oids.contentType,
+          value: forge.pki.oids.data
+        },
+        {
+          type: forge.pki.oids.messageDigest
+          // value will be auto-populated at signing time
+        },
+        {
+          type: forge.pki.oids.signingTime,
+          value: new Date()
+        }
+      ]
+    });
 
-    // Read the signature
-    const signature = fs.readFileSync(signaturePath);
-    console.log(`â Pass signed with openssl (${signature.length} bytes)`);
+    // Sign with detached content (Apple Wallet requirement)
+    p7.sign({ detached: true });
 
-    // Cleanup temp files
-    try {
-      fs.unlinkSync(manifestPath);
-      fs.unlinkSync(signaturePath);
-      fs.unlinkSync(cleanCertPath);
-      fs.unlinkSync(cleanKeyPath);
-      if (fs.existsSync(cleanWwdrPath)) fs.unlinkSync(cleanWwdrPath);
-      fs.rmdirSync(tmpDir);
-    } catch (e) { /* ignore cleanup errors */ }
+    // Convert to DER format
+    const asn1 = p7.toAsn1();
+    const der = forge.asn1.toDer(asn1);
+    const signature = Buffer.from(der.getBytes(), 'binary');
 
+    console.log('✓ Pass signed with node-forge (' + signature.length + ' bytes)');
     return signature;
   } catch (error) {
-    console.error('openssl signing failed:', error.message);
-    console.warn('â ï¸ MOCK MODE: pass not signed (openssl error)');
+    console.error('node-forge signing failed:', error.message);
+    console.error('Stack:', error.stack);
+    console.warn('⚠️ MOCK MODE: pass not signed (signing error)');
     return Buffer.from('UNSIGNED_MOCK_SIGNATURE');
   }
 }
