@@ -2,88 +2,113 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const os = require('os');
+const crypto = require('crypto');
 
 const router = express.Router();
 
-function cleanPem(pemString) {
-  const matches = pemString.match(/-----BEGIN [^-]+-----[\s\S]+?-----END [^-]+-----/g);
-  return matches ? matches.join('\n') : pemString;
+function cleanPem(pem) {
+  const lines = pem.split('\n');
+  const cleaned = [];
+  let inBlock = false;
+  for (const line of lines) {
+    if (line.startsWith('-----BEGIN')) { inBlock = true; cleaned.push(line); continue; }
+    if (line.startsWith('-----END')) { cleaned.push(line); inBlock = false; continue; }
+    if (inBlock && !line.startsWith('Bag Attributes') && !line.match(/^\s*(friendlyName|localKeyID|subject|issuer|Key Fingerprint)/) && !line.match(/^\s+[0-9A-Fa-f]{2}\s/) && line.trim() !== '') {
+      cleaned.push(line);
+    }
+  }
+  return cleaned.join('\n');
 }
 
 router.get('/sign-test', (req, res) => {
-  const certPath = path.join(__dirname, '../../certs/signerCert.pem');
-  const keyPath = path.join(__dirname, '../../certs/signerKey.pem');
-  const wwdrPath = path.join(__dirname, '../../certs/wwdr.pem');
-
-  const result = {
-    certExists: fs.existsSync(certPath),
-    keyExists: fs.existsSync(keyPath),
-    wwdrExists: fs.existsSync(wwdrPath),
-    certSizeRaw: fs.existsSync(certPath) ? fs.statSync(certPath).size : 0,
-    opensslVersion: '',
-    methods: {}
-  };
-
   try {
-    result.opensslVersion = execSync('openssl version', { encoding: 'utf8' }).trim();
-  } catch (e) {
-    result.opensslVersion = 'NOT FOUND: ' + e.message;
+    const certDir = path.join(__dirname, '../../certs');
+    const certPath = path.join(certDir, 'signerCert.pem');
+    const keyPath = path.join(certDir, 'signerKey.pem');
+    const wwdrPath = path.join(certDir, 'wwdr.pem');
+
+    const certExists = fs.existsSync(certPath);
+    const keyExists = fs.existsSync(keyPath);
+    const wwdrExists = fs.existsSync(wwdrPath);
+
+    const certRaw = certExists ? fs.readFileSync(certPath, 'utf8') : '';
+    const keyRaw = keyExists ? fs.readFileSync(keyPath, 'utf8') : '';
+    const certClean = cleanPem(certRaw);
+    const keyClean = cleanPem(keyRaw);
+
+    const certB64 = certClean.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+    const keyB64 = keyClean.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+
+    const result = {
+      certExists, keyExists, wwdrExists,
+      certSizeRaw: certRaw.length,
+      certSizeClean: certClean.length,
+      keySizeClean: keyClean.length,
+      certB64Start: certB64.substring(0, 44),
+      certB64End: certB64.substring(certB64.length - 44),
+      keyB64Start: keyB64.substring(0, 44),
+      keyB64End: keyB64.substring(keyB64.length - 44),
+      certSHA256: crypto.createHash('sha256').update(certB64).digest('hex').substring(0, 16),
+      keySHA256: crypto.createHash('sha256').update(keyB64).digest('hex').substring(0, 16),
+      opensslVersion: '',
+      certModulusMD5: '',
+      keyModulusMD5: '',
+      modulusMatch: false,
+      expectedModulusMD5: 'e0c3301091ade69ed2d20b8bdddeb000',
+      cmsResult: '',
+      smimeResult: ''
+    };
+
+    try { result.opensslVersion = execSync('openssl version').toString().trim(); } catch(e) { result.opensslVersion = e.message; }
+
+    const tmpDir = '/tmp/debug-sign-' + Date.now();
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const cPath = path.join(tmpDir, 'cert.pem');
+    const kPath = path.join(tmpDir, 'key.pem');
+    const wPath = path.join(tmpDir, 'wwdr.pem');
+    const mPath = path.join(tmpDir, 'manifest.json');
+
+    fs.writeFileSync(cPath, certClean, 'utf8');
+    fs.writeFileSync(kPath, keyClean, { mode: 0o600 });
+    if (wwdrExists) fs.writeFileSync(wPath, cleanPem(fs.readFileSync(wwdrPath, 'utf8')), 'utf8');
+    fs.writeFileSync(mPath, JSON.stringify({ test: 'hello' }));
+
+    // MODULUS HASH - key diagnostic
+    try {
+      const certMod = execSync('openssl x509 -in ' + cPath + ' -noout -modulus 2>&1').toString().trim();
+      result.certModulusMD5 = crypto.createHash('md5').update(certMod).digest('hex');
+    } catch(e) { result.certModulusMD5 = 'ERROR: ' + e.message.substring(0, 200); }
+
+    try {
+      const keyMod = execSync('openssl rsa -in ' + kPath + ' -noout -modulus 2>&1').toString().trim();
+      result.keyModulusMD5 = crypto.createHash('md5').update(keyMod).digest('hex');
+    } catch(e) { result.keyModulusMD5 = 'ERROR: ' + e.message.substring(0, 200); }
+
+    result.modulusMatch = (result.certModulusMD5 === result.keyModulusMD5 && !result.certModulusMD5.startsWith('ERROR'));
+
+    // CMS signing test
+    try {
+      const wwdrFlag = wwdrExists ? ' -certfile ' + wPath : '';
+      execSync('openssl cms -sign -binary -in ' + mPath + ' -signer ' + cPath + ' -inkey ' + kPath + wwdrFlag + ' -outform DER -out ' + tmpDir + '/sig.der 2>&1');
+      const sigSize = fs.statSync(tmpDir + '/sig.der').size;
+      result.cmsResult = 'OK (' + sigSize + ' bytes)';
+    } catch(e) { result.cmsResult = 'FAIL: ' + (e.stdout ? e.stdout.toString().substring(0, 300) : e.message.substring(0, 300)); }
+
+    // SMIME signing test
+    try {
+      const wwdrFlag = wwdrExists ? ' -certfile ' + wPath : '';
+      execSync('openssl smime -sign -binary -in ' + mPath + ' -signer ' + cPath + ' -inkey ' + kPath + wwdrFlag + ' -outform DER -out ' + tmpDir + '/sig2.der 2>&1');
+      const sigSize = fs.statSync(tmpDir + '/sig2.der').size;
+      result.smimeResult = 'OK (' + sigSize + ' bytes)';
+    } catch(e) { result.smimeResult = 'FAIL: ' + (e.stdout ? e.stdout.toString().substring(0, 300) : e.message.substring(0, 300)); }
+
+    // Cleanup
+    try { execSync('rm -rf ' + tmpDir); } catch(e) {}
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  if (!result.certExists || !result.keyExists) {
-    return res.json(result);
-  }
-
-  // Clean PEMs
-  const cleanCert = cleanPem(fs.readFileSync(certPath, 'utf8'));
-  const cleanKey = cleanPem(fs.readFileSync(keyPath, 'utf8'));
-  const cleanWwdr = fs.existsSync(wwdrPath) ? cleanPem(fs.readFileSync(wwdrPath, 'utf8')) : null;
-
-  result.certSizeClean = cleanCert.length;
-  result.keySizeClean = cleanKey.length;
-
-  const manifest = '{"test.txt":"da39a3ee5e6b4b0d3255bfef95601890afd80709"}';
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'signtest-'));
-  const mPath = path.join(tmpDir, 'manifest.json');
-  const cPath = path.join(tmpDir, 'cert.pem');
-  const kPath = path.join(tmpDir, 'key.pem');
-  const wPath = path.join(tmpDir, 'wwdr.pem');
-  const sPath = path.join(tmpDir, 'sig.der');
-
-  fs.writeFileSync(mPath, manifest, 'utf8');
-  fs.writeFileSync(cPath, cleanCert, 'utf8');
-  fs.writeFileSync(kPath, cleanKey, 'utf8');
-  if (cleanWwdr) fs.writeFileSync(wPath, cleanWwdr, 'utf8');
-
-  // Test 1: openssl cms
-  try {
-    let cmd = 'openssl cms -sign -binary -in "' + mPath + '" -out "' + sPath + '" -outform DER -signer "' + cPath + '" -inkey "' + kPath + '"';
-    if (cleanWwdr) cmd += ' -certfile "' + wPath + '"';
-    execSync(cmd, { stdio: 'pipe', timeout: 15000 });
-    const sig = fs.existsSync(sPath) ? fs.readFileSync(sPath) : null;
-    result.methods.cms = { ok: !!sig, size: sig ? sig.length : 0 };
-    if (fs.existsSync(sPath)) fs.unlinkSync(sPath);
-  } catch (e) {
-    result.methods.cms = { ok: false, error: e.stderr ? e.stderr.toString().trim() : e.message };
-  }
-
-  // Test 2: openssl smime
-  try {
-    let cmd = 'openssl smime -sign -binary -in "' + mPath + '" -out "' + sPath + '" -outform DER -signer "' + cPath + '" -inkey "' + kPath + '" -passin pass:';
-    if (cleanWwdr) cmd += ' -certfile "' + wPath + '"';
-    execSync(cmd, { stdio: 'pipe', timeout: 15000 });
-    const sig = fs.existsSync(sPath) ? fs.readFileSync(sPath) : null;
-    result.methods.smime = { ok: !!sig, size: sig ? sig.length : 0 };
-    if (fs.existsSync(sPath)) fs.unlinkSync(sPath);
-  } catch (e) {
-    result.methods.smime = { ok: false, error: e.stderr ? e.stderr.toString().trim() : e.message };
-  }
-
-  // Cleanup
-  try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
-
-  res.json(result);
 });
 
 module.exports = router;
