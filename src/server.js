@@ -29,6 +29,9 @@ loadCerts();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust reverse proxy (Railway, Heroku, etc.) for correct req.protocol
+app.set('trust proxy', true);
+
 // Middleware
 app.use(cors());
 app.use(morgan('combined'));
