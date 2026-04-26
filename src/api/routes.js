@@ -102,6 +102,39 @@ router.get('/brands/:id', async (req, res) => {
   }
 });
 
+// Update brand config
+router.put('/brands/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, config } = req.body;
+    
+    // Get current brand
+    const current = await db.query('SELECT * FROM brands WHERE id = $1', [id]);
+    if (current.rows.length === 0) {
+      return res.status(404).json({ error: 'Brand not found' });
+    }
+    
+    // Merge config if provided
+    let newConfig = current.rows[0].config || {};
+    if (config) {
+      newConfig = { ...newConfig, ...config };
+    }
+    
+    const updateName = name || current.rows[0].name;
+    
+    await db.query(
+      'UPDATE brands SET name = $1, config = $2, updated_at = NOW() WHERE id = $3',
+      [updateName, JSON.stringify(newConfig), id]
+    );
+    
+    const updated = await db.query('SELECT * FROM brands WHERE id = $1', [id]);
+    res.json(updated.rows[0]);
+  } catch (err) {
+    console.error('Error updating brand:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================================================
 // TEMPLATE MANAGEMENT
 // ============================================================================
