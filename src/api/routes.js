@@ -24,7 +24,40 @@ const {
   listPasses,
   listEvents,
   unregisterDevice,
-  getSerialsForDevice
+  getSerialsForDevice,
+  // Rewards
+  createReward,
+  listRewards,
+  getReward,
+  updateReward,
+  deleteReward,
+  // Challenges
+  createChallenge,
+  listChallenges,
+  getChallenge,
+  updateChallenge,
+  deleteChallenge,
+  // Tiers
+  createTier,
+  listTiers,
+  getTier,
+  updateTier,
+  deleteTier,
+  // VIP Cards
+  createVipCard,
+  listVipCards,
+  getVipCard,
+  updateVipCard,
+  deleteVipCard,
+  // Reward Claims
+  claimReward,
+  listClaims,
+  // Challenge Completions
+  completeChallenge,
+  listCompletions,
+  // Push Log
+  logPush,
+  listPushes
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
 
@@ -702,6 +735,610 @@ router.get('/landing/:pass_id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting landing page data:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// REWARDS
+// ============================================================================
+
+/**
+ * POST /api/v1/rewards - Create reward
+ */
+router.post('/rewards', async (req, res) => {
+  try {
+    const { brand_id, title, description, cost, icon } = req.body;
+
+    if (!brand_id || !title) {
+      return res.status(400).json({
+        error: 'Brand ID and title are required'
+      });
+    }
+
+    const brand = await getBrand(brand_id);
+    if (!brand) {
+      return res.status(404).json({ error: 'Brand not found' });
+    }
+
+    const reward = await createReward({
+      brand_id,
+      title,
+      description: description || '',
+      cost: cost || 0,
+      icon: icon || '🎁'
+    });
+
+    await logEvent({
+      brand_id,
+      event_type: 'reward_created',
+      metadata: { reward_id: reward.id, title }
+    });
+
+    res.status(201).json(reward);
+  } catch (error) {
+    console.error('Error creating reward:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/rewards - List rewards
+ */
+router.get('/rewards', async (req, res) => {
+  try {
+    const { brand_id } = req.query;
+
+    if (!brand_id) {
+      return res.status(400).json({ error: 'Brand ID is required' });
+    }
+
+    const rewards = await listRewards(brand_id);
+    res.json(rewards);
+  } catch (error) {
+    console.error('Error listing rewards:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/rewards/:id - Update reward
+ */
+router.put('/rewards/:id', async (req, res) => {
+  try {
+    const { title, description, cost, icon, active } = req.body;
+
+    const reward = await getReward(req.params.id);
+    if (!reward) {
+      return res.status(404).json({ error: 'Reward not found' });
+    }
+
+    const updated = await updateReward(req.params.id, {
+      title,
+      description,
+      cost,
+      icon,
+      active
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating reward:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/rewards/:id - Delete reward
+ */
+router.delete('/rewards/:id', async (req, res) => {
+  try {
+    const reward = await getReward(req.params.id);
+    if (!reward) {
+      return res.status(404).json({ error: 'Reward not found' });
+    }
+
+    await deleteReward(req.params.id);
+
+    await logEvent({
+      brand_id: reward.brand_id,
+      event_type: 'reward_deleted',
+      metadata: { reward_id: req.params.id, title: reward.title }
+    });
+
+    res.json({ success: true, message: `Reward "${reward.title}" deleted` });
+  } catch (error) {
+    console.error('Error deleting reward:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/rewards/:id/claim - Claim reward
+ */
+router.post('/rewards/:id/claim', async (req, res) => {
+  try {
+    const { pass_id } = req.body;
+
+    if (!pass_id) {
+      return res.status(400).json({ error: 'Pass ID is required' });
+    }
+
+    const reward = await getReward(req.params.id);
+    if (!reward) {
+      return res.status(404).json({ error: 'Reward not found' });
+    }
+
+    const pass = await getPassInstance(pass_id);
+    if (!pass) {
+      return res.status(404).json({ error: 'Pass not found' });
+    }
+
+    const claim = await claimReward({
+      reward_id: req.params.id,
+      pass_id,
+      brand_id: reward.brand_id
+    });
+
+    await logEvent({
+      pass_id,
+      brand_id: reward.brand_id,
+      event_type: 'reward_claimed',
+      metadata: { reward_id: req.params.id, cost: reward.cost }
+    });
+
+    res.status(201).json(claim);
+  } catch (error) {
+    console.error('Error claiming reward:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// CHALLENGES
+// ============================================================================
+
+/**
+ * POST /api/v1/challenges - Create challenge
+ */
+router.post('/challenges', async (req, res) => {
+  try {
+    const { brand_id, title, description, points, icon, type, recurring } = req.body;
+
+    if (!brand_id || !title) {
+      return res.status(400).json({
+        error: 'Brand ID and title are required'
+      });
+    }
+
+    const brand = await getBrand(brand_id);
+    if (!brand) {
+      return res.status(404).json({ error: 'Brand not found' });
+    }
+
+    const challenge = await createChallenge({
+      brand_id,
+      title,
+      description: description || '',
+      points: points || 0,
+      icon: icon || '⭐',
+      type: type || 'action',
+      recurring: recurring || false
+    });
+
+    await logEvent({
+      brand_id,
+      event_type: 'challenge_created',
+      metadata: { challenge_id: challenge.id, title }
+    });
+
+    res.status(201).json(challenge);
+  } catch (error) {
+    console.error('Error creating challenge:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/challenges - List challenges
+ */
+router.get('/challenges', async (req, res) => {
+  try {
+    const { brand_id } = req.query;
+
+    if (!brand_id) {
+      return res.status(400).json({ error: 'Brand ID is required' });
+    }
+
+    const challenges = await listChallenges(brand_id);
+    res.json(challenges);
+  } catch (error) {
+    console.error('Error listing challenges:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/challenges/:id - Update challenge
+ */
+router.put('/challenges/:id', async (req, res) => {
+  try {
+    const { title, description, points, icon, type, recurring, active } = req.body;
+
+    const challenge = await getChallenge(req.params.id);
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    const updated = await updateChallenge(req.params.id, {
+      title,
+      description,
+      points,
+      icon,
+      type,
+      recurring,
+      active
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating challenge:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/challenges/:id - Delete challenge
+ */
+router.delete('/challenges/:id', async (req, res) => {
+  try {
+    const challenge = await getChallenge(req.params.id);
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    await deleteChallenge(req.params.id);
+
+    await logEvent({
+      brand_id: challenge.brand_id,
+      event_type: 'challenge_deleted',
+      metadata: { challenge_id: req.params.id, title: challenge.title }
+    });
+
+    res.json({ success: true, message: `Challenge "${challenge.title}" deleted` });
+  } catch (error) {
+    console.error('Error deleting challenge:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/challenges/:id/complete - Complete challenge
+ */
+router.post('/challenges/:id/complete', async (req, res) => {
+  try {
+    const { pass_id } = req.body;
+
+    if (!pass_id) {
+      return res.status(400).json({ error: 'Pass ID is required' });
+    }
+
+    const challenge = await getChallenge(req.params.id);
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    const pass = await getPassInstance(pass_id);
+    if (!pass) {
+      return res.status(404).json({ error: 'Pass not found' });
+    }
+
+    const completion = await completeChallenge({
+      challenge_id: req.params.id,
+      pass_id,
+      brand_id: challenge.brand_id
+    });
+
+    await logEvent({
+      pass_id,
+      brand_id: challenge.brand_id,
+      event_type: 'challenge_completed',
+      metadata: { challenge_id: req.params.id, points: challenge.points }
+    });
+
+    res.status(201).json(completion);
+  } catch (error) {
+    console.error('Error completing challenge:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// TIERS
+// ============================================================================
+
+/**
+ * POST /api/v1/tiers - Create tier
+ */
+router.post('/tiers', async (req, res) => {
+  try {
+    const { brand_id, name, min_points, color, perks, sort_order } = req.body;
+
+    if (!brand_id || !name) {
+      return res.status(400).json({
+        error: 'Brand ID and name are required'
+      });
+    }
+
+    const brand = await getBrand(brand_id);
+    if (!brand) {
+      return res.status(404).json({ error: 'Brand not found' });
+    }
+
+    const tier = await createTier({
+      brand_id,
+      name,
+      min_points: min_points || 0,
+      color: color || '#888888',
+      perks: perks || [],
+      sort_order: sort_order || 0
+    });
+
+    await logEvent({
+      brand_id,
+      event_type: 'tier_created',
+      metadata: { tier_id: tier.id, name }
+    });
+
+    res.status(201).json(tier);
+  } catch (error) {
+    console.error('Error creating tier:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/tiers - List tiers
+ */
+router.get('/tiers', async (req, res) => {
+  try {
+    const { brand_id } = req.query;
+
+    if (!brand_id) {
+      return res.status(400).json({ error: 'Brand ID is required' });
+    }
+
+    const tiers = await listTiers(brand_id);
+    res.json(tiers);
+  } catch (error) {
+    console.error('Error listing tiers:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/tiers/:id - Update tier
+ */
+router.put('/tiers/:id', async (req, res) => {
+  try {
+    const { name, min_points, color, perks, sort_order } = req.body;
+
+    const tier = await getTier(req.params.id);
+    if (!tier) {
+      return res.status(404).json({ error: 'Tier not found' });
+    }
+
+    const updated = await updateTier(req.params.id, {
+      name,
+      min_points,
+      color,
+      perks,
+      sort_order
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating tier:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/tiers/:id - Delete tier
+ */
+router.delete('/tiers/:id', async (req, res) => {
+  try {
+    const tier = await getTier(req.params.id);
+    if (!tier) {
+      return res.status(404).json({ error: 'Tier not found' });
+    }
+
+    await deleteTier(req.params.id);
+
+    await logEvent({
+      brand_id: tier.brand_id,
+      event_type: 'tier_deleted',
+      metadata: { tier_id: req.params.id, name: tier.name }
+    });
+
+    res.json({ success: true, message: `Tier "${tier.name}" deleted` });
+  } catch (error) {
+    console.error('Error deleting tier:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// VIP CARDS
+// ============================================================================
+
+/**
+ * POST /api/v1/vip-cards - Create VIP card
+ */
+router.post('/vip-cards', async (req, res) => {
+  try {
+    const { brand_id, name, description, color } = req.body;
+
+    if (!brand_id || !name) {
+      return res.status(400).json({
+        error: 'Brand ID and name are required'
+      });
+    }
+
+    const brand = await getBrand(brand_id);
+    if (!brand) {
+      return res.status(404).json({ error: 'Brand not found' });
+    }
+
+    const vipCard = await createVipCard({
+      brand_id,
+      name,
+      description: description || '',
+      color: color || 'from-blue-400 to-blue-600'
+    });
+
+    await logEvent({
+      brand_id,
+      event_type: 'vip_card_created',
+      metadata: { vip_card_id: vipCard.id, name }
+    });
+
+    res.status(201).json(vipCard);
+  } catch (error) {
+    console.error('Error creating VIP card:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/vip-cards - List VIP cards
+ */
+router.get('/vip-cards', async (req, res) => {
+  try {
+    const { brand_id } = req.query;
+
+    if (!brand_id) {
+      return res.status(400).json({ error: 'Brand ID is required' });
+    }
+
+    const vipCards = await listVipCards(brand_id);
+    res.json(vipCards);
+  } catch (error) {
+    console.error('Error listing VIP cards:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/vip-cards/:id - Update VIP card
+ */
+router.put('/vip-cards/:id', async (req, res) => {
+  try {
+    const { name, description, color, assigned, active } = req.body;
+
+    const vipCard = await getVipCard(req.params.id);
+    if (!vipCard) {
+      return res.status(404).json({ error: 'VIP card not found' });
+    }
+
+    const updated = await updateVipCard(req.params.id, {
+      name,
+      description,
+      color,
+      assigned,
+      active
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating VIP card:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/vip-cards/:id - Delete VIP card
+ */
+router.delete('/vip-cards/:id', async (req, res) => {
+  try {
+    const vipCard = await getVipCard(req.params.id);
+    if (!vipCard) {
+      return res.status(404).json({ error: 'VIP card not found' });
+    }
+
+    await deleteVipCard(req.params.id);
+
+    await logEvent({
+      brand_id: vipCard.brand_id,
+      event_type: 'vip_card_deleted',
+      metadata: { vip_card_id: req.params.id, name: vipCard.name }
+    });
+
+    res.json({ success: true, message: `VIP card "${vipCard.name}" deleted` });
+  } catch (error) {
+    console.error('Error deleting VIP card:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// PUSH NOTIFICATIONS
+// ============================================================================
+
+/**
+ * POST /api/v1/push/send - Log push notification
+ */
+router.post('/push/send', async (req, res) => {
+  try {
+    const { brand_id, title, message, target, sent_count } = req.body;
+
+    if (!brand_id || !title || !message) {
+      return res.status(400).json({
+        error: 'Brand ID, title, and message are required'
+      });
+    }
+
+    const brand = await getBrand(brand_id);
+    if (!brand) {
+      return res.status(404).json({ error: 'Brand not found' });
+    }
+
+    const pushLog = await logPush({
+      brand_id,
+      title,
+      message,
+      target: target || 'all',
+      sent_count: sent_count || 0
+    });
+
+    await logEvent({
+      brand_id,
+      event_type: 'push_sent',
+      metadata: { title, target: target || 'all', sent_count: sent_count || 0 }
+    });
+
+    res.status(201).json(pushLog);
+  } catch (error) {
+    console.error('Error logging push:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/push/history - Get push history
+ */
+router.get('/push/history', async (req, res) => {
+  try {
+    const { brand_id } = req.query;
+
+    if (!brand_id) {
+      return res.status(400).json({ error: 'Brand ID is required' });
+    }
+
+    const history = await listPushes(brand_id);
+    res.json(history);
+  } catch (error) {
+    console.error('Error getting push history:', error);
     res.status(500).json({ error: error.message });
   }
 });

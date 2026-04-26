@@ -6,1459 +6,1014 @@
     <title>Nudj Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --bg-primary: #0D0B1A;
-            --bg-secondary: #1E1A36;
-            --bg-tertiary: #2D2645;
-            --accent-teal: #00D4AA;
-            --accent-purple: #7C3AED;
-            --text-primary: #FFFFFF;
-            --text-secondary: #B0A8C1;
-            --border-color: #3A3556;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            overflow-x: hidden;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border-color);
-            padding: 24px;
-            overflow-y: auto;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--accent-teal);
-            margin-bottom: 32px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-section {
-            margin-bottom: 32px;
-        }
-
-        .nav-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--accent-purple);
-            margin-bottom: 12px;
-            opacity: 0.7;
-        }
-
-        .nav-item {
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-            color: var(--text-secondary);
-            border: 1px solid transparent;
-        }
-
-        .nav-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--accent-teal);
-        }
-
-        .nav-item.active {
-            background: var(--accent-teal);
-            color: var(--bg-primary);
-            font-weight: 600;
-        }
-
-        .main {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding: 20px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-title {
-            font-size: 28px;
-            font-weight: 600;
-        }
-
-        .brand-selector {
-            padding: 8px 16px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .brand-selector:hover {
-            background: var(--accent-purple);
-            opacity: 0.8;
-        }
-
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 32px;
-        }
-
-        .section {
-            display: none;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        .section-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 24px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .stat-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            transition: all 0.3s;
-        }
-
-        .stat-card:hover {
-            border-color: var(--accent-teal);
-            box-shadow: 0 4px 12px rgba(0, 212, 170, 0.1);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--accent-purple);
-            margin-bottom: 8px;
-            opacity: 0.7;
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--accent-teal);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--accent-purple);
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: border 0.2s;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--accent-teal);
-            box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.1);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .button {
-            padding: 12px 24px;
-            background: var(--accent-teal);
-            color: var(--bg-primary);
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
-        }
-
-        .button:active {
-            transform: translateY(0);
-        }
-
-        .button.secondary {
-            background: transparent;
-            color: var(--accent-teal);
-            border: 1px solid var(--accent-teal);
-        }
-
-        .button.secondary:hover {
-            background: rgba(0, 212, 170, 0.1);
-        }
-
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .table thead th {
-            background: var(--bg-tertiary);
-            padding: 16px;
-            text-align: left;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--accent-purple);
-            font-weight: 600;
-        }
-
-        .table tbody td {
-            padding: 14px 16px;
-            border-top: 1px solid var(--border-color);
-            font-size: 14px;
-        }
-
-        .table tbody tr:hover {
-            background: var(--bg-tertiary);
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .badge.active {
-            background: rgba(0, 212, 170, 0.2);
-            color: var(--accent-teal);
-        }
-
-        .badge.inactive {
-            background: rgba(124, 58, 237, 0.2);
-            color: var(--accent-purple);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            font-size: 12px;
-        }
-
-        .action-btn {
-            padding: 4px 8px;
-            background: var(--accent-purple);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-
-        .action-btn:hover {
-            opacity: 1;
-        }
-
-        .templates-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .template-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .template-card:hover {
-            border-color: var(--accent-teal);
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 212, 170, 0.1);
-        }
-
-        .template-name {
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .template-type {
-            font-size: 12px;
-            color: var(--accent-purple);
-            opacity: 0.7;
-            text-transform: uppercase;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 32px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 24px;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 24px;
-        }
-
-        .qr-container {
-            text-align: center;
-            padding: 20px;
-            background: var(--bg-tertiary);
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .qr-container canvas {
-            max-width: 200px;
-        }
-
-        .copy-button {
-            margin-top: 12px;
-            width: 100%;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--accent-purple);
-        }
-
-        .success-message {
-            background: rgba(0, 212, 170, 0.1);
-            border: 1px solid var(--accent-teal);
-            color: var(--accent-teal);
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-        }
-
-        .member-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.3s;
-            margin-bottom: 12px;
-        }
-
-        .member-card:hover {
-            border-color: var(--accent-teal);
-            box-shadow: 0 4px 12px rgba(0, 212, 170, 0.1);
-        }
-
-        .member-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .member-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 20px;
-            color: var(--bg-primary);
-        }
-
-        .member-avatar.fondatore { background: #CCFF00; }
-        .member-avatar.socio { background: var(--accent-teal); }
-        .member-avatar.staff { background: var(--accent-purple); }
-        .member-avatar.gold { background: #FFD700; }
-        .member-avatar.silver { background: #C0C0C0; }
-
-        .member-name {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 4px;
-        }
-
-        .member-level {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-        }
-
-        .member-points {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .points-display {
-            text-align: right;
-        }
-
-        .points-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #CCFF00;
-        }
-
-        .points-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-        }
-
-        .points-btn {
-            padding: 8px 16px;
-            background: var(--accent-teal);
-            color: var(--bg-primary);
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .points-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
-        }
-
-        .member-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .member-action-btn {
-            padding: 6px 12px;
-            border: 1px solid var(--border-color);
-            background: transparent;
-            color: var(--text-secondary);
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .member-action-btn:hover {
-            border-color: var(--accent-teal);
-            color: var(--accent-teal);
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: var(--accent-teal);
-            color: var(--bg-primary);
-            padding: 14px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            z-index: 2000;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        @media (max-width: 768px) {
-            .layout {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                display: none;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .header {
-                flex-direction: column;
-                gap: 16px;
-            }
-        }
+            --bg: #0D0B1A; --bg2: #1E1A36; --bg3: #2D2645;
+            --teal: #00D4AA; --purple: #7C3AED; --yellow: #CCFF00;
+            --text: #FFFFFF; --text2: #B0A8C1; --border: #3A3556;
+            --red: #FF6B6B; --green: #34D399;
+        }
+        html, body { width: 100%; height: 100%; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+        .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 20px 16px; overflow-y: auto; }
+        .logo { font-size: 22px; font-weight: 700; color: var(--teal); margin-bottom: 28px; display: flex; align-items: center; gap: 8px; }
+        .nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--purple); margin: 20px 0 8px; opacity: 0.7; }
+        .nav-item { padding: 10px 12px; margin-bottom: 4px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.2s; }
+        .nav-item:hover { background: var(--bg3); color: var(--teal); }
+        .nav-item.active { background: var(--teal); color: var(--bg); font-weight: 600; }
+        .main { display: flex; flex-direction: column; overflow: hidden; }
+        .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; }
+        .header-title { font-size: 24px; font-weight: 600; }
+        .brand-sel { padding: 7px 14px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .content { flex: 1; overflow-y: auto; padding: 28px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .sec-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .stat-card:hover { border-color: var(--teal); }
+        .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--purple); margin-bottom: 6px; opacity: 0.7; }
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--teal); }
+        .stat-delta { font-size: 11px; color: var(--green); margin-top: 4px; }
+        input, select, textarea { width: 100%; padding: 9px 12px; background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; font-family: inherit; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 2px rgba(0,212,170,0.1); }
+        .form-group { margin-bottom: 16px; }
+        .form-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--purple); margin-bottom: 6px; display: block; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .btn { padding: 10px 20px; background: var(--teal); color: var(--bg); border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,212,170,0.3); }
+        .btn.sec { background: transparent; color: var(--teal); border: 1px solid var(--teal); }
+        .btn.danger { background: var(--red); }
+        .btn.purple { background: var(--purple); }
+        .btn.small { padding: 6px 12px; font-size: 12px; }
+        .table { width: 100%; border-collapse: collapse; background: var(--bg2); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+        .table thead th { background: var(--bg3); padding: 12px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--purple); font-weight: 600; }
+        .table tbody td { padding: 12px 14px; border-top: 1px solid var(--border); font-size: 13px; }
+        .table tbody tr:hover { background: var(--bg3); }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .badge.active { background: rgba(0,212,170,0.2); color: var(--teal); }
+        .badge.inactive { background: rgba(124,58,237,0.2); color: var(--purple); }
+        .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 12px; }
+        .card:hover { border-color: var(--teal); }
+        .card-row { display: flex; align-items: center; justify-content: space-between; }
+        .card-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; background: var(--bg3); flex-shrink: 0; }
+        .card-info { flex: 1; margin-left: 14px; }
+        .card-title { font-weight: 600; font-size: 14px; }
+        .card-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+        .card-meta { font-size: 11px; color: var(--teal); font-weight: 600; margin-top: 4px; }
+        .card-actions { display: flex; gap: 6px; }
+        .member-card { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; }
+        .member-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: var(--bg); background: var(--teal); flex-shrink: 0; }
+        .member-name { font-weight: 600; font-size: 15px; }
+        .member-level { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2); }
+        .points-value { font-size: 24px; font-weight: 700; color: var(--yellow); }
+        .points-label { font-size: 10px; text-transform: uppercase; color: var(--text2); }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 28px; max-width: 520px; width: 92%; max-height: 90vh; overflow-y: auto; position: relative; }
+        .modal-header { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--text2); cursor: pointer; font-size: 22px; }
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--teal); color: var(--bg); padding: 12px 22px; border-radius: 8px; font-weight: 600; font-size: 13px; z-index: 2000; opacity: 0; transform: translateY(20px); transition: all 0.3s; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .push-card { background: linear-gradient(135deg, var(--purple), #5B21B6); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .tier-bar { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+        .tier-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .chart-placeholder { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+        .color-input-wrap { display: flex; gap: 8px; align-items: center; }
+        .color-input-wrap input[type="color"] { width: 40px; height: 34px; border: none; border-radius: 6px; cursor: pointer; padding: 0; }
+        .color-input-wrap input[type="text"] { flex: 1; }
+        @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } .form-row { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; } }
     </style>
 </head>
 <body>
-    <div class="layout">
-        <div class="sidebar">
-            <div class="logo">&#9670; Nudj</div>
+<div class="layout">
+    <div class="sidebar">
+        <div class="logo">&#9670; Nudj</div>
+        <div class="nav-label">Dashboard</div>
+        <div class="nav-item active" onclick="nav('overview')">Overview</div>
+        <div class="nav-item" onclick="nav('members')">Membri</div>
+        <div class="nav-item" onclick="nav('create-pass')">Crea Pass</div>
+        <div class="nav-label">Loyalty</div>
+        <div class="nav-item" onclick="nav('rewards')">Premi</div>
+        <div class="nav-item" onclick="nav('challenges')">Sfide</div>
+        <div class="nav-item" onclick="nav('tiers')">Livelli</div>
+        <div class="nav-item" onclick="nav('vip-cards')">Carte VIP</div>
+        <div class="nav-label">Comunicazione</div>
+        <div class="nav-item" onclick="nav('push')">Push Notification</div>
+        <div class="nav-label">Setup</div>
+        <div class="nav-item" onclick="nav('templates')">Template</div>
+        <div class="nav-item" onclick="nav('brand-settings')">Brand</div>
+    </div>
 
-            <div class="nav-section">
-                <div class="nav-label">Dashboard</div>
-                <div class="nav-item active" onclick="switchSection('overview')">Overview</div>
-                <div class="nav-item" onclick="switchSection('members')">Membri</div>
-                <div class="nav-item" onclick="switchSection('create-pass')">Crea Pass</div>
-                <div class="nav-item" onclick="switchSection('recent-passes')">Pass Recenti</div>
-                <div class="nav-item" onclick="switchSection('templates')">Template</div>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-label">Setup</div>
-                <div class="nav-item" onclick="switchSection('setup-brand')">Nuova Brand</div>
-            </div>
+    <div class="main">
+        <div class="header">
+            <div class="header-title">Nudj Dashboard</div>
+            <select class="brand-sel" id="brandSelector" onchange="changeBrand()">
+                <option value="">Seleziona Brand</option>
+            </select>
         </div>
 
-        <div class="main">
-            <div class="header">
-                <div class="header-title">Nudj Dashboard</div>
-                <select class="brand-selector" id="brandSelector" onchange="changeBrand()">
-                    <option value="">Seleziona Brand</option>
-                </select>
+        <div class="content">
+
+            <!-- OVERVIEW -->
+            <div id="overview" class="section active">
+                <div class="sec-title">Overview</div>
+                <div class="stats-grid" id="statsGrid"><div style="color:var(--text2)">Caricamento...</div></div>
+                <div class="chart-placeholder" id="chartArea">
+                    <div style="font-weight:600;margin-bottom:12px;">Andamento eventi</div>
+                    <svg id="eventChart" viewBox="0 0 600 160" style="width:100%;height:140px;"></svg>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <div class="sec-title">Top Membri</div>
+                        <div id="topMembers"></div>
+                    </div>
+                    <div>
+                        <div class="sec-title">Distribuzione Livelli</div>
+                        <div id="tierDistribution"></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="content">
-                <!-- Overview Section -->
-                <div id="overview" class="section active">
-                    <div class="section-title">Overview</div>
-                    <div class="stats-grid" id="statsGrid">
-                        <div class="loading">Caricamento statistiche...</div>
-                    </div>
-                </div>
+            <!-- MEMBERS -->
+            <div id="members" class="section">
+                <div class="sec-title">Membri</div>
+                <div id="membersContent" style="color:var(--text2)">Caricamento...</div>
+            </div>
 
-                <!-- Members Section -->
-                <div id="members" class="section">
-                    <div class="section-title">Membri</div>
-                    <div id="membersContent" class="loading">Caricamento membri...</div>
+            <!-- CREATE PASS -->
+            <div id="create-pass" class="section">
+                <div class="sec-title">Genera Nuovo Pass</div>
+                <div id="successMessage"></div>
+                <div class="form-group">
+                    <label class="form-label">Template</label>
+                    <select id="templateSelect" onchange="loadTemplateFields()"><option value="">Seleziona template</option></select>
                 </div>
-
-                <!-- Points Modal -->
-                <div id="pointsModal" class="modal">
-                    <div class="modal-content">
-                        <button class="modal-close" onclick="closePointsModal()">&times;</button>
-                        <div class="modal-header" id="pointsModalTitle">Aggiungi Punti</div>
-                        <div style="margin-bottom: 20px;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                                <button class="button" onclick="addQuickPoints(10)" style="background: #00D4AA;">+10 Partita</button>
-                                <button class="button" onclick="addQuickPoints(5)" style="background: #7C3AED;">+5 Visita</button>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Punti personalizzati</label>
-                                <div style="display: flex; gap: 8px;">
-                                    <input type="number" id="customPoints" placeholder="es. 25" style="flex: 1;">
-                                    <button class="button" onclick="addCustomPoints()">Aggiungi</button>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Motivo (opzionale)</label>
-                                <input type="text" id="pointsReason" placeholder="es. Torneo interno, Evento speciale...">
-                            </div>
-                        </div>
-                        <div id="pointsHistory" style="margin-top: 16px;"></div>
-                    </div>
+                <div id="fieldGroup"></div>
+                <div class="form-row">
+                    <button class="btn" onclick="generatePass()">Genera Pass</button>
+                    <button class="btn sec" onclick="resetForm()">Reset</button>
                 </div>
+                <div id="passResult"></div>
+            </div>
 
-                <!-- Create Pass Section -->
-                <div id="create-pass" class="section">
-                    <div class="section-title">Genera Nuovo Pass</div>
-                    <div id="successMessage"></div>
+            <!-- REWARDS -->
+            <div id="rewards" class="section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <div class="sec-title" style="margin-bottom:0">Catalogo Premi</div>
+                    <button class="btn" onclick="openRewardModal()">+ Nuovo Premio</button>
+                </div>
+                <div id="rewardsList"></div>
+            </div>
+
+            <!-- CHALLENGES -->
+            <div id="challenges" class="section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <div class="sec-title" style="margin-bottom:0">Sfide & Missioni</div>
+                    <button class="btn" onclick="openChallengeModal()">+ Nuova Sfida</button>
+                </div>
+                <div id="challengesList"></div>
+            </div>
+
+            <!-- TIERS -->
+            <div id="tiers" class="section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <div class="sec-title" style="margin-bottom:0">Sistema Livelli</div>
+                    <button class="btn" onclick="openTierModal()">+ Nuovo Livello</button>
+                </div>
+                <div id="tiersList"></div>
+            </div>
+
+            <!-- VIP CARDS -->
+            <div id="vip-cards" class="section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <div class="sec-title" style="margin-bottom:0">Carte VIP</div>
+                    <button class="btn" onclick="openVipModal()">+ Nuova Carta</button>
+                </div>
+                <div id="vipCardsList"></div>
+            </div>
+
+            <!-- PUSH NOTIFICATIONS -->
+            <div id="push" class="section">
+                <div class="sec-title">Invia Push Notification</div>
+                <div class="push-card">
                     <div class="form-group">
-                        <label class="form-label">Template</label>
-                        <select id="templateSelect" onchange="loadTemplateFields()">
-                            <option value="">Seleziona un template</option>
+                        <label class="form-label" style="color:rgba(255,255,255,0.7)">Titolo</label>
+                        <input type="text" id="pushTitle" placeholder="es. Offerta speciale weekend!" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color:rgba(255,255,255,0.7)">Messaggio</label>
+                        <textarea id="pushMessage" rows="3" placeholder="es. Vieni a giocare sabato e guadagna punti doppi!" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);resize:vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="color:rgba(255,255,255,0.7)">Target</label>
+                        <select id="pushTarget" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);">
+                            <option value="all">Tutti i membri</option>
+                            <option value="active">Solo attivi (ultimi 30gg)</option>
+                            <option value="inactive">Inattivi (win-back)</option>
+                            <option value="top">Top tier</option>
                         </select>
                     </div>
-
-                    <div id="fieldGroup"></div>
-
-                    <div class="form-row">
-                        <button class="button" onclick="generatePass()">Genera Pass</button>
-                        <button class="button secondary" onclick="resetForm()">Reset</button>
-                    </div>
-
-                    <div id="passResult"></div>
+                    <button class="btn" style="background:white;color:var(--purple);width:100%;" onclick="sendPush()">Invia Notifica</button>
                 </div>
+                <div class="sec-title" style="margin-top:24px;">Storico Notifiche</div>
+                <div id="pushHistory"></div>
+            </div>
 
-                <!-- Recent Passes Section -->
-                <div id="recent-passes" class="section">
-                    <div class="section-title">Pass Recenti</div>
-                    <div id="passesTable" class="loading">Caricamento...</div>
-                </div>
-
-                <!-- Templates Section -->
-                <div id="templates" class="section">
-                    <div class="section-title">Template Disponibili</div>
-                    <div id="templatesGrid" class="loading">Caricamento...</div>
-
-                    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
-                        <div class="section-title">Crea Nuovo Template</div>
-                        <div class="form-group">
-                            <label class="form-label">Nome Template</label>
-                            <input type="text" id="templateName" placeholder="es. Tessera Fedelt&#224;">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tipo Pass</label>
-                            <select id="templatePassType">
-                                <option value="generic">Generic</option>
-                                <option value="storeCard">Store Card</option>
-                                <option value="eventTicket">Event Ticket</option>
-                                <option value="coupon">Coupon</option>
-                                <option value="boardingPass">Boarding Pass</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Campi (uno per riga: chiave=etichetta=valore)</label>
-                            <textarea id="templateFields" rows="4" placeholder="nome=Nome=&#10;livello=Livello=Socio&#10;punti=Punti=0&#10;scadenza=Scadenza=31/12/2026" style="width:100%;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:8px;padding:12px;color:var(--text-primary);font-family:monospace;resize:vertical;"></textarea>
-                        </div>
-                        <button class="button" onclick="createTemplate()">Crea Template</button>
+            <!-- TEMPLATES -->
+            <div id="templates" class="section">
+                <div class="sec-title">Template</div>
+                <div id="templatesGrid" style="color:var(--text2)">Caricamento...</div>
+                <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
+                    <div class="sec-title">Crea Nuovo Template</div>
+                    <div class="form-group"><label class="form-label">Nome</label><input type="text" id="templateName" placeholder="es. Tessera Fedelta"></div>
+                    <div class="form-group"><label class="form-label">Tipo Pass</label>
+                        <select id="templatePassType"><option value="generic">Generic</option><option value="storeCard">Store Card</option><option value="eventTicket">Event Ticket</option><option value="coupon">Coupon</option></select>
                     </div>
-                </div>
-
-                <!-- Setup Brand Section -->
-                <div id="setup-brand" class="section">
-                    <div class="section-title">Crea Nuova Brand</div>
-                    <div class="form-group">
-                        <label class="form-label">Nome Brand</label>
-                        <input type="text" id="brandName" placeholder="es. CoffeeShop">
+                    <div class="form-group"><label class="form-label">Campi (chiave=etichetta=valore per riga)</label>
+                        <textarea id="templateFields" rows="4" placeholder="nome=Nome=&#10;livello=Livello=Socio&#10;punti=Punti=0" style="font-family:monospace;resize:vertical;"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Slug (URL-friendly)</label>
-                        <input type="text" id="brandSlug" placeholder="es. coffeeshop">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Colore Primario (hex)</label>
-                        <input type="text" id="brandColor" value="#00D4AA" placeholder="#00D4AA">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Colore Sfondo Pass (hex)</label>
-                        <input type="text" id="brandBgColor" value="#1B2A4A" placeholder="#1B2A4A">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Colore Testo Pass (hex)</label>
-                        <input type="text" id="brandFgColor" value="#FFFFFF" placeholder="#FFFFFF">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Logo Text (testo mostrato nel pass)</label>
-                        <input type="text" id="brandLogoText" placeholder="es. Coffee Shop">
-                    </div>
-                    <button class="button" onclick="createBrand()">Crea Brand</button>
-
-                    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
-                        <div class="section-title" style="color: #FF6B6B;">Zona Pericolosa</div>
-                        <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">Elimina la brand corrente e tutti i dati associati (template, pass, eventi).</p>
-                        <button class="button" style="background: #FF6B6B;" onclick="deleteBrandAction()">Elimina Brand Corrente</button>
-                    </div>
+                    <button class="btn" onclick="createTemplate()">Crea Template</button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Back-of-Pass Edit Modal -->
-    <div id="backEditModal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <button class="modal-close" onclick="closeBackEditModal()">&times;</button>
-            <div class="modal-header">✏️ Retro Pass — <span id="backEditMemberName"></span></div>
-            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 20px;">
-                Modifica i contenuti che appaiono sul retro della tessera Apple Wallet.
-            </p>
-            <div id="backFieldsContainer"></div>
-            <div style="display: flex; gap: 12px; margin-top: 20px;">
-                <button class="button" onclick="saveBackFields()">Salva Retro</button>
-                <button class="button secondary" onclick="closeBackEditModal()">Annulla</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- QR Modal -->
-    <div id="qrModal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeQRModal()">&times;</button>
-            <div class="modal-header">QR Code Pass</div>
-            <div class="qr-container">
-                <canvas id="qrCanvas"></canvas>
-            </div>
-            <input type="text" id="qrUrl" readonly style="margin-bottom: 12px;">
-            <button class="button copy-button" onclick="copyQRUrl()">Copia Link</button>
-        </div>
-    </div>
-
-    <script>
-        const API_BASE = '/api/v1';
-        let currentBrandId = null;
-
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadBrands();
-            await refreshOverview();
-            setInterval(refreshOverview, 30000); // Auto-refresh every 30s
-        });
-
-        // ===== Navigation =====
-        function switchSection(sectionId) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
-
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            event.target.classList.add('active');
-
-            if (sectionId === 'members') loadMembers();
-            if (sectionId === 'recent-passes') loadRecentPasses();
-            if (sectionId === 'templates') loadTemplates();
-        }
-
-        // ===== Brands =====
-        async function loadBrands() {
-            try {
-                const res = await fetch(`${API_BASE}/brands`);
-                const brands = await res.json();
-
-                const selector = document.getElementById('brandSelector');
-                brands.forEach(brand => {
-                    const option = document.createElement('option');
-                    option.value = brand.id;
-                    option.textContent = brand.name;
-                    selector.appendChild(option);
-                });
-
-                if (brands.length > 0) {
-                    selector.value = brands[0].id;
-                    currentBrandId = brands[0].id;
-                    await loadTemplates();
-                    await refreshOverview();
-                }
-            } catch (error) {
-                console.error('Error loading brands:', error);
-            }
-        }
-
-        function changeBrand() {
-            const selector = document.getElementById('brandSelector');
-            currentBrandId = selector.value;
-            refreshOverview();
-            loadTemplates();
-        }
-
-        async function createBrand() {
-            const name = document.getElementById('brandName').value;
-            const slug = document.getElementById('brandSlug').value;
-            const color = document.getElementById('brandColor').value;
-            const bgColor = document.getElementById('brandBgColor').value;
-            const fgColor = document.getElementById('brandFgColor').value;
-            const logoText = document.getElementById('brandLogoText').value;
-
-            if (!name || !slug) {
-                alert('Compila Nome e Slug');
-                return;
-            }
-
-            try {
-                const config = { primaryColor: color };
-                if (bgColor) config.backgroundColor = bgColor;
-                if (fgColor) config.foregroundColor = fgColor;
-                if (logoText) config.logoText = logoText;
-
-                const res = await fetch(`${API_BASE}/brands`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, slug, config })
-                });
-
-                if (!res.ok) throw new Error('Failed to create brand');
-
-                const brand = await res.json();
-                showToast('Brand creata con successo!');
-
-                // Reload brands
-                document.getElementById('brandSelector').innerHTML = '<option value="">Seleziona Brand</option>';
-                await loadBrands();
-
-                // Clear form
-                document.getElementById('brandName').value = '';
-                document.getElementById('brandSlug').value = '';
-            } catch (error) {
-                console.error('Error creating brand:', error);
-                alert('Errore nella creazione della brand');
-            }
-        }
-
-        async function deleteBrandAction() {
-            if (!currentBrandId) {
-                alert('Seleziona prima una brand');
-                return;
-            }
-            if (!confirm('Sei sicuro? Questa azione elimina la brand e TUTTI i dati associati (template, pass, eventi). Non si può annullare.')) {
-                return;
-            }
-            try {
-                const res = await fetch(`${API_BASE}/brands/${currentBrandId}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Delete failed');
-                showToast('Brand eliminata');
-                currentBrandId = null;
-                document.getElementById('brandSelector').innerHTML = '<option value="">Seleziona Brand</option>';
-                await loadBrands();
-            } catch (error) {
-                console.error('Error deleting brand:', error);
-                alert('Errore nell\'eliminazione della brand');
-            }
-        }
-
-        async function createTemplate() {
-            if (!currentBrandId) {
-                alert('Seleziona prima una brand');
-                return;
-            }
-            const name = document.getElementById('templateName').value;
-            const passType = document.getElementById('templatePassType').value;
-            const fieldsText = document.getElementById('templateFields').value;
-
-            if (!name) {
-                alert('Inserisci il nome del template');
-                return;
-            }
-
-            // Parse fields from textarea
-            const fields = fieldsText.split('\n').filter(l => l.trim()).map(line => {
-                const parts = line.split('=');
-                return {
-                    key: (parts[0] || '').trim(),
-                    label: (parts[1] || parts[0] || '').trim(),
-                    value: (parts[2] || '').trim()
-                };
-            }).filter(f => f.key);
-
-            try {
-                const res = await fetch(`${API_BASE}/templates`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        brand_id: currentBrandId,
-                        name,
-                        pass_type: passType,
-                        fields,
-                        style: {},
-                        config: {}
-                    })
-                });
-
-                if (!res.ok) throw new Error('Failed to create template');
-                showToast('Template creato con successo!');
-                document.getElementById('templateName').value = '';
-                document.getElementById('templateFields').value = '';
-                await loadTemplates();
-            } catch (error) {
-                console.error('Error creating template:', error);
-                alert('Errore nella creazione del template');
-            }
-        }
-
-        async function deleteTemplateAction(templateId, templateName) {
-            if (!confirm(`Eliminare il template "${templateName}" e tutti i pass associati?`)) return;
-            try {
-                const res = await fetch(`${API_BASE}/templates/${templateId}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Delete failed');
-                showToast('Template eliminato');
-                await loadTemplates();
-            } catch (error) {
-                console.error('Error deleting template:', error);
-                alert('Errore nell\'eliminazione del template');
-            }
-        }
-
-        async function deletePassAction(passId) {
-            if (!confirm('Eliminare questo pass?')) return;
-            try {
-                const res = await fetch(`${API_BASE}/passes/${passId}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Delete failed');
-                showToast('Pass eliminato');
-                await loadRecentPasses();
-                await loadMembers();
-            } catch (error) {
-                console.error('Error deleting pass:', error);
-                alert('Errore nell\'eliminazione del pass');
-            }
-        }
-
-        // ===== Overview/Stats =====
-        async function refreshOverview() {
-            if (!currentBrandId) return;
-
-            try {
-                const res = await fetch(`${API_BASE}/analytics/${currentBrandId}`);
-                const analytics = await res.json();
-
-                const statsHtml = `
-                    <div class="stat-card">
-                        <div class="stat-label">Pass Attivi</div>
-                        <div class="stat-value">${analytics.byStatus?.active || 0}</div>
+            <!-- BRAND SETTINGS -->
+            <div id="brand-settings" class="section">
+                <div class="sec-title">Impostazioni Brand</div>
+                <div class="card" style="padding:24px;">
+                    <div class="form-group"><label class="form-label">Nome Brand</label><input type="text" id="bsName" placeholder="Nome brand"></div>
+                    <div class="form-group"><label class="form-label">Colore Sfondo</label>
+                        <div class="color-input-wrap"><input type="color" id="bsBgPick" value="#000000" onchange="document.getElementById('bsBg').value=this.value"><input type="text" id="bsBg" placeholder="#000000"></div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Scan Totali</div>
-                        <div class="stat-value">${analytics.events?.pass_scanned || 0}</div>
+                    <div class="form-group"><label class="form-label">Colore Testo</label>
+                        <div class="color-input-wrap"><input type="color" id="bsFgPick" value="#FFFFFF" onchange="document.getElementById('bsFg').value=this.value"><input type="text" id="bsFg" placeholder="#FFFFFF"></div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Visualizzazioni</div>
-                        <div class="stat-value">${analytics.events?.landing_page_viewed || 0}</div>
+                    <div class="form-group"><label class="form-label">Colore Etichette</label>
+                        <div class="color-input-wrap"><input type="color" id="bsLblPick" value="#CCFF00" onchange="document.getElementById('bsLbl').value=this.value"><input type="text" id="bsLbl" placeholder="#CCFF00"></div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Download</div>
-                        <div class="stat-value">${analytics.events?.pass_downloaded || 0}</div>
-                    </div>
-                `;
-
-                document.getElementById('statsGrid').innerHTML = statsHtml;
-            } catch (error) {
-                console.error('Error loading analytics:', error);
-            }
-        }
-
-        // ===== Templates =====
-        async function loadTemplates() {
-            if (!currentBrandId) return;
-
-            try {
-                const res = await fetch(`${API_BASE}/templates?brand_id=${currentBrandId}`);
-                const templates = await res.json();
-
-                // Populate template select
-                const select = document.getElementById('templateSelect');
-                select.innerHTML = '<option value="">Seleziona un template</option>';
-                templates.forEach(t => {
-                    const option = document.createElement('option');
-                    option.value = t.id;
-                    option.textContent = t.name;
-                    option.dataset.template = JSON.stringify(t);
-                    select.appendChild(option);
-                });
-
-                // Populate templates grid
-                const gridHtml = templates.map(t => `
-                    <div class="template-card">
-                        <div class="template-name">${t.name}</div>
-                        <div class="template-type">${t.pass_type} &middot; ${(t.fields || []).length} campi</div>
-                        <button class="action-btn" style="margin-top:8px;color:#FF6B6B;" onclick="deleteTemplateAction('${t.id}', '${t.name.replace(/'/g, "\\'")}')">Elimina</button>
-                    </div>
-                `).join('');
-
-                document.getElementById('templatesGrid').innerHTML = gridHtml || '<p>No templates found</p>';
-            } catch (error) {
-                console.error('Error loading templates:', error);
-            }
-        }
-
-        // ===== Create Pass =====
-        function loadTemplateFields() {
-            const select = document.getElementById('templateSelect');
-            const templateJson = select.options[select.selectedIndex]?.dataset.template;
-
-            if (!templateJson) {
-                document.getElementById('fieldGroup').innerHTML = '';
-                return;
-            }
-
-            const template = JSON.parse(templateJson);
-            const fieldGroup = document.getElementById('fieldGroup');
-            let html = '';
-
-            if (template.fields) {
-                template.fields.forEach(field => {
-                    html += `
-                        <div class="form-group">
-                            <label class="form-label">${field.label}</label>
-                            <input type="text" class="field-input" data-key="${field.key}" placeholder="${field.value || ''}">
-                        </div>
-                    `;
-                });
-            }
-
-            html += `
-                <div class="form-group">
-                    <label class="form-label">Email Acquirente</label>
-                    <input type="email" id="customerEmail" placeholder="email@example.com">
+                    <div class="form-group"><label class="form-label">Logo Text</label><input type="text" id="bsLogoText" placeholder="Testo mostrato nel pass"></div>
+                    <button class="btn" onclick="saveBrandSettings()">Salva Modifiche</button>
                 </div>
-            `;
+                <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+                    <div class="sec-title" style="color:var(--red);">Zona Pericolosa</div>
+                    <p style="color:var(--text2);margin-bottom:14px;font-size:13px;">Elimina la brand corrente e tutti i dati associati.</p>
+                    <button class="btn danger" onclick="deleteBrandAction()">Elimina Brand</button>
+                </div>
+                <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+                    <div class="sec-title">Crea Nuova Brand</div>
+                    <div class="form-group"><label class="form-label">Nome</label><input type="text" id="newBrandName" placeholder="Nome brand"></div>
+                    <div class="form-group"><label class="form-label">Slug</label><input type="text" id="newBrandSlug" placeholder="slug-url-friendly"></div>
+                    <button class="btn" onclick="createBrand()">Crea Brand</button>
+                </div>
+            </div>
 
-            fieldGroup.innerHTML = html;
+        </div>
+    </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Points Modal -->
+<div id="pointsModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('pointsModal')">&times;</button>
+        <div class="modal-header" id="pointsModalTitle">Aggiungi Punti</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <button class="btn" onclick="addQuickPoints(10)">+10 Partita</button>
+            <button class="btn purple" onclick="addQuickPoints(5)">+5 Visita</button>
+        </div>
+        <div class="form-group"><label class="form-label">Punti personalizzati</label>
+            <div style="display:flex;gap:8px;"><input type="number" id="customPoints" placeholder="es. 25" style="flex:1;"><button class="btn" onclick="addCustomPoints()">Aggiungi</button></div>
+        </div>
+        <div class="form-group"><label class="form-label">Motivo</label><input type="text" id="pointsReason" placeholder="es. Torneo, Evento speciale..."></div>
+    </div>
+</div>
+
+<!-- Back Edit Modal -->
+<div id="backEditModal" class="modal">
+    <div class="modal-content" style="max-width:600px;">
+        <button class="modal-close" onclick="closeModal('backEditModal')">&times;</button>
+        <div class="modal-header">Retro Pass &mdash; <span id="backEditMemberName"></span></div>
+        <p style="color:var(--text2);font-size:12px;margin-bottom:16px;">Modifica i contenuti sul retro della tessera Apple Wallet.</p>
+        <div id="backFieldsContainer"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn" onclick="saveBackFields()">Salva Retro</button>
+            <button class="btn sec" onclick="closeModal('backEditModal')">Annulla</button>
+        </div>
+    </div>
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal" class="modal">
+    <div class="modal-content" style="text-align:center;">
+        <button class="modal-close" onclick="closeModal('qrModal')">&times;</button>
+        <div class="modal-header">QR Code Pass</div>
+        <div style="padding:20px;background:var(--bg3);border-radius:8px;margin:16px 0;"><canvas id="qrCanvas"></canvas></div>
+        <input type="text" id="qrUrl" readonly style="margin-bottom:10px;">
+        <button class="btn" style="width:100%;" onclick="navigator.clipboard.writeText(document.getElementById('qrUrl').value).then(()=>toast('Link copiato!'))">Copia Link</button>
+    </div>
+</div>
+
+<!-- Reward Modal -->
+<div id="rewardModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('rewardModal')">&times;</button>
+        <div class="modal-header" id="rewardModalTitle">Nuovo Premio</div>
+        <input type="hidden" id="rewardEditId">
+        <div class="form-group"><label class="form-label">Titolo</label><input type="text" id="rwTitle" placeholder="es. Caffe gratis"></div>
+        <div class="form-group"><label class="form-label">Descrizione</label><input type="text" id="rwDesc" placeholder="es. Un espresso omaggio al bar"></div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">Costo (punti)</label><input type="number" id="rwCost" placeholder="50"></div>
+            <div class="form-group"><label class="form-label">Icona (emoji)</label><input type="text" id="rwIcon" placeholder="🎁" value="🎁"></div>
+        </div>
+        <button class="btn" onclick="saveReward()">Salva Premio</button>
+    </div>
+</div>
+
+<!-- Challenge Modal -->
+<div id="challengeModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('challengeModal')">&times;</button>
+        <div class="modal-header" id="challengeModalTitle">Nuova Sfida</div>
+        <input type="hidden" id="challengeEditId">
+        <div class="form-group"><label class="form-label">Titolo</label><input type="text" id="chTitle" placeholder="es. Recensione Google"></div>
+        <div class="form-group"><label class="form-label">Descrizione</label><input type="text" id="chDesc" placeholder="es. Lascia una recensione"></div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">Punti</label><input type="number" id="chPoints" placeholder="30"></div>
+            <div class="form-group"><label class="form-label">Icona</label><input type="text" id="chIcon" placeholder="⭐" value="⭐"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">Tipo</label>
+                <select id="chType"><option value="action">Azione</option><option value="review">Recensione</option><option value="social">Social</option><option value="referral">Referral</option><option value="checkin">Check-in</option><option value="spend">Spesa</option><option value="tournament">Torneo</option></select>
+            </div>
+            <div class="form-group"><label class="form-label">Ricorrente?</label>
+                <select id="chRecurring"><option value="false">No (una tantum)</option><option value="true">Si (ripetibile)</option></select>
+            </div>
+        </div>
+        <button class="btn" onclick="saveChallenge()">Salva Sfida</button>
+    </div>
+</div>
+
+<!-- Tier Modal -->
+<div id="tierModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('tierModal')">&times;</button>
+        <div class="modal-header" id="tierModalTitle">Nuovo Livello</div>
+        <input type="hidden" id="tierEditId">
+        <div class="form-group"><label class="form-label">Nome</label><input type="text" id="trName" placeholder="es. Gold"></div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">Punti minimi</label><input type="number" id="trMinPoints" placeholder="0"></div>
+            <div class="form-group"><label class="form-label">Colore (hex)</label>
+                <div class="color-input-wrap"><input type="color" id="trColorPick" value="#00D4AA" onchange="document.getElementById('trColor').value=this.value"><input type="text" id="trColor" value="#00D4AA"></div>
+            </div>
+        </div>
+        <div class="form-group"><label class="form-label">Benefit (uno per riga)</label>
+            <textarea id="trPerks" rows="4" placeholder="Accesso base&#10;Newsletter eventi&#10;Sconto 5% bar" style="resize:vertical;"></textarea>
+        </div>
+        <button class="btn" onclick="saveTier()">Salva Livello</button>
+    </div>
+</div>
+
+<!-- VIP Card Modal -->
+<div id="vipModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('vipModal')">&times;</button>
+        <div class="modal-header" id="vipModalTitle">Nuova Carta VIP</div>
+        <input type="hidden" id="vipEditId">
+        <div class="form-group"><label class="form-label">Nome</label><input type="text" id="vpName" placeholder="es. Corporate Card"></div>
+        <div class="form-group"><label class="form-label">Descrizione</label><input type="text" id="vpDesc" placeholder="es. Convenzione aziende partner"></div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">Colore CSS</label><input type="text" id="vpColor" value="from-blue-400 to-blue-600" placeholder="from-blue-400 to-blue-600"></div>
+            <div class="form-group"><label class="form-label">Assegnate</label><input type="number" id="vpAssigned" value="0"></div>
+        </div>
+        <button class="btn" onclick="saveVipCard()">Salva Carta</button>
+    </div>
+</div>
+
+<!-- Claim Reward Modal -->
+<div id="claimModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('claimModal')">&times;</button>
+        <div class="modal-header">Riscatta Premio</div>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:14px;" id="claimInfo"></p>
+        <div class="form-group"><label class="form-label">Seleziona Membro</label><select id="claimPassSelect"></select></div>
+        <button class="btn" onclick="confirmClaim()">Conferma Riscatto</button>
+    </div>
+</div>
+
+<!-- Complete Challenge Modal -->
+<div id="completeModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('completeModal')">&times;</button>
+        <div class="modal-header">Completa Sfida</div>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:14px;" id="completeInfo"></p>
+        <div class="form-group"><label class="form-label">Seleziona Membro</label><select id="completePassSelect"></select></div>
+        <button class="btn" onclick="confirmComplete()">Conferma Completamento</button>
+    </div>
+</div>
+
+<div id="toastEl" class="toast"></div>
+
+<script>
+const API = '/api/v1';
+let brandId = null;
+let membersCache = [];
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadBrands();
+    setInterval(refreshOverview, 30000);
+});
+
+// ==================== NAV ====================
+function nav(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (event && event.target) event.target.classList.add('active');
+    const loaders = { members: loadMembers, 'create-pass': loadTemplateSelect, rewards: loadRewards, challenges: loadChallenges, tiers: loadTiers, 'vip-cards': loadVipCards, push: loadPushHistory, templates: loadTemplates, 'brand-settings': loadBrandSettings };
+    if (loaders[id]) loaders[id]();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function toast(msg) {
+    const t = document.getElementById('toastEl');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ==================== BRANDS ====================
+async function loadBrands() {
+    const res = await fetch(`${API}/brands`);
+    const brands = await res.json();
+    const sel = document.getElementById('brandSelector');
+    sel.innerHTML = '<option value="">Seleziona Brand</option>';
+    brands.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name; sel.appendChild(o); });
+    if (brands.length > 0) { sel.value = brands[0].id; brandId = brands[0].id; refreshOverview(); loadTemplateSelect(); }
+}
+function changeBrand() { brandId = document.getElementById('brandSelector').value; refreshOverview(); }
+
+async function createBrand() {
+    const name = document.getElementById('newBrandName').value;
+    const slug = document.getElementById('newBrandSlug').value;
+    if (!name || !slug) return alert('Compila nome e slug');
+    await fetch(`${API}/brands`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, slug, config: {}}) });
+    toast('Brand creata!'); document.getElementById('newBrandName').value = ''; document.getElementById('newBrandSlug').value = '';
+    document.getElementById('brandSelector').innerHTML = ''; await loadBrands();
+}
+
+async function deleteBrandAction() {
+    if (!brandId) return alert('Seleziona una brand');
+    if (!confirm('Eliminare la brand e TUTTI i dati? Non si puo annullare.')) return;
+    await fetch(`${API}/brands/${brandId}`, {method:'DELETE'});
+    toast('Brand eliminata'); brandId = null; document.getElementById('brandSelector').innerHTML = ''; await loadBrands();
+}
+
+async function saveBrandSettings() {
+    if (!brandId) return;
+    const config = {};
+    const bg = document.getElementById('bsBg').value; if (bg) config.backgroundColor = bg;
+    const fg = document.getElementById('bsFg').value; if (fg) config.foregroundColor = fg;
+    const lbl = document.getElementById('bsLbl').value; if (lbl) config.labelColor = lbl;
+    const lt = document.getElementById('bsLogoText').value; if (lt) config.logoText = lt;
+    const name = document.getElementById('bsName').value;
+    await fetch(`${API}/brands/${brandId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: name || undefined, config}) });
+    toast('Brand aggiornata!');
+}
+
+async function loadBrandSettings() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/brands/${brandId}`);
+    const brand = await res.json();
+    document.getElementById('bsName').value = brand.name || '';
+    const c = brand.config || {};
+    document.getElementById('bsBg').value = c.backgroundColor || '';
+    document.getElementById('bsBgPick').value = c.backgroundColor || '#000000';
+    document.getElementById('bsFg').value = c.foregroundColor || '';
+    document.getElementById('bsFgPick').value = c.foregroundColor || '#FFFFFF';
+    document.getElementById('bsLbl').value = c.labelColor || '';
+    document.getElementById('bsLblPick').value = c.labelColor || '#CCFF00';
+    document.getElementById('bsLogoText').value = c.logoText || '';
+}
+
+// ==================== OVERVIEW ====================
+async function refreshOverview() {
+    if (!brandId) return;
+    try {
+        const [anaRes, passRes, rwRes, chRes, trRes] = await Promise.all([
+            fetch(`${API}/analytics/${brandId}`), fetch(`${API}/passes?brand_id=${brandId}`),
+            fetch(`${API}/rewards?brand_id=${brandId}`), fetch(`${API}/challenges?brand_id=${brandId}`),
+            fetch(`${API}/tiers?brand_id=${brandId}`)
+        ]);
+        const analytics = await anaRes.json();
+        const passes = await passRes.json();
+        const rewards = await rwRes.json();
+        const challenges = await chRes.json();
+        const tiers = await trRes.json();
+
+        const totalMembers = passes.length;
+        const totalPoints = passes.reduce((s, p) => s + (parseInt(p.field_values?.punti) || 0), 0);
+        const avgPoints = totalMembers > 0 ? Math.round(totalPoints / totalMembers) : 0;
+
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-card"><div class="stat-label">Membri</div><div class="stat-value">${totalMembers}</div></div>
+            <div class="stat-card"><div class="stat-label">Punti Totali</div><div class="stat-value">${totalPoints.toLocaleString()}</div></div>
+            <div class="stat-card"><div class="stat-label">Media Punti</div><div class="stat-value">${avgPoints}</div></div>
+            <div class="stat-card"><div class="stat-label">Premi Attivi</div><div class="stat-value">${rewards.filter(r=>r.active).length}</div></div>
+            <div class="stat-card"><div class="stat-label">Sfide Attive</div><div class="stat-value">${challenges.filter(c=>c.active).length}</div></div>
+            <div class="stat-card"><div class="stat-label">Download</div><div class="stat-value">${analytics.events?.pass_downloaded || 0}</div></div>
+        `;
+
+        // Top members
+        const sorted = [...passes].filter(p => p.field_values?.nome).sort((a,b) => (parseInt(b.field_values?.punti)||0) - (parseInt(a.field_values?.punti)||0));
+        document.getElementById('topMembers').innerHTML = sorted.slice(0,5).map(p => `
+            <div class="card card-row" style="padding:12px 14px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="member-avatar" style="width:32px;height:32px;font-size:14px;">${(p.field_values.nome||'?')[0]}</div>
+                    <div><div style="font-weight:600;font-size:13px;">${p.field_values.nome}</div><div style="font-size:11px;color:var(--text2)">${p.field_values.livello||'Socio'}</div></div>
+                </div>
+                <div style="font-weight:700;color:var(--yellow)">${parseInt(p.field_values.punti)||0} pts</div>
+            </div>
+        `).join('') || '<p style="color:var(--text2);font-size:13px;">Nessun membro</p>';
+
+        // Tier distribution
+        if (tiers.length > 0) {
+            document.getElementById('tierDistribution').innerHTML = tiers.map(t => {
+                const count = passes.filter(p => {
+                    const pts = parseInt(p.field_values?.punti) || 0;
+                    const nextTier = tiers.find(nt => nt.min_points > t.min_points);
+                    return pts >= t.min_points && (!nextTier || pts < nextTier.min_points);
+                }).length;
+                const pct = totalMembers > 0 ? Math.round(count / totalMembers * 100) : 0;
+                return `<div style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="font-weight:600">${t.name}</span><span>${count} (${pct}%)</span></div>
+                    <div class="tier-bar"><div class="tier-fill" style="width:${pct}%;background:${t.color||'var(--teal)'}"></div></div>
+                </div>`;
+            }).join('');
+        } else {
+            document.getElementById('tierDistribution').innerHTML = '<p style="color:var(--text2);font-size:13px;">Nessun livello configurato</p>';
         }
+    } catch(e) { console.error('Overview error:', e); }
+}
 
-        async function generatePass() {
-            const templateSelect = document.getElementById('templateSelect');
-            if (!templateSelect.value) {
-                alert('Seleziona un template');
-                return;
-            }
+// ==================== MEMBERS ====================
+async function loadMembers() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/passes?brand_id=${brandId}`);
+    const passes = await res.json();
+    membersCache = passes.filter(p => p.field_values?.nome);
 
-            const fieldValues = {};
-            document.querySelectorAll('.field-input').forEach(input => {
-                fieldValues[input.dataset.key] = input.value;
-            });
+    if (membersCache.length === 0) {
+        document.getElementById('membersContent').innerHTML = '<p style="color:var(--text2)">Nessun membro.</p>';
+        return;
+    }
 
-            const customerData = {
-                email: document.getElementById('customerEmail')?.value || ''
-            };
-
-            try {
-                const res = await fetch(`${API_BASE}/passes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        template_id: templateSelect.value,
-                        field_values: fieldValues,
-                        customer_data: customerData
-                    })
-                });
-
-                if (!res.ok) throw new Error('Failed to generate pass');
-
-                const pass = await res.json();
-
-                // Show success message
-                const msgDiv = document.getElementById('successMessage');
-                msgDiv.innerHTML = `<div class="success-message">Pass generato con successo! Serial: ${pass.serial_number}</div>`;
-                setTimeout(() => msgDiv.innerHTML = '', 5000);
-
-                // Show result
-                document.getElementById('passResult').innerHTML = `
-                    <div style="margin-top: 24px; padding: 20px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
-                        <div style="margin-bottom: 12px;"><strong>Pass ID:</strong> ${pass.id}</div>
-                        <div style="margin-bottom: 12px;"><strong>Serial:</strong> ${pass.serial_number}</div>
-                        <div style="margin-bottom: 12px;"><strong>Link Landing:</strong> <a href="${pass.landing_url}" target="_blank" style="color: var(--accent-teal);">${pass.landing_url}</a></div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <button class="button" onclick="window.location.href='${pass.download_url}'">Scarica .pkpass</button>
-                            <button class="button secondary" onclick="showQRModal('${pass.landing_url}')">Mostra QR</button>
-                        </div>
+    const totalPts = membersCache.reduce((s,p) => s + (parseInt(p.field_values?.punti)||0), 0);
+    const html = `
+        <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stat-card"><div class="stat-label">Membri</div><div class="stat-value">${membersCache.length}</div></div>
+            <div class="stat-card"><div class="stat-label">Punti Totali</div><div class="stat-value">${totalPts.toLocaleString()}</div></div>
+            <div class="stat-card"><div class="stat-label">Media</div><div class="stat-value">${Math.round(totalPts/membersCache.length)}</div></div>
+        </div>
+        ${membersCache.map(p => {
+            const name = p.field_values.nome || 'N/A';
+            const lvl = p.field_values.livello || 'Socio';
+            const pts = parseInt(p.field_values.punti) || 0;
+            return `<div class="card member-card">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div class="member-avatar">${name[0]}</div>
+                    <div><div class="member-name">${name}</div><div class="member-level">${lvl}</div></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="text-align:right"><div class="points-value">${pts}</div><div class="points-label">punti</div></div>
+                    <div class="card-actions">
+                        <button class="btn small" onclick="openPointsModal('${p.id}','${name.replace(/'/g,"\\'")}',${pts})">+ Punti</button>
+                        <button class="btn small sec" onclick="openBackEditModal('${p.id}','${name.replace(/'/g,"\\'")}')">Retro</button>
+                        <button class="btn small sec" onclick="showQR('${p.landing_url}')">QR</button>
+                        <button class="btn small" style="background:var(--red)" onclick="deletePassAction('${p.id}')">X</button>
                     </div>
-                `;
+                </div>
+            </div>`;
+        }).join('')}
+    `;
+    document.getElementById('membersContent').innerHTML = html;
+}
 
-                // Reload passes list
-                loadRecentPasses();
-            } catch (error) {
-                console.error('Error generating pass:', error);
-                alert('Errore nella generazione del pass');
-            }
-        }
+// ==================== POINTS ====================
+let selectedPass = null;
+function openPointsModal(id, name, pts) {
+    selectedPass = {id, name, points: pts};
+    document.getElementById('pointsModalTitle').textContent = `Punti - ${name} (${pts} attuali)`;
+    document.getElementById('customPoints').value = '';
+    document.getElementById('pointsReason').value = '';
+    document.getElementById('pointsModal').classList.add('active');
+}
 
-        function resetForm() {
-            document.getElementById('templateSelect').value = '';
-            document.getElementById('fieldGroup').innerHTML = '';
-            document.getElementById('passResult').innerHTML = '';
-        }
+async function addQuickPoints(n) { if(selectedPass) await updatePoints(selectedPass.id, selectedPass.points + n); }
+async function addCustomPoints() {
+    const n = parseInt(document.getElementById('customPoints').value);
+    if (!n || !selectedPass) return alert('Inserisci un valore');
+    await updatePoints(selectedPass.id, selectedPass.points + n);
+}
 
-        // ===== Recent Passes =====
-        async function loadRecentPasses() {
-            if (!currentBrandId) return;
+async function updatePoints(passId, newPts) {
+    const getR = await fetch(`${API}/passes/${passId}`);
+    const pass = await getR.json();
+    const fields = {...pass.field_values, punti: String(newPts)};
+    await fetch(`${API}/passes/${passId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({field_values: fields})});
+    toast(`Punti aggiornati a ${newPts}`);
+    closeModal('pointsModal'); selectedPass = null; loadMembers();
+}
 
-            try {
-                const res = await fetch(`${API_BASE}/passes?brand_id=${currentBrandId}`);
-                const passes = await res.json();
+// ==================== BACK EDIT ====================
+let backEditId = null, backEditFields = {};
+async function openBackEditModal(passId, name) {
+    backEditId = passId;
+    document.getElementById('backEditMemberName').textContent = name;
+    const [passR, tplR] = await Promise.all([fetch(`${API}/passes/${passId}`).then(r=>r.json()), null]);
+    const pass = passR;
+    const tpl = await fetch(`${API}/templates/${pass.template_id}`).then(r=>r.json());
+    backEditFields = pass.field_values || {};
+    const backs = (tpl.fields||[]).filter(f => f.type === 'back');
+    document.getElementById('backFieldsContainer').innerHTML = backs.length === 0
+        ? '<p style="color:var(--text2)">Nessun campo retro nel template.</p>'
+        : backs.map(f => `<div class="form-group"><label class="form-label">${f.label}</label><textarea class="back-field" data-key="${f.key}" rows="3" style="resize:vertical;">${backEditFields[f.key]||f.value||''}</textarea></div>`).join('');
+    document.getElementById('backEditModal').classList.add('active');
+}
 
-                const table = `
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Serial</th>
-                                <th>Status</th>
-                                <th>Creato</th>
-                                <th>Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${passes.slice(0, 10).map(p => `
-                                <tr>
-                                    <td>${p.serial_number.substring(0, 12)}</td>
-                                    <td><span class="badge ${p.status}">${p.status}</span></td>
-                                    <td>${new Date(p.created_at).toLocaleDateString('it-IT')}</td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="action-btn" onclick="window.location.href='${p.download_url}'">â</button>
-                                            <button class="action-btn" onclick="showQRModal('${p.landing_url}')">QR</button>
-                                            <button class="action-btn" onclick="copyLink('${p.landing_url}')">â§</button>
-                                        </div>
-                                            <button class="action-btn" style="color:#FF6B6B;" onclick="deletePassAction('${p.id}')">&#10005;</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
+async function saveBackFields() {
+    if (!backEditId) return;
+    const updated = {...backEditFields};
+    document.querySelectorAll('.back-field').forEach(t => { updated[t.dataset.key] = t.value; });
+    await fetch(`${API}/passes/${backEditId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({field_values: updated})});
+    toast('Retro aggiornato!'); closeModal('backEditModal'); loadMembers();
+}
 
-                document.getElementById('passesTable').innerHTML = table;
-            } catch (error) {
-                console.error('Error loading passes:', error);
-            }
-        }
+// ==================== REWARDS ====================
+async function loadRewards() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/rewards?brand_id=${brandId}`);
+    const rewards = await res.json();
+    document.getElementById('rewardsList').innerHTML = rewards.length === 0
+        ? '<p style="color:var(--text2)">Nessun premio configurato. Crea il primo!</p>'
+        : rewards.map(r => `<div class="card card-row">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="card-icon">${r.icon||'🎁'}</div>
+                <div class="card-info"><div class="card-title">${r.title}</div><div class="card-desc">${r.description||''}</div><div class="card-meta">${r.cost} punti &middot; ${r.total_claimed||0} riscattati</div></div>
+            </div>
+            <div class="card-actions">
+                <button class="btn small" onclick="openClaimModal('${r.id}','${r.title.replace(/'/g,"\\'")}',${r.cost})">Riscatta</button>
+                <button class="btn small sec" onclick="editReward('${r.id}')">Modifica</button>
+                <button class="btn small danger" onclick="deleteReward('${r.id}')">Elimina</button>
+            </div>
+        </div>`).join('');
+}
 
-        // ===== QR Modal =====
-        function showQRModal(url) {
-            document.getElementById('qrUrl').value = url;
-            const canvas = document.getElementById('qrCanvas');
+function openRewardModal(data) {
+    document.getElementById('rewardEditId').value = data?.id || '';
+    document.getElementById('rewardModalTitle').textContent = data ? 'Modifica Premio' : 'Nuovo Premio';
+    document.getElementById('rwTitle').value = data?.title || '';
+    document.getElementById('rwDesc').value = data?.description || '';
+    document.getElementById('rwCost').value = data?.cost || '';
+    document.getElementById('rwIcon').value = data?.icon || '🎁';
+    document.getElementById('rewardModal').classList.add('active');
+}
 
-            QRCode.toCanvas(canvas, url, {
-                width: 200,
-                color: { dark: '#0D0B1A', light: '#FFFFFF' }
-            }, (err) => {
-                if (err) console.error('QR Error:', err);
-            });
+async function editReward(id) {
+    const res = await fetch(`${API}/rewards?brand_id=${brandId}`);
+    const all = await res.json();
+    const r = all.find(x => x.id === id);
+    if (r) openRewardModal(r);
+}
 
-            document.getElementById('qrModal').classList.add('active');
-        }
+async function saveReward() {
+    const id = document.getElementById('rewardEditId').value;
+    const body = { brand_id: brandId, title: document.getElementById('rwTitle').value, description: document.getElementById('rwDesc').value, cost: parseInt(document.getElementById('rwCost').value)||0, icon: document.getElementById('rwIcon').value };
+    if (!body.title) return alert('Inserisci un titolo');
+    if (id) { await fetch(`${API}/rewards/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
+    else { await fetch(`${API}/rewards`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
+    toast('Premio salvato!'); closeModal('rewardModal'); loadRewards();
+}
 
-        function closeQRModal() {
-            document.getElementById('qrModal').classList.remove('active');
-        }
+async function deleteReward(id) {
+    if (!confirm('Eliminare questo premio?')) return;
+    await fetch(`${API}/rewards/${id}`, {method:'DELETE'});
+    toast('Premio eliminato'); loadRewards();
+}
 
-        function copyQRUrl() {
-            const url = document.getElementById('qrUrl').value;
-            navigator.clipboard.writeText(url).then(() => {
-                alert('Copiato!');
-            });
-        }
+let claimRewardId = null;
+async function openClaimModal(rewardId, title, cost) {
+    claimRewardId = rewardId;
+    document.getElementById('claimInfo').textContent = `Riscattare "${title}" (${cost} punti) per:`;
+    if (membersCache.length === 0) await loadMembers();
+    const sel = document.getElementById('claimPassSelect');
+    sel.innerHTML = membersCache.map(p => `<option value="${p.id}">${p.field_values.nome} (${parseInt(p.field_values.punti)||0} pts)</option>`).join('');
+    document.getElementById('claimModal').classList.add('active');
+}
 
-        function copyLink(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                alert('Link copiato!');
-            });
-        }
+async function confirmClaim() {
+    const passId = document.getElementById('claimPassSelect').value;
+    if (!claimRewardId || !passId) return;
+    try {
+        const res = await fetch(`${API}/rewards/${claimRewardId}/claim`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pass_id: passId})});
+        if (!res.ok) { const err = await res.json(); alert(err.error || 'Errore'); return; }
+        toast('Premio riscattato!'); closeModal('claimModal'); loadRewards(); loadMembers();
+    } catch(e) { alert('Errore: ' + e.message); }
+}
 
-        // ===== Members Management =====
-        let currentMembers = [];
-        let selectedMemberPass = null;
+// ==================== CHALLENGES ====================
+async function loadChallenges() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/challenges?brand_id=${brandId}`);
+    const challenges = await res.json();
+    document.getElementById('challengesList').innerHTML = challenges.length === 0
+        ? '<p style="color:var(--text2)">Nessuna sfida configurata.</p>'
+        : challenges.map(c => `<div class="card card-row">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="card-icon">${c.icon||'⭐'}</div>
+                <div class="card-info"><div class="card-title">${c.title}</div><div class="card-desc">${c.description||''}</div><div class="card-meta">+${c.points} punti &middot; ${c.type} ${c.recurring?'(ricorrente)':''}</div></div>
+            </div>
+            <div class="card-actions">
+                <button class="btn small" onclick="openCompleteModal('${c.id}','${c.title.replace(/'/g,"\\'")}',${c.points})">Assegna</button>
+                <button class="btn small sec" onclick="editChallenge('${c.id}')">Modifica</button>
+                <button class="btn small danger" onclick="deleteChallenge('${c.id}')">Elimina</button>
+            </div>
+        </div>`).join('');
+}
 
-        async function loadMembers() {
-            if (!currentBrandId) return;
+function openChallengeModal(data) {
+    document.getElementById('challengeEditId').value = data?.id || '';
+    document.getElementById('challengeModalTitle').textContent = data ? 'Modifica Sfida' : 'Nuova Sfida';
+    document.getElementById('chTitle').value = data?.title || '';
+    document.getElementById('chDesc').value = data?.description || '';
+    document.getElementById('chPoints').value = data?.points || '';
+    document.getElementById('chIcon').value = data?.icon || '⭐';
+    document.getElementById('chType').value = data?.type || 'action';
+    document.getElementById('chRecurring').value = data?.recurring ? 'true' : 'false';
+    document.getElementById('challengeModal').classList.add('active');
+}
 
-            try {
-                const res = await fetch(`${API_BASE}/passes?brand_id=${currentBrandId}`);
-                const passes = await res.json();
+async function editChallenge(id) {
+    const res = await fetch(`${API}/challenges?brand_id=${brandId}`);
+    const all = await res.json();
+    const c = all.find(x => x.id === id);
+    if (c) openChallengeModal(c);
+}
 
-                // Filter only passes that have a member field
-                currentMembers = passes.filter(p => p.field_values && p.field_values.nome);
+async function saveChallenge() {
+    const id = document.getElementById('challengeEditId').value;
+    const body = { brand_id: brandId, title: document.getElementById('chTitle').value, description: document.getElementById('chDesc').value, points: parseInt(document.getElementById('chPoints').value)||0, icon: document.getElementById('chIcon').value, type: document.getElementById('chType').value, recurring: document.getElementById('chRecurring').value === 'true' };
+    if (!body.title) return alert('Inserisci un titolo');
+    if (id) { await fetch(`${API}/challenges/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
+    else { await fetch(`${API}/challenges`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
+    toast('Sfida salvata!'); closeModal('challengeModal'); loadChallenges();
+}
 
-                if (currentMembers.length === 0) {
-                    document.getElementById('membersContent').innerHTML = '<p style="color: var(--text-secondary);">Nessun membro trovato per questa brand.</p>';
-                    return;
-                }
+async function deleteChallenge(id) {
+    if (!confirm('Eliminare questa sfida?')) return;
+    await fetch(`${API}/challenges/${id}`, {method:'DELETE'});
+    toast('Sfida eliminata'); loadChallenges();
+}
 
-                const membersHtml = currentMembers.map(p => {
-                    const name = p.field_values.nome || 'Senza Nome';
-                    const livello = (p.field_values.livello || 'Socio').toLowerCase();
-                    const punti = parseInt(p.field_values.punti) || 0;
-                    const initial = name.charAt(0).toUpperCase();
+let completeChallengeId = null;
+async function openCompleteModal(challengeId, title, points) {
+    completeChallengeId = challengeId;
+    document.getElementById('completeInfo').textContent = `Assegnare "${title}" (+${points} punti) a:`;
+    if (membersCache.length === 0) await loadMembers();
+    const sel = document.getElementById('completePassSelect');
+    sel.innerHTML = membersCache.map(p => `<option value="${p.id}">${p.field_values.nome} (${parseInt(p.field_values.punti)||0} pts)</option>`).join('');
+    document.getElementById('completeModal').classList.add('active');
+}
 
-                    return `
-                        <div class="member-card">
-                            <div class="member-info">
-                                <div class="member-avatar ${livello}">${initial}</div>
-                                <div>
-                                    <div class="member-name">${name}</div>
-                                    <div class="member-level">${p.field_values.livello || 'Socio'}</div>
-                                </div>
-                            </div>
-                            <div class="member-points">
-                                <div class="points-display">
-                                    <div class="points-value">${punti}</div>
-                                    <div class="points-label">punti</div>
-                                </div>
-                                <div class="member-actions">
-                                    <button class="points-btn" onclick="openPointsModal('${p.id}', '${name}', ${punti})">+ Punti</button>
-                                    <button class="member-action-btn" onclick="openBackEditModal('${p.id}', '${name.replace(/'/g, "\\'")}')">Retro</button>
-                                    <button class="member-action-btn" onclick="showQRModal('${p.landing_url}')">QR</button>
-                                    <button class="member-action-btn" onclick="copyLink('${p.landing_url}')">Link</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+async function confirmComplete() {
+    const passId = document.getElementById('completePassSelect').value;
+    if (!completeChallengeId || !passId) return;
+    try {
+        const res = await fetch(`${API}/challenges/${completeChallengeId}/complete`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pass_id: passId})});
+        if (!res.ok) { const err = await res.json(); alert(err.error || 'Errore'); return; }
+        toast('Sfida completata! Punti assegnati.'); closeModal('completeModal'); loadChallenges(); loadMembers();
+    } catch(e) { alert('Errore: ' + e.message); }
+}
 
-                // Stats summary at top
-                const totalMembers = currentMembers.length;
-                const totalPoints = currentMembers.reduce((sum, p) => sum + (parseInt(p.field_values.punti) || 0), 0);
-                const avgPoints = totalMembers > 0 ? Math.round(totalPoints / totalMembers) : 0;
+// ==================== TIERS ====================
+async function loadTiers() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/tiers?brand_id=${brandId}`);
+    const tiers = await res.json();
+    document.getElementById('tiersList').innerHTML = tiers.length === 0
+        ? '<p style="color:var(--text2)">Nessun livello configurato.</p>'
+        : tiers.map((t,i) => `<div class="card card-row">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="card-icon" style="background:${t.color||'var(--teal)'};color:white;font-weight:700;font-size:14px;">${i+1}</div>
+                <div class="card-info">
+                    <div class="card-title">${t.name}</div>
+                    <div class="card-desc">${t.min_points}+ punti</div>
+                    <div class="card-meta">${(t.perks||[]).join(' · ')}</div>
+                </div>
+            </div>
+            <div class="card-actions">
+                <button class="btn small sec" onclick="editTier('${t.id}')">Modifica</button>
+                <button class="btn small danger" onclick="deleteTier('${t.id}')">Elimina</button>
+            </div>
+        </div>`).join('');
+}
 
-                const summaryHtml = `
-                    <div class="stats-grid" style="margin-bottom: 24px;">
-                        <div class="stat-card">
-                            <div class="stat-label">Membri Totali</div>
-                            <div class="stat-value">${totalMembers}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Punti Totali</div>
-                            <div class="stat-value">${totalPoints}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Media Punti</div>
-                            <div class="stat-value">${avgPoints}</div>
-                        </div>
-                    </div>
-                `;
+function openTierModal(data) {
+    document.getElementById('tierEditId').value = data?.id || '';
+    document.getElementById('tierModalTitle').textContent = data ? 'Modifica Livello' : 'Nuovo Livello';
+    document.getElementById('trName').value = data?.name || '';
+    document.getElementById('trMinPoints').value = data?.min_points ?? '';
+    document.getElementById('trColor').value = data?.color || '#00D4AA';
+    document.getElementById('trColorPick').value = data?.color || '#00D4AA';
+    document.getElementById('trPerks').value = (data?.perks || []).join('\n');
+    document.getElementById('tierModal').classList.add('active');
+}
 
-                document.getElementById('membersContent').innerHTML = summaryHtml + membersHtml;
-            } catch (error) {
-                console.error('Error loading members:', error);
-                document.getElementById('membersContent').innerHTML = '<p style="color: red;">Errore nel caricamento membri.</p>';
-            }
-        }
+async function editTier(id) {
+    const res = await fetch(`${API}/tiers?brand_id=${brandId}`);
+    const all = await res.json();
+    const t = all.find(x => x.id === id);
+    if (t) openTierModal(t);
+}
 
-        function openPointsModal(passId, memberName, currentPoints) {
-            selectedMemberPass = { id: passId, name: memberName, points: currentPoints };
-            document.getElementById('pointsModalTitle').textContent = `Punti â ${memberName} (${currentPoints} attuali)`;
-            document.getElementById('customPoints').value = '';
-            document.getElementById('pointsReason').value = '';
-            document.getElementById('pointsModal').classList.add('active');
-        }
+async function saveTier() {
+    const id = document.getElementById('tierEditId').value;
+    const perks = document.getElementById('trPerks').value.split('\n').filter(l => l.trim());
+    const body = { brand_id: brandId, name: document.getElementById('trName').value, min_points: parseInt(document.getElementById('trMinPoints').value)||0, color: document.getElementById('trColor').value, perks };
+    if (!body.name) return alert('Inserisci un nome');
+    if (id) { await fetch(`${API}/tiers/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
+    else { await fetch(`${API}/tiers`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
+    toast('Livello salvato!'); closeModal('tierModal'); loadTiers();
+}
 
-        function closePointsModal() {
-            document.getElementById('pointsModal').classList.remove('active');
-            selectedMemberPass = null;
-        }
+async function deleteTier(id) {
+    if (!confirm('Eliminare questo livello?')) return;
+    await fetch(`${API}/tiers/${id}`, {method:'DELETE'});
+    toast('Livello eliminato'); loadTiers();
+}
 
-        async function addQuickPoints(amount) {
-            if (!selectedMemberPass) return;
-            await updateMemberPoints(selectedMemberPass.id, selectedMemberPass.points + amount, amount > 5 ? 'Partita giocata' : 'Visita al centro');
-        }
+// ==================== VIP CARDS ====================
+async function loadVipCards() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/vip-cards?brand_id=${brandId}`);
+    const cards = await res.json();
+    document.getElementById('vipCardsList').innerHTML = cards.length === 0
+        ? '<p style="color:var(--text2)">Nessuna carta VIP.</p>'
+        : cards.map(v => `<div class="card card-row">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div class="card-icon" style="background:linear-gradient(135deg,var(--purple),var(--teal));">&#9733;</div>
+                <div class="card-info"><div class="card-title">${v.name}</div><div class="card-desc">${v.description||''}</div><div class="card-meta">${v.assigned||0} assegnate &middot; ${v.active?'Attiva':'Disattiva'}</div></div>
+            </div>
+            <div class="card-actions">
+                <button class="btn small sec" onclick="editVipCard('${v.id}')">Modifica</button>
+                <button class="btn small danger" onclick="deleteVipCard('${v.id}')">Elimina</button>
+            </div>
+        </div>`).join('');
+}
 
-        async function addCustomPoints() {
-            if (!selectedMemberPass) return;
-            const amount = parseInt(document.getElementById('customPoints').value);
-            if (!amount || amount === 0) { alert('Inserisci un valore'); return; }
-            const reason = document.getElementById('pointsReason').value || 'Aggiunta manuale';
-            await updateMemberPoints(selectedMemberPass.id, selectedMemberPass.points + amount, reason);
-        }
+function openVipModal(data) {
+    document.getElementById('vipEditId').value = data?.id || '';
+    document.getElementById('vipModalTitle').textContent = data ? 'Modifica Carta VIP' : 'Nuova Carta VIP';
+    document.getElementById('vpName').value = data?.name || '';
+    document.getElementById('vpDesc').value = data?.description || '';
+    document.getElementById('vpColor').value = data?.color || 'from-blue-400 to-blue-600';
+    document.getElementById('vpAssigned').value = data?.assigned || 0;
+    document.getElementById('vipModal').classList.add('active');
+}
 
-        async function updateMemberPoints(passId, newPoints, reason) {
-            try {
-                // Get current pass data
-                const getRes = await fetch(`${API_BASE}/passes/${passId}`);
-                const pass = await getRes.json();
+async function editVipCard(id) {
+    const res = await fetch(`${API}/vip-cards?brand_id=${brandId}`);
+    const all = await res.json();
+    const v = all.find(x => x.id === id);
+    if (v) openVipModal(v);
+}
 
-                // Update field_values with new points
-                const updatedFields = { ...pass.field_values, punti: String(newPoints) };
+async function saveVipCard() {
+    const id = document.getElementById('vipEditId').value;
+    const body = { brand_id: brandId, name: document.getElementById('vpName').value, description: document.getElementById('vpDesc').value, color: document.getElementById('vpColor').value, assigned: parseInt(document.getElementById('vpAssigned').value)||0 };
+    if (!body.name) return alert('Inserisci un nome');
+    if (id) { await fetch(`${API}/vip-cards/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
+    else { await fetch(`${API}/vip-cards`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
+    toast('Carta VIP salvata!'); closeModal('vipModal'); loadVipCards();
+}
 
-                const res = await fetch(`${API_BASE}/passes/${passId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ field_values: updatedFields })
-                });
+async function deleteVipCard(id) {
+    if (!confirm('Eliminare questa carta?')) return;
+    await fetch(`${API}/vip-cards/${id}`, {method:'DELETE'});
+    toast('Carta eliminata'); loadVipCards();
+}
 
-                if (!res.ok) throw new Error('Update failed');
+// ==================== PUSH ====================
+async function sendPush() {
+    if (!brandId) return;
+    const title = document.getElementById('pushTitle').value;
+    const message = document.getElementById('pushMessage').value;
+    const target = document.getElementById('pushTarget').value;
+    if (!title || !message) return alert('Compila titolo e messaggio');
+    await fetch(`${API}/push/send`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({brand_id: brandId, title, message, target})});
+    toast('Notifica inviata!');
+    document.getElementById('pushTitle').value = '';
+    document.getElementById('pushMessage').value = '';
+    loadPushHistory();
+}
 
-                // Show toast
-                showToast(`+${newPoints - selectedMemberPass.points} punti a ${selectedMemberPass.name} â ${reason}`);
+async function loadPushHistory() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/push/history?brand_id=${brandId}`);
+    const pushes = await res.json();
+    document.getElementById('pushHistory').innerHTML = pushes.length === 0
+        ? '<p style="color:var(--text2)">Nessuna notifica inviata.</p>'
+        : pushes.map(p => `<div class="card" style="padding:14px 18px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+                <div><div style="font-weight:600;font-size:14px;">${p.title}</div><div style="font-size:12px;color:var(--text2);margin-top:2px;">${p.message}</div></div>
+                <div style="text-align:right;"><div class="badge active">${p.target}</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">${new Date(p.created_at).toLocaleDateString('it-IT')}</div></div>
+            </div>
+        </div>`).join('');
+}
 
-                // Close modal and reload
-                closePointsModal();
-                await loadMembers();
-            } catch (error) {
-                console.error('Error updating points:', error);
-                alert('Errore nell\'aggiornamento dei punti');
-            }
-        }
+// ==================== TEMPLATES ====================
+async function loadTemplateSelect() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/templates?brand_id=${brandId}`);
+    const tpls = await res.json();
+    const sel = document.getElementById('templateSelect');
+    sel.innerHTML = '<option value="">Seleziona template</option>';
+    tpls.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = t.name; o.dataset.template = JSON.stringify(t); sel.appendChild(o); });
+}
 
-        // ===== Back-of-Pass Editing =====
-        let backEditPassId = null;
-        let backEditCurrentFields = {};
+async function loadTemplates() {
+    if (!brandId) return;
+    const res = await fetch(`${API}/templates?brand_id=${brandId}`);
+    const tpls = await res.json();
+    document.getElementById('templatesGrid').innerHTML = tpls.length === 0
+        ? '<p style="color:var(--text2)">Nessun template.</p>'
+        : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">${tpls.map(t => `
+            <div class="card" style="cursor:pointer;">
+                <div style="font-weight:600;margin-bottom:6px;">${t.name}</div>
+                <div style="font-size:12px;color:var(--purple);text-transform:uppercase;">${t.pass_type} &middot; ${(t.fields||[]).length} campi</div>
+                <button class="btn small danger" style="margin-top:10px;" onclick="deleteTemplateAction('${t.id}','${t.name.replace(/'/g,"\\'")}')">Elimina</button>
+            </div>`).join('')}</div>`;
+}
 
-        async function openBackEditModal(passId, memberName) {
-            backEditPassId = passId;
-            document.getElementById('backEditMemberName').textContent = memberName;
+async function createTemplate() {
+    if (!brandId) return alert('Seleziona una brand');
+    const name = document.getElementById('templateName').value;
+    const passType = document.getElementById('templatePassType').value;
+    const fieldsText = document.getElementById('templateFields').value;
+    if (!name) return alert('Inserisci il nome');
+    const fields = fieldsText.split('\n').filter(l=>l.trim()).map(line => { const p = line.split('='); return {key:(p[0]||'').trim(), label:(p[1]||p[0]||'').trim(), value:(p[2]||'').trim()}; }).filter(f=>f.key);
+    await fetch(`${API}/templates`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({brand_id: brandId, name, pass_type: passType, fields, style: {}, config: {}})});
+    toast('Template creato!'); document.getElementById('templateName').value = ''; document.getElementById('templateFields').value = ''; loadTemplates(); loadTemplateSelect();
+}
 
-            try {
-                // Fetch pass data
-                const passRes = await fetch(`${API_BASE}/passes/${passId}`);
-                const pass = await passRes.json();
+async function deleteTemplateAction(id, name) {
+    if (!confirm(`Eliminare "${name}" e tutti i pass associati?`)) return;
+    await fetch(`${API}/templates/${id}`, {method:'DELETE'}); toast('Template eliminato'); loadTemplates();
+}
 
-                // Fetch template to get back field definitions
-                const tplRes = await fetch(`${API_BASE}/templates/${pass.template_id}`);
-                const template = await tplRes.json();
+// ==================== PASS GENERATION ====================
+function loadTemplateFields() {
+    const sel = document.getElementById('templateSelect');
+    const json = sel.options[sel.selectedIndex]?.dataset.template;
+    if (!json) { document.getElementById('fieldGroup').innerHTML = ''; return; }
+    const tpl = JSON.parse(json);
+    document.getElementById('fieldGroup').innerHTML = (tpl.fields||[]).map(f => `<div class="form-group"><label class="form-label">${f.label}</label><input type="text" class="field-input" data-key="${f.key}" placeholder="${f.value||''}"></div>`).join('')
+        + '<div class="form-group"><label class="form-label">Email</label><input type="email" id="customerEmail" placeholder="email@example.com"></div>';
+}
 
-                backEditCurrentFields = pass.field_values || {};
+async function generatePass() {
+    const tplId = document.getElementById('templateSelect').value;
+    if (!tplId) return alert('Seleziona un template');
+    const fv = {}; document.querySelectorAll('.field-input').forEach(i => { fv[i.dataset.key] = i.value; });
+    const res = await fetch(`${API}/passes`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({template_id: tplId, field_values: fv, customer_data: {email: document.getElementById('customerEmail')?.value || ''}})});
+    if (!res.ok) return alert('Errore generazione pass');
+    const pass = await res.json();
+    document.getElementById('successMessage').innerHTML = `<div style="background:rgba(0,212,170,0.1);border:1px solid var(--teal);color:var(--teal);padding:14px;border-radius:8px;margin-bottom:14px;">Pass generato! Serial: ${pass.serial_number}</div>`;
+    document.getElementById('passResult').innerHTML = `<div class="card" style="margin-top:20px;padding:20px;">
+        <div style="margin-bottom:10px;"><strong>ID:</strong> ${pass.id}</div>
+        <div style="margin-bottom:10px;"><strong>Landing:</strong> <a href="${pass.landing_url}" target="_blank" style="color:var(--teal);">${pass.landing_url}</a></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="btn" onclick="window.location.href='${pass.download_url}'">Scarica .pkpass</button>
+            <button class="btn sec" onclick="showQR('${pass.landing_url}')">QR Code</button>
+        </div>
+    </div>`;
+    setTimeout(() => document.getElementById('successMessage').innerHTML = '', 5000);
+}
 
-                // Find back fields from template
-                const backFields = (template.fields || []).filter(f => f.type === 'back');
+function resetForm() { document.getElementById('templateSelect').value = ''; document.getElementById('fieldGroup').innerHTML = ''; document.getElementById('passResult').innerHTML = ''; }
 
-                const container = document.getElementById('backFieldsContainer');
+async function deletePassAction(id) {
+    if (!confirm('Eliminare questo pass?')) return;
+    await fetch(`${API}/passes/${id}`, {method:'DELETE'}); toast('Pass eliminato'); loadMembers();
+}
 
-                if (backFields.length === 0) {
-                    container.innerHTML = `
-                        <div style="padding: 20px; background: var(--bg-tertiary); border-radius: 8px; color: var(--text-secondary); text-align: center;">
-                            Nessun campo retro definito nel template.<br>
-                            <small>Aggiungi campi con tipo "back" nel template per abilitare il retro.</small>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = backFields.map(field => {
-                        const currentValue = backEditCurrentFields[field.key] || field.value || '';
-                        return `
-                            <div class="form-group">
-                                <label class="form-label">${field.label}</label>
-                                <textarea
-                                    class="back-field-input"
-                                    data-key="${field.key}"
-                                    rows="4"
-                                    placeholder="Scrivi qui il contenuto per ${field.label}..."
-                                    style="resize: vertical; min-height: 80px;"
-                                >${currentValue}</textarea>
-                            </div>
-                        `;
-                    }).join('');
-                }
-
-                document.getElementById('backEditModal').classList.add('active');
-            } catch (error) {
-                console.error('Error loading back fields:', error);
-                alert('Errore nel caricamento dei campi retro');
-            }
-        }
-
-        function closeBackEditModal() {
-            document.getElementById('backEditModal').classList.remove('active');
-            backEditPassId = null;
-        }
-
-        async function saveBackFields() {
-            if (!backEditPassId) return;
-
-            // Collect updated back field values
-            const updatedFields = { ...backEditCurrentFields };
-            document.querySelectorAll('.back-field-input').forEach(textarea => {
-                updatedFields[textarea.dataset.key] = textarea.value;
-            });
-
-            try {
-                const res = await fetch(`${API_BASE}/passes/${backEditPassId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ field_values: updatedFields })
-                });
-
-                if (!res.ok) throw new Error('Update failed');
-
-                showToast('Retro pass aggiornato!');
-                closeBackEditModal();
-                await loadMembers();
-            } catch (error) {
-                console.error('Error saving back fields:', error);
-                alert('Errore nel salvataggio del retro');
-            }
-        }
-
-        function showToast(message) {
-            let toast = document.getElementById('toast');
-            if (!toast) {
-                toast = document.createElement('div');
-                toast.id = 'toast';
-                toast.className = 'toast';
-                document.body.appendChild(toast);
-            }
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-    </script>
+// ==================== QR ====================
+function showQR(url) {
+    document.getElementById('qrUrl').value = url;
+    QRCode.toCanvas(document.getElementById('qrCanvas'), url, {width:200, color:{dark:'#0D0B1A',light:'#FFFFFF'}}, ()=>{});
+    document.getElementById('qrModal').classList.add('active');
+}
+</script>
 </body>
 </html>
-

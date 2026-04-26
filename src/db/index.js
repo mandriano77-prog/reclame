@@ -64,6 +64,80 @@ CREATE TABLE IF NOT EXISTS device_registrations (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(device_library_id, serial_number)
 );
+
+CREATE TABLE IF NOT EXISTS rewards (
+  id TEXT PRIMARY KEY,
+  brand_id TEXT NOT NULL REFERENCES brands(id),
+  title TEXT NOT NULL,
+  description TEXT,
+  cost INTEGER NOT NULL DEFAULT 0,
+  icon TEXT DEFAULT '🎁',
+  active BOOLEAN DEFAULT true,
+  max_claims INTEGER,
+  total_claimed INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS challenges (
+  id TEXT PRIMARY KEY,
+  brand_id TEXT NOT NULL REFERENCES brands(id),
+  title TEXT NOT NULL,
+  description TEXT,
+  points INTEGER NOT NULL DEFAULT 0,
+  icon TEXT DEFAULT '⭐',
+  type TEXT DEFAULT 'action',
+  recurring BOOLEAN DEFAULT false,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tiers (
+  id TEXT PRIMARY KEY,
+  brand_id TEXT NOT NULL REFERENCES brands(id),
+  name TEXT NOT NULL,
+  min_points INTEGER NOT NULL DEFAULT 0,
+  color TEXT DEFAULT '#888888',
+  perks JSONB DEFAULT '[]',
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vip_cards (
+  id TEXT PRIMARY KEY,
+  brand_id TEXT NOT NULL REFERENCES brands(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  color TEXT DEFAULT 'from-blue-400 to-blue-600',
+  assigned INTEGER DEFAULT 0,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS reward_claims (
+  id TEXT PRIMARY KEY,
+  reward_id TEXT NOT NULL REFERENCES rewards(id),
+  pass_id TEXT NOT NULL REFERENCES pass_instances(id),
+  brand_id TEXT NOT NULL,
+  claimed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS challenge_completions (
+  id TEXT PRIMARY KEY,
+  challenge_id TEXT NOT NULL REFERENCES challenges(id),
+  pass_id TEXT NOT NULL REFERENCES pass_instances(id),
+  brand_id TEXT NOT NULL,
+  completed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS push_log (
+  id SERIAL PRIMARY KEY,
+  brand_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  target TEXT DEFAULT 'all',
+  sent_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 `;
 
 /**
@@ -550,6 +624,686 @@ async function getSerialsForDevice(deviceLibraryId) {
   return result.rows.map(row => row.serial_number);
 }
 
+// ============================================================================
+// REWARDS CRUD
+// ============================================================================
+
+/**
+ * Create a new reward
+ */
+async function createReward(data) {
+  const id = data.id || uuidv4();
+  const { brand_id, title, description = '', cost = 0, icon = '🎁', active = true, max_claims = null } = data;
+
+  if (!brand_id || !title) {
+    throw new Error('Brand ID and title are required');
+  }
+
+  try {
+    await pool.query(
+      `INSERT INTO rewards (id, brand_id, title, description, cost, icon, active, max_claims)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id, brand_id, title, description, cost, icon, active, max_claims]
+    );
+    return { id, brand_id, title, description, cost, icon, active, max_claims, total_claimed: 0 };
+  } catch (error) {
+    throw new Error(`Failed to create reward: ${error.message}`);
+  }
+}
+
+/**
+ * List rewards for a brand
+ */
+async function listRewards(brandId) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM rewards WHERE brand_id = $1 ORDER BY created_at DESC`,
+      [brandId]
+    );
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to list rewards: ${error.message}`);
+  }
+}
+
+/**
+ * Get a single reward by ID
+ */
+async function getReward(id) {
+  try {
+    const result = await pool.query('SELECT * FROM rewards WHERE id = $1', [id]);
+    if (result.rows.length === 0) return null;
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Failed to get reward: ${error.message}`);
+  }
+}
+
+/**
+ * Update a reward
+ */
+async function updateReward(id, data) {
+  try {
+    const current = await getReward(id);
+    if (!current) return null;
+
+    const updates = [];
+    const values = [];
+    let paramCount = 0;
+
+    if (data.title) {
+      paramCount++;
+      updates.push(`title = $${paramCount}`);
+      values.push(data.title);
+    }
+    if (data.description !== undefined) {
+      paramCount++;
+      updates.push(`description = $${paramCount}`);
+      values.push(data.description);
+    }
+    if (data.cost !== undefined) {
+      paramCount++;
+      updates.push(`cost = $${paramCount}`);
+      values.push(data.cost);
+    }
+    if (data.icon !== undefined) {
+      paramCount++;
+      updates.push(`icon = $${paramCount}`);
+      values.push(data.icon);
+    }
+    if (data.active !== undefined) {
+      paramCount++;
+      updates.push(`active = $${paramCount}`);
+      values.push(data.active);
+    }
+
+    if (updates.length === 0) return getReward(id);
+
+    paramCount++;
+    values.push(id);
+
+    await pool.query(
+      `UPDATE rewards SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+      values
+    );
+    return getReward(id);
+  } catch (error) {
+    throw new Error(`Failed to update reward: ${error.message}`);
+  }
+}
+
+/**
+ * Delete a reward and its claims
+ */
+async function deleteReward(id) {
+  try {
+    await pool.query('DELETE FROM reward_claims WHERE reward_id = $1', [id]);
+    await pool.query('DELETE FROM rewards WHERE id = $1', [id]);
+    return { success: true };
+  } catch (error) {
+    throw new Error(`Failed to delete reward: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// CHALLENGES CRUD
+// ============================================================================
+
+/**
+ * Create a new challenge
+ */
+async function createChallenge(data) {
+  const id = data.id || uuidv4();
+  const { brand_id, title, description = '', points = 0, icon = '⭐', type = 'action', recurring = false, active = true } = data;
+
+  if (!brand_id || !title) {
+    throw new Error('Brand ID and title are required');
+  }
+
+  try {
+    await pool.query(
+      `INSERT INTO challenges (id, brand_id, title, description, points, icon, type, recurring, active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [id, brand_id, title, description, points, icon, type, recurring, active]
+    );
+    return { id, brand_id, title, description, points, icon, type, recurring, active };
+  } catch (error) {
+    throw new Error(`Failed to create challenge: ${error.message}`);
+  }
+}
+
+/**
+ * List challenges for a brand
+ */
+async function listChallenges(brandId) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM challenges WHERE brand_id = $1 ORDER BY created_at DESC`,
+      [brandId]
+    );
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to list challenges: ${error.message}`);
+  }
+}
+
+/**
+ * Get a single challenge by ID
+ */
+async function getChallenge(id) {
+  try {
+    const result = await pool.query('SELECT * FROM challenges WHERE id = $1', [id]);
+    if (result.rows.length === 0) return null;
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Failed to get challenge: ${error.message}`);
+  }
+}
+
+/**
+ * Update a challenge
+ */
+async function updateChallenge(id, data) {
+  try {
+    const current = await getChallenge(id);
+    if (!current) return null;
+
+    const updates = [];
+    const values = [];
+    let paramCount = 0;
+
+    if (data.title) {
+      paramCount++;
+      updates.push(`title = $${paramCount}`);
+      values.push(data.title);
+    }
+    if (data.description !== undefined) {
+      paramCount++;
+      updates.push(`description = $${paramCount}`);
+      values.push(data.description);
+    }
+    if (data.points !== undefined) {
+      paramCount++;
+      updates.push(`points = $${paramCount}`);
+      values.push(data.points);
+    }
+    if (data.icon !== undefined) {
+      paramCount++;
+      updates.push(`icon = $${paramCount}`);
+      values.push(data.icon);
+    }
+    if (data.type !== undefined) {
+      paramCount++;
+      updates.push(`type = $${paramCount}`);
+      values.push(data.type);
+    }
+    if (data.recurring !== undefined) {
+      paramCount++;
+      updates.push(`recurring = $${paramCount}`);
+      values.push(data.recurring);
+    }
+    if (data.active !== undefined) {
+      paramCount++;
+      updates.push(`active = $${paramCount}`);
+      values.push(data.active);
+    }
+
+    if (updates.length === 0) return getChallenge(id);
+
+    paramCount++;
+    values.push(id);
+
+    await pool.query(
+      `UPDATE challenges SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+      values
+    );
+    return getChallenge(id);
+  } catch (error) {
+    throw new Error(`Failed to update challenge: ${error.message}`);
+  }
+}
+
+/**
+ * Delete a challenge and its completions
+ */
+async function deleteChallenge(id) {
+  try {
+    await pool.query('DELETE FROM challenge_completions WHERE challenge_id = $1', [id]);
+    await pool.query('DELETE FROM challenges WHERE id = $1', [id]);
+    return { success: true };
+  } catch (error) {
+    throw new Error(`Failed to delete challenge: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// TIERS CRUD
+// ============================================================================
+
+/**
+ * Create a new tier
+ */
+async function createTier(data) {
+  const id = data.id || uuidv4();
+  const { brand_id, name, min_points = 0, color = '#888888', perks = [], sort_order = 0 } = data;
+
+  if (!brand_id || !name) {
+    throw new Error('Brand ID and name are required');
+  }
+
+  try {
+    const perksJson = typeof perks === 'string' ? perks : JSON.stringify(perks);
+    await pool.query(
+      `INSERT INTO tiers (id, brand_id, name, min_points, color, perks, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, brand_id, name, min_points, color, perksJson, sort_order]
+    );
+    return { id, brand_id, name, min_points, color, perks, sort_order };
+  } catch (error) {
+    throw new Error(`Failed to create tier: ${error.message}`);
+  }
+}
+
+/**
+ * List tiers for a brand
+ */
+async function listTiers(brandId) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM tiers WHERE brand_id = $1 ORDER BY min_points ASC`,
+      [brandId]
+    );
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to list tiers: ${error.message}`);
+  }
+}
+
+/**
+ * Get a single tier by ID
+ */
+async function getTier(id) {
+  try {
+    const result = await pool.query('SELECT * FROM tiers WHERE id = $1', [id]);
+    if (result.rows.length === 0) return null;
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Failed to get tier: ${error.message}`);
+  }
+}
+
+/**
+ * Update a tier
+ */
+async function updateTier(id, data) {
+  try {
+    const current = await getTier(id);
+    if (!current) return null;
+
+    const updates = [];
+    const values = [];
+    let paramCount = 0;
+
+    if (data.name) {
+      paramCount++;
+      updates.push(`name = $${paramCount}`);
+      values.push(data.name);
+    }
+    if (data.min_points !== undefined) {
+      paramCount++;
+      updates.push(`min_points = $${paramCount}`);
+      values.push(data.min_points);
+    }
+    if (data.color !== undefined) {
+      paramCount++;
+      updates.push(`color = $${paramCount}`);
+      values.push(data.color);
+    }
+    if (data.perks !== undefined) {
+      paramCount++;
+      const perksJson = typeof data.perks === 'string' ? data.perks : JSON.stringify(data.perks);
+      updates.push(`perks = $${paramCount}`);
+      values.push(perksJson);
+    }
+    if (data.sort_order !== undefined) {
+      paramCount++;
+      updates.push(`sort_order = $${paramCount}`);
+      values.push(data.sort_order);
+    }
+
+    if (updates.length === 0) return getTier(id);
+
+    paramCount++;
+    values.push(id);
+
+    await pool.query(
+      `UPDATE tiers SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+      values
+    );
+    return getTier(id);
+  } catch (error) {
+    throw new Error(`Failed to update tier: ${error.message}`);
+  }
+}
+
+/**
+ * Delete a tier
+ */
+async function deleteTier(id) {
+  try {
+    await pool.query('DELETE FROM tiers WHERE id = $1', [id]);
+    return { success: true };
+  } catch (error) {
+    throw new Error(`Failed to delete tier: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// VIP CARDS CRUD
+// ============================================================================
+
+/**
+ * Create a new VIP card
+ */
+async function createVipCard(data) {
+  const id = data.id || uuidv4();
+  const { brand_id, name, description = '', color = 'from-blue-400 to-blue-600', active = true } = data;
+
+  if (!brand_id || !name) {
+    throw new Error('Brand ID and name are required');
+  }
+
+  try {
+    await pool.query(
+      `INSERT INTO vip_cards (id, brand_id, name, description, color, active)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, brand_id, name, description, color, active]
+    );
+    return { id, brand_id, name, description, color, assigned: 0, active };
+  } catch (error) {
+    throw new Error(`Failed to create VIP card: ${error.message}`);
+  }
+}
+
+/**
+ * List VIP cards for a brand
+ */
+async function listVipCards(brandId) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM vip_cards WHERE brand_id = $1 ORDER BY created_at DESC`,
+      [brandId]
+    );
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to list VIP cards: ${error.message}`);
+  }
+}
+
+/**
+ * Get a single VIP card by ID
+ */
+async function getVipCard(id) {
+  try {
+    const result = await pool.query('SELECT * FROM vip_cards WHERE id = $1', [id]);
+    if (result.rows.length === 0) return null;
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Failed to get VIP card: ${error.message}`);
+  }
+}
+
+/**
+ * Update a VIP card
+ */
+async function updateVipCard(id, data) {
+  try {
+    const current = await getVipCard(id);
+    if (!current) return null;
+
+    const updates = [];
+    const values = [];
+    let paramCount = 0;
+
+    if (data.name) {
+      paramCount++;
+      updates.push(`name = $${paramCount}`);
+      values.push(data.name);
+    }
+    if (data.description !== undefined) {
+      paramCount++;
+      updates.push(`description = $${paramCount}`);
+      values.push(data.description);
+    }
+    if (data.color !== undefined) {
+      paramCount++;
+      updates.push(`color = $${paramCount}`);
+      values.push(data.color);
+    }
+    if (data.assigned !== undefined) {
+      paramCount++;
+      updates.push(`assigned = $${paramCount}`);
+      values.push(data.assigned);
+    }
+    if (data.active !== undefined) {
+      paramCount++;
+      updates.push(`active = $${paramCount}`);
+      values.push(data.active);
+    }
+
+    if (updates.length === 0) return getVipCard(id);
+
+    paramCount++;
+    values.push(id);
+
+    await pool.query(
+      `UPDATE vip_cards SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+      values
+    );
+    return getVipCard(id);
+  } catch (error) {
+    throw new Error(`Failed to update VIP card: ${error.message}`);
+  }
+}
+
+/**
+ * Delete a VIP card
+ */
+async function deleteVipCard(id) {
+  try {
+    await pool.query('DELETE FROM vip_cards WHERE id = $1', [id]);
+    return { success: true };
+  } catch (error) {
+    throw new Error(`Failed to delete VIP card: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// REWARD CLAIMS
+// ============================================================================
+
+/**
+ * Claim a reward - creates claim, increments total_claimed, deducts points from pass
+ */
+async function claimReward(data) {
+  const id = data.id || uuidv4();
+  const { reward_id, pass_id, brand_id } = data;
+
+  if (!reward_id || !pass_id || !brand_id) {
+    throw new Error('Reward ID, pass ID, and brand ID are required');
+  }
+
+  try {
+    // Get reward
+    const reward = await getReward(reward_id);
+    if (!reward) {
+      throw new Error('Reward not found');
+    }
+
+    // Get pass
+    const pass = await getPassInstance(pass_id);
+    if (!pass) {
+      throw new Error('Pass not found');
+    }
+
+    // Check if pass has enough points
+    const currentPoints = pass.field_values?.punti || 0;
+    if (currentPoints < reward.cost) {
+      throw new Error(`Insufficient points. Required: ${reward.cost}, Available: ${currentPoints}`);
+    }
+
+    // Create claim
+    await pool.query(
+      `INSERT INTO reward_claims (id, reward_id, pass_id, brand_id) VALUES ($1, $2, $3, $4)`,
+      [id, reward_id, pass_id, brand_id]
+    );
+
+    // Increment total_claimed
+    await pool.query(
+      `UPDATE rewards SET total_claimed = total_claimed + 1 WHERE id = $1`,
+      [reward_id]
+    );
+
+    // Deduct points from pass
+    const newPoints = currentPoints - reward.cost;
+    const updatedFieldValues = { ...pass.field_values, punti: newPoints };
+    await updatePassInstance(pass_id, { field_values: updatedFieldValues });
+
+    return { id, reward_id, pass_id, brand_id, claimed_at: new Date().toISOString() };
+  } catch (error) {
+    throw new Error(`Failed to claim reward: ${error.message}`);
+  }
+}
+
+/**
+ * List reward claims
+ */
+async function listClaims(brandId, passId = null) {
+  try {
+    let query = 'SELECT * FROM reward_claims WHERE brand_id = $1';
+    const params = [brandId];
+
+    if (passId) {
+      query += ' AND pass_id = $2';
+      params.push(passId);
+    }
+
+    query += ' ORDER BY claimed_at DESC';
+    const result = await pool.query(query, params);
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to list claims: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// CHALLENGE COMPLETIONS
+// ============================================================================
+
+/**
+ * Complete a challenge - creates completion, adds points to pass
+ */
+async function completeChallenge(data) {
+  const id = data.id || uuidv4();
+  const { challenge_id, pass_id, brand_id } = data;
+
+  if (!challenge_id || !pass_id || !brand_id) {
+    throw new Error('Challenge ID, pass ID, and brand ID are required');
+  }
+
+  try {
+    // Get challenge
+    const challenge = await getChallenge(challenge_id);
+    if (!challenge) {
+      throw new Error('Challenge not found');
+    }
+
+    // Get pass
+    const pass = await getPassInstance(pass_id);
+    if (!pass) {
+      throw new Error('Pass not found');
+    }
+
+    // Create completion
+    await pool.query(
+      `INSERT INTO challenge_completions (id, challenge_id, pass_id, brand_id) VALUES ($1, $2, $3, $4)`,
+      [id, challenge_id, pass_id, brand_id]
+    );
+
+    // Add points to pass
+    const currentPoints = pass.field_values?.punti || 0;
+    const newPoints = currentPoints + challenge.points;
+    const updatedFieldValues = { ...pass.field_values, punti: newPoints };
+    await updatePassInstance(pass_id, { field_values: updatedFieldValues });
+
+    return { id, challenge_id, pass_id, brand_id, completed_at: new Date().toISOString() };
+  } catch (error) {
+    throw new Error(`Failed to complete challenge: ${error.message}`);
+  }
+}
+
+/**
+ * List challenge completions
+ */
+async function listCompletions(brandId, passId = null) {
+  try {
+    let query = 'SELECT * FROM challenge_completions WHERE brand_id = $1';
+    const params = [brandId];
+
+    if (passId) {
+      query += ' AND pass_id = $2';
+      params.push(passId);
+    }
+
+    query += ' ORDER BY completed_at DESC';
+    const result = await pool.query(query, params);
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to list completions: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// PUSH LOG
+// ============================================================================
+
+/**
+ * Log a push notification
+ */
+async function logPush(data) {
+  const { brand_id, title, message, target = 'all', sent_count = 0 } = data;
+
+  if (!brand_id || !title || !message) {
+    throw new Error('Brand ID, title, and message are required');
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO push_log (brand_id, title, message, target, sent_count) VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, brand_id, title, message, target, sent_count, created_at`,
+      [brand_id, title, message, target, sent_count]
+    );
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Failed to log push: ${error.message}`);
+  }
+}
+
+/**
+ * List push history for a brand
+ */
+async function listPushes(brandId) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM push_log WHERE brand_id = $1 ORDER BY created_at DESC`,
+      [brandId]
+    );
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to list pushes: ${error.message}`);
+  }
+}
+
 /**
  * Update a brand
  */
@@ -648,5 +1402,38 @@ module.exports = {
   listEvents,
   unregisterDevice,
   getSerialsForDevice,
+  // Rewards
+  createReward,
+  listRewards,
+  getReward,
+  updateReward,
+  deleteReward,
+  // Challenges
+  createChallenge,
+  listChallenges,
+  getChallenge,
+  updateChallenge,
+  deleteChallenge,
+  // Tiers
+  createTier,
+  listTiers,
+  getTier,
+  updateTier,
+  deleteTier,
+  // VIP Cards
+  createVipCard,
+  listVipCards,
+  getVipCard,
+  updateVipCard,
+  deleteVipCard,
+  // Reward Claims
+  claimReward,
+  listClaims,
+  // Challenge Completions
+  completeChallenge,
+  listCompletions,
+  // Push Log
+  logPush,
+  listPushes,
   pool
 };
