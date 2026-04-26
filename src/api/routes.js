@@ -57,9 +57,11 @@ const {
   listCompletions,
   // Push Log
   logPush,
-  listPushes
+  listPushes,
+  getDevicesForBrand
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
+const { sendPushUpdate } = require('../engine/apns');
 
 const router = express.Router();
 
@@ -1290,7 +1292,7 @@ router.delete('/vip-cards/:id', async (req, res) => {
  */
 router.post('/push/send', async (req, res) => {
   try {
-    const { brand_id, title, message, target, sent_count } = req.body;
+    const { brand_id, title, message, target } = req.body;
 
     if (!brand_id || !title || !message) {
       return res.status(400).json({
@@ -1303,23 +1305,62 @@ router.post('/push/send', async (req, res) => {
       return res.status(404).json({ error: 'Brand not found' });
     }
 
+    // Get all registered devices for this brand's passes
+    const devices = await getDevicesForBrand(brand_id);
+    let sentCount = 0;
+    let failCount = 0;
+    const results = [];
+
+    // Send APNs push to each device (empty payload = wallet pass update signal)
+    for (const device of devices) {
+      try {
+        const result = await sendPushUpdate(device.push_token);
+        if (result.success) {
+          sentCount++;
+        } else {
+          failCount++;
+        }
+        results.push({ token: device.push_token.substring(0, 8) + '...', ...result });
+      } catch (err) {
+        failCount++;
+        results.push({ token: device.push_token.substring(0, 8) + '...', success: false, reason: err.message });
+      }
+    }
+
+    // Log the push to DB
     const pushLog = await logPush({
       brand_id,
       title,
       message,
       target: target || 'all',
-      sent_count: sent_count || 0
+      sent_count: sentCount
     });
 
     await logEvent({
       brand_id,
       event_type: 'push_sent',
-      metadata: { title, target: target || 'all', sent_count: sent_count || 0 }
+      metadata: {
+        title,
+        target: target || 'all',
+        sent_count: sentCount,
+        fail_count: failCount,
+        total_devices: devices.length
+      }
     });
 
-    res.status(201).json(pushLog);
+    res.status(201).json({
+      ...pushLog,
+      delivery: {
+        total_devices: devices.length,
+        sent: sentCount,
+        failed: failCount,
+        note: devices.length === 0
+          ? 'No devices registered yet. Passes must be added to Apple Wallet first.'
+          : undefined
+      }
+    });
   } catch (error) {
-    console.error('Error logging push:', error);
+    console.error('Error sending push:', error);
     res.status(400).json({ error: error.message });
   }
 });

@@ -378,6 +378,24 @@ async function logEvent(data) {
 }
 
 /**
+ * Get all push tokens for devices registered to passes of a given brand
+ */
+async function getDevicesForBrand(brandId) {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT dr.push_token, dr.device_library_id, dr.serial_number
+       FROM device_registrations dr
+       JOIN pass_instances pi ON dr.serial_number = pi.serial_number
+       WHERE pi.brand_id = $1`,
+      [brandId]
+    );
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to get devices for brand: ${error.message}`);
+  }
+}
+
+/**
  * Get analytics for a brand
  */
 async function getAnalytics(brandId) {
@@ -1390,6 +1408,7 @@ module.exports = {
   getAnalytics,
   registerDevice,
   getDevicesForPass,
+  getDevicesForBrand,
   getBrand,
   getTemplate,
   updateBrand,

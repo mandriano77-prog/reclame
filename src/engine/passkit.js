@@ -76,10 +76,11 @@ function generatePassJson(template, instance, brand, options = {}) {
           case 'back': backFields.push(fieldObj); break;
         }
       } else {
-        // Auto-distribute: first field = header, second = primary, rest = secondary/auxiliary
-        if (index === 0) headerFields.push(fieldObj);
-        else if (index === 1) primaryFields.push(fieldObj);
-        else if (index <= 3) secondaryFields.push(fieldObj);
+        // Auto-distribute: first field = primary (big center), next 2 = secondary, rest = auxiliary
+        // Do NOT auto-assign headerFields — they overlap with logoText on small screens.
+        // Use field.type = 'header' explicitly if needed.
+        if (index === 0) primaryFields.push(fieldObj);
+        else if (index <= 2) secondaryFields.push(fieldObj);
         else auxiliaryFields.push(fieldObj);
       }
     });
@@ -168,7 +169,7 @@ async function generateIcon(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF')
         input: Buffer.from(
           `<svg width="29" height="29" xmlns="http://www.w3.org/2000/svg">
             <rect width="29" height="29" fill="${bgColor}"/>
-            <text x="14.5" y="20" font-family="Helvetica" font-size="18" font-weight="bold" fill="${fgColor}" text-anchor="middle">${initial}</text>
+            <text x="14.5" y="20" font-family="sans-serif" font-size="18" font-weight="bold" fill="${fgColor}" text-anchor="middle">${initial}</text>
           </svg>`
         ),
         top: 0,
@@ -192,7 +193,7 @@ async function generateIcon(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF')
         input: Buffer.from(
           `<svg width="58" height="58" xmlns="http://www.w3.org/2000/svg">
             <rect width="58" height="58" fill="${bgColor}"/>
-            <text x="29" y="42" font-family="Helvetica" font-size="36" font-weight="bold" fill="${fgColor}" text-anchor="middle">${initial}</text>
+            <text x="29" y="42" font-family="sans-serif" font-size="36" font-weight="bold" fill="${fgColor}" text-anchor="middle">${initial}</text>
           </svg>`
         ),
         top: 0,
@@ -206,12 +207,16 @@ async function generateIcon(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF')
 }
 
 /**
- * Generate logo PNG files
+ * Generate logo PNG files — shows brand initial only.
+ * The full brand name is displayed via logoText in pass.json.
+ * Using only geometric shapes + initial avoids font rendering issues on Linux servers.
  */
 async function generateLogo(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF') {
   const bg = parseColor(bgColor);
+  const fg = parseColor(fgColor);
+  const initial = brandName.charAt(0).toUpperCase();
 
-  // 160x50 logo
+  // 160x50 logo — initial letter in a rounded rect
   const logo160 = await sharp({
     create: {
       width: 160,
@@ -225,7 +230,8 @@ async function generateLogo(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF')
         input: Buffer.from(
           `<svg width="160" height="50" xmlns="http://www.w3.org/2000/svg">
             <rect width="160" height="50" fill="${bgColor}"/>
-            <text x="80" y="35" font-family="Helvetica" font-size="24" font-weight="bold" fill="${fgColor}" text-anchor="middle">${brandName}</text>
+            <rect x="55" y="3" width="44" height="44" rx="10" fill="${fgColor}" opacity="0.15"/>
+            <text x="77" y="36" font-family="sans-serif" font-size="28" font-weight="bold" fill="${fgColor}" text-anchor="middle">${initial}</text>
           </svg>`
         ),
         top: 0,
@@ -249,7 +255,8 @@ async function generateLogo(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF')
         input: Buffer.from(
           `<svg width="320" height="100" xmlns="http://www.w3.org/2000/svg">
             <rect width="320" height="100" fill="${bgColor}"/>
-            <text x="160" y="70" font-family="Helvetica" font-size="48" font-weight="bold" fill="${fgColor}" text-anchor="middle">${brandName}</text>
+            <rect x="110" y="6" width="88" height="88" rx="20" fill="${fgColor}" opacity="0.15"/>
+            <text x="154" y="72" font-family="sans-serif" font-size="56" font-weight="bold" fill="${fgColor}" text-anchor="middle">${initial}</text>
           </svg>`
         ),
         top: 0,
@@ -282,7 +289,7 @@ async function generateStrip(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF'
         input: Buffer.from(
           `<svg width="375" height="123" xmlns="http://www.w3.org/2000/svg">
             <rect width="375" height="123" fill="${bgColor}"/>
-            <text x="187.5" y="75" font-family="Helvetica" font-size="32" font-weight="bold" fill="${fgColor}" text-anchor="middle">${brandName}</text>
+            <text x="187.5" y="75" font-family="sans-serif" font-size="32" font-weight="bold" fill="${fgColor}" text-anchor="middle">${brandName}</text>
           </svg>`
         ),
         top: 0,
@@ -306,7 +313,7 @@ async function generateStrip(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF'
         input: Buffer.from(
           `<svg width="750" height="246" xmlns="http://www.w3.org/2000/svg">
             <rect width="750" height="246" fill="${bgColor}"/>
-            <text x="375" y="150" font-family="Helvetica" font-size="64" font-weight="bold" fill="${fgColor}" text-anchor="middle">${brandName}</text>
+            <text x="375" y="150" font-family="sans-serif" font-size="64" font-weight="bold" fill="${fgColor}" text-anchor="middle">${brandName}</text>
           </svg>`
         ),
         top: 0,
