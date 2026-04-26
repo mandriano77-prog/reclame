@@ -1323,6 +1323,30 @@ async function listPushes(brandId) {
 }
 
 /**
+ * Delete a single push log entry
+ */
+async function deletePush(id) {
+  try {
+    await pool.query('DELETE FROM push_log WHERE id = $1', [id]);
+    return { success: true };
+  } catch (error) {
+    throw new Error(`Failed to delete push: ${error.message}`);
+  }
+}
+
+/**
+ * Delete all push log entries for a brand
+ */
+async function clearPushHistory(brandId) {
+  try {
+    const result = await pool.query('DELETE FROM push_log WHERE brand_id = $1', [brandId]);
+    return { success: true, deleted: result.rowCount };
+  } catch (error) {
+    throw new Error(`Failed to clear push history: ${error.message}`);
+  }
+}
+
+/**
  * Update a brand
  */
 async function updateBrand(id, data) {
@@ -1454,5 +1478,7 @@ module.exports = {
   // Push Log
   logPush,
   listPushes,
+  deletePush,
+  clearPushHistory,
   pool
 };

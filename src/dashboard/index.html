@@ -976,14 +976,36 @@ async function loadPushHistory() {
     if (!brandId) return;
     const res = await fetch(`${API}/push/history?brand_id=${brandId}`);
     const pushes = await res.json();
-    document.getElementById('pushHistory').innerHTML = pushes.length === 0
-        ? '<p style="color:var(--text2)">Nessuna notifica inviata.</p>'
-        : pushes.map(p => `<div class="card" style="padding:14px 18px;">
+    if (pushes.length === 0) {
+        document.getElementById('pushHistory').innerHTML = '<p style="color:var(--text2)">Nessuna notifica inviata.</p>';
+        return;
+    }
+    document.getElementById('pushHistory').innerHTML =
+        `<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+            <button class="btn small" style="background:var(--red);font-size:11px;" onclick="clearAllPush()">Svuota storico</button>
+        </div>` +
+        pushes.map(p => `<div class="card" style="padding:14px 18px;">
             <div style="display:flex;justify-content:space-between;align-items:start;">
-                <div><div style="font-weight:600;font-size:14px;">${p.title}</div><div style="font-size:12px;color:var(--text2);margin-top:2px;">${p.message}</div></div>
-                <div style="text-align:right;"><div class="badge active">${p.target}</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">${new Date(p.created_at).toLocaleDateString('it-IT')}</div></div>
+                <div style="flex:1;"><div style="font-weight:600;font-size:14px;">${p.title}</div><div style="font-size:12px;color:var(--text2);margin-top:2px;">${p.message}</div></div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="text-align:right;"><div class="badge active">${p.target}</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">${new Date(p.created_at).toLocaleDateString('it-IT')}</div></div>
+                    <button class="btn small sec" style="font-size:11px;padding:4px 8px;" onclick="deleteSinglePush(${p.id})">✕</button>
+                </div>
             </div>
         </div>`).join('');
+}
+
+async function deleteSinglePush(id) {
+    await fetch(`${API}/push/${id}`, {method:'DELETE'});
+    toast('Notifica eliminata');
+    loadPushHistory();
+}
+
+async function clearAllPush() {
+    if (!confirm('Svuotare tutto lo storico notifiche?')) return;
+    await fetch(`${API}/push/clear/${brandId}`, {method:'DELETE'});
+    toast('Storico svuotato');
+    loadPushHistory();
 }
 
 // ==================== TEMPLATES ====================

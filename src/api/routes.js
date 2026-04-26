@@ -58,6 +58,8 @@ const {
   // Push Log
   logPush,
   listPushes,
+  deletePush,
+  clearPushHistory,
   getDevicesForBrand
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
@@ -1447,6 +1449,32 @@ router.get('/push/history', async (req, res) => {
     res.json(history);
   } catch (error) {
     console.error('Error getting push history:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/push/:id - Delete a single push log entry
+ */
+router.delete('/push/:id', async (req, res) => {
+  try {
+    await deletePush(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting push:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/push/clear/:brand_id - Clear all push history for a brand
+ */
+router.delete('/push/clear/:brand_id', async (req, res) => {
+  try {
+    const result = await clearPushHistory(req.params.brand_id);
+    res.json(result);
+  } catch (error) {
+    console.error('Error clearing push history:', error);
     res.status(500).json({ error: error.message });
   }
 });
