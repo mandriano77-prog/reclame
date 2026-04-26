@@ -34,13 +34,18 @@ function parseColor(color) {
 function generatePassJson(template, instance, brand, options = {}) {
   const {
     baseUrl = 'http://localhost:3000',
-    passTypeIdentifier = `pass.com.nudj.${brand.slug}`,
-    teamIdentifier = 'XXXXXXXXXX'
+    passTypeIdentifier = process.env.PASS_TYPE_IDENTIFIER || `pass.com.nudj.${brand.slug}`,
+    teamIdentifier = process.env.TEAM_IDENTIFIER || 'XXXXXXXXXX'
   } = options;
 
-  const foregroundColor = template.style?.foregroundColor || 'rgb(255, 255, 255)';
-  const backgroundColor = template.style?.backgroundColor || 'rgb(13, 11, 26)';
-  const labelColor = template.style?.labelColor || 'rgb(0, 212, 170)';
+  // Read colors from brand.config first, then template.style, then defaults
+  const brandConfig = brand.config || {};
+  const fgHex = brandConfig.foregroundColor || null;
+  const foregroundColor = fgHex ? `rgb(${parseColor(fgHex).r}, ${parseColor(fgHex).g}, ${parseColor(fgHex).b})` : (template.style?.foregroundColor || 'rgb(255, 255, 255)');
+  const bgHex = brandConfig.backgroundColor || null;
+  const backgroundColor = bgHex ? `rgb(${parseColor(bgHex).r}, ${parseColor(bgHex).g}, ${parseColor(bgHex).b})` : (template.style?.backgroundColor || 'rgb(13, 11, 26)');
+  const lblHex = brandConfig.labelColor || null;
+  const labelColor = lblHex ? `rgb(${parseColor(lblHex).r}, ${parseColor(lblHex).g}, ${parseColor(lblHex).b})` : (template.style?.labelColor || 'rgb(184, 196, 216)');
 
   // Build field arrays based on template
   const headerFields = [];
@@ -50,10 +55,10 @@ function generatePassJson(template, instance, brand, options = {}) {
   const backFields = [];
 
   if (template.fields && Array.isArray(template.fields)) {
-    template.fields.forEach(field => {
+    template.fields.forEach((field, index) => {
       const fieldObj = {
         key: field.key,
-        label: field.label || field.key,
+        label: (field.label || field.key).toUpperCase(),
         value: instance.field_values?.[field.key] || field.value || ''
       };
 
@@ -61,22 +66,21 @@ function generatePassJson(template, instance, brand, options = {}) {
         fieldObj.dateStyle = field.dateStyle;
       }
 
-      switch (field.type) {
-        case 'header':
-          headerFields.push(fieldObj);
-          break;
-        case 'primary':
-          primaryFields.push(fieldObj);
-          break;
-        case 'secondary':
-          secondaryFields.push(fieldObj);
-          break;
-        case 'auxiliary':
-          auxiliaryFields.push(fieldObj);
-          break;
-        case 'back':
-          backFields.push(fieldObj);
-          break;
+      if (field.type) {
+        // Explicit type placement
+        switch (field.type) {
+          case 'header': headerFields.push(fieldObj); break;
+          case 'primary': primaryFields.push(fieldObj); break;
+          case 'secondary': secondaryFields.push(fieldObj); break;
+          case 'auxiliary': auxiliaryFields.push(fieldObj); break;
+          case 'back': backFields.push(fieldObj); break;
+        }
+      } else {
+        // Auto-distribute: first field = header, second = primary, rest = secondary/auxiliary
+        if (index === 0) headerFields.push(fieldObj);
+        else if (index === 1) primaryFields.push(fieldObj);
+        else if (index <= 3) secondaryFields.push(fieldObj);
+        else auxiliaryFields.push(fieldObj);
       }
     });
   }
@@ -411,9 +415,10 @@ async function createPkpass(template, instance, brand, options = {}) {
   // Generate pass.json
   const passJson = generatePassJson(template, instance, brand, { baseUrl });
 
-  // Generate images
-  const bgColor = template.style?.backgroundColor || '#0D0B1A';
-  const fgColor = template.style?.foregroundColor || '#FFFFFF';
+  // Generate images - use brand.config colors first, then template.style, then defaults
+  const brandCfg = brand.config || {};
+  const bgColor = brandCfg.backgroundColor || template.style?.backgroundColor || '#0D0B1A';
+  const fgColor = brandCfg.foregroundColor || template.style?.foregroundColor || '#FFFFFF';
 
   let iconBuffers, logoBuffers;
 
