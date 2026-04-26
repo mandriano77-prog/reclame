@@ -219,6 +219,13 @@
                             <option value="top">Top tier</option>
                         </select>
                     </div>
+                    <div class="form-group" style="margin-top:4px;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:rgba(255,255,255,0.85);font-size:13px;">
+                            <input type="checkbox" id="pushUpdatePass" checked style="width:auto;accent-color:var(--teal);">
+                            <span>Aggiorna contenuto pass (notifica visibile "Carta aggiornata")</span>
+                        </label>
+                        <p style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:4px;margin-left:26px;">Il messaggio apparirà nel retro del pass. iOS notifica automaticamente l'aggiornamento.</p>
+                    </div>
                     <button class="btn" style="background:white;color:var(--purple);width:100%;" onclick="sendPush()">Invia Notifica</button>
                 </div>
                 <div class="sec-title" style="margin-top:24px;">Storico Notifiche</div>
@@ -1013,16 +1020,19 @@ async function sendPush() {
     const title = document.getElementById('pushTitle').value;
     const message = document.getElementById('pushMessage').value;
     const target = document.getElementById('pushTarget').value;
+    const updatePass = document.getElementById('pushUpdatePass').checked;
     if (!title || !message) return alert('Compila titolo e messaggio');
     try {
-        const res = await fetch(`${API}/push/send`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({brand_id: brandId, title, message, target})});
+        const res = await fetch(`${API}/push/send`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({brand_id: brandId, title, message, target, update_pass: updatePass})});
         const data = await res.json();
         if (data.delivery) {
             const d = data.delivery;
             if (d.total_devices === 0) {
                 toast('Nessun dispositivo registrato. I pass devono essere aggiunti al Wallet prima di ricevere push.');
             } else if (d.sent > 0) {
-                toast(`Push inviata a ${d.sent}/${d.total_devices} dispositivi`);
+                let msg = `Push inviata a ${d.sent}/${d.total_devices} dispositivi`;
+                if (d.passes_updated > 0) msg += ` — ${d.passes_updated} pass aggiornati`;
+                toast(msg);
             } else {
                 const reason = d.results?.[0]?.reason || 'sconosciuto';
                 toast(`Invio fallito (0/${d.total_devices}). Motivo: ${reason}`);
@@ -1070,14 +1080,16 @@ async function deleteSinglePush(id) {
 
 async function resendPush(title, message, target) {
     try {
-        const res = await fetch(`${API}/push/send`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({brand_id: brandId, title, message, target})});
+        const res = await fetch(`${API}/push/send`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({brand_id: brandId, title, message, target, update_pass: true})});
         const data = await res.json();
         if (data.delivery) {
             const d = data.delivery;
             if (d.total_devices === 0) {
                 toast('Nessun dispositivo registrato.');
             } else if (d.sent > 0) {
-                toast(`Reinviata a ${d.sent}/${d.total_devices} dispositivi`);
+                let msg = `Reinviata a ${d.sent}/${d.total_devices} dispositivi`;
+                if (d.passes_updated > 0) msg += ` — ${d.passes_updated} pass aggiornati`;
+                toast(msg);
             } else {
                 toast(`Invio fallito (0/${d.total_devices}). Dettagli nei log server.`);
             }

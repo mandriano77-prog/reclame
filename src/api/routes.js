@@ -1361,7 +1361,7 @@ router.delete('/vip-cards/:id', async (req, res) => {
  */
 router.post('/push/send', async (req, res) => {
   try {
-    const { brand_id, title, message, target } = req.body;
+    const { brand_id, title, message, target, update_pass } = req.body;
 
     if (!brand_id || !title || !message) {
       return res.status(400).json({
@@ -1372,6 +1372,51 @@ router.post('/push/send', async (req, res) => {
     const brand = await getBrand(brand_id);
     if (!brand) {
       return res.status(404).json({ error: 'Brand not found' });
+    }
+
+    // If update_pass is true, update brand config with the announcement
+    // and regenerate all passes so iOS shows "Pass Updated" notification
+    let passesUpdated = 0;
+    if (update_pass) {
+      console.log('📝 Updating pass content with push announcement...');
+
+      // Save announcement to brand config
+      const updatedConfig = {
+        ...(brand.config || {}),
+        pushAnnouncement: {
+          title: title,
+          message: message,
+          date: new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          timestamp: new Date().toISOString()
+        }
+      };
+      await updateBrand(brand_id, { config: updatedConfig });
+
+      // Regenerate all passes for this brand (clear cache + rebuild)
+      const passes = await listPasses(brand_id);
+      const updatedBrand = await getBrand(brand_id);
+      const cacheDir = ensureCacheDir();
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+      for (const pass of passes) {
+        try {
+          // Clear cached pkpass
+          const pkpassPath = path.join(cacheDir, `${pass.id}.pkpass`);
+          if (fs.existsSync(pkpassPath)) {
+            fs.unlinkSync(pkpassPath);
+          }
+          // Regenerate with updated brand config (includes announcement)
+          const template = await getTemplate(pass.template_id);
+          if (template) {
+            const pkpassBuffer = await createPkpass(template, pass, updatedBrand, { baseUrl });
+            fs.writeFileSync(pkpassPath, pkpassBuffer);
+            passesUpdated++;
+          }
+        } catch (err) {
+          console.error(`Error regenerating pass ${pass.id}:`, err.message);
+        }
+      }
+      console.log(`✓ Regenerated ${passesUpdated}/${passes.length} passes with announcement`);
     }
 
     // Get all registered devices for this brand's passes
@@ -1407,13 +1452,14 @@ router.post('/push/send', async (req, res) => {
 
     await logEvent({
       brand_id,
-      event_type: 'push_sent',
+      event_type: update_pass ? 'push_update_sent' : 'push_sent',
       metadata: {
         title,
         target: target || 'all',
         sent_count: sentCount,
         fail_count: failCount,
-        total_devices: devices.length
+        total_devices: devices.length,
+        passes_updated: passesUpdated
       }
     });
 
@@ -1423,10 +1469,13 @@ router.post('/push/send', async (req, res) => {
         total_devices: devices.length,
         sent: sentCount,
         failed: failCount,
+        passes_updated: passesUpdated,
         results: results,
         note: devices.length === 0
           ? 'No devices registered yet. Passes must be added to Apple Wallet first.'
-          : undefined
+          : update_pass && passesUpdated > 0
+            ? `${passesUpdated} pass aggiornati. iOS mostrerà "Carta aggiornata" ai possessori.`
+            : undefined
       }
     });
   } catch (error) {

@@ -246,6 +246,23 @@ function generatePassJson(template, instance, brand, options = {}) {
     passStructure.backFields = backFields;
   }
 
+  // Push announcement — shown on the back of the pass when brand sends a manual push
+  if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
+    backFields.unshift({
+      key: 'announcement',
+      label: brandConfig.pushAnnouncement.title || 'NOVITÀ',
+      value: brandConfig.pushAnnouncement.message
+    });
+    // Add timestamp if present
+    if (brandConfig.pushAnnouncement.date) {
+      backFields.splice(1, 0, {
+        key: 'announcement_date',
+        label: 'DATA',
+        value: brandConfig.pushAnnouncement.date
+      });
+    }
+  }
+
   // If no fields defined, add a simple placeholder
   if (Object.keys(passStructure).length === 0) {
     passStructure.primaryFields = [
