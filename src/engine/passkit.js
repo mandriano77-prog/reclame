@@ -303,10 +303,8 @@ function generatePassJson(template, instance, brand, options = {}) {
     passJson.relevantDate = brandConfig.relevantDate;
   }
 
-  // Max distance for geofencing (default Apple uses ~100m)
-  if (brandConfig.maxDistance) {
-    passJson.maxDistance = parseInt(brandConfig.maxDistance);
-  }
+  // Max distance for geofencing — 500m default
+  passJson.maxDistance = parseInt(brandConfig.maxDistance) || 500;
 
   return passJson;
 }
