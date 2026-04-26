@@ -269,7 +269,7 @@ function generatePassJson(template, instance, brand, options = {}) {
     labelColor,
     // logoText omitted — brand identity comes from the logo image only
     authenticationToken: instance.auth_token,
-    webServiceURL: `${baseUrl}/api/v1`,
+    webServiceURL: `${baseUrl}/api`,
     [structureKey]: passStructure,
     barcode: {
       format: 'PKBarcodeFormatQR',
