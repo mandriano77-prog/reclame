@@ -226,37 +226,21 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  // Hint to user: tap "..." or "ⓘ" for details (shows on front, bottom area)
-  auxiliaryFields.push({
-    key: 'hint',
-    label: '',
-    value: 'Tocca ··· per novità e dettagli'
-  });
-
-  // Push announcement — when brand sends a manual push with pass update
-  // CRITICAL: changeMessage is what triggers the VISIBLE notification on iOS.
-  // Without it, the pass updates silently. With it, iOS shows the message
-  // on the lock screen / notification center when the field value changes.
-  //
-  // IMPORTANT: Only ONE field should have changeMessage to avoid iOS
-  // falling back to the generic "biglietto modificato" text.
+  // Push announcement — only TITLE on front (secondaryFields = bigger text),
+  // full message on back. changeMessage drives the iOS notification.
   if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
-    // FRONT: short announcement with changeMessage (this drives the notification)
-    const shortMsg = brandConfig.pushAnnouncement.message.length > 40
-      ? brandConfig.pushAnnouncement.message.substring(0, 37) + '...'
-      : brandConfig.pushAnnouncement.message;
-    auxiliaryFields.push({
+    // FRONT: push title only, in secondaryFields for larger font
+    secondaryFields.push({
       key: 'announcement',
-      label: '📢 ' + (brandConfig.pushAnnouncement.title || 'NOVITÀ'),
-      value: shortMsg,
-      // iOS notification text: "📢 [titolo]: [messaggio breve]"
-      changeMessage: '📢 ' + (brandConfig.pushAnnouncement.title || 'Novità') + ': %@'
+      label: 'NOVITA',
+      value: brandConfig.pushAnnouncement.title || 'Aggiornamento',
+      changeMessage: '%@'
     });
 
-    // BACK: full message (NO changeMessage — only front drives notification)
+    // BACK: full message + date
     backFields.unshift({
       key: 'announcement_full',
-      label: brandConfig.pushAnnouncement.title || 'NOVITÀ',
+      label: brandConfig.pushAnnouncement.title || 'NOVITA',
       value: brandConfig.pushAnnouncement.message
     });
     if (brandConfig.pushAnnouncement.date) {
@@ -267,6 +251,13 @@ function generatePassJson(template, instance, brand, options = {}) {
       });
     }
   }
+
+  // Hint: tap "..." for details — alone in auxiliaryFields, clean
+  auxiliaryFields.push({
+    key: 'hint',
+    label: '',
+    value: 'Tocca ... in alto a destra per i dettagli'
+  });
 
   // Determine the pass structure type
   const passStructure = {};
@@ -526,17 +517,24 @@ async function createPkpass(template, instance, brand, options = {}) {
   let iconBuffers, logoBuffers;
 
   // Check if brand has custom logo images (base64 in config)
+  // Re-process logos to ensure left alignment every time
   if (brand.config?.logos) {
     const brandLogos = brand.config.logos;
     iconBuffers = {
       icon: brandLogos['icon'] ? Buffer.from(brandLogos['icon'], 'base64') : null,
       icon2x: brandLogos['icon@2x'] ? Buffer.from(brandLogos['icon@2x'], 'base64') : null
     };
-    logoBuffers = {
-      logo: brandLogos['logo'] ? Buffer.from(brandLogos['logo'], 'base64') : null,
-      logo2x: brandLogos['logo@2x'] ? Buffer.from(brandLogos['logo@2x'], 'base64') : null
-    };
-    console.log('✓ Using custom brand logos');
+
+    // Re-resize logos with left alignment (stored logos may be centered)
+    if (brandLogos['logo']) {
+      const rawLogo = Buffer.from(brandLogos['logo'], 'base64');
+      const logo1x = await sharp(rawLogo).resize(160, 50, { fit: 'contain', position: 'left', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+      const logo2x = await sharp(rawLogo).resize(320, 100, { fit: 'contain', position: 'left', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+      logoBuffers = { logo: logo1x, logo2x: logo2x };
+    } else {
+      logoBuffers = { logo: null, logo2x: null };
+    }
+    console.log('✓ Using custom brand logos (left-aligned)');
   }
 
   // Fall back to generated images if no custom logos
