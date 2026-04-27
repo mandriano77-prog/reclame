@@ -542,14 +542,21 @@ async function createPkpass(template, instance, brand, options = {}) {
     logoBuffers = logos;
   }
 
-  // Strip images — custom from brand config or generated fallback
+  // Strip images — custom from brand config → default asset file → generated fallback
   let stripBuffers;
+  const defaultStripPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-strip.png');
   if (brand.config?.logos?.strip) {
     const rawStrip = Buffer.from(brand.config.logos.strip, 'base64');
     const strip1x = await sharp(rawStrip).resize(375, 123, { fit: 'cover' }).png().toBuffer();
     const strip2x = await sharp(rawStrip).resize(750, 246, { fit: 'cover' }).png().toBuffer();
     stripBuffers = { strip: strip1x, strip2x: strip2x };
-    console.log('✓ Using custom strip image');
+    console.log('✓ Using custom strip image (from DB)');
+  } else if (fs.existsSync(defaultStripPath)) {
+    const rawStrip = fs.readFileSync(defaultStripPath);
+    const strip1x = await sharp(rawStrip).resize(375, 123, { fit: 'cover' }).png().toBuffer();
+    const strip2x = await sharp(rawStrip).resize(750, 246, { fit: 'cover' }).png().toBuffer();
+    stripBuffers = { strip: strip1x, strip2x: strip2x };
+    console.log('✓ Using default strip image (from file)');
   } else {
     stripBuffers = await generateStrip(brand.name, bgColor, fgColor);
   }
