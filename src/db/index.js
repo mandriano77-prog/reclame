@@ -182,8 +182,6 @@ async function getDb() {
       await pool.query(`
         UPDATE brands
         SET config = jsonb_set(COALESCE(config, '{}'), '{logos,strip}', $1::jsonb)
-        WHERE NOT (config->'logos' ? 'strip')
-           OR config->'logos'->>'strip' IS NULL
       `, [JSON.stringify(stripB64)]);
       console.log('✓ Default strip image loaded for brands');
     }
