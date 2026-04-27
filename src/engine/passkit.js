@@ -227,23 +227,28 @@ function generatePassJson(template, instance, brand, options = {}) {
   }
 
   // Push announcement — when brand sends a manual push with pass update
+  // CRITICAL: changeMessage is what triggers the VISIBLE notification on iOS.
+  // Without it, the pass updates silently. With it, iOS shows the message
+  // on the lock screen / notification center when the field value changes.
   if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
     // FRONT: short announcement visible immediately when pass is opened
-    // Truncate to ~40 chars for clean display on auxiliaryFields
     const shortMsg = brandConfig.pushAnnouncement.message.length > 40
       ? brandConfig.pushAnnouncement.message.substring(0, 37) + '...'
       : brandConfig.pushAnnouncement.message;
     auxiliaryFields.push({
       key: 'announcement',
       label: '📢 ' + (brandConfig.pushAnnouncement.title || 'NOVITÀ'),
-      value: shortMsg
+      value: shortMsg,
+      // This is what iOS shows as the notification text! %@ = field value
+      changeMessage: '%@'
     });
 
-    // BACK: full message with details
+    // BACK: full message with details (also with changeMessage)
     backFields.unshift({
       key: 'announcement_full',
       label: brandConfig.pushAnnouncement.title || 'NOVITÀ',
-      value: brandConfig.pushAnnouncement.message
+      value: brandConfig.pushAnnouncement.message,
+      changeMessage: brandConfig.pushAnnouncement.title + ': %@'
     });
     if (brandConfig.pushAnnouncement.date) {
       backFields.splice(1, 0, {
