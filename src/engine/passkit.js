@@ -225,12 +225,14 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  // AUXILIARY: NOVITÀ E PROMOZIONI
+  // AUXILIARY: NOVITÀ — short teaser only (auxiliaryFields have tiny text on eventTicket)
+  // Full message goes ONLY in backFields. changeMessage triggers iOS "Carta aggiornata" notification.
   if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
+    const shortTitle = (brandConfig.pushAnnouncement.title || 'NOVITÀ').substring(0, 40);
     auxiliaryFields.push({
       key: 'announcement',
-      label: brandConfig.pushAnnouncement.title || 'NOVITÀ',
-      value: brandConfig.pushAnnouncement.message,
+      label: 'NOVITÀ',
+      value: shortTitle + ' →',
       changeMessage: '%@'
     });
   }
@@ -385,12 +387,11 @@ async function generateLogo(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF')
 async function generateStrip(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF') {
   const initial = brandName.charAt(0).toUpperCase();
 
-  // 375x123 strip — large initial centered
+  // 375x123 strip — large initial centered, clean background (no decorative rect)
   const letter375 = letterToSvgPaths(initial, 162, 22, 50, 80, fgColor);
   const strip375 = await sharp(Buffer.from(
     `<svg width="375" height="123" xmlns="http://www.w3.org/2000/svg">
-      <rect width="375" height="123" fill="${bgColor}"/>
-      <rect x="147" y="12" width="80" height="100" rx="16" fill="${fgColor}" opacity="0.1"/>${letter375}
+      <rect width="375" height="123" fill="${bgColor}"/>${letter375}
     </svg>`
   )).png().toBuffer();
 
@@ -398,8 +399,7 @@ async function generateStrip(brandName, bgColor = '#0D0B1A', fgColor = '#FFFFFF'
   const letter750 = letterToSvgPaths(initial, 325, 43, 100, 160, fgColor);
   const strip750 = await sharp(Buffer.from(
     `<svg width="750" height="246" xmlns="http://www.w3.org/2000/svg">
-      <rect width="750" height="246" fill="${bgColor}"/>
-      <rect x="295" y="23" width="160" height="200" rx="32" fill="${fgColor}" opacity="0.1"/>${letter750}
+      <rect width="750" height="246" fill="${bgColor}"/>${letter750}
     </svg>`
   )).png().toBuffer();
 
