@@ -618,6 +618,27 @@ router.post('/passes/:id/regenerate', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/passes/:id/debug-json - Return the pass.json from cached pkpass (debug)
+ */
+router.get('/passes/:id/debug-json', async (req, res) => {
+  try {
+    const cacheDir = ensureCacheDir();
+    const pkpassPath = path.join(cacheDir, `${req.params.id}.pkpass`);
+    if (!fs.existsSync(pkpassPath)) {
+      return res.status(404).json({ error: 'No cached pkpass found. Regenerate first.' });
+    }
+    const AdmZip = require('adm-zip');
+    const zip = new AdmZip(pkpassPath);
+    const passEntry = zip.getEntry('pass.json');
+    if (!passEntry) return res.status(500).json({ error: 'pass.json not found in pkpass' });
+    const passJson = JSON.parse(passEntry.getData().toString('utf8'));
+    res.json(passJson);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/v1/passes - List passes (optional ?brand_id=&status=)
  */
 router.get('/passes', async (req, res) => {
