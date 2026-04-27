@@ -194,7 +194,12 @@ function generatePassJson(template, instance, brand, options = {}) {
   const auxiliaryFields = [];
   const backFields = [];
 
-  // No header fields — keep top area clean
+  // HEADER (top-right): hint to tap ··· for more details
+  headerFields.push({
+    key: 'info_hint',
+    label: '',
+    value: 'Clicca ··· per i dettagli'
+  });
 
   // No primaryFields — they overlay the strip image on eventTicket
   const primaryFields = [];
