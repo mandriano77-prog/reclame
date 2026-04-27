@@ -9,6 +9,7 @@ const {
   getPassInstance,
   getPassBySerial,
   updatePassInstance,
+  touchPass,
   logEvent,
   getAnalytics,
   registerDevice,
@@ -651,12 +652,47 @@ router.delete('/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber
 
 /**
  * GET /api/v1/devices/:deviceLibraryIdentifier/registrations/:passTypeIdentifier
- * Get serial numbers for device
+ * Get serial numbers for device (Apple Wallet update check)
+ *
+ * Apple sends ?passesUpdatedSince=<tag> to check which passes changed.
+ * We filter by last_updated and return a lastUpdated tag for the next check.
+ * If there are no updates, return 204 (Apple spec).
  */
 router.get('/devices/:deviceLibraryId/registrations/:passTypeId', async (req, res) => {
   try {
-    const serialNumbers = await getSerialsForDevice(req.params.deviceLibraryId);
-    res.json({ serialNumbers });
+    const { deviceLibraryId } = req.params;
+    const passesUpdatedSince = req.query.passesUpdatedSince;
+
+    // Get all serial numbers registered for this device
+    const allSerials = await getSerialsForDevice(deviceLibraryId);
+
+    if (allSerials.length === 0) {
+      return res.status(204).send();
+    }
+
+    // Filter by last_updated if tag is provided
+    let filteredSerials = allSerials;
+    if (passesUpdatedSince) {
+      const sinceDate = new Date(passesUpdatedSince);
+      const updatedSerials = [];
+      for (const serial of allSerials) {
+        const pass = await getPassBySerial(serial);
+        if (pass && new Date(pass.last_updated) > sinceDate) {
+          updatedSerials.push(serial);
+        }
+      }
+      filteredSerials = updatedSerials;
+    }
+
+    if (filteredSerials.length === 0) {
+      return res.status(204).send(); // No updates — Apple spec
+    }
+
+    // Return serial numbers + lastUpdated tag (ISO string)
+    res.json({
+      serialNumbers: filteredSerials,
+      lastUpdated: new Date().toISOString()
+    });
   } catch (error) {
     console.error('Error getting device registrations:', error);
     res.status(500).json({ error: error.message });
@@ -690,8 +726,10 @@ router.get('/passes/:passTypeId/:serialNumber', async (req, res) => {
 
     // Check if cached file exists
     if (fs.existsSync(pkpassPath)) {
+      const stat = fs.statSync(pkpassPath);
       res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
       res.setHeader('Content-Disposition', `attachment; filename="${serialNumber}.pkpass"`);
+      res.setHeader('Last-Modified', stat.mtime.toUTCString());
       return res.sendFile(pkpassPath);
     }
 
@@ -1410,6 +1448,8 @@ router.post('/push/send', async (req, res) => {
           if (template) {
             const pkpassBuffer = await createPkpass(template, pass, updatedBrand, { baseUrl });
             fs.writeFileSync(pkpassPath, pkpassBuffer);
+            // Touch last_updated so Apple's passesUpdatedSince check finds it
+            await touchPass(pass.id);
             passesUpdated++;
           }
         } catch (err) {

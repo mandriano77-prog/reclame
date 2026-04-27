@@ -355,6 +355,18 @@ async function updatePassInstance(id, data) {
 }
 
 /**
+ * Touch a pass — update last_updated timestamp to signal a change to Apple Wallet
+ */
+async function touchPass(id) {
+  try {
+    await pool.query('UPDATE pass_instances SET last_updated = NOW() WHERE id = $1', [id]);
+    return { success: true };
+  } catch (error) {
+    throw new Error(`Failed to touch pass: ${error.message}`);
+  }
+}
+
+/**
  * Log an event
  */
 async function logEvent(data) {
@@ -1428,6 +1440,7 @@ module.exports = {
   getPassInstance,
   getPassBySerial,
   updatePassInstance,
+  touchPass,
   logEvent,
   getAnalytics,
   registerDevice,
