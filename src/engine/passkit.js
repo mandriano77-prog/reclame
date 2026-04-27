@@ -225,14 +225,16 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  // AUXILIARY: NOVITÀ — short teaser only (auxiliaryFields have tiny text on eventTicket)
-  // Full message goes ONLY in backFields. changeMessage triggers iOS "Carta aggiornata" notification.
+  // AUXILIARY: Promo teaser on pass front — title as label, short promo text + arrow as value
+  // Full message in backFields only. changeMessage triggers iOS "Carta aggiornata" notification.
   if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
-    const shortTitle = (brandConfig.pushAnnouncement.title || 'NOVITÀ').substring(0, 40).toUpperCase();
+    const promoTitle = (brandConfig.pushAnnouncement.title || 'NOVITÀ').substring(0, 30).toUpperCase();
+    // ~35 chars max visible in value on standard iPhone
+    const promoText = brandConfig.pushAnnouncement.message.substring(0, 35) + ' ↗';
     auxiliaryFields.push({
       key: 'announcement',
-      label: shortTitle,
-      value: 'Guarda il retro ↗',
+      label: promoTitle,
+      value: promoText,
       changeMessage: '%@'
     });
   }
