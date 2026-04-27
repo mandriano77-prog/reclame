@@ -201,13 +201,15 @@ function generatePassJson(template, instance, brand, options = {}) {
     value: '... ↗'
   });
 
-  // SECONDARY: NOME + PUNTI + LIVELLO (storeCard renders sec+aux on ONE row on iOS)
-  secondaryFields.push({
+  // PRIMARY: NOME (big, prominent — only eventTicket supports this)
+  const primaryFields = [];
+  primaryFields.push({
     key: 'member_name',
     label: 'NOME',
     value: instance.field_values?.nome || instance.field_values?.name || ''
   });
 
+  // SECONDARY: PUNTI + LIVELLO
   if (template.fields && Array.isArray(template.fields)) {
     template.fields.forEach((field) => {
       const fieldObj = {
@@ -217,14 +219,13 @@ function generatePassJson(template, instance, brand, options = {}) {
       };
       if (field.dateStyle) fieldObj.dateStyle = field.dateStyle;
 
-      if (field.type === 'secondary') secondaryFields.push(fieldObj); // PUNTI, LIVELLO
+      if (field.type === 'secondary') secondaryFields.push(fieldObj);
       else if (field.type === 'auxiliary') auxiliaryFields.push(fieldObj);
       else if (field.type === 'back') backFields.push(fieldObj);
     });
   }
 
-  // AUXILIARY (row 2, alone = full width, label fits)
-  // Push announcement — changeMessage drives the iOS "Carta aggiornata" notification
+  // AUXILIARY: NOVITÀ E PROMOZIONI
   if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
     auxiliaryFields.push({
       key: 'announcement',
@@ -264,6 +265,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   const structureKey = template.pass_type || 'storeCard';
   const passStructure = {};
   if (headerFields.length > 0) passStructure.headerFields = headerFields;
+  if (primaryFields.length > 0) passStructure.primaryFields = primaryFields;
   if (secondaryFields.length > 0) passStructure.secondaryFields = secondaryFields;
   if (auxiliaryFields.length > 0) passStructure.auxiliaryFields = auxiliaryFields;
   if (orderedBackFields.length > 0) passStructure.backFields = orderedBackFields;
@@ -559,8 +561,8 @@ async function createPkpass(template, instance, brand, options = {}) {
     'logo@2x.png': logoBuffers.logo2x || logoBuffers.logo
   };
 
-  // Strip images always included for storeCard/coupon
-  if (template.pass_type === 'coupon' || template.pass_type === 'storeCard') {
+  // Strip images always included for storeCard/coupon/eventTicket
+  if (template.pass_type === 'coupon' || template.pass_type === 'storeCard' || template.pass_type === 'eventTicket') {
     files['strip.png'] = stripBuffers.strip;
     files['strip@2x.png'] = stripBuffers.strip2x;
   }
