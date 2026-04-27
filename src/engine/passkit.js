@@ -226,6 +226,34 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
+  // Push announcement — when brand sends a manual push with pass update
+  if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
+    // FRONT: short announcement visible immediately when pass is opened
+    // Truncate to ~40 chars for clean display on auxiliaryFields
+    const shortMsg = brandConfig.pushAnnouncement.message.length > 40
+      ? brandConfig.pushAnnouncement.message.substring(0, 37) + '...'
+      : brandConfig.pushAnnouncement.message;
+    auxiliaryFields.push({
+      key: 'announcement',
+      label: '📢 ' + (brandConfig.pushAnnouncement.title || 'NOVITÀ'),
+      value: shortMsg
+    });
+
+    // BACK: full message with details
+    backFields.unshift({
+      key: 'announcement_full',
+      label: brandConfig.pushAnnouncement.title || 'NOVITÀ',
+      value: brandConfig.pushAnnouncement.message
+    });
+    if (brandConfig.pushAnnouncement.date) {
+      backFields.splice(1, 0, {
+        key: 'announcement_date',
+        label: 'ULTIMO AGGIORNAMENTO',
+        value: brandConfig.pushAnnouncement.date
+      });
+    }
+  }
+
   // Determine the pass structure type
   const passStructure = {};
   const structureKey = template.pass_type || 'generic';
@@ -244,23 +272,6 @@ function generatePassJson(template, instance, brand, options = {}) {
   }
   if (backFields.length > 0) {
     passStructure.backFields = backFields;
-  }
-
-  // Push announcement — shown on the back of the pass when brand sends a manual push
-  if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
-    backFields.unshift({
-      key: 'announcement',
-      label: brandConfig.pushAnnouncement.title || 'NOVITÀ',
-      value: brandConfig.pushAnnouncement.message
-    });
-    // Add timestamp if present
-    if (brandConfig.pushAnnouncement.date) {
-      backFields.splice(1, 0, {
-        key: 'announcement_date',
-        label: 'DATA',
-        value: brandConfig.pushAnnouncement.date
-      });
-    }
   }
 
   // If no fields defined, add a simple placeholder
