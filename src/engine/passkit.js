@@ -232,18 +232,18 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  // Push announcement — only TITLE on front (secondaryFields = bigger text),
+  // Push announcement — TITLE on front in auxiliaryFields (below PUNTI, left-aligned),
   // full message on back. changeMessage drives the iOS notification.
   if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
-    // FRONT: push title only, in secondaryFields for larger font
-    secondaryFields.push({
+    // FRONT: push title in auxiliaryFields (under secondary row, left)
+    auxiliaryFields.push({
       key: 'announcement',
       label: 'NOVITA',
       value: brandConfig.pushAnnouncement.title || 'Aggiornamento',
       changeMessage: '%@'
     });
 
-    // BACK: full message only (no date — cleaner layout)
+    // BACK: full message
     backFields.unshift({
       key: 'announcement_full',
       label: brandConfig.pushAnnouncement.title || 'NOVITA',
@@ -251,11 +251,11 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  // Hint: tap "..." for details — alone in auxiliaryFields, clean
-  auxiliaryFields.push({
+  // Hint on back (not front — keep front clean)
+  backFields.push({
     key: 'hint',
     label: '',
-    value: 'Tocca ... in alto a destra per i dettagli'
+    value: 'Tocca ... in alto a destra per scoprire i dettagli del tuo pass.'
   });
 
   // Determine the pass structure type
