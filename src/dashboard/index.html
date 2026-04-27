@@ -1247,14 +1247,15 @@ function loadTemplateFields() {
     const json = sel.options[sel.selectedIndex]?.dataset.template;
     if (!json) { document.getElementById('fieldGroup').innerHTML = ''; return; }
     const tpl = JSON.parse(json);
-    document.getElementById('fieldGroup').innerHTML = (tpl.fields||[]).map(f => `<div class="form-group"><label class="form-label">${f.label}</label><input type="text" class="field-input" data-key="${f.key}" placeholder="${f.value||''}"></div>`).join('')
+    document.getElementById('fieldGroup').innerHTML = '<div class="form-group"><label class="form-label">Nome</label><input type="text" id="passNome" placeholder="Nome e Cognome"></div>'
+        + (tpl.fields||[]).map(f => `<div class="form-group"><label class="form-label">${f.label}</label><input type="text" class="field-input" data-key="${f.key}" placeholder="${f.value||''}"></div>`).join('')
         + '<div class="form-group"><label class="form-label">Email</label><input type="email" id="customerEmail" placeholder="email@example.com"></div>';
 }
 
 async function generatePass() {
     const tplId = document.getElementById('templateSelect').value;
     if (!tplId) return alert('Seleziona un template');
-    const fv = {}; document.querySelectorAll('.field-input').forEach(i => { fv[i.dataset.key] = i.value; });
+    const fv = {}; const nomeVal = document.getElementById('passNome')?.value || ''; if (nomeVal) fv.nome = nomeVal; document.querySelectorAll('.field-input').forEach(i => { fv[i.dataset.key] = i.value; });
     const res = await fetch(`${API}/passes`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({template_id: tplId, field_values: fv, customer_data: {email: document.getElementById('customerEmail')?.value || ''}})});
     if (!res.ok) return alert('Errore generazione pass');
     const pass = await res.json();
@@ -1293,6 +1294,7 @@ async function loadCreatedPasses() {
                 <button class="btn small sec" onclick="showQR('${p.landing_url}')">QR</button>
                 <button class="btn small sec" onclick="regeneratePass('${p.id}')">↻</button>
                 <a href="${p.download_url}" class="btn small">Download</a>
+                <button class="btn small" style="background:#e74c3c;border-color:#e74c3c;" onclick="deletePass('${p.id}')">✕</button>
             </div>
         </div>`;
     }).join('');
@@ -1309,6 +1311,13 @@ async function regeneratePass(id) {
 async function deletePassAction(id) {
     if (!confirm('Eliminare questo pass?')) return;
     await fetch(`${API}/passes/${id}`, {method:'DELETE'}); toast('Pass eliminato'); loadMembers();
+}
+async function deletePass(id) {
+    if (!confirm('Eliminare questo pass? L\'azione è irreversibile.')) return;
+    try {
+        const r = await fetch(`${API}/passes/${id}`, {method:'DELETE'});
+        if (r.ok) { toast('Pass eliminato'); loadCreatedPasses(); loadMembers(); } else { toast('Errore eliminazione', 'error'); }
+    } catch(e) { toast('Errore: ' + e.message, 'error'); }
 }
 
 // ==================== QR ====================
