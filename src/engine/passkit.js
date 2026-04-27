@@ -194,12 +194,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   const auxiliaryFields = [];
   const backFields = [];
 
-  // HEADER (top-right): "Altre info ... ↗" — invites user to flip the card
-  headerFields.push({
-    key: 'info_hint',
-    label: 'ALTRE INFO',
-    value: '... ↗'
-  });
+  // No header fields — keep top area clean
 
   // No primaryFields — they overlay the strip image on eventTicket
   const primaryFields = [];
