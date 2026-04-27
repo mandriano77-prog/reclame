@@ -229,8 +229,8 @@ function generatePassJson(template, instance, brand, options = {}) {
   if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
     auxiliaryFields.push({
       key: 'announcement',
-      label: 'NOVITÀ E PROMOZIONI',
-      value: brandConfig.pushAnnouncement.title || 'Aggiornamento',
+      label: brandConfig.pushAnnouncement.title || 'NOVITÀ',
+      value: brandConfig.pushAnnouncement.message,
       changeMessage: '%@'
     });
   }
