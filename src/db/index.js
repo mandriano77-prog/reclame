@@ -224,15 +224,17 @@ async function getDb() {
       WHERE pass_type = 'storeCard'
     `);
 
-    // Load default strip image for brands without one
-    const stripPath = require('path').join(__dirname, '..', '..', 'assets', 'strip_default.png');
+    // Load default strip image into DB for all brands (overwrite old ugly strips)
+    const stripPath = require('path').join(__dirname, '..', '..', 'public', 'assets', 'default-strip.png');
     if (require('fs').existsSync(stripPath)) {
       const stripB64 = require('fs').readFileSync(stripPath).toString('base64');
       await pool.query(`
         UPDATE brands
-        SET config = jsonb_set(COALESCE(config, '{}'), '{logos,strip}', $1::jsonb)
+        SET config = jsonb_set(
+          jsonb_set(COALESCE(config, '{}'), '{logos}', COALESCE(config->'logos', '{}'))
+          , '{logos,strip}', $1::jsonb)
       `, [JSON.stringify(stripB64)]);
-      console.log('✓ Default strip image loaded for brands');
+      console.log('✓ Default strip image loaded into DB for all brands');
     }
 
     // Add member_id column to pass_instances if not exists
