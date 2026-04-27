@@ -545,12 +545,21 @@ function previewLogo(input) {
 
 let pendingStripBase64 = null;
 function previewStrip(input) {
-    if (!input.files || !input.files[0]) return;
+    console.log('previewStrip called', input.files);
+    if (!input.files || !input.files[0]) { console.log('No file selected'); return; }
     const file = input.files[0];
+    console.log('Strip file:', file.name, file.size, file.type);
     const reader = new FileReader();
     reader.onload = function(e) {
+        console.log('Strip FileReader loaded, size:', e.target.result.length);
         pendingStripBase64 = e.target.result.split(',')[1];
-        document.getElementById('stripPreview').innerHTML = `<img src="${e.target.result}" style="max-width:100%;max-height:80px;border-radius:6px;background:#222;padding:4px;">`;
+        const prev = document.getElementById('stripPreview');
+        prev.innerHTML = `<img src="${e.target.result}" style="max-width:100%;max-height:80px;border-radius:6px;background:#222;padding:4px;"><br><span style="font-size:11px;color:var(--teal);">✓ Immagine pronta — clicca Salva Modifiche</span>`;
+        console.log('Strip preview updated, base64 length:', pendingStripBase64.length);
+    };
+    reader.onerror = function(e) {
+        console.error('Strip FileReader error:', e);
+        document.getElementById('stripPreview').innerHTML = '<span style="color:red;">Errore nel caricamento del file</span>';
     };
     reader.readAsDataURL(file);
 }
