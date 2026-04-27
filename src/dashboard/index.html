@@ -1043,9 +1043,10 @@ async function generatePassForMember(memberId, name, email) {
             member_id: memberId
         })
     });
-    if (!res.ok) return alert('Errore generazione pass');
+    if (!res.ok) { const err = await res.json(); return alert(err.error || 'Errore generazione pass'); }
     const pass = await res.json();
     toast(`Pass generato per ${name}!`);
+    window.open(pass.landing_url, '_blank');
     loadMembers();
     loadCreatedPasses();
 }
@@ -1546,8 +1547,9 @@ async function generatePass() {
     const fv = {}; const nomeVal = document.getElementById('passNome')?.value || ''; if (nomeVal) fv.nome = nomeVal; document.querySelectorAll('.field-input').forEach(i => { if (i.dataset.key) fv[i.dataset.key] = i.value; });
     const payload = {template_id: tplId, field_values: fv, customer_data: {email: document.getElementById('customerEmail')?.value || ''}, member_id: memberId};
     const res = await fetch(`${API}/passes`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-    if (!res.ok) return alert('Errore generazione pass');
+    if (!res.ok) { const err = await res.json(); return alert(err.error || 'Errore generazione pass'); }
     const pass = await res.json();
+    window.open(pass.landing_url, '_blank');
     document.getElementById('successMessage').innerHTML = `<div style="background:rgba(0,212,170,0.1);border:1px solid var(--teal);color:var(--teal);padding:14px;border-radius:8px;margin-bottom:14px;">Pass generato! Serial: ${pass.serial_number}</div>`;
     document.getElementById('passResult').innerHTML = `<div class="card" style="margin-top:20px;padding:20px;">
         <div style="margin-bottom:10px;"><strong>ID:</strong> ${pass.id}</div>
