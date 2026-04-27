@@ -197,7 +197,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   // HEADER (top-right): hint to tap ··· for more details
   headerFields.push({
     key: 'info_hint',
-    label: 'CLICCA I TRE PUNTINI',
+    label: 'CLICK SUI PUNTINI',
     value: 'per i dettagli'
   });
 
