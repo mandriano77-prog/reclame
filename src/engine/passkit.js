@@ -216,12 +216,15 @@ function generatePassJson(template, instance, brand, options = {}) {
           case 'back': backFields.push(fieldObj); break;
         }
       } else {
-        // Auto-distribute: first field = header (top-right), second = primary (center),
-        // next 2 = secondary, rest = auxiliary
-        if (index === 0) headerFields.push(fieldObj);
+        // Auto-distribute: first field = header (top-right, no label),
+        // second = primary (center), third = secondary, rest = back
+        if (index === 0) {
+          fieldObj.label = ''; // Header: just the value, no label above
+          headerFields.push(fieldObj);
+        }
         else if (index === 1) primaryFields.push(fieldObj);
-        else if (index <= 3) secondaryFields.push(fieldObj);
-        else auxiliaryFields.push(fieldObj);
+        else if (index === 2) secondaryFields.push(fieldObj);
+        else backFields.push(fieldObj); // Extra fields go to back
       }
     });
   }
