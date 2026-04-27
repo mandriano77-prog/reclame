@@ -232,7 +232,7 @@ function generatePassJson(template, instance, brand, options = {}) {
     auxiliaryFields.push({
       key: 'announcement',
       label: shortTitle,
-      value: 'Guarda il retro ⤴',
+      value: 'Guarda il retro ↗',
       changeMessage: '%@'
     });
   }
