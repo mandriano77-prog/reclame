@@ -225,19 +225,8 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  // AUXILIARY: Promo teaser on pass front — title as label, short promo text + arrow as value
-  // Full message in backFields only. changeMessage triggers iOS "Carta aggiornata" notification.
-  if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
-    const promoTitle = (brandConfig.pushAnnouncement.title || 'NOVITÀ').substring(0, 30).toUpperCase();
-    // ~35 chars max visible in value on standard iPhone
-    const promoText = brandConfig.pushAnnouncement.message.substring(0, 35) + ' ↗';
-    auxiliaryFields.push({
-      key: 'announcement',
-      label: promoTitle,
-      value: promoText,
-      changeMessage: '%@'
-    });
-  }
+  // Push announcement — shown ONLY in backFields (retro), not on front
+  // changeMessage on a back field still triggers iOS "Carta aggiornata" notification
 
   // ── BACK FIELDS (order: Novita → Links → Regolamento → Contatti) ──
 
@@ -247,7 +236,8 @@ function generatePassJson(template, instance, brand, options = {}) {
     orderedBackFields.push({
       key: 'announcement_full',
       label: brandConfig.pushAnnouncement.title || 'NOVITÀ E PROMOZIONI',
-      value: brandConfig.pushAnnouncement.message
+      value: brandConfig.pushAnnouncement.message,
+      changeMessage: '%@'
     });
   }
 
