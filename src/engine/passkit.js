@@ -225,8 +225,16 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  // Promo is shown via the strip image (generated in dashboard), not auxiliary fields
-  // This avoids iOS pill/highlight on the pass front
+  // AUXILIARY: Promo teaser on pass front (no changeMessage = no iOS pill)
+  if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
+    const promoTitle = (brandConfig.pushAnnouncement.title || 'NOVITÀ').substring(0, 30).toUpperCase();
+    const promoText = brandConfig.pushAnnouncement.message.substring(0, 35) + ' ↗';
+    auxiliaryFields.push({
+      key: 'announcement',
+      label: promoTitle,
+      value: promoText
+    });
+  }
 
   // ── BACK FIELDS (order: Novita → Links → Regolamento → Contatti) ──
 
