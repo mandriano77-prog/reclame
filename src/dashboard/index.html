@@ -85,6 +85,7 @@
         .color-input-wrap input[type="text"] { flex: 1; }
         @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } .form-row { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; } }
     </style>
+    <style id="brandThemeStyle"></style>
 </head>
 <body>
 <div class="layout">
@@ -608,9 +609,47 @@ async function loadBrands() {
     const sel = document.getElementById('brandSelector');
     sel.innerHTML = '<option value="">Seleziona Brand</option>';
     brands.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name; sel.appendChild(o); });
-    if (brands.length > 0) { sel.value = brands[0].id; brandId = brands[0].id; refreshOverview(); loadTemplateSelect(); }
+    if (brands.length > 0) { sel.value = brands[0].id; brandId = brands[0].id; refreshOverview(); loadTemplateSelect(); applyBrandTheme(); }
 }
-function changeBrand() { brandId = document.getElementById('brandSelector').value; refreshOverview(); }
+function changeBrand() { brandId = document.getElementById('brandSelector').value; refreshOverview(); applyBrandTheme(); }
+
+function applyBrandTheme() {
+    if (!brandId) return;
+    fetch(`${API}/brands/${brandId}`).then(r => r.json()).then(brand => {
+        const c = brand.config || {};
+        const bg = c.backgroundColor || '#000000';
+        const fg = c.foregroundColor || '#FFFFFF';
+        const lbl = c.labelColor || '#D4E600';
+        // Derive palette from brand colors
+        const root = document.documentElement.style;
+        root.setProperty('--bg', bg);
+        root.setProperty('--bg2', lightenHex(bg, 12));
+        root.setProperty('--bg3', lightenHex(bg, 22));
+        root.setProperty('--teal', lbl);
+        root.setProperty('--purple', adjustAlpha(lbl, 0.7));
+        root.setProperty('--text', fg);
+        root.setProperty('--text2', adjustAlpha(fg, 0.6));
+        root.setProperty('--border', adjustAlpha(fg, 0.12));
+        // Update focus ring color
+        const style = document.getElementById('brandThemeStyle');
+        if (style) style.textContent = `input:focus,select:focus,textarea:focus{border-color:${lbl}!important;box-shadow:0 0 0 2px ${lbl}22!important;} .nav-item.active{background:${lbl}!important;color:${bg}!important;} .badge.active{background:${lbl}33!important;color:${lbl}!important;}`;
+    }).catch(()=>{});
+}
+
+function lightenHex(hex, amount) {
+    hex = hex.replace('#','');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    let r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+    r = Math.min(255, r + amount); g = Math.min(255, g + amount); b = Math.min(255, b + amount);
+    return '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+function adjustAlpha(hex, alpha) {
+    hex = hex.replace('#','');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
 
 async function createBrand() {
     const name = document.getElementById('newBrandName').value;
