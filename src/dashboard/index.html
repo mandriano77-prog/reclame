@@ -258,7 +258,8 @@
 
             <!-- PUSH NOTIFICATIONS -->
             <div id="push" class="section">
-                <div class="sec-title">Invia Push Notification</div>
+                <div class="sec-title">Notifiche Push — Invia o Programma</div>
+                <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Scrivi titolo e messaggio, scegli quando inviare: subito, una volta, ogni giorno o ogni settimana.</p>
                 <div class="push-card">
                     <div class="form-group">
                         <label class="form-label" style="color:rgba(255,255,255,0.7)">Titolo</label>
@@ -383,8 +384,8 @@
                         <button class="btn small sec" onclick="addLocationRow()" style="margin-top:8px;">+ Aggiungi punto vendita</button>
                     </div>
                     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-                        <div class="sec-title" style="font-size:15px;">Notifica programmata</div>
-                        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Il pass appare sulla lock screen in questa data/ora (utile per eventi, promo a tempo).</p>
+                        <div class="sec-title" style="font-size:15px;">Promemoria Lock Screen</div>
+                        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Il pass appare automaticamente sulla lock screen a questa data/ora — senza testo, solo il pass visibile. Utile per eventi o scadenze. Per inviare notifiche con testo, usa la sezione <strong style="color:var(--teal);">Notifiche Push</strong>.</p>
                         <div class="form-group"><label class="form-label">Data e ora</label><input type="datetime-local" id="bsRelevantDate"></div>
                     </div>
                     <button class="btn" onclick="saveBrandSettings()" style="margin-top:20px;">Salva Modifiche</button>
