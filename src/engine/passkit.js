@@ -185,7 +185,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   const bgHex = brandConfig.backgroundColor || null;
   const backgroundColor = bgHex ? `rgb(${parseColor(bgHex).r}, ${parseColor(bgHex).g}, ${parseColor(bgHex).b})` : (template.style?.backgroundColor || 'rgb(13, 11, 26)');
   const lblHex = brandConfig.labelColor || null;
-  const labelColor = lblHex ? `rgb(${parseColor(lblHex).r}, ${parseColor(lblHex).g}, ${parseColor(lblHex).b})` : (template.style?.labelColor || 'rgb(200, 255, 0)');
+  const labelColor = lblHex ? `rgb(${parseColor(lblHex).r}, ${parseColor(lblHex).g}, ${parseColor(lblHex).b})` : (template.style?.labelColor || 'rgb(212, 230, 0)');
 
   // ── Build field arrays ──────────────────────────────────────────
   // Layout (storeCard): Header → Strip → Secondary → Auxiliary → Back
