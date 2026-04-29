@@ -1028,21 +1028,24 @@ function renderLocations() {
     geoCircles = [];
 
     c.innerHTML = locationRows.map((loc, i) => `
-        <div class="card" style="padding:12px;margin-bottom:8px;">
-            <div style="display:flex;gap:8px;align-items:center;">
-                <div style="flex:1;min-width:0;">
-                    <div style="display:flex;gap:6px;margin-bottom:6px;">
-                        <span style="font-size:12px;color:var(--text2);white-space:nowrap;">Lat: <strong style="color:var(--text1);">${loc.latitude}</strong></span>
-                        <span style="font-size:12px;color:var(--text2);white-space:nowrap;">Lng: <strong style="color:var(--text1);">${loc.longitude}</strong></span>
-                        <span style="font-size:12px;color:var(--teal);white-space:nowrap;">${loc.radius >= 1000 ? (loc.radius / 1000).toFixed(1) + 'km' : (loc.radius || 500) + 'm'}</span>
-                    </div>
-                    <input type="text" placeholder="Messaggio lock screen (es. Sei vicino! Vieni a giocare)" value="${loc.relevantText}" onchange="locationRows[${i}].relevantText=this.value" style="width:100%;font-size:13px;">
+        <div class="card" style="padding:14px;margin-bottom:10px;border:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span style="font-size:12px;color:var(--text2);">📍 Lat: <strong style="color:var(--text1);">${loc.latitude}</strong></span>
+                    <span style="font-size:12px;color:var(--text2);">Lng: <strong style="color:var(--text1);">${loc.longitude}</strong></span>
+                    <span style="font-size:12px;background:var(--teal);color:#000;padding:2px 8px;border-radius:10px;font-weight:600;">${loc.radius >= 1000 ? (loc.radius / 1000).toFixed(1) + 'km' : (loc.radius || 500) + 'm'}</span>
                 </div>
-                <button class="btn small" style="background:var(--teal);padding:4px 8px;" onclick="zoomToLocation(${i})">📍</button>
-                <button class="btn small" style="background:var(--red);padding:4px 8px;" onclick="removeLocationRow(${i})">✕</button>
+                <div style="display:flex;gap:6px;">
+                    <button class="btn small" style="background:var(--teal);padding:4px 8px;" onclick="zoomToLocation(${i})">📍</button>
+                    <button class="btn small" style="background:var(--red);padding:4px 8px;" onclick="removeLocationRow(${i})">✕</button>
+                </div>
+            </div>
+            <div>
+                <label style="font-size:12px;color:var(--teal);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Messaggio lock screen</label>
+                <input type="text" placeholder="es. Sei vicino a ${loc.relevantText ? '' : 'Hirostar'}! Vieni a giocare una partita 🎾" value="${loc.relevantText}" onchange="locationRows[${i}].relevantText=this.value" style="width:100%;font-size:14px;padding:10px 12px;">
             </div>
         </div>
-    `).join('') || '<p style="font-size:12px;color:var(--text2);">Nessun punto vendita configurato.</p>';
+    `).join('') || '<p style="font-size:12px;color:var(--text2);">Nessun punto vendita configurato. Cerca un indirizzo o clicca sulla mappa.</p>';
 
     // Draw markers and circles on map
     if (geoMap) {
