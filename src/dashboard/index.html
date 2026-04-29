@@ -2137,7 +2137,6 @@ async function generatePass() {
     const res = await fetch(`${API}/passes`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
     if (!res.ok) { const err = await res.json(); return alert(err.error || 'Errore generazione pass'); }
     const pass = await res.json();
-    window.open(pass.landing_url, '_blank');
     document.getElementById('successMessage').innerHTML = `<div style="background:rgba(0,212,170,0.1);border:1px solid var(--teal);color:var(--teal);padding:14px;border-radius:8px;margin-bottom:14px;">Pass generato! Serial: ${pass.serial_number}</div>`;
     document.getElementById('passResult').innerHTML = `<div class="card" style="margin-top:20px;padding:20px;">
         <div style="margin-bottom:10px;"><strong>ID:</strong> ${pass.id}</div>

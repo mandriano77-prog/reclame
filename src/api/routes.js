@@ -717,7 +717,8 @@ router.post('/passes', async (req, res) => {
     });
 
     const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
-    const landingUrl = `https://${CUSTOM_DOMAIN}/landing/?id=${passInstance.id}`;
+    const brandSlug = brand.slug || '';
+    const landingUrl = `https://${CUSTOM_DOMAIN}/${brandSlug}`;
 
     res.status(201).json({
       id: passInstance.id,
