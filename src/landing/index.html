@@ -257,18 +257,34 @@
         @media (max-width: 480px) {
             .container {
                 max-width: 100%;
+                padding: 16px 12px;
             }
 
             .header {
-                margin-bottom: 30px;
+                margin-bottom: 12px;
+            }
+
+            .header img {
+                width: 120px !important;
+                height: 120px !important;
+            }
+
+            .brand-logo {
+                width: 48px !important;
+                height: 48px !important;
+                font-size: 22px !important;
             }
 
             .brand-name {
-                font-size: 20px;
+                font-size: 18px;
             }
 
             .pass-card {
-                padding: 20px;
+                padding: 14px;
+            }
+
+            .field-row {
+                margin-bottom: 10px !important;
             }
         }
     </style>
@@ -440,17 +456,17 @@
 
                 <form id="signupForm" class="pass-card" style="background:${bg}; border-color:${lbl}33;" onsubmit="handleSignup(event)">
                     <input type="hidden" name="brand_id" value="${brand.id}">
-                    <div style="margin-bottom:16px;">
+                    <div class="field-row" style="margin-bottom:16px;">
                         <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:${lbl}; margin-bottom:6px;">Nome</label>
                         <input type="text" name="name" required placeholder="Il tuo nome"
                             style="width:100%; padding:12px; background:${fg}11; border:1px solid ${lbl}33; border-radius:8px; color:${fg}; font-size:15px; outline:none;">
                     </div>
-                    <div style="margin-bottom:16px;">
+                    <div class="field-row" style="margin-bottom:16px;">
                         <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:${lbl}; margin-bottom:6px;">Email</label>
                         <input type="email" name="email" required placeholder="La tua email"
                             style="width:100%; padding:12px; background:${fg}11; border:1px solid ${lbl}33; border-radius:8px; color:${fg}; font-size:15px; outline:none;">
                     </div>
-                    <div style="margin-bottom:16px;">
+                    <div class="field-row" style="margin-bottom:16px;">
                         <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:${lbl}; margin-bottom:6px;">Telefono</label>
                         <div style="display:flex; gap:6px;">
                             <select name="phone_prefix" required
@@ -481,7 +497,7 @@
                                 style="flex:1; padding:10px 12px; background:${fg}11; border:1px solid ${lbl}33; border-radius:8px; color:${fg}; font-size:15px; outline:none;">
                         </div>
                     </div>
-                    <div style="margin-bottom:20px;">
+                    <div class="field-row" style="margin-bottom:20px;">
                         <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
                             <input type="checkbox" name="privacy" required
                                 style="margin-top:3px; width:18px; height:18px; accent-color:${lbl}; flex-shrink:0;">
