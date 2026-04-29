@@ -1029,12 +1029,13 @@ router.post('/passes/signup', async (req, res) => {
       member = await createMember({ brand_id, first_name, last_name, email, phone });
     }
 
-    // Create pass instance
+    // Create pass instance with name populated
+    const fullName = [first_name, last_name].filter(Boolean).join(' ');
     const passInstance = await createPassInstance({
       template_id: template.id,
       brand_id: brand.id,
-      customer_data: { email, phone, name },
-      field_values: {},
+      customer_data: { email, phone, name: fullName },
+      field_values: { nome: fullName, name: fullName },
       member_id: member.id
     });
 
