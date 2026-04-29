@@ -167,14 +167,24 @@ router.get('/brands/:id', async (req, res) => {
 
 /**
  * GET /api/v1/brands/:id/logo - Serve brand logo as PNG image
+ * Priority: static file (slug-based) > landing_logo in DB > logo@2x > logo > icon
  */
 router.get('/brands/:id/logo', async (req, res) => {
   try {
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).send('Not found');
 
+    // 1. Check for static file: public/assets/{slug}-logo.png
+    if (brand.slug) {
+      const staticPath = path.join(__dirname, '..', '..', 'public', 'assets', `${brand.slug}-logo.png`);
+      if (fs.existsSync(staticPath)) {
+        res.set('Cache-Control', 'public, max-age=86400');
+        return res.sendFile(staticPath);
+      }
+    }
+
+    // 2. Fallback to DB base64
     const logos = brand.config?.logos;
-    // Prefer landing_logo > logo@2x > logo > icon@2x > icon
     const b64 = logos?.landing_logo || logos?.['logo@2x'] || logos?.logo || logos?.['icon@2x'] || logos?.icon;
     if (!b64) return res.status(404).send('No logo');
 
