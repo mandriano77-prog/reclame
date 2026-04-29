@@ -96,9 +96,9 @@
         <div class="nav-item" onclick="nav('members')">Membri</div>
         <div class="nav-item" onclick="nav('create-pass')">Crea Pass</div>
         <div class="nav-label">Loyalty</div>
-        <div class="nav-item" onclick="nav('rewards')">Premi</div>
-        <div class="nav-item" onclick="nav('challenges')">Sfide</div>
         <div class="nav-item" onclick="nav('tiers')">Livelli</div>
+        <div class="nav-item" onclick="nav('challenges')">Sfide</div>
+        <div class="nav-item" onclick="nav('rewards')">Premi</div>
         <div class="nav-item" onclick="nav('vip-cards')">Carte VIP</div>
         <div class="nav-label">Comunicazione</div>
         <div class="nav-item" onclick="nav('push')">Push Notification</div>
@@ -222,12 +222,13 @@
             </div>
 
             <!-- REWARDS -->
-            <div id="rewards" class="section">
+            <!-- TIERS -->
+            <div id="tiers" class="section">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <div class="sec-title" style="margin-bottom:0">Catalogo Premi</div>
-                    <button class="btn" onclick="openRewardModal()">+ Nuovo Premio</button>
+                    <div class="sec-title" style="margin-bottom:0">Sistema Livelli</div>
+                    <button class="btn" onclick="openTierModal()">+ Nuovo Livello</button>
                 </div>
-                <div id="rewardsList"></div>
+                <div id="tiersList"></div>
             </div>
 
             <!-- CHALLENGES -->
@@ -239,13 +240,13 @@
                 <div id="challengesList"></div>
             </div>
 
-            <!-- TIERS -->
-            <div id="tiers" class="section">
+            <!-- REWARDS -->
+            <div id="rewards" class="section">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <div class="sec-title" style="margin-bottom:0">Sistema Livelli</div>
-                    <button class="btn" onclick="openTierModal()">+ Nuovo Livello</button>
+                    <div class="sec-title" style="margin-bottom:0">Catalogo Premi</div>
+                    <button class="btn" onclick="openRewardModal()">+ Nuovo Premio</button>
                 </div>
-                <div id="tiersList"></div>
+                <div id="rewardsList"></div>
             </div>
 
             <!-- VIP CARDS -->
