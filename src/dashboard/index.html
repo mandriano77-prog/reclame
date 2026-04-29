@@ -1903,8 +1903,15 @@ function loadTemplateFields() {
     // Only show secondary/auxiliary fields (NOT back fields — those are fixed content)
     const editableFields = (tpl.fields||[]).filter(f => f.type !== 'back');
     document.getElementById('fieldGroup').innerHTML = '<div class="form-group"><label class="form-label">Nome</label><input type="text" id="passNome" placeholder="Nome e Cognome"></div>'
-        + editableFields.map(f => `<div class="form-group"><label class="form-label">${f.label}</label><input type="text" class="field-input" data-key="${f.key}" placeholder="${f.value||''}" value="${f.value||''}"></div>`).join('')
+        + editableFields.map(f => {
+            if (f.key === 'livello') {
+                return `<div class="form-group"><label class="form-label">${f.label}</label><select class="field-input" data-key="livello" id="passLivello"><option value="">Caricamento...</option></select></div>`;
+            }
+            return `<div class="form-group"><label class="form-label">${f.label}</label><input type="text" class="field-input" data-key="${f.key}" placeholder="${f.value||''}" value="${f.value||''}"></div>`;
+        }).join('')
         + '<div class="form-group"><label class="form-label">Email</label><input type="email" id="customerEmail" placeholder="email@example.com"></div>';
+    // Load tiers into livello dropdown
+    loadTiersForPassForm();
     // If a member is selected, auto-fill
     onMemberSelect();
 }
@@ -1931,6 +1938,19 @@ async function generatePass() {
     </div>`;
     setTimeout(() => document.getElementById('successMessage').innerHTML = '', 5000);
     loadCreatedPasses();
+}
+
+async function loadTiersForPassForm() {
+    const sel = document.getElementById('passLivello');
+    if (!sel || !brandId) return;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/tiers`);
+        const tiers = await res.json();
+        sel.innerHTML = tiers.map((t, i) => `<option value="${t.name}" ${i === 0 ? 'selected' : ''}>${t.name} (${t.min_points}+ pts)</option>`).join('');
+        if (!tiers.length) sel.innerHTML = '<option value="">Nessun livello configurato</option>';
+    } catch (e) {
+        sel.innerHTML = '<option value="">Errore caricamento livelli</option>';
+    }
 }
 
 function resetForm() { document.getElementById('templateSelect').value = ''; document.getElementById('fieldGroup').innerHTML = ''; document.getElementById('passResult').innerHTML = ''; }
