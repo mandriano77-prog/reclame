@@ -124,4 +124,102 @@ async function sendWelcomeEmail({ to, name, brandName, brandColor, points, downl
   return result;
 }
 
-module.exports = { sendWelcomeEmail };
+/**
+ * Send invite email when admin creates a new dashboard user
+ */
+async function sendUserInviteEmail({ to, name, password, role, brandName, dashboardUrl }) {
+  console.log('📧 sendUserInviteEmail called — to:', to);
+
+  const resend = getResend();
+  if (!resend) {
+    console.log('⚠️ RESEND_API_KEY not set — skipping invite email to', to);
+    return { skipped: true, reason: 'RESEND_API_KEY not set' };
+  }
+
+  const firstName = name.split(/\s+/)[0];
+  const fromEmail = getFromEmail();
+  const fromName = getFromName();
+  const roleLabel = role === 'admin' ? 'Amministratore' : 'Manager';
+  const brandLine = brandName ? `per <strong style="color:#fff;">${brandName}</strong>` : 'con accesso a tutti i brand';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; background:#111; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width:500px; margin:0 auto; padding:32px 20px;">
+
+    <!-- Header -->
+    <div style="text-align:center; padding:40px 24px; background:#1E1A36; border-radius:16px 16px 0 0;">
+      <h1 style="color:#00D4AA; font-size:24px; margin:0 0 8px; font-weight:700;">&#9670; Nudj</h1>
+      <p style="color:#B0A8C1; font-size:14px; margin:0;">Dashboard Access</p>
+    </div>
+
+    <!-- Body -->
+    <div style="background:#1a1a1a; padding:32px 24px; border-radius:0 0 16px 16px;">
+
+      <p style="color:#e0e0e0; font-size:16px; line-height:1.6; margin:0 0 20px;">
+        Ciao <strong style="color:#fff;">${firstName}</strong>,
+      </p>
+
+      <p style="color:#bbb; font-size:14px; line-height:1.6; margin:0 0 24px;">
+        Ti è stato creato un accesso alla dashboard Nudj come <strong style="color:#00D4AA;">${roleLabel}</strong> ${brandLine}.
+      </p>
+
+      <!-- Credentials box -->
+      <div style="background:#222; border:1px solid #00D4AA33; border-radius:12px; padding:24px; margin:0 0 24px;">
+        <p style="color:#00D4AA; font-size:12px; text-transform:uppercase; letter-spacing:1px; margin:0 0 16px; font-weight:600;">Le tue credenziali</p>
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td style="color:#888; font-size:13px; padding:6px 0; width:80px;">Email</td>
+            <td style="color:#fff; font-size:14px; font-weight:600; padding:6px 0;">${to}</td>
+          </tr>
+          <tr>
+            <td style="color:#888; font-size:13px; padding:6px 0;">Password</td>
+            <td style="color:#fff; font-size:14px; font-weight:600; padding:6px 0; font-family:monospace;">${password}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="color:#bbb; font-size:13px; line-height:1.6; margin:0 0 24px;">
+        Ti consigliamo di cambiare la password al primo accesso.
+      </p>
+
+      <!-- CTA -->
+      <div style="text-align:center; margin:0 0 16px;">
+        <a href="${dashboardUrl}" style="display:inline-block; background:#00D4AA; color:#000; font-weight:700; font-size:15px; padding:14px 32px; border-radius:10px; text-decoration:none;">
+          Accedi alla Dashboard
+        </a>
+      </div>
+
+      <p style="color:#666; font-size:12px; text-align:center; margin:0;">
+        Se non hai richiesto questo accesso, ignora questa email.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center; padding:24px 0 0;">
+      <p style="color:#444; font-size:11px; margin:0;">
+        Powered by Precise Consulting
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+  const result = await resend.emails.send({
+    from: `${fromName} <${fromEmail}>`,
+    to: [to],
+    subject: `Il tuo accesso alla dashboard Nudj`,
+    html
+  });
+
+  console.log('✓ Invite email sent to', to, JSON.stringify(result));
+  return result;
+}
+
+module.exports = { sendWelcomeEmail, sendUserInviteEmail };

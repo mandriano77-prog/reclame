@@ -2,7 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
-const { sendWelcomeEmail } = require('../engine/mailer');
+const { sendWelcomeEmail, sendUserInviteEmail } = require('../engine/mailer');
 const {
   createBrand,
   createTemplate,
@@ -240,6 +240,23 @@ router.post('/users', authMiddleware, adminOnly, async (req, res) => {
       return res.status(400).json({ error: 'Ruolo non valido. Usa admin o manager.' });
     }
     const user = await createUser({ email, password, name, role: role || 'manager', brand_id });
+
+    // Send invite email with credentials
+    let brandName = null;
+    if (brand_id) {
+      const brand = await getBrand(brand_id);
+      if (brand) brandName = brand.name;
+    }
+    const dashboardUrl = `https://${process.env.CUSTOM_DOMAIN || 'nudj.studio'}/dashboard/`;
+    sendUserInviteEmail({
+      to: email,
+      name,
+      password,
+      role: role || 'manager',
+      brandName,
+      dashboardUrl
+    }).catch(err => console.error('Invite email error:', err));
+
     res.status(201).json(user);
   } catch (e) {
     if (e.message.includes('duplicate') || e.message.includes('unique')) {
