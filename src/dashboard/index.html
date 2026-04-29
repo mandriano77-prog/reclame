@@ -1306,7 +1306,6 @@ async function loadMembers() {
                 <div class="card-actions">
                     ${linkedPass ? `
                         <button class="btn small" onclick="openPointsModal('${linkedPass.id}','${safeName}',${pts})">+ Punti</button>
-                        <button class="btn small sec" onclick="openBackEditModal('${linkedPass.id}','${safeName}')">Retro</button>
                         <button class="btn small sec" onclick="showQR('${linkedPass.landing_url}')">QR</button>
                     ` : `
                         <span style="font-size:11px;color:var(--text2);padding:6px 0;">Nessun pass</span>
