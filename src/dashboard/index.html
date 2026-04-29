@@ -90,7 +90,7 @@
 <body>
 <div class="layout">
     <div class="sidebar">
-        <div class="logo">&#9670; Nudj</div>
+        <div class="logo" id="sidebarBrandName">&#9670; Nudj</div>
         <div class="nav-label">Dashboard</div>
         <div class="nav-item active" onclick="nav('overview')">Overview</div>
         <div class="nav-item" onclick="nav('members')">Membri</div>
@@ -109,7 +109,7 @@
 
     <div class="main">
         <div class="header">
-            <div class="header-title">Nudj Dashboard</div>
+            <div class="header-title" id="headerBrandTitle">Nudj Dashboard</div>
             <select class="brand-sel" id="brandSelector" onchange="changeBrand()">
                 <option value="">Seleziona Brand</option>
             </select>
@@ -422,7 +422,7 @@
                 <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
                     <div class="sec-title">Crea Nuova Brand</div>
                     <div class="form-group"><label class="form-label">Nome</label><input type="text" id="newBrandName" placeholder="Nome brand"></div>
-                    <div class="form-group"><label class="form-label">Slug</label><input type="text" id="newBrandSlug" placeholder="slug-url-friendly"></div>
+                    <div class="form-group"><label class="form-label">URL personalizzato</label><input type="text" id="newBrandSlug" placeholder="es. hirostar-hangar" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')"><p style="font-size:11px;color:var(--text2);margin-top:4px;" id="slugPreviewUrl">Link onboarding: .../landing/<strong>---</strong></p></div>
                     <button class="btn" onclick="createBrand()">Crea Brand</button>
                 </div>
             </div>
@@ -620,6 +620,11 @@ function applyBrandTheme() {
         const bg = c.backgroundColor || '#000000';
         const fg = c.foregroundColor || '#FFFFFF';
         const lbl = c.labelColor || '#D4E600';
+        // Update brand name in sidebar, header, and page title
+        const name = brand.name || 'Nudj';
+        document.getElementById('sidebarBrandName').textContent = name;
+        document.getElementById('headerBrandTitle').textContent = name + ' Dashboard';
+        document.title = name + ' — Dashboard';
         // Derive palette from brand colors
         const root = document.documentElement.style;
         root.setProperty('--bg', bg);
@@ -650,6 +655,14 @@ function adjustAlpha(hex, alpha) {
     const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
     return `rgba(${r},${g},${b},${alpha})`;
 }
+
+// Auto-update slug URL preview
+document.addEventListener('input', e => {
+    if (e.target.id === 'newBrandSlug') {
+        const slug = e.target.value || '---';
+        document.getElementById('slugPreviewUrl').innerHTML = `Link onboarding: ${location.origin}/landing/<strong>${slug}</strong>`;
+    }
+});
 
 async function createBrand() {
     const name = document.getElementById('newBrandName').value;
