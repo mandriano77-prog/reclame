@@ -2,6 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const { sendWelcomeEmail } = require('../engine/mailer');
 const {
   createBrand,
   createTemplate,
@@ -1102,11 +1103,12 @@ router.post('/passes/signup', async (req, res) => {
       template_id: template.id,
       brand_id: brand.id,
       customer_data: { email, phone, name: fullName },
-      field_values: { nome: fullName, name: fullName, livello: firstTier, punti: '0' },
+      field_values: { nome: fullName, name: fullName, livello: firstTier, punti: '10' },
       member_id: member.id
     });
 
     // Generate .pkpass file
+    const CUSTOM_DOMAIN = process.env.CUSTOM_DOMAIN || 'nudj.studio';
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const pkpassBuffer = await createPkpass(template, passInstance, brand, { baseUrl });
 
@@ -1119,10 +1121,21 @@ router.post('/passes/signup', async (req, res) => {
       pass_id: passInstance.id,
       brand_id: brand.id,
       event_type: 'pass_created',
-      metadata: { source: 'landing_signup', email }
+      metadata: { source: 'landing_signup', email, welcome_points: 10 }
     });
 
     const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
+    const landingUrl = `https://${CUSTOM_DOMAIN}/${brand.slug || ''}`;
+
+    // Send welcome email (async, don't block response)
+    sendWelcomeEmail({
+      to: email,
+      name: fullName,
+      brandName: brand.name,
+      brandColor: brand.config?.backgroundColor || '#000000',
+      points: 10,
+      landingUrl
+    }).catch(err => console.error('Welcome email error:', err));
 
     res.status(201).json({
       message: 'Pass creato con successo!',
