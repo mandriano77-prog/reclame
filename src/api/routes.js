@@ -1153,6 +1153,73 @@ router.post('/passes/signup', async (req, res) => {
 // ============================================================================
 
 /**
+ * GET /api/v1/challenges/seed - Seed challenges for Hirostar
+ */
+router.get('/challenges/seed', async (req, res) => {
+  try {
+    // Find Hirostar brand
+    const hirostar = await pool.query(`SELECT id, name FROM brands WHERE LOWER(name) LIKE '%hirostar%' OR LOWER(name) LIKE '%hangar%' LIMIT 1`);
+    if (!hirostar.rows.length) return res.status(404).json({ error: 'Hirostar brand not found' });
+    const bid = hirostar.rows[0].id;
+
+    // Check existing
+    const existing = await listChallenges(bid);
+    if (existing.length > 0) {
+      return res.json({ message: `Already have ${existing.length} challenges`, challenges: existing });
+    }
+
+    const challenges = [
+      // Frequenza di gioco
+      { title: 'Warm Up', description: 'Gioca la tua prima partita dopo l\'iscrizione al club.', points: 30, icon: '🎾', type: 'action', recurring: false },
+      { title: 'Settimana Calda', description: 'Gioca 3 partite in una settimana. Il ritmo fa la differenza!', points: 50, icon: '🔥', type: 'action', recurring: true },
+      { title: 'Maratoneta del Mese', description: 'Gioca 10 partite in un mese. Sei un vero habitué!', points: 200, icon: '💪', type: 'action', recurring: true },
+      { title: 'Streak Machine', description: 'Gioca almeno una partita a settimana per 4 settimane consecutive.', points: 300, icon: '⚡', type: 'action', recurring: true },
+
+      // Referral / Social
+      { title: 'Porta un Amico', description: 'Invita un amico che si iscrive al programma fedeltà. Tu guadagni punti, lui il benvenuto!', points: 100, icon: '🤝', type: 'action', recurring: true },
+      { title: 'Doppio Misto', description: 'Gioca con 5 partner diversi nello stesso mese. Socialità in campo!', points: 150, icon: '👥', type: 'action', recurring: true },
+      { title: 'Capitano', description: 'Organizza una partita completa da 4 persone prenotando tu il campo.', points: 80, icon: '🫡', type: 'action', recurring: true },
+
+      // Fasce orarie
+      { title: 'Early Bird', description: 'Gioca 3 volte in fascia mattutina (8:00-12:00). Il padel del mattino ha l\'oro in bocca.', points: 80, icon: '🌅', type: 'action', recurring: true },
+      { title: 'Midweek Warrior', description: 'Prenota e gioca un campo dal lunedì al giovedì. I veri giocatori non aspettano il weekend.', points: 40, icon: '📅', type: 'action', recurring: true },
+
+      // Eventi e tornei
+      { title: 'Torneo Debuttante', description: 'Partecipa al tuo primo torneo sociale del club.', points: 150, icon: '🏆', type: 'action', recurring: false },
+      { title: 'Gladiatore', description: 'Partecipa a 3 tornei in un trimestre. Sei un combattente!', points: 400, icon: '⚔️', type: 'action', recurring: true },
+      { title: 'Campione Sociale', description: 'Vinci un torneo sociale mensile. Gloria eterna!', points: 300, icon: '👑', type: 'action', recurring: true },
+
+      // Cross-selling
+      { title: 'After Match', description: 'Ordina al bar dopo la partita 5 volte nel mese. Il terzo tempo è sacro!', points: 100, icon: '🍻', type: 'action', recurring: true },
+      { title: 'Upgrade Kit', description: 'Effettua un acquisto nel pro shop del club.', points: 80, icon: '🛒', type: 'action', recurring: true },
+
+      // Stagionali
+      { title: 'Sfida del 1° Maggio', description: 'Gioca una partita il giorno della festa. Chi gioca non fa ponte!', points: 100, icon: '🎉', type: 'action', recurring: false },
+      { title: 'Estate in Campo', description: 'Gioca 20 partite tra giugno e agosto. Il caldo non ti ferma!', points: 300, icon: '☀️', type: 'action', recurring: false },
+
+      // Milestone
+      { title: 'Quota 500', description: 'Raggiungi 500 punti totali. Stai scalando!', points: 50, icon: '📈', type: 'action', recurring: false },
+      { title: 'Level Up', description: 'Passa al livello successivo del programma. Ogni livello è una conquista.', points: 100, icon: '🆙', type: 'action', recurring: true },
+
+      // Community
+      { title: 'Recensione Google', description: 'Lascia una recensione su Google Maps per il club. Aiutaci a crescere!', points: 50, icon: '⭐', type: 'action', recurring: false },
+      { title: 'Social Padel', description: 'Condividi un post o una story taggando @HangarPadel. Fai vedere che ci sei!', points: 40, icon: '📱', type: 'action', recurring: true },
+    ];
+
+    const created = [];
+    for (const c of challenges) {
+      const challenge = await createChallenge({ brand_id: bid, ...c });
+      created.push(challenge);
+    }
+
+    res.json({ message: `Created ${created.length} challenges`, count: created.length });
+  } catch (error) {
+    console.error('Error seeding challenges:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /api/v1/rewards/check - Check rewards in DB
  */
 router.get('/rewards/check', async (req, res) => {
