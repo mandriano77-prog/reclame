@@ -174,25 +174,33 @@ router.get('/brands/:id/logo', async (req, res) => {
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).send('Not found');
 
-    // 1. Check for static file: public/assets/{slug}-logo.png
+    const logos = brand.config?.logos;
+
+    // 1. DB landing_logo has highest priority (uploaded via dashboard)
+    if (logos?.landing_logo) {
+      const buf = Buffer.from(logos.landing_logo, 'base64');
+      res.set('Content-Type', 'image/png');
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.send(buf);
+    }
+
+    // 2. Check for static file: public/assets/{slug}-logo.png
     if (brand.slug) {
       const staticPath = path.resolve(__dirname, '..', '..', 'public', 'assets', `${brand.slug}-logo.png`);
-      console.log('Looking for static logo at:', staticPath, 'exists:', fs.existsSync(staticPath));
       if (fs.existsSync(staticPath)) {
         res.set('Content-Type', 'image/png');
-        res.set('Cache-Control', 'public, max-age=86400');
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         return res.sendFile(staticPath);
       }
     }
 
-    // 2. Fallback to DB base64
-    const logos = brand.config?.logos;
-    const b64 = logos?.landing_logo || logos?.['logo@2x'] || logos?.logo || logos?.['icon@2x'] || logos?.icon;
+    // 3. Fallback to other DB logos
+    const b64 = logos?.['logo@2x'] || logos?.logo || logos?.['icon@2x'] || logos?.icon;
     if (!b64) return res.status(404).send('No logo');
 
     const buf = Buffer.from(b64, 'base64');
     res.set('Content-Type', 'image/png');
-    res.set('Cache-Control', 'public, max-age=86400');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.send(buf);
   } catch (error) {
     res.status(500).send('Error');

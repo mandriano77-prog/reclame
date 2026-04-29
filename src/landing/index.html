@@ -421,9 +421,9 @@
             }
 
             // Build logo: use brand logo image if available, fallback to initial letter
-            const hasLogo = config.logos && config.logos.logo;
+            const hasLogo = config.logos && (config.logos.landing_logo || config.logos.logo);
             const logoHtml = hasLogo
-                ? `<img src="/api/v1/brands/${brand.id}/logo" style="width:200px; height:200px; border-radius:50%; object-fit:cover; display:block; margin:0 auto;" alt="${brand.name}">`
+                ? `<img src="/api/v1/brands/${brand.id}/logo?t=${Date.now()}" style="width:200px; height:200px; border-radius:50%; object-fit:cover; display:block; margin:0 auto;" alt="${brand.name}">`
                 : `<div class="brand-logo" style="background:${lbl}; color:${bg};">${initial}</div>`;
 
             const container = document.getElementById('container');
