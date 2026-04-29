@@ -659,11 +659,84 @@
                 <div class="footer" style="color:${lbl}; opacity:0.3; font-size:11px; margin-top:32px; text-align:center;">Powered by Precise Consulting</div>
             `;
 
-            // Fade in
+            // Fade in + confetti
             requestAnimationFrame(() => {
                 container.style.transition = 'opacity 0.5s ease';
                 container.style.opacity = '1';
+                launchConfetti();
             });
+        }
+
+        function launchConfetti() {
+            const canvas = document.createElement('canvas');
+            canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+            document.body.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const lbl = window.__brandLbl || '#CCFF00';
+            const colors = [lbl, '#fff', '#FFD700', '#FF6B6B', '#4ECDC4', '#A78BFA', lbl, '#fff'];
+            const pieces = [];
+            const total = 120;
+
+            for (let i = 0; i < total; i++) {
+                pieces.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * -1.2,
+                    w: Math.random() * 8 + 4,
+                    h: Math.random() * 6 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: Math.random() * 3 + 2,
+                    rot: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 8,
+                    opacity: 1,
+                    shape: Math.random() > 0.5 ? 'rect' : 'circle'
+                });
+            }
+
+            let frame = 0;
+            const maxFrames = 180;
+
+            function animate() {
+                frame++;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                pieces.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.04;
+                    p.vx *= 0.99;
+                    p.rot += p.rotSpeed;
+
+                    if (frame > maxFrames - 40) {
+                        p.opacity = Math.max(0, p.opacity - 0.025);
+                    }
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rot * Math.PI / 180);
+                    ctx.globalAlpha = p.opacity;
+                    ctx.fillStyle = p.color;
+
+                    if (p.shape === 'rect') {
+                        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                });
+
+                if (frame < maxFrames) {
+                    requestAnimationFrame(animate);
+                } else {
+                    canvas.remove();
+                }
+            }
+            animate();
         }
 
         // ── Single Pass View ────────────────────────────────────────
