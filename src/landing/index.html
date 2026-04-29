@@ -285,6 +285,17 @@
             return url.searchParams.get(name);
         }
 
+        // Detect slug from URL path (e.g. /hirostar-hangar → "hirostar-hangar")
+        function getSlugFromPath() {
+            const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+            // Skip known routes and files
+            if (!path || path.includes('/') || path.includes('.') ||
+                ['api', 'dashboard', 'landing', 'debug', 'health'].includes(path)) {
+                return null;
+            }
+            return path;
+        }
+
         // Generate QR code using simple inline algorithm
         function generateQRCode(text, size = 120) {
             const canvas = document.createElement('canvas');
@@ -292,12 +303,10 @@
             canvas.height = size;
             const ctx = canvas.getContext('2d');
 
-            // Simple placeholder QR - in production use qrcode.js library
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, size, size);
             ctx.fillStyle = '#0D0B1A';
 
-            // Draw a simple pattern for visual representation
             const cellSize = size / 21;
             for (let i = 0; i < 21; i++) {
                 for (let j = 0; j < 21; j++) {
@@ -321,10 +330,31 @@
             });
         }
 
-        // Main function to load and render pass
+        // Main function — detects mode: slug (brand page) or ?id= (single pass)
         async function loadPass() {
             const passId = getQueryParam('id');
+            const slug = getSlugFromPath();
 
+            // MODE 1: Brand landing via slug (nudj.studio/hirostar-hangar)
+            if (slug && !passId) {
+                try {
+                    const response = await fetch(`/api/v1/landing/brand/${slug}`);
+                    if (!response.ok) {
+                        renderError(response.status === 404
+                            ? 'Brand non trovato. Verifica il link.'
+                            : 'Errore nel caricamento.');
+                        return;
+                    }
+                    const data = await response.json();
+                    renderBrandLanding(data);
+                } catch (error) {
+                    console.error('Error loading brand:', error);
+                    renderError('Errore nella connessione. Riprova più tardi.');
+                }
+                return;
+            }
+
+            // MODE 2: Single pass via ?id=
             if (!passId) {
                 renderError('Pass ID non trovato. Verifica il link.');
                 return;
@@ -362,6 +392,132 @@
             `;
         }
 
+        // ── Brand Landing (slug mode) ──────────────────────────────
+        function renderBrandLanding(data) {
+            const { brand, template, signup_url } = data;
+            const config = brand.config || {};
+            const bg = config.backgroundColor || '#000000';
+            const fg = config.foregroundColor || '#FFFFFF';
+            const lbl = config.labelColor || '#D4E600';
+            const initial = brand.name.charAt(0).toUpperCase();
+
+            // Apply brand colors to page
+            document.body.style.background = bg;
+
+            const passType = template ? template.pass_type_label || template.pass_type || 'Fidelity Card' : 'Fidelity Card';
+            const templateName = template ? template.name : '';
+
+            // Build fields preview from template
+            let fieldsPreview = '';
+            if (template && template.fields) {
+                const previewFields = template.fields.filter(f => f.type === 'primary' || f.type === 'secondary').slice(0, 3);
+                previewFields.forEach(f => {
+                    fieldsPreview += `
+                        <div class="field-group">
+                            <div class="field-label" style="color:${lbl}">${f.label}</div>
+                            <div class="field-value secondary" style="color:${fg}">${f.value || '—'}</div>
+                        </div>`;
+                });
+            }
+
+            const container = document.getElementById('container');
+            container.innerHTML = `
+                <div class="header">
+                    <div class="brand-logo" style="background:${lbl}; color:${bg};">${initial}</div>
+                    <div class="brand-name" style="color:${fg}">${brand.name}</div>
+                    <div class="brand-subtitle" style="color:${lbl}; opacity:0.9">${templateName || passType}</div>
+                </div>
+
+                <div class="pass-card" style="background:${bg}; border-color:${lbl}33;">
+                    <div class="pass-header">
+                        <div class="pass-type" style="color:${lbl}">${passType}</div>
+                    </div>
+                    ${fieldsPreview ? `<div class="pass-content">${fieldsPreview}</div>` : ''}
+                    <p style="color:${fg}; opacity:0.7; font-size:13px; text-align:center; margin-top:12px;">
+                        Ottieni la tua card digitale gratuita
+                    </p>
+                </div>
+
+                <form id="signupForm" class="pass-card" style="background:${bg}; border-color:${lbl}33;" onsubmit="handleSignup(event)">
+                    <input type="hidden" name="brand_id" value="${brand.id}">
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:${lbl}; margin-bottom:6px;">Nome</label>
+                        <input type="text" name="name" required placeholder="Il tuo nome"
+                            style="width:100%; padding:12px; background:${fg}11; border:1px solid ${lbl}33; border-radius:8px; color:${fg}; font-size:15px; outline:none;">
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:${lbl}; margin-bottom:6px;">Email</label>
+                        <input type="email" name="email" required placeholder="La tua email"
+                            style="width:100%; padding:12px; background:${fg}11; border:1px solid ${lbl}33; border-radius:8px; color:${fg}; font-size:15px; outline:none;">
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:${lbl}; margin-bottom:6px;">Telefono (opzionale)</label>
+                        <input type="tel" name="phone" placeholder="+39 ..."
+                            style="width:100%; padding:12px; background:${fg}11; border:1px solid ${lbl}33; border-radius:8px; color:${fg}; font-size:15px; outline:none;">
+                    </div>
+                    <button type="submit" class="cta-button" style="background:${lbl}; color:${bg}; box-shadow: 0 4px 16px ${lbl}44;">
+                        <svg class="wallet-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M20 8H4V4h16m0-2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 11h-4v2h4v-2z"/>
+                        </svg>
+                        Ottieni la tua Card
+                    </button>
+                </form>
+
+                <div class="footer" style="color:${lbl}; opacity:0.4">
+                    Powered by Nudj
+                </div>
+            `;
+        }
+
+        // ── Signup handler ──────────────────────────────────────────
+        async function handleSignup(e) {
+            e.preventDefault();
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            const origText = btn.innerHTML;
+            btn.innerHTML = 'Creazione in corso...';
+            btn.disabled = true;
+
+            const body = {
+                brand_id: form.brand_id.value,
+                name: form.name.value,
+                email: form.email.value,
+                phone: form.phone.value || undefined
+            };
+
+            try {
+                const resp = await fetch('/api/v1/passes/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error || 'Errore nella registrazione');
+                }
+
+                const data = await resp.json();
+
+                if (data.download_url) {
+                    // Redirect to download the .pkpass file
+                    window.location.href = data.download_url;
+                } else if (data.pass && data.pass.id) {
+                    // Redirect to pass landing
+                    window.location.href = `/landing/?id=${data.pass.id}`;
+                } else {
+                    btn.innerHTML = '✓ Registrazione completata!';
+                    btn.style.opacity = '0.7';
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                btn.innerHTML = origText;
+                btn.disabled = false;
+                alert(error.message || 'Errore. Riprova.');
+            }
+        }
+
+        // ── Single Pass View ────────────────────────────────────────
         function renderPass(data) {
             const { pass, template, brand, download_url } = data;
 

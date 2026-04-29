@@ -86,6 +86,9 @@ const XLSX = require('xlsx');
 
 const router = express.Router();
 
+// Custom domain for short landing URLs (fallback to request host)
+const CUSTOM_DOMAIN = process.env.CUSTOM_DOMAIN || 'nudj.studio';
+
 // Helper to ensure cache directory exists
 function ensureCacheDir() {
   const cacheDir = path.join(__dirname, '../../data/pkpass-cache');
@@ -425,7 +428,7 @@ router.post('/passes', async (req, res) => {
     });
 
     const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
-    const landingUrl = `${baseUrl}/landing/?id=${passInstance.id}`;
+    const landingUrl = `https://${CUSTOM_DOMAIN}/landing/?id=${passInstance.id}`;
 
     res.status(201).json({
       id: passInstance.id,
@@ -456,7 +459,7 @@ router.get('/passes/:id', async (req, res) => {
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
-    const landingUrl = `${baseUrl}/landing/?id=${passInstance.id}`;
+    const landingUrl = `https://${CUSTOM_DOMAIN}/landing/?id=${passInstance.id}`;
 
     res.json({
       ...passInstance,
@@ -565,7 +568,7 @@ router.put('/passes/:id', async (req, res) => {
     res.json({
       ...updated,
       download_url: `${baseUrl}/api/v1/passes/${req.params.id}/download`,
-      landing_url: `${baseUrl}/landing/?id=${req.params.id}`
+      landing_url: `https://${CUSTOM_DOMAIN}/landing/?id=${req.params.id}`
     });
   } catch (error) {
     console.error('Error updating pass:', error);
@@ -674,7 +677,7 @@ router.get('/passes', async (req, res) => {
     const passesWithUrls = passes.map(pass => ({
       ...pass,
       download_url: `${baseUrl}/api/v1/passes/${pass.id}/download`,
-      landing_url: `${baseUrl}/landing/?id=${pass.id}`
+      landing_url: `https://${CUSTOM_DOMAIN}/landing/?id=${pass.id}`
     }));
 
     res.json(passesWithUrls);
@@ -939,6 +942,37 @@ router.get('/landing/:pass_id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting landing page data:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/landing/brand/:slug - Get brand landing data by slug
+ * Used when accessing nudj.studio/:slug
+ */
+router.get('/landing/brand/:slug', async (req, res) => {
+  try {
+    const { getBrandBySlug, listPasses, getTemplate } = require('../db');
+    const brand = await getBrandBySlug(req.params.slug);
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+
+    // Get first template for this brand
+    const passes = await listPasses(brand.id);
+    let template = null;
+    if (passes.length > 0) {
+      template = await getTemplate(passes[0].template_id);
+    }
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    res.json({
+      brand: { id: brand.id, name: brand.name, slug: brand.slug, config: brand.config },
+      template: template ? { id: template.id, name: template.name, pass_type: template.pass_type, style: template.style } : null,
+      signup_url: `${baseUrl}/api/v1/passes/signup`,
+      passes_count: passes.length
+    });
+  } catch (error) {
+    console.error('Error getting brand landing:', error);
     res.status(500).json({ error: error.message });
   }
 });

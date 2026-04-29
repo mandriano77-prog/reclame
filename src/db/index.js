@@ -634,6 +634,17 @@ async function getBrand(id) {
   }
 }
 
+async function getBrandBySlug(slug) {
+  try {
+    const result = await pool.query(`SELECT * FROM brands WHERE slug = $1`, [slug]);
+    if (result.rows.length === 0) return null;
+    const row = result.rows[0];
+    return { id: row.id, name: row.name, slug: row.slug, config: row.config, created_at: row.created_at, updated_at: row.updated_at };
+  } catch (error) {
+    throw new Error(`Failed to get brand by slug: ${error.message}`);
+  }
+}
+
 /**
  * Get a template by ID
  */
@@ -1708,6 +1719,7 @@ module.exports = {
   getDevicesForPass,
   getDevicesForBrand,
   getBrand,
+  getBrandBySlug,
   getTemplate,
   updateBrand,
   deleteBrand,
