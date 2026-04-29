@@ -21,7 +21,7 @@ const getFromName = () => process.env.FROM_NAME || 'Nudj';
 /**
  * Send welcome email after signup
  */
-async function sendWelcomeEmail({ to, name, brandName, brandColor, points, landingUrl }) {
+async function sendWelcomeEmail({ to, name, brandName, brandColor, points, downloadUrl }) {
   console.log('📧 sendWelcomeEmail called — to:', to, 'RESEND_API_KEY set:', !!process.env.RESEND_API_KEY);
 
   const resend = getResend();
@@ -90,8 +90,8 @@ async function sendWelcomeEmail({ to, name, brandName, brandColor, points, landi
 
       <!-- CTA -->
       <div style="text-align:center; margin:0 0 16px;">
-        <a href="${landingUrl}" style="display:inline-block; background:${accent}; color:#000; font-weight:700; font-size:15px; padding:14px 32px; border-radius:10px; text-decoration:none;">
-          Apri la tua Card
+        <a href="${downloadUrl}" style="display:inline-block; background:${accent}; color:#000; font-weight:700; font-size:15px; padding:14px 32px; border-radius:10px; text-decoration:none;">
+          Scarica la tua Card
         </a>
       </div>
 

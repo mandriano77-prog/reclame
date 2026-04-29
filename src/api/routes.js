@@ -1137,7 +1137,7 @@ router.post('/passes/signup', async (req, res) => {
         brandName: brand.name,
         brandColor: brand.config?.backgroundColor || '#000000',
         points: 10,
-        landingUrl
+        downloadUrl
       });
     } catch (err) {
       emailError = err.message || String(err);
