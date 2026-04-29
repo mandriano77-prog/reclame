@@ -278,6 +278,30 @@ async function getDb() {
       }
     } catch(e) { console.log('Members migration note:', e.message); }
 
+    // --- Seed default tiers for brands that have none ---
+    try {
+      const brandsWithoutTiers = await pool.query(`
+        SELECT b.id FROM brands b
+        WHERE NOT EXISTS (SELECT 1 FROM tiers t WHERE t.brand_id = b.id)
+      `);
+      for (const row of brandsWithoutTiers.rows) {
+        const defaultTiers = [
+          { name: 'Pared',   min_points: 0,    color: '#888888', sort_order: 1 },
+          { name: 'Bandeja', min_points: 100,  color: '#4CAF50', sort_order: 2 },
+          { name: 'Víbora',  min_points: 300,  color: '#2196F3', sort_order: 3 },
+          { name: 'Bajada',  min_points: 600,  color: '#9C27B0', sort_order: 4 },
+          { name: 'Por Tres', min_points: 1000, color: '#FFD700', sort_order: 5 }
+        ];
+        for (const tier of defaultTiers) {
+          await pool.query(
+            `INSERT INTO tiers (id, brand_id, name, min_points, color, perks, sort_order) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [uuidv4(), row.id, tier.name, tier.min_points, tier.color, '[]', tier.sort_order]
+          );
+        }
+        console.log(`✓ Seeded 5 padel tiers for brand ${row.id}`);
+      }
+    } catch(e) { console.log('Tier seed note:', e.message); }
+
   } catch (error) {
     console.error('Error initializing schema:', error);
     throw error;
