@@ -1153,6 +1153,65 @@ router.post('/passes/signup', async (req, res) => {
 // ============================================================================
 
 /**
+ * POST /api/v1/rewards/seed - Force-seed the rewards catalog
+ */
+router.post('/rewards/seed', async (req, res) => {
+  try {
+    const { brand_id } = req.body;
+    if (!brand_id) {
+      // Auto-detect first brand
+      const brandResult = await pool.query('SELECT id FROM brands LIMIT 1');
+      if (!brandResult.rows.length) return res.status(404).json({ error: 'No brands found' });
+      req.body.brand_id = brandResult.rows[0].id;
+    }
+    const bid = req.body.brand_id;
+
+    // Check existing
+    const existing = await listRewards(bid);
+    if (existing.length > 0) {
+      return res.json({ message: `Already have ${existing.length} rewards`, rewards: existing });
+    }
+
+    const rewards = [
+      { title: 'Drink di benvenuto', description: 'Una consumazione gratuita al bar del club: acqua, succo o bibita a scelta.', cost: 50, icon: '🥤' },
+      { title: 'Grip overgrip omaggio', description: 'Un overgrip di qualità per la tua racchetta, a scelta tra i modelli disponibili.', cost: 80, icon: '🎾' },
+      { title: 'Tubo palline', description: 'Un tubo di 3 palline da padel omaggio per le tue partite.', cost: 100, icon: '🎯' },
+      { title: '1 ora campo gratuita', description: 'Prenota 1 ora di campo padel senza costi aggiuntivi.', cost: 150, icon: '🏟️' },
+      { title: 'Sconto 10% al bar', description: 'Buono sconto del 10% su tutte le consumazioni al bar, valido per una giornata intera.', cost: 120, icon: '☕' },
+      { title: 'Sconto 10% noleggio racchette', description: 'Sconto del 10% sul noleggio racchette per un mese intero.', cost: 200, icon: '🏸' },
+      { title: 'Accesso torneo sociale', description: 'Iscrizione gratuita al prossimo torneo sociale mensile del club.', cost: 250, icon: '🏆' },
+      { title: '2 ore campo gratuite', description: 'Prenota 2 ore di campo padel senza costi. Utilizzabili anche in giorni diversi.', cost: 300, icon: '⏰' },
+      { title: 'Sconto 15% al bar', description: 'Buono sconto del 15% su tutte le consumazioni al bar, valido per una settimana.', cost: 280, icon: '🍹' },
+      { title: 'Lezione di gruppo', description: 'Una lezione di gruppo con il coach del club (max 4 partecipanti, 1 ora).', cost: 350, icon: '👨‍🏫' },
+      { title: 'Incordatura racchetta', description: 'Servizio di incordatura professionale gratuito per la tua racchetta.', cost: 400, icon: '🔧' },
+      { title: 'Maglietta club esclusiva', description: 'T-shirt tecnica con il logo del club, in edizione limitata per i soci.', cost: 500, icon: '👕' },
+      { title: '4 ore campo gratuite', description: '4 ore di campo padel gratuite, utilizzabili nel mese corrente.', cost: 550, icon: '🌟' },
+      { title: 'Sconto 20% pro shop', description: 'Buono sconto del 20% su tutti i prodotti del pro shop del club.', cost: 500, icon: '🛍️' },
+      { title: 'Lezione privata 30 min', description: 'Una sessione privata di 30 minuti con il coach per migliorare la tua tecnica.', cost: 600, icon: '🎓' },
+      { title: 'Kit palline mensile', description: 'Un kit completo di palline da padel premium ogni mese per un mese.', cost: 450, icon: '📦' },
+      { title: 'Cena club con coach', description: 'Invito alla cena esclusiva del club con il coach e gli altri soci premium.', cost: 800, icon: '🍽️' },
+      { title: 'Campo illimitato mensile', description: 'Accesso illimitato ai campi per un mese intero.', cost: 1000, icon: '♾️' },
+      { title: 'Bar open giornaliero', description: 'Una consumazione gratuita al giorno al bar per un mese intero.', cost: 800, icon: '🍺' },
+      { title: 'Racchetta brandizzata club', description: 'Una racchetta da padel con il logo del club, in edizione esclusiva numerata.', cost: 1500, icon: '🏅' },
+      { title: 'Abbigliamento tecnico stagionale', description: 'Kit completo di abbigliamento tecnico (maglia + pantaloncini) con branding club.', cost: 1200, icon: '🎽' },
+      { title: 'Ospite illimitato mensile', description: 'Porta un ospite gratuito a ogni partita per un mese intero.', cost: 900, icon: '🤝' },
+      { title: 'Trofeo Socio dell\'Anno', description: 'Candidatura al premio annuale con trofeo personalizzato e naming su torneo.', cost: 2000, icon: '🏆' },
+    ];
+
+    const created = [];
+    for (const r of rewards) {
+      const reward = await createReward({ brand_id: bid, ...r });
+      created.push(reward);
+    }
+
+    res.json({ message: `Created ${created.length} rewards`, count: created.length });
+  } catch (error) {
+    console.error('Error seeding rewards:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/v1/rewards - Create reward
  */
 router.post('/rewards', async (req, res) => {
