@@ -305,6 +305,49 @@ async function getDb() {
       }
     } catch(e) { console.log('Tier seed note:', e.message); }
 
+    // --- Populate tier content (description, perks, rewards) where empty ---
+    try {
+      const tierContent = {
+        'Pared': {
+          description: 'Il primo passo nel club. Benvenuto in campo!',
+          perks: ['Accesso area soci', 'Newsletter settimanale eventi', 'Prenotazione campi online'],
+          rewards_list: ['Drink di benvenuto al bar', 'Grip overgrip omaggio']
+        },
+        'Bandeja': {
+          description: 'Stai prendendo ritmo. I vantaggi crescono con te.',
+          perks: ['Tutti i vantaggi Pared', 'Sconto 10% noleggio racchette', 'Accesso tornei sociali mensili', 'Priorita prenotazione weekend'],
+          rewards_list: ['1 ora campo gratuita al mese', 'Sconto 10% al bar', 'Tubo palline omaggio ogni 2 mesi']
+        },
+        'Víbora': {
+          description: 'Giocatore esperto. Il club ti riconosce.',
+          perks: ['Tutti i vantaggi Bandeja', 'Sconto 15% pro shop', 'Lezione di gruppo gratuita al mese', 'Invito eventi esclusivi', 'Parcheggio riservato'],
+          rewards_list: ['2 ore campo gratuite al mese', 'Sconto 15% al bar', 'Incordatura racchetta gratuita trimestrale', 'Maglietta club esclusiva']
+        },
+        'Bajada': {
+          description: 'Hai conquistato il campo. Trattamento premium.',
+          perks: ['Tutti i vantaggi Vibora', 'Sconto 20% su tutto il pro shop', 'Accesso spogliatoio VIP', 'Lezione privata al mese (30 min)', 'Ospite gratuito 1 volta al mese'],
+          rewards_list: ['4 ore campo gratuite al mese', 'Sconto 20% al bar', 'Kit completo palline ogni mese', 'Accesso anticipato tornei', 'Cena club semestrale con coach']
+        },
+        'Por Tres': {
+          description: 'Il livello massimo. Sei la leggenda del club.',
+          perks: ['Tutti i vantaggi Bajada', 'Campo riservato fascia prime time', 'Personal coach dedicato (1h/mese)', 'Accesso illimitato ospiti', 'Naming su torneo mensile', 'Posto riservato area lounge'],
+          rewards_list: ['Campo illimitato', 'Bar open 1 consumazione/giorno', 'Racchetta brandizzata club in omaggio', 'Abbigliamento tecnico stagionale', 'Invito cena annuale con sponsor', 'Trofeo socio dell\'anno (votazione)']
+        }
+      };
+
+      const allTiers = await pool.query(`SELECT id, name, description FROM tiers`);
+      for (const t of allTiers.rows) {
+        const content = tierContent[t.name];
+        if (content && (!t.description || t.description === '')) {
+          await pool.query(
+            `UPDATE tiers SET description = $1, perks = $2, rewards_list = $3 WHERE id = $4`,
+            [content.description, JSON.stringify(content.perks), JSON.stringify(content.rewards_list), t.id]
+          );
+          console.log(`✓ Populated content for tier: ${t.name}`);
+        }
+      }
+    } catch(e) { console.log('Tier content population note:', e.message); }
+
   } catch (error) {
     console.error('Error initializing schema:', error);
     throw error;
