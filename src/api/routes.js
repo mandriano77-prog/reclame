@@ -1153,18 +1153,17 @@ router.post('/passes/signup', async (req, res) => {
 // ============================================================================
 
 /**
- * POST /api/v1/rewards/seed - Force-seed the rewards catalog
+ * GET/POST /api/v1/rewards/seed - Force-seed the rewards catalog
  */
-router.post('/rewards/seed', async (req, res) => {
+router.all('/rewards/seed', async (req, res) => {
   try {
-    const { brand_id } = req.body;
-    if (!brand_id) {
-      // Auto-detect first brand
+    const brand_id = req.body?.brand_id || req.query?.brand_id;
+    let bid = brand_id;
+    if (!bid) {
       const brandResult = await pool.query('SELECT id FROM brands LIMIT 1');
       if (!brandResult.rows.length) return res.status(404).json({ error: 'No brands found' });
-      req.body.brand_id = brandResult.rows[0].id;
+      bid = brandResult.rows[0].id;
     }
-    const bid = req.body.brand_id;
 
     // Check existing
     const existing = await listRewards(bid);
