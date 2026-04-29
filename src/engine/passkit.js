@@ -260,8 +260,32 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   });
 
-  // 3. Template back fields (regolamento, contatti, etc.)
-  backFields.forEach(f => orderedBackFields.push(f));
+  // 3. REGOLAMENTO — from brand backContent (overrides template back fields)
+  const backContent = brandConfig.backContent || {};
+  if (backContent.regolamento) {
+    orderedBackFields.push({
+      key: 'regolamento',
+      label: 'REGOLAMENTO',
+      value: backContent.regolamento
+    });
+  }
+
+  // 4. CONTATTI — from brand backContent
+  if (backContent.contatti) {
+    orderedBackFields.push({
+      key: 'contatti',
+      label: 'CONTATTI',
+      value: backContent.contatti
+    });
+  }
+
+  // 5. Any remaining template back fields (fallback)
+  backFields.forEach(f => {
+    // Skip if already covered by backContent
+    if (f.key === 'regolamento' && backContent.regolamento) return;
+    if (f.key === 'contatti' && backContent.contatti) return;
+    orderedBackFields.push(f);
+  });
 
   // ── Pass structure ────────────────────────────────────────────
   const structureKey = template.pass_type || 'storeCard';

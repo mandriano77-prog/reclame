@@ -446,6 +446,18 @@
                         <button class="btn small sec" onclick="addLinkRow()" style="margin-top:8px;">+ Aggiungi link</button>
                     </div>
                     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+                        <div class="sec-title" style="font-size:15px;">Contenuti retro pass</div>
+                        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Testi che appaiono sul retro della tessera dopo i link. Visibili toccando la "i" sulla card.</p>
+                        <div class="form-group">
+                            <label class="form-label">Regolamento</label>
+                            <textarea id="bsRegolamento" rows="5" placeholder="Inserisci il regolamento del programma fedeltà..." style="resize:vertical;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contatti</label>
+                            <textarea id="bsContatti" rows="4" placeholder="Indirizzo, telefono, email, orari..." style="resize:vertical;"></textarea>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
                         <div class="sec-title" style="font-size:15px;">Geofencing — Notifiche di prossimita</div>
                         <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Quando il cliente e vicino al punto vendita, il pass appare sulla lock screen con il tuo messaggio.</p>
                         <div id="locationsContainer"></div>
@@ -1099,6 +1111,12 @@ async function saveBrandSettings() {
     const validLinks = linkRows.filter(l => l.label && l.url);
     config.links = validLinks;
 
+    // Save back content (regolamento, contatti)
+    config.backContent = {
+        regolamento: document.getElementById('bsRegolamento').value || '',
+        contatti: document.getElementById('bsContatti').value || ''
+    };
+
     // Save geofencing locations
     const validLocations = locationRows.filter(l => l.latitude && l.longitude);
     if (validLocations.length > 0) {
@@ -1149,6 +1167,11 @@ async function loadBrandSettings() {
     // Load links
     linkRows = (c.links || []).map(l => ({label: l.label || '', url: l.url || ''}));
     renderLinks();
+
+    // Load back content
+    const bc = c.backContent || {};
+    document.getElementById('bsRegolamento').value = bc.regolamento || '';
+    document.getElementById('bsContatti').value = bc.contatti || '';
 
     // Load geofencing locations
     locationRows = (c.locations || []).map(l => ({latitude: l.latitude || '', longitude: l.longitude || '', relevantText: l.relevantText || ''}));
