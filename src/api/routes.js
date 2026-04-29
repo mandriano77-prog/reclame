@@ -977,6 +977,96 @@ router.get('/landing/brand/:slug', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/v1/passes/signup - Public self-signup from brand landing page
+ * Creates a member + pass in one step. Expects: brand_id, name, email, phone (optional)
+ */
+router.post('/passes/signup', async (req, res) => {
+  try {
+    const { brand_id, name, email, phone } = req.body;
+    if (!brand_id || !name || !email) {
+      return res.status(400).json({ error: 'brand_id, name e email sono obbligatori' });
+    }
+
+    const brand = await getBrand(brand_id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+
+    // Get the first template for this brand
+    const templates = await listTemplates(brand_id);
+    if (!templates || templates.length === 0) {
+      return res.status(400).json({ error: 'Nessun template configurato per questo brand' });
+    }
+    const template = templates[0];
+
+    // Split name into first/last
+    const nameParts = name.trim().split(/\s+/);
+    const first_name = nameParts[0];
+    const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+
+    // Check if member with same email already exists for this brand
+    const existingCheck = await pool.query(
+      'SELECT id FROM members WHERE brand_id = $1 AND email = $2', [brand_id, email]
+    );
+
+    let member;
+    if (existingCheck.rows.length > 0) {
+      // Member exists — check if they already have an active pass
+      const memberId = existingCheck.rows[0].id;
+      const passCheck = await pool.query(
+        'SELECT id FROM pass_instances WHERE member_id = $1 AND status = $2', [memberId, 'active']
+      );
+      if (passCheck.rows.length > 0) {
+        // Already has a pass — return download URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        return res.json({
+          message: 'Hai già un pass attivo!',
+          download_url: `${baseUrl}/api/v1/passes/${passCheck.rows[0].id}/download`
+        });
+      }
+      member = { id: memberId, first_name, last_name, email, phone };
+    } else {
+      // Create new member
+      member = await createMember({ brand_id, first_name, last_name, email, phone });
+    }
+
+    // Create pass instance
+    const passInstance = await createPassInstance({
+      template_id: template.id,
+      brand_id: brand.id,
+      customer_data: { email, phone, name },
+      field_values: {},
+      member_id: member.id
+    });
+
+    // Generate .pkpass file
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const pkpassBuffer = await createPkpass(template, passInstance, brand, { baseUrl });
+
+    // Cache the pkpass file
+    const cacheDir = ensureCacheDir();
+    const pkpassPath = path.join(cacheDir, `${passInstance.id}.pkpass`);
+    fs.writeFileSync(pkpassPath, pkpassBuffer);
+
+    await logEvent({
+      pass_id: passInstance.id,
+      brand_id: brand.id,
+      event_type: 'pass_created',
+      metadata: { source: 'landing_signup', email }
+    });
+
+    const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
+
+    res.status(201).json({
+      message: 'Pass creato con successo!',
+      pass: { id: passInstance.id, serial_number: passInstance.serial_number },
+      download_url: downloadUrl
+    });
+  } catch (error) {
+    console.error('Error in signup:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================================================
 // REWARDS
 // ============================================================================
