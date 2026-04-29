@@ -1309,7 +1309,7 @@ async function loadMembers() {
                         <button class="btn small sec" onclick="openBackEditModal('${linkedPass.id}','${safeName}')">Retro</button>
                         <button class="btn small sec" onclick="showQR('${linkedPass.landing_url}')">QR</button>
                     ` : `
-                        <button class="btn small" onclick="generatePassForMember('${m.id}','${safeName}','${(m.email||'').replace(/'/g,"\\'")}')">Genera Pass</button>
+                        <span style="font-size:11px;color:var(--text2);padding:6px 0;">Nessun pass</span>
                     `}
                     <button class="btn small sec" onclick="openMemberModal('${m.id}')">Modifica</button>
                     <button class="btn small" style="background:#e74c3c;border-color:#e74c3c;" onclick="deleteMemberAction('${m.id}','${safeName}')">X</button>
