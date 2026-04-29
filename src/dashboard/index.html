@@ -2155,7 +2155,7 @@ async function loadTiersForPassForm() {
     const sel = document.getElementById('passLivello');
     if (!sel || !brandId) return;
     try {
-        const res = await fetch(`${API}/brands/${brandId}/tiers`);
+        const res = await fetch(`${API}/tiers?brand_id=${brandId}`);
         const tiers = await res.json();
         sel.innerHTML = tiers.map((t, i) => `<option value="${t.name}" ${i === 0 ? 'selected' : ''}>${t.name} (${t.min_points}+ pts)</option>`).join('');
         if (!tiers.length) sel.innerHTML = '<option value="">Nessun livello configurato</option>';
