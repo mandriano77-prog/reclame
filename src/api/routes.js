@@ -566,7 +566,7 @@ router.post('/brands/:id/ai-strip', async (req, res) => {
       input: {
         prompt: fullPrompt,
         num_outputs: 1,
-        aspect_ratio: '3:1',
+        aspect_ratio: '21:9',
         output_format: 'png'
       }
     });
