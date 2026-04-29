@@ -573,7 +573,7 @@
                 if (data.message && data.message.includes('già')) {
                     showAlreadyRegistered(downloadUrl);
                 } else {
-                    showThankYou(userName.split(/\s+/)[0], downloadUrl, data._email_debug);
+                    showThankYou(userName.split(/\s+/)[0], downloadUrl);
                 }
 
             } catch (error) {
@@ -613,7 +613,7 @@
             });
         }
 
-        function showThankYou(firstName, downloadUrl, emailDebug) {
+        function showThankYou(firstName, downloadUrl) {
             // Read brand colors from current page state
             const bg = document.body.style.background || '#000000';
             const container = document.getElementById('container');
@@ -655,16 +655,6 @@
                 <p style="color:#666; font-size:12px; text-align:center; margin:20px 0 0;">
                     Controlla la tua email per i dettagli del tuo account.
                 </p>
-
-                ${emailDebug ? `<div style="background:#111; border:1px solid #333; border-radius:8px; padding:12px; margin:16px 0; font-family:monospace; font-size:11px; color:#888; word-break:break-all;">
-                    📧 EMAIL DEBUG:<br>
-                    Key set: ${emailDebug.resend_key_set}<br>
-                    Key prefix: ${emailDebug.resend_key_prefix || 'N/A'}<br>
-                    From: ${emailDebug.from}<br>
-                    To: ${emailDebug.to}<br>
-                    Result: ${JSON.stringify(emailDebug.result)}<br>
-                    Error: ${emailDebug.error || 'none'}
-                </div>` : ''}
 
                 <div class="footer" style="color:${lbl}; opacity:0.3; font-size:11px; margin-top:32px; text-align:center;">Powered by Precise Consulting</div>
             `;

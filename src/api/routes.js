@@ -1127,79 +1127,24 @@ router.post('/passes/signup', async (req, res) => {
     const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
     const landingUrl = `https://${CUSTOM_DOMAIN}/${brand.slug || ''}`;
 
-    // Send welcome email (await to capture result for diagnostics)
-    let emailResult = null;
-    let emailError = null;
-    try {
-      emailResult = await sendWelcomeEmail({
-        to: email,
-        name: fullName,
-        brandName: brand.name,
-        brandColor: brand.config?.backgroundColor || '#000000',
-        points: 10,
-        downloadUrl
-      });
-    } catch (err) {
-      emailError = err.message || String(err);
-      console.error('Welcome email error:', err);
-    }
+    // Send welcome email (async, don't block response)
+    sendWelcomeEmail({
+      to: email,
+      name: fullName,
+      brandName: brand.name,
+      brandColor: brand.config?.backgroundColor || '#000000',
+      points: 10,
+      downloadUrl
+    }).catch(err => console.error('Welcome email error:', err));
 
     res.status(201).json({
       message: 'Pass creato con successo!',
       pass: { id: passInstance.id, serial_number: passInstance.serial_number },
-      download_url: downloadUrl,
-      _email_debug: {
-        resend_key_set: !!process.env.RESEND_API_KEY,
-        resend_key_prefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 8) + '...' : null,
-        from: process.env.FROM_EMAIL || 'noreply@nudj.studio',
-        to: email,
-        result: emailResult,
-        error: emailError
-      }
+      download_url: downloadUrl
     });
   } catch (error) {
     console.error('Error in signup:', error);
     res.status(500).json({ error: error.message });
-  }
-});
-
-// ============================================================================
-// EMAIL DIAGNOSTICS (temporary — remove after debugging)
-// ============================================================================
-
-/**
- * GET /api/v1/email/status - Check if Resend is configured
- */
-router.get('/email/status', (req, res) => {
-  res.json({
-    resend_api_key_set: !!process.env.RESEND_API_KEY,
-    resend_api_key_prefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 8) + '...' : null,
-    from_email: process.env.FROM_EMAIL || 'noreply@nudj.studio',
-    from_name: process.env.FROM_NAME || 'Nudj',
-    node_env: process.env.NODE_ENV || 'not set'
-  });
-});
-
-/**
- * POST /api/v1/email/test - Send a test welcome email
- * Body: { "to": "your@email.com" }
- */
-router.post('/email/test', async (req, res) => {
-  const { to } = req.body;
-  if (!to) return res.status(400).json({ error: 'Provide "to" email address' });
-
-  try {
-    const result = await sendWelcomeEmail({
-      to,
-      name: 'Test User',
-      brandName: 'Hirostar Hangar Padel',
-      brandColor: '#1a472a',
-      points: 10,
-      landingUrl: 'https://nudj.studio'
-    });
-    res.json({ success: true, result });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message, stack: err.stack });
   }
 });
 
