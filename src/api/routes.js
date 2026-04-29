@@ -166,6 +166,28 @@ router.get('/brands/:id', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/brands/:id/logo - Serve brand logo as PNG image
+ */
+router.get('/brands/:id/logo', async (req, res) => {
+  try {
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).send('Not found');
+
+    const logos = brand.config?.logos;
+    // Prefer landing_logo > logo@2x > logo > icon@2x > icon
+    const b64 = logos?.landing_logo || logos?.['logo@2x'] || logos?.logo || logos?.['icon@2x'] || logos?.icon;
+    if (!b64) return res.status(404).send('No logo');
+
+    const buf = Buffer.from(b64, 'base64');
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(buf);
+  } catch (error) {
+    res.status(500).send('Error');
+  }
+});
+
+/**
  * PUT /api/v1/brands/:id - Update brand (name, config)
  */
 router.put('/brands/:id', async (req, res) => {
