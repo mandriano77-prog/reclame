@@ -109,7 +109,7 @@
 
     <div class="main">
         <div class="header">
-            <div class="header-title" id="headerBrandTitle">Nudj Dashboard</div>
+            <div class="header-title" id="headerBrandTitle">Dashboard</div>
             <select class="brand-sel" id="brandSelector" onchange="changeBrand()">
                 <option value="">Seleziona Brand</option>
             </select>
@@ -623,7 +623,7 @@ function applyBrandTheme() {
         // Update brand name in sidebar, header, and page title
         const name = brand.name || 'Nudj';
         document.getElementById('sidebarBrandName').textContent = name;
-        document.getElementById('headerBrandTitle').textContent = name + ' Dashboard';
+        document.getElementById('headerBrandTitle').textContent = 'Dashboard';
         document.title = name + ' — Dashboard';
         // Derive palette from brand colors
         const root = document.documentElement.style;
