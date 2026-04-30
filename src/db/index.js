@@ -367,13 +367,19 @@ async function getDb() {
       console.log('✓ challenge_progress table ensured');
     } catch(e) { console.log('challenge_progress migration note:', e.message); }
 
-    // --- Seed default tiers for brands that have none ---
+    // --- Seed default tiers ONLY for padel brands (with Playtomic config) that have none ---
     try {
       const brandsWithoutTiers = await pool.query(`
-        SELECT b.id FROM brands b
+        SELECT b.id, b.name, b.config FROM brands b
         WHERE NOT EXISTS (SELECT 1 FROM tiers t WHERE t.brand_id = b.id)
       `);
       for (const row of brandsWithoutTiers.rows) {
+        // Only seed padel tiers for brands with Playtomic integration
+        const config = typeof row.config === 'string' ? JSON.parse(row.config) : (row.config || {});
+        if (!config.playtomic) {
+          console.log(`⏭ Skipping tier seed for non-padel brand: ${row.name}`);
+          continue;
+        }
         const defaultTiers = [
           { name: 'Pared',   min_points: 0,    color: '#888888', sort_order: 1 },
           { name: 'Bandeja', min_points: 100,  color: '#4CAF50', sort_order: 2 },
@@ -387,7 +393,7 @@ async function getDb() {
             [uuidv4(), row.id, tier.name, tier.min_points, tier.color, '[]', tier.sort_order]
           );
         }
-        console.log(`✓ Seeded 5 padel tiers for brand ${row.id}`);
+        console.log(`✓ Seeded 5 padel tiers for brand ${row.name} (${row.id})`);
       }
     } catch(e) { console.log('Tier seed note:', e.message); }
 
@@ -421,7 +427,12 @@ async function getDb() {
         }
       };
 
-      const allTiers = await pool.query(`SELECT id, name, description FROM tiers`);
+      // Only update tiers belonging to padel brands (with Playtomic config)
+      const allTiers = await pool.query(`
+        SELECT t.id, t.name, t.description FROM tiers t
+        JOIN brands b ON b.id = t.brand_id
+        WHERE b.config::text LIKE '%playtomic%'
+      `);
       for (const t of allTiers.rows) {
         const content = tierContent[t.name];
         if (content && (!t.description || t.description === '')) {
@@ -434,14 +445,16 @@ async function getDb() {
       }
     } catch(e) { console.log('Tier content population note:', e.message); }
 
-    // --- Populate rewards catalog where empty ---
+    // --- Populate rewards catalog ONLY for padel brands without rewards ---
     try {
-      const existingRewards = await pool.query(`SELECT COUNT(*) as count FROM rewards`);
-      if (parseInt(existingRewards.rows[0].count) === 0) {
-        // Get first brand
-        const brandResult = await pool.query(`SELECT id FROM brands LIMIT 1`);
-        if (brandResult.rows.length > 0) {
-          const brandId = brandResult.rows[0].id;
+      // Find padel brands (with Playtomic config) that have zero rewards
+      const padelBrandsNoRewards = await pool.query(`
+        SELECT b.id, b.name FROM brands b
+        WHERE b.config::text LIKE '%playtomic%'
+        AND NOT EXISTS (SELECT 1 FROM rewards r WHERE r.brand_id = b.id)
+      `);
+      for (const brandRow of padelBrandsNoRewards.rows) {
+          const brandId = brandRow.id;
           const rewards = [
             // Livello Pared (base) — 50-100 punti
             { title: 'Drink di benvenuto', description: 'Una consumazione gratuita al bar del club: acqua, succo o bibita a scelta.', cost: 50, icon: '🥤' },
@@ -484,8 +497,7 @@ async function getDb() {
               [id, brandId, r.title, r.description, r.cost, r.icon]
             );
           }
-          console.log(`✓ Populated ${rewards.length} rewards in catalog`);
-        }
+          console.log(`✓ Populated ${rewards.length} rewards for brand ${brandRow.name}`);
       }
     } catch(e) { console.log('Rewards population note:', e.message); }
 

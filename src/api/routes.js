@@ -126,7 +126,7 @@ function authMiddleware(req, res, next) {
     '/brands/',             // brand slug lookup (used by landing page)
     '/landing/',            // landing page API (brand by slug, pass info)
     '/passes/signup',       // public signup endpoint
-    '/rewards/seed', '/challenges/seed', '/challenges/migrate-triggers', '/rewards/check', '/rewards/fix-brand'
+    '/rewards/seed', '/challenges/seed', '/challenges/migrate-triggers', '/rewards/check', '/rewards/fix-brand', '/cleanup/non-padel'
   ];
   // Apple Wallet device registration paths & pass downloads
   if (req.path.match(/\/devices\//) || req.path.match(/\/passes\/.*\/pkpass/) || req.path.match(/\/passes\/.*\/download/)) return next();
@@ -1641,6 +1641,42 @@ router.get('/rewards/fix-brand', async (req, res) => {
       rewards: rResult.rows,
       tiers: tResult.rows
     });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+/**
+ * GET /api/v1/cleanup/non-padel - Remove padel-specific data from non-padel brands
+ * Deletes tiers, rewards, and challenges that were incorrectly seeded
+ */
+router.get('/cleanup/non-padel', async (req, res) => {
+  try {
+    // Find non-padel brands (those WITHOUT Playtomic config)
+    const nonPadel = await pool.query(`
+      SELECT id, name FROM brands
+      WHERE config::text NOT LIKE '%playtomic%' OR config IS NULL
+    `);
+
+    if (nonPadel.rows.length === 0) {
+      return res.json({ message: 'No non-padel brands found', cleaned: [] });
+    }
+
+    const cleaned = [];
+    for (const brand of nonPadel.rows) {
+      const tiersDeleted = await pool.query('DELETE FROM tiers WHERE brand_id = $1 RETURNING id, name', [brand.id]);
+      const rewardsDeleted = await pool.query('DELETE FROM rewards WHERE brand_id = $1 RETURNING id, title', [brand.id]);
+      const challengesDeleted = await pool.query('DELETE FROM challenges WHERE brand_id = $1 RETURNING id, title', [brand.id]);
+
+      cleaned.push({
+        brand: brand.name,
+        brand_id: brand.id,
+        tiers_removed: tiersDeleted.rows.length,
+        rewards_removed: rewardsDeleted.rows.length,
+        challenges_removed: challengesDeleted.rows.length
+      });
+      console.log(`[Cleanup] Brand ${brand.name}: removed ${tiersDeleted.rows.length} tiers, ${rewardsDeleted.rows.length} rewards, ${challengesDeleted.rows.length} challenges`);
+    }
+
+    res.json({ message: 'Cleanup completed', cleaned });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
