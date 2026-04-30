@@ -625,11 +625,22 @@ async function getDb() {
       const allBrands = await pool.query('SELECT id, name FROM brands');
       console.log(`[ScratchSeed] Found ${allBrands.rows.length} brands total`);
       for (const row of allBrands.rows) {
-        const existing = await pool.query('SELECT COUNT(*) as cnt FROM instant_win_campaigns WHERE brand_id = $1', [row.id]);
-        if (parseInt(existing.rows[0].cnt) > 0) {
-          console.log(`[ScratchSeed] ${row.name} already has ${existing.rows[0].cnt} campaigns, skipping`);
+        // Check if brand already has campaigns
+        const existing = await pool.query('SELECT id FROM instant_win_campaigns WHERE brand_id = $1 LIMIT 1', [row.id]);
+        if (existing.rows.length > 0) {
+          // Ensure scratchCardId is in brand config
+          const brandRes = await pool.query('SELECT config FROM brands WHERE id = $1', [row.id]);
+          const config = brandRes.rows[0]?.config || {};
+          if (!config.scratchCardId) {
+            config.scratchCardId = existing.rows[0].id;
+            await pool.query('UPDATE brands SET config = $1 WHERE id = $2', [JSON.stringify(config), row.id]);
+            console.log(`[ScratchSeed] ${row.name}: saved scratchCardId ${existing.rows[0].id} to brand config`);
+          } else {
+            console.log(`[ScratchSeed] ${row.name} already has campaign + config, skipping`);
+          }
           continue;
         }
+        const scratchId = uuidv4();
         const prizes = [
           { name: 'Super Bonus!', description: '+50 punti', points: 50, icon: '🎉', weight: 20 },
           { name: 'Bonus', description: '+20 punti', points: 20, icon: '⭐', weight: 40 },
@@ -638,8 +649,13 @@ async function getDb() {
         await pool.query(
           `INSERT INTO instant_win_campaigns (id, brand_id, title, description, type, win_probability, prizes, max_plays_per_member)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [uuidv4(), row.id, 'Gratta e Vinci', 'Gratta la card per scoprire se hai vinto punti bonus!', 'scratch', 30, JSON.stringify(prizes), 1]
+          [scratchId, row.id, 'Gratta e Vinci', 'Gratta la card per scoprire se hai vinto punti bonus!', 'scratch', 30, JSON.stringify(prizes), 1]
         );
+        // Save scratchCardId to brand config
+        const brandRes = await pool.query('SELECT config FROM brands WHERE id = $1', [row.id]);
+        const config = brandRes.rows[0]?.config || {};
+        config.scratchCardId = scratchId;
+        await pool.query('UPDATE brands SET config = $1 WHERE id = $2', [JSON.stringify(config), row.id]);
         console.log(`✓ Default scratch card created for brand ${row.name} (${row.id})`);
       }
     } catch(e) { console.error('Scratch card seed ERROR:', e.message, e.stack); }

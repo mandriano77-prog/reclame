@@ -3740,31 +3740,21 @@ function doCopyScratchLink() {
 }
 
 async function sendScratchPush(campaignId) {
-    if (!confirm('Inviare una push a TUTTI i membri con il link alla scratch card personalizzato?')) return;
+    if (!confirm('Inviare una push a tutti i membri? Il link scratch card è già sul retro del pass di ogni membro.')) return;
     try {
-        const res = await fetch(`${API}/members?brand_id=${brandId}`, { headers: getAuthHeaders() });
-        const members = await res.json();
-        const baseUrl = `${window.location.origin}/scratch/${campaignId}`;
-        let sent = 0;
-        for (const m of members) {
-            const scratchUrl = `${baseUrl}?m=${m.id}`;
-            try {
-                await fetch(`${API}/push/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-                    body: JSON.stringify({
-                        brand_id: brandId,
-                        title: '🎰 Gratta e Vinci!',
-                        message: 'Hai una scratch card da grattare! Apri per scoprire se hai vinto.',
-                        target: 'member',
-                        member_id: m.id,
-                        update_pass: false
-                    })
-                });
-                sent++;
-            } catch(e) { /* skip failed */ }
-        }
-        toast(`Push inviata a ${sent} membri con link personalizzato`);
+        const res = await fetch(`${API}/push/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({
+                brand_id: brandId,
+                title: '🎰 Gratta e Vinci!',
+                message: 'Hai una scratch card da grattare! Apri il pass e tocca la "i" per giocare.',
+                update_pass: true
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + (data.error || 'Invio fallito')); return; }
+        toast(`Push inviata a ${data.sent || 0} dispositivi`);
     } catch(e) { toast('Errore: ' + e.message); }
 }
 
