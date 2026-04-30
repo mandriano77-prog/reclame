@@ -3656,12 +3656,14 @@ async function copyReferralLink(code) {
 let scratchPrizesCount = 0;
 
 async function loadScratchCards() {
-    if (!brandId) return;
+    if (!brandId) { console.log('[Scratch] No brandId'); return; }
     try {
         const res = await fetch(`${API}/brands/${brandId}/scratch-cards`, { headers: authHeaders() });
+        if (!res.ok) { console.error('[Scratch] API error:', res.status); return; }
         const campaigns = await res.json();
+        console.log('[Scratch] Loaded', campaigns.length, 'campaigns');
         const list = document.getElementById('scratchCardsList');
-        if (!campaigns.length) {
+        if (!Array.isArray(campaigns) || !campaigns.length) {
             list.innerHTML = '<div style="color:var(--text2);padding:20px;text-align:center;">Nessuna campagna scratch card. Crea la prima!</div>';
             return;
         }
