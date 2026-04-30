@@ -824,8 +824,43 @@ router.post('/passes', async (req, res) => {
       pass_id: passInstance.id,
       brand_id: brand.id,
       event_type: 'pass_created',
-      metadata: { template_id, customer_email: customer_data?.email }
+      metadata: { template_id, customer_email: customer_data?.email, source: 'dashboard' }
     });
+
+    // If pass has welcome points (punti = '10' or similar) and is linked to a member, log the points
+    const puntiValue = parseInt(field_values?.punti || '0');
+    if (member_id && puntiValue > 0) {
+      try {
+        await logPoints({
+          brand_id: brand.id,
+          member_id: member_id,
+          pass_id: passInstance.id,
+          points: puntiValue,
+          reason: 'signup',
+          details: 'Punti di benvenuto'
+        });
+        console.log(`[CreatePass] Logged ${puntiValue} welcome points for member ${member_id}`);
+      } catch(e) { console.error('[CreatePass] Error logging points:', e.message); }
+
+      // Send welcome email if member has email
+      if (member_id) {
+        try {
+          const memberData = await getMember(member_id);
+          if (memberData && memberData.email) {
+            const fullName = [memberData.first_name, memberData.last_name].filter(Boolean).join(' ') || 'Membro';
+            const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
+            sendWelcomeEmail({
+              to: memberData.email,
+              name: fullName,
+              brandName: brand.name,
+              brandColor: brand.config?.backgroundColor || '#000000',
+              points: puntiValue,
+              downloadUrl
+            }).catch(err => console.error('[CreatePass] Welcome email error:', err.message));
+          }
+        } catch(e) { console.error('[CreatePass] Member lookup error:', e.message); }
+      }
+    }
 
     const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
     const brandSlug = brand.slug || '';
