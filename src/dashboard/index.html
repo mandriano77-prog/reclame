@@ -2078,6 +2078,8 @@ async function loadMembers() {
                     ${linkedPass ? `
                         <button class="btn small" onclick="openPointsModal('${linkedPass.id}','${safeName}',${pts})">+ Punti</button>
                         <button class="btn small sec" onclick="showQR('${linkedPass.landing_url}')">QR</button>
+                        <button class="btn small sec" onclick="window.open('${linkedPass.download_url}','_blank')" title="Scarica .pkpass">&#8595; Pass</button>
+                        <button class="btn small sec" onclick="copyPassLink('${linkedPass.download_url}')" title="Copia link download">&#128279;</button>
                     ` : `
                         <span style="font-size:11px;color:var(--text2);padding:6px 0;">Nessun pass</span>
                     `}
@@ -2131,8 +2133,14 @@ async function saveMember() {
         await fetch(`${API}/members/${editId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
         toast('Membro aggiornato');
     } else {
-        await fetch(`${API}/members`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
-        toast('Membro creato');
+        const createRes = await fetch(`${API}/members`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+        const newMember = await createRes.json();
+        if (newMember.error) { toast('Errore: ' + newMember.error, 'error'); return; }
+        toast('Membro creato con pass e punti di benvenuto!');
+        // If member has email, welcome email was sent
+        if (data.email) {
+            toast('Welcome email inviata a ' + data.email);
+        }
     }
     closeModal('memberModal');
     loadMembers();
@@ -3516,6 +3524,14 @@ async function savePushConfig() {
 }
 
 // ─── Referral Link Copy ──────────────────────────────
+function copyPassLink(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        toast('Link download pass copiato!');
+    }).catch(() => {
+        prompt('Copia questo link:', url);
+    });
+}
+
 async function copyReferralLink(code) {
     // Get brand slug for the landing URL
     let slug = brandId;
