@@ -217,12 +217,23 @@ async function evaluateBookingPartners(challenge, member, brand_id) {
 
 // ─── Main Evaluator ────────────────────────────────────
 
+/**
+ * Evaluate referral challenge: count how many members this member has referred.
+ * trigger_config: { target: 5 } → complete when referral_count >= target
+ */
+async function evaluateReferral(challenge, member) {
+  const target = challenge.trigger_config?.target || 1;
+  const current = member.referral_count || 0;
+  return { current, target, completed: current >= target };
+}
+
 const EVALUATORS = {
   booking_count: evaluateBookingCount,
   booking_streak: evaluateBookingStreak,
   booking_time: evaluateBookingTime,
   booking_day: evaluateBookingDay,
   booking_partners: evaluateBookingPartners,
+  referral: evaluateReferral,
 };
 
 /**
@@ -241,10 +252,10 @@ async function evaluateChallenges(brand_id) {
       return { evaluated: 0, completed: 0, message: 'Nessuna sfida Playtomic attiva' };
     }
 
-    // Get all members with Playtomic data
-    const members = await db.getMembersByPlaytomicEmail(brand_id);
+    // Get all members for this brand (not just Playtomic — also referral challenges)
+    const members = await db.listMembers(brand_id);
     if (members.length === 0) {
-      return { evaluated: 0, completed: 0, message: 'Nessun membro Playtomic' };
+      return { evaluated: 0, completed: 0, message: 'Nessun membro' };
     }
 
     let totalEvaluated = 0;

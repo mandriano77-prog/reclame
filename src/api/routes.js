@@ -93,6 +93,12 @@ const {
   updateUser,
   deleteUser,
   verifyPassword,
+  // Referral
+  getMemberByReferralCode,
+  incrementReferralCount,
+  // Analytics
+  logAnalyticsEvent,
+  getAnalyticsStats,
   pool
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
@@ -1112,6 +1118,37 @@ router.post('/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber',
       serial_number: serialNumber
     });
 
+    // Log pass installation analytics event
+    await logAnalyticsEvent({
+      event_type: 'pass_installed',
+      metadata: { serial_number: serialNumber, device_library_id: deviceLibraryId }
+    });
+
+    // Get the pass and brand details
+    const passData = await getPassBySerial(serialNumber);
+    if (passData) {
+      const pass = await getPassInstance(passData.id);
+      if (pass) {
+        const brandData = await getBrand(pass.brand_id);
+
+        // Check if brand has welcome push configured
+        if (brandData && brandData.config && brandData.config.welcome_push_message) {
+          try {
+            await sendPushUpdate({
+              deviceLibraryId: deviceLibraryId,
+              pushToken: pushToken,
+              serialNumber: serialNumber,
+              passId: pass.id,
+              message: brandData.config.welcome_push_message
+            });
+          } catch (pushError) {
+            console.error('Error sending welcome push:', pushError);
+            // Don't fail the registration if push fails
+          }
+        }
+      }
+    }
+
     await logEvent({
       event_type: 'device_registered',
       device_id: deviceLibraryId,
@@ -1385,7 +1422,7 @@ router.get('/landing/brand/:slug', async (req, res) => {
  */
 router.post('/passes/signup', async (req, res) => {
   try {
-    const { brand_id, name, email, phone, playtomic_email } = req.body;
+    const { brand_id, name, email, phone, playtomic_email, referral_code } = req.body;
     if (!brand_id || !name || !email) {
       return res.status(400).json({ error: 'brand_id, name e email sono obbligatori' });
     }
@@ -1411,6 +1448,16 @@ router.post('/passes/signup', async (req, res) => {
     );
 
     let member;
+    let referrer_id = null;
+
+    // Handle referral code if provided
+    if (referral_code) {
+      const referrer = await getMemberByReferralCode(brand_id, referral_code);
+      if (referrer) {
+        referrer_id = referrer.id;
+      }
+    }
+
     if (existingCheck.rows.length > 0) {
       // Member exists — check if they already have an active pass
       const memberId = existingCheck.rows[0].id;
@@ -1432,7 +1479,17 @@ router.post('/passes/signup', async (req, res) => {
       }
     } else {
       // Create new member
-      member = await createMember({ brand_id, first_name, last_name, email, phone, playtomic_email: playtomic_email || null });
+      member = await createMember({ brand_id, first_name, last_name, email, phone, playtomic_email: playtomic_email || null, referred_by: referrer_id });
+
+      // Increment referrer's referral count if applicable
+      if (referrer_id) {
+        await incrementReferralCount(referrer_id);
+        await logAnalyticsEvent({
+          event_type: 'member_referred',
+          brand_id: brand_id,
+          metadata: { referred_member_id: member.id, referrer_id: referrer_id, referral_code: referral_code }
+        });
+      }
     }
 
     // Get first tier for this brand (lowest sort_order / min_points)
@@ -2776,6 +2833,244 @@ router.get('/brands/:id/playtomic/logs', async (req, res) => {
     const logs = await listSyncLogs(req.params.id, parseInt(req.query.limit) || 50);
     res.json(logs);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== STRIP PROMOS ====================
+
+/**
+ * GET /api/v1/brands/:id/strip-promos - List all strip promos for a brand
+ */
+router.get('/brands/:id/strip-promos', authMiddleware, async (req, res) => {
+  try {
+    const promos = await pool.query(
+      'SELECT * FROM strip_promos WHERE brand_id = $1 ORDER BY created_at DESC',
+      [req.params.id]
+    );
+    res.json(promos.rows);
+  } catch (error) {
+    console.error('Error listing strip promos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/brands/:id/strip-promos - Create new strip promo
+ * Body: { title, strip_base64, start_date, end_date, push_message, push_frequency }
+ */
+router.post('/brands/:id/strip-promos', authMiddleware, async (req, res) => {
+  try {
+    const { title, strip_base64, start_date, end_date, push_message, push_frequency } = req.body;
+
+    if (!title || !strip_base64 || !start_date || !end_date) {
+      return res.status(400).json({ error: 'title, strip_base64, start_date, and end_date are required' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO strip_promos
+       (brand_id, title, strip_base64, start_date, end_date, push_message, push_frequency, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+       RETURNING *`,
+      [req.params.id, title, strip_base64, start_date, end_date, push_message || null, push_frequency || null]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error creating strip promo:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/strip-promos/:id - Update strip promo
+ */
+router.put('/strip-promos/:id', authMiddleware, async (req, res) => {
+  try {
+    const { title, strip_base64, start_date, end_date, push_message, push_frequency } = req.body;
+
+    const updates = [];
+    const params = [req.params.id];
+    let paramIndex = 2;
+
+    if (title !== undefined) {
+      updates.push(`title = $${paramIndex++}`);
+      params.push(title);
+    }
+    if (strip_base64 !== undefined) {
+      updates.push(`strip_base64 = $${paramIndex++}`);
+      params.push(strip_base64);
+    }
+    if (start_date !== undefined) {
+      updates.push(`start_date = $${paramIndex++}`);
+      params.push(start_date);
+    }
+    if (end_date !== undefined) {
+      updates.push(`end_date = $${paramIndex++}`);
+      params.push(end_date);
+    }
+    if (push_message !== undefined) {
+      updates.push(`push_message = $${paramIndex++}`);
+      params.push(push_message);
+    }
+    if (push_frequency !== undefined) {
+      updates.push(`push_frequency = $${paramIndex++}`);
+      params.push(push_frequency);
+    }
+
+    updates.push(`updated_at = NOW()`);
+
+    if (updates.length === 1) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    const result = await pool.query(
+      `UPDATE strip_promos SET ${updates.join(', ')} WHERE id = $1 RETURNING *`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Strip promo not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating strip promo:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/strip-promos/:id - Delete strip promo
+ */
+router.delete('/strip-promos/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'DELETE FROM strip_promos WHERE id = $1 RETURNING id',
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Strip promo not found' });
+    }
+
+    res.json({ success: true, id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting strip promo:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== REFERRAL ====================
+
+/**
+ * GET /api/v1/brands/:id/referral-stats - Get referral stats for brand
+ */
+router.get('/brands/:id/referral-stats', authMiddleware, async (req, res) => {
+  try {
+    const stats = await pool.query(
+      `SELECT
+        COUNT(*) as total_members,
+        COUNT(*) FILTER (WHERE referred_by IS NOT NULL) as referred_members,
+        COALESCE(AVG(referral_count), 0) as avg_referrals_per_member,
+        COALESCE(MAX(referral_count), 0) as max_referrals
+       FROM members WHERE brand_id = $1`,
+      [req.params.id]
+    );
+
+    const topReferrers = await pool.query(
+      `SELECT id, first_name, last_name, email, referral_count
+       FROM members
+       WHERE brand_id = $1 AND referral_count > 0
+       ORDER BY referral_count DESC
+       LIMIT 10`,
+      [req.params.id]
+    );
+
+    res.json({
+      stats: stats.rows[0],
+      topReferrers: topReferrers.rows
+    });
+  } catch (error) {
+    console.error('Error getting referral stats:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== ANALYTICS FULL ====================
+
+/**
+ * GET /api/v1/brands/:id/analytics/full - Get comprehensive analytics for brand
+ */
+router.get('/brands/:id/analytics/full', authMiddleware, async (req, res) => {
+  try {
+    // Pass statistics
+    const passStats = await pool.query(
+      `SELECT
+        COUNT(*) as total_passes,
+        COUNT(*) FILTER (WHERE status = 'active') as active_passes,
+        COUNT(*) FILTER (WHERE status = 'inactive') as inactive_passes,
+        COUNT(*) FILTER (WHERE status = 'expired') as expired_passes,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as passes_created_week,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') as passes_created_month
+       FROM pass_instances WHERE brand_id = $1`,
+      [req.params.id]
+    );
+
+    // Device statistics
+    const deviceStats = await pool.query(
+      `SELECT
+        COUNT(DISTINCT device_library_id) as total_devices,
+        COUNT(*) as total_registrations
+       FROM devices
+       WHERE pass_id IN (SELECT id FROM pass_instances WHERE brand_id = $1)`,
+      [req.params.id]
+    );
+
+    // Member statistics
+    const memberStats = await pool.query(
+      `SELECT
+        COUNT(*) as total_members,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as members_created_week,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') as members_created_month,
+        COUNT(*) FILTER (WHERE referred_by IS NOT NULL) as referred_members,
+        COALESCE(AVG(referral_count), 0) as avg_referral_count
+       FROM members WHERE brand_id = $1`,
+      [req.params.id]
+    );
+
+    // Event statistics
+    const eventStats = await pool.query(
+      `SELECT
+        COUNT(*) as total_events,
+        COUNT(*) FILTER (WHERE event_type = 'pass_created') as passes_created,
+        COUNT(*) FILTER (WHERE event_type = 'pass_updated') as passes_updated,
+        COUNT(*) FILTER (WHERE event_type = 'device_registered') as devices_registered,
+        COUNT(*) FILTER (WHERE event_type = 'push_sent') as pushes_sent,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as events_week
+       FROM events WHERE brand_id = $1`,
+      [req.params.id]
+    );
+
+    // Points/engagement statistics
+    const engagementStats = await pool.query(
+      `SELECT
+        COUNT(*) as total_claims,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as claims_week
+       FROM reward_claims WHERE reward_id IN (SELECT id FROM rewards WHERE brand_id = $1)`,
+      [req.params.id]
+    );
+
+    res.json({
+      passes: passStats.rows[0],
+      devices: deviceStats.rows[0],
+      members: memberStats.rows[0],
+      events: eventStats.rows[0],
+      engagement: engagementStats.rows[0],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting analytics:', error);
     res.status(500).json({ error: error.message });
   }
 });

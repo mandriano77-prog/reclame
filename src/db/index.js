@@ -367,6 +367,62 @@ async function getDb() {
       console.log('✓ challenge_progress table ensured');
     } catch(e) { console.log('challenge_progress migration note:', e.message); }
 
+    // --- Strip Promos table (scheduled promotional strips) ---
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS strip_promos (
+          id TEXT PRIMARY KEY,
+          brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          title TEXT NOT NULL,
+          strip_base64 TEXT NOT NULL,
+          start_date TIMESTAMPTZ NOT NULL,
+          end_date TIMESTAMPTZ NOT NULL,
+          push_message TEXT,
+          push_frequency TEXT DEFAULT 'none',
+          last_push_sent TIMESTAMPTZ,
+          active BOOLEAN DEFAULT true,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      console.log('✓ strip_promos table ensured');
+    } catch(e) { console.log('strip_promos migration note:', e.message); }
+
+    // --- Add referral_code and referred_by to members ---
+    try {
+      await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE`);
+      await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS referred_by TEXT`);
+      await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS referral_count INTEGER DEFAULT 0`);
+      console.log('✓ members referral columns ensured');
+    } catch(e) { console.log('members referral migration note:', e.message); }
+
+    // --- Analytics events table (pass lifecycle tracking) ---
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS analytics_events (
+          id TEXT PRIMARY KEY,
+          brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          member_id TEXT REFERENCES members(id) ON DELETE SET NULL,
+          pass_id TEXT,
+          event_type TEXT NOT NULL,
+          event_data JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_brand_type ON analytics_events(brand_id, event_type)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at)`);
+      console.log('✓ analytics_events table ensured');
+    } catch(e) { console.log('analytics_events migration note:', e.message); }
+
+    // --- Generate referral codes for existing members that don't have one ---
+    try {
+      const membersNoCode = await pool.query(`SELECT id FROM members WHERE referral_code IS NULL`);
+      for (const m of membersNoCode.rows) {
+        const code = m.id.substring(0, 8).toUpperCase();
+        await pool.query(`UPDATE members SET referral_code = $1 WHERE id = $2`, [code, m.id]);
+      }
+      if (membersNoCode.rows.length > 0) console.log(`✓ Generated referral codes for ${membersNoCode.rows.length} members`);
+    } catch(e) { console.log('referral code generation note:', e.message); }
+
     // --- Seed default tiers ONLY for padel brands (with Playtomic config) that have none ---
     try {
       const brandsWithoutTiers = await pool.query(`
@@ -2087,13 +2143,15 @@ async function getDueScheduledPush() {
 
 async function createMember(data) {
   const id = data.id || uuidv4();
-  const { brand_id, first_name, last_name = null, email = null, phone = null, notes = null, playtomic_email = null } = data;
+  const { brand_id, first_name, last_name = null, email = null, phone = null, notes = null, playtomic_email = null, referred_by = null } = data;
   if (!brand_id || !first_name) throw new Error('Brand ID and first_name are required');
+  const referral_code = data.referral_code || id.substring(0, 8).toUpperCase();
   await pool.query(
-    `INSERT INTO members (id, brand_id, first_name, last_name, email, phone, notes, playtomic_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [id, brand_id, first_name, last_name, email, phone, notes, playtomic_email]
+    `INSERT INTO members (id, brand_id, first_name, last_name, email, phone, notes, playtomic_email, referral_code, referred_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [id, brand_id, first_name, last_name, email, phone, notes, playtomic_email, referral_code, referred_by]
   );
-  return { id, brand_id, first_name, last_name, email, phone, notes, playtomic_email, created_at: new Date() };
+  return { id, brand_id, first_name, last_name, email, phone, notes, playtomic_email, referral_code, referred_by, created_at: new Date() };
 }
 
 async function getMember(id) {
@@ -2190,6 +2248,129 @@ async function updateMemberPlaytomic(member_id, { playtomic_player_id, playtomic
     `UPDATE members SET playtomic_player_id = COALESCE($2, playtomic_player_id), playtomic_accepts_marketing = COALESCE($3, playtomic_accepts_marketing), updated_at = NOW() WHERE id = $1`,
     [member_id, playtomic_player_id, playtomic_accepts_marketing]
   );
+}
+
+// ─── Strip Promos ──────────────────────────────────────
+
+async function createStripPromo({ brand_id, title, strip_base64, start_date, end_date, push_message, push_frequency }) {
+  const id = uuidv4();
+  await pool.query(
+    `INSERT INTO strip_promos (id, brand_id, title, strip_base64, start_date, end_date, push_message, push_frequency)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [id, brand_id, title, strip_base64, start_date, end_date, push_message || null, push_frequency || 'none']
+  );
+  return { id, brand_id, title, start_date, end_date, push_message, push_frequency };
+}
+
+async function listStripPromos(brand_id) {
+  const res = await pool.query(
+    `SELECT id, brand_id, title, start_date, end_date, push_message, push_frequency, last_push_sent, active, created_at FROM strip_promos WHERE brand_id = $1 ORDER BY start_date DESC`,
+    [brand_id]
+  );
+  return res.rows;
+}
+
+async function getStripPromo(id) {
+  const res = await pool.query(`SELECT * FROM strip_promos WHERE id = $1`, [id]);
+  return res.rows[0] || null;
+}
+
+async function updateStripPromo(id, fields) {
+  const sets = [];
+  const vals = [id];
+  let i = 2;
+  for (const [k, v] of Object.entries(fields)) {
+    if (['title', 'strip_base64', 'start_date', 'end_date', 'push_message', 'push_frequency', 'active', 'last_push_sent'].includes(k)) {
+      sets.push(`${k} = $${i}`);
+      vals.push(v);
+      i++;
+    }
+  }
+  if (sets.length === 0) return null;
+  await pool.query(`UPDATE strip_promos SET ${sets.join(', ')} WHERE id = $1`, vals);
+  return getStripPromo(id);
+}
+
+async function deleteStripPromo(id) {
+  await pool.query(`DELETE FROM strip_promos WHERE id = $1`, [id]);
+}
+
+async function getActiveStripPromos() {
+  const now = new Date().toISOString();
+  const res = await pool.query(
+    `SELECT sp.*, b.name as brand_name FROM strip_promos sp JOIN brands b ON sp.brand_id = b.id
+     WHERE sp.active = true AND sp.start_date <= $1 AND sp.end_date >= $1`,
+    [now]
+  );
+  return res.rows;
+}
+
+// ─── Analytics Events ──────────────────────────────────
+
+async function logAnalyticsEvent({ brand_id, member_id, pass_id, event_type, event_data }) {
+  const id = uuidv4();
+  await pool.query(
+    `INSERT INTO analytics_events (id, brand_id, member_id, pass_id, event_type, event_data) VALUES ($1,$2,$3,$4,$5,$6)`,
+    [id, brand_id, member_id || null, pass_id || null, event_type, JSON.stringify(event_data || {})]
+  );
+  return id;
+}
+
+async function getAnalyticsStats(brand_id) {
+  const results = {};
+  // Pass installs (device registrations)
+  const installs = await pool.query(
+    `SELECT COUNT(DISTINCT device_id) as total FROM device_registrations WHERE brand_id = $1`,
+    [brand_id]
+  );
+  results.active_devices = parseInt(installs.rows[0]?.total || 0);
+
+  // Pass count
+  const passes = await pool.query(
+    `SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE status = 'active') as active FROM pass_instances WHERE brand_id = $1`,
+    [brand_id]
+  );
+  results.total_passes = parseInt(passes.rows[0]?.total || 0);
+  results.active_passes = parseInt(passes.rows[0]?.active || 0);
+
+  // Members
+  const members = await pool.query(`SELECT COUNT(*) as total FROM members WHERE brand_id = $1`, [brand_id]);
+  results.total_members = parseInt(members.rows[0]?.total || 0);
+
+  // Referral stats
+  const referrals = await pool.query(
+    `SELECT COUNT(*) as total FROM members WHERE brand_id = $1 AND referred_by IS NOT NULL`,
+    [brand_id]
+  );
+  results.total_referrals = parseInt(referrals.rows[0]?.total || 0);
+
+  // Analytics events by type (last 30 days)
+  const events = await pool.query(
+    `SELECT event_type, COUNT(*) as count FROM analytics_events
+     WHERE brand_id = $1 AND created_at > NOW() - INTERVAL '30 days'
+     GROUP BY event_type`,
+    [brand_id]
+  );
+  results.events_30d = {};
+  events.rows.forEach(r => { results.events_30d[r.event_type] = parseInt(r.count); });
+
+  // Retention: passes created vs still active
+  results.retention_rate = results.total_passes > 0
+    ? Math.round((results.active_passes / results.total_passes) * 100)
+    : 0;
+
+  return results;
+}
+
+// ─── Referral helpers ──────────────────────────────────
+
+async function getMemberByReferralCode(code) {
+  const res = await pool.query(`SELECT * FROM members WHERE referral_code = $1`, [code]);
+  return res.rows[0] || null;
+}
+
+async function incrementReferralCount(member_id) {
+  await pool.query(`UPDATE members SET referral_count = COALESCE(referral_count, 0) + 1 WHERE id = $1`, [member_id]);
 }
 
 // ─── Users ──────────────────────────────────────────────
@@ -2370,6 +2551,19 @@ module.exports = {
   listSyncLogs,
   getMembersByPlaytomicEmail,
   updateMemberPlaytomic,
+  // Strip Promos
+  createStripPromo,
+  listStripPromos,
+  getStripPromo,
+  updateStripPromo,
+  deleteStripPromo,
+  getActiveStripPromos,
+  // Analytics
+  logAnalyticsEvent,
+  getAnalyticsStats,
+  // Referral
+  getMemberByReferralCode,
+  incrementReferralCount,
   // Users
   createUser,
   getUserByEmail,

@@ -9,6 +9,7 @@ const apiRoutes = require('./api/routes');
 const debugSignRoutes = require('./api/debug-sign');
 const { startScheduler } = require('./engine/scheduler');
 const { runPlaytomicCron } = require('./engine/playtomic');
+const { runStripPromoCheck } = require('./engine/strip-promo');
 
 // Load certificates: prefer FILE-BASED certs (from repo), fallback to env vars
 function loadCerts() {
@@ -125,6 +126,12 @@ getDb().then(db => {
       }, msUntil);
     }
     schedulePlaytomicDaily();
+
+    // Strip Promo cron — check every hour for active/expired promos
+    console.log('🎨 Strip Promo scheduler started (every 60 min)');
+    setInterval(() => runStripPromoCheck(), 60 * 60 * 1000);
+    // Run once at startup (after 30 sec delay to let DB finish migrations)
+    setTimeout(() => runStripPromoCheck(), 30 * 1000);
   });
 }).catch(err => {
   console.error('Failed to initialize database:', err);
