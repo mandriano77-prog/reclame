@@ -337,4 +337,66 @@ async function sendRecapEmail({ to, brandName, brandColor, memberName, periodLab
   }
 }
 
-module.exports = { sendWelcomeEmail, sendUserInviteEmail, sendRecapEmail };
+/**
+ * Send scratch card invitation email
+ */
+async function sendScratchEmail({ to, name, brandName, brandColor, scratchUrl, campaignTitle }) {
+  const resend = getResend();
+  if (!resend) {
+    console.log('[Mailer] RESEND_API_KEY not set — skipping scratch email to', to);
+    return { skipped: true };
+  }
+
+  const fromEmail = getFromEmail();
+  const fromName = getFromName();
+  const firstName = (name || '').split(/\s+/)[0] || 'Ciao';
+  const color = brandColor || '#D4E600';
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:480px;margin:0 auto;padding:32px 24px;">
+
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="font-size:48px;margin-bottom:8px;">🎰</div>
+      <h1 style="color:#fff;font-size:24px;font-weight:700;margin:0;">${campaignTitle || 'Gratta e Vinci!'}</h1>
+      <p style="color:#888;font-size:14px;margin:8px 0 0;">da ${brandName}</p>
+    </div>
+
+    <div style="background:#111;border-radius:16px;padding:28px 24px;text-align:center;border:1px solid #222;">
+      <p style="color:#ccc;font-size:16px;line-height:1.6;margin:0 0 8px;">
+        ${firstName}, hai una scratch card tutta per te!
+      </p>
+      <p style="color:#888;font-size:14px;line-height:1.5;margin:0 0 24px;">
+        Gratta per scoprire se hai vinto punti bonus.
+      </p>
+      <a href="${scratchUrl}" style="display:inline-block;background:${color};color:#000;font-size:16px;font-weight:700;padding:14px 40px;border-radius:50px;text-decoration:none;letter-spacing:0.5px;">
+        GRATTA ORA
+      </a>
+    </div>
+
+    <div style="text-align:center;padding:24px 0 0;">
+      <p style="color:#444;font-size:11px;margin:0;">
+        Powered by Nudj
+      </p>
+    </div>
+
+  </div>
+</body></html>`;
+
+  try {
+    const result = await resend.emails.send({
+      from: `${fromName} <${fromEmail}>`,
+      to: [to],
+      subject: `🎰 ${firstName}, hai una scratch card da ${brandName}!`,
+      html
+    });
+    console.log(`[Mailer] ✓ Scratch email sent to ${to}`);
+    return result;
+  } catch(e) {
+    console.error(`[Mailer] ✗ Failed to send scratch to ${to}:`, e.message);
+    return { error: e.message };
+  }
+}
+
+module.exports = { sendWelcomeEmail, sendUserInviteEmail, sendRecapEmail, sendScratchEmail };

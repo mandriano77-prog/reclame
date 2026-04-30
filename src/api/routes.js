@@ -2,7 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
-const { sendWelcomeEmail, sendUserInviteEmail } = require('../engine/mailer');
+const { sendWelcomeEmail, sendUserInviteEmail, sendScratchEmail } = require('../engine/mailer');
 const {
   createBrand,
   createTemplate,
@@ -3527,6 +3527,49 @@ router.post('/scratch-cards/:id/play', async (req, res) => {
     res.json({ won, prize, play_id: play.id });
   } catch (err) {
     console.error('[ScratchCard] Play error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Scratch Card: send email invitations ───────────────────────
+router.post('/scratch-cards/:id/send-email', authMiddleware, async (req, res) => {
+  try {
+    const campaign = await getInstantWinCampaign(req.params.id);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    const brand = await getBrand(campaign.brand_id);
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+
+    const members = await listMembers(campaign.brand_id);
+    const membersWithEmail = members.filter(m => m.email);
+    if (membersWithEmail.length === 0) return res.json({ sent: 0, skipped: 0, message: 'No members with email' });
+
+    const baseUrl = `https://${CUSTOM_DOMAIN}`;
+    const brandColor = brand.config?.primaryColor || brand.config?.colors?.primary || '#D4E600';
+    let sent = 0, skipped = 0, errors = [];
+
+    for (const member of membersWithEmail) {
+      const scratchUrl = `${baseUrl}/scratch/${campaign.id}?m=${member.id}`;
+      try {
+        const result = await sendScratchEmail({
+          to: member.email,
+          name: member.first_name || member.full_name || '',
+          brandName: brand.name,
+          brandColor,
+          scratchUrl,
+          campaignTitle: campaign.title
+        });
+        if (result?.skipped) { skipped++; } else { sent++; }
+      } catch (e) {
+        errors.push({ member_id: member.id, error: e.message });
+        skipped++;
+      }
+    }
+
+    console.log(`[ScratchEmail] Campaign ${campaign.id}: sent=${sent}, skipped=${skipped}, errors=${errors.length}`);
+    res.json({ sent, skipped, total: membersWithEmail.length, errors: errors.slice(0, 5) });
+  } catch (err) {
+    console.error('[ScratchEmail] Error:', err);
     res.status(500).json({ error: err.message });
   }
 });

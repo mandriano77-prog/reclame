@@ -3688,6 +3688,7 @@ async function loadScratchCards() {
                         </div>
                     </div>
                     <div style="display:flex;gap:4px;flex-shrink:0;">
+                        <button class="btn small" onclick="sendScratchEmailBlast('${c.id}')" title="Invia email a tutti i membri">📧</button>
                         <button class="btn small" onclick="sendScratchPush('${c.id}')" title="Invia push a tutti">📲</button>
                         <button class="btn small sec" onclick="copyScratchLink('${c.id}')" title="Copia link membro">🔗</button>
                         <button class="btn small sec" onclick="editScratchCard('${c.id}')">✏️</button>
@@ -3755,6 +3756,19 @@ async function sendScratchPush(campaignId) {
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + (data.error || 'Invio fallito')); return; }
         toast(`Push inviata a ${data.sent || 0} dispositivi`);
+    } catch(e) { toast('Errore: ' + e.message); }
+}
+
+async function sendScratchEmailBlast(campaignId) {
+    if (!confirm('Inviare una email con scratch card personalizzata a tutti i membri con email?')) return;
+    try {
+        const res = await fetch(`${API}/scratch-cards/${campaignId}/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
+        });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + (data.error || 'Invio fallito')); return; }
+        toast(`Email inviate: ${data.sent} su ${data.total} membri`);
     } catch(e) { toast('Errore: ' + e.message); }
 }
 
