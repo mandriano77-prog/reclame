@@ -101,6 +101,7 @@ async function syncPlayers(brand_id, config) {
 
   let matched = 0;
   let totalPlayers = 0;
+  const matchDetails = []; // { member_name, email, player_id }
   let cursor = null;
   let hasMore = true;
 
@@ -117,10 +118,8 @@ async function syncPlayers(brand_id, config) {
 
     if (!resp.ok) {
       if (resp.status === 401 || resp.status === 403) {
-        // Token expired, refresh and retry
         tokenCache.delete(brand_id);
         const newToken = await getToken(brand_id, client_id, secret);
-        // Retry this page
         const retryResp = await fetchWithRetry(url, {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${newToken}` }
         });
@@ -145,6 +144,11 @@ async function syncPlayers(brand_id, config) {
           playtomic_accepts_marketing: player.accepts_commercial_communications || false
         });
         matched++;
+        matchDetails.push({
+          member_name: `${member.first_name || ''} ${member.last_name || ''}`.trim(),
+          email: player.email,
+          player_id: player.player_id
+        });
       }
     }
 
@@ -152,7 +156,7 @@ async function syncPlayers(brand_id, config) {
     cursor = result.next_cursor_id || null;
   }
 
-  return { matched, total_players: totalPlayers };
+  return { matched, total_players: totalPlayers, match_details: matchDetails };
 }
 
 // ─── Booking Sync ───────────────────────────────────────
@@ -191,6 +195,12 @@ async function syncBookings(brand_id, config) {
   let page = 0;
   let hasMore = true;
 
+  // Collect raw data for report
+  const allBookings = [];      // every booking found from Playtomic
+  const matchedBookings = [];  // bookings where participant matched a Nudj member (new)
+  const skippedBookings = [];  // bookings already synced (duplicate)
+  const unmatchedParticipants = []; // participants with no Nudj member
+
   while (hasMore) {
     const url = `${PLAYTOMIC_BASE}/api/v1/bookings?tenant_id=${tenant_id}&start_booking_date=${startDate}&end_booking_date=${endDate}&status=FINISHED&page=${page}&size=200`;
 
@@ -224,6 +234,21 @@ async function syncBookings(brand_id, config) {
       if (booking.is_canceled) continue;
       if (!booking.participant_info || !booking.participant_info.participants) continue;
 
+      // Collect raw booking info
+      const bookingInfo = {
+        booking_id: booking.booking_id,
+        date: booking.booking_start_date,
+        end_date: booking.booking_end_date,
+        sport: booking.sport_id || 'N/A',
+        court: booking.resource_name || 'N/A',
+        participants: (booking.participant_info.participants || []).map(p => ({
+          email: p.email || 'N/A',
+          name: p.name || p.full_name || '',
+          player_id: p.participant_id || ''
+        }))
+      };
+      allBookings.push(bookingInfo);
+
       for (const participant of booking.participant_info.participants) {
         // Match by player_id first (fast), then by email (fallback)
         let member = null;
@@ -234,11 +259,30 @@ async function syncBookings(brand_id, config) {
           member = emailMap.get(participant.email.toLowerCase());
         }
 
-        if (!member) continue;
+        if (!member) {
+          unmatchedParticipants.push({
+            email: participant.email || 'N/A',
+            name: participant.name || participant.full_name || '',
+            booking_id: booking.booking_id,
+            date: booking.booking_start_date,
+            court: booking.resource_name || 'N/A'
+          });
+          continue;
+        }
 
         // Check if already synced
         const alreadySynced = await db.isBookingSynced(brand_id, booking.booking_id, member.id);
-        if (alreadySynced) continue;
+        if (alreadySynced) {
+          skippedBookings.push({
+            booking_id: booking.booking_id,
+            member_name: `${member.first_name || ''} ${member.last_name || ''}`.trim(),
+            email: participant.email || '',
+            date: booking.booking_start_date,
+            court: booking.resource_name || 'N/A',
+            reason: 'già sincronizzato'
+          });
+          continue;
+        }
 
         // Log the booking (points are awarded by challenge evaluator)
         await db.addSyncLogEntry({
@@ -250,6 +294,16 @@ async function syncBookings(brand_id, config) {
           booking_date: booking.booking_start_date,
           sport_id: booking.sport_id,
           resource_name: booking.resource_name
+        });
+
+        matchedBookings.push({
+          booking_id: booking.booking_id,
+          member_name: `${member.first_name || ''} ${member.last_name || ''}`.trim(),
+          member_id: member.id,
+          email: participant.email || '',
+          date: booking.booking_start_date,
+          court: booking.resource_name || 'N/A',
+          sport: booking.sport_id || 'N/A'
         });
 
         processed++;
@@ -264,7 +318,13 @@ async function syncBookings(brand_id, config) {
     }
   }
 
-  return { processed };
+  return {
+    processed,
+    all_bookings: allBookings,
+    matched_bookings: matchedBookings,
+    skipped_bookings: skippedBookings,
+    unmatched_participants: unmatchedParticipants
+  };
 }
 
 // ─── Full Sync (Players + Bookings) ────────────────────

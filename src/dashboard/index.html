@@ -1727,6 +1727,90 @@ function renderSyncReport(data) {
         </div>`;
     }
 
+    // ─── Raw Data Section (collapsible) ───────────────────
+    const allBk = b.all_bookings || [];
+    const matchedBk = b.matched_bookings || [];
+    const skippedBk = b.skipped_bookings || [];
+    const unmatchedPt = b.unmatched_participants || [];
+    const matchDetails = p.match_details || [];
+
+    if (allBk.length > 0 || matchDetails.length > 0) {
+        html += `<div style="margin-top:16px;padding-top:12px;border-top:2px solid var(--border);">
+            <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.arrow').textContent=this.nextElementSibling.style.display==='none'?'▸':'▾'" style="cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <span class="arrow" style="font-size:12px;">▸</span>
+                <strong style="font-size:13px;">🔍 Dati grezzi Playtomic</strong>
+                <span style="font-size:11px;color:var(--text2);">(${allBk.length} prenotazioni, ${matchDetails.length} player match)</span>
+            </div>
+            <div style="display:none;font-size:11px;line-height:1.5;">`;
+
+        // Player matches found
+        if (matchDetails.length > 0) {
+            html += `<div style="margin-bottom:12px;">
+                <div style="font-weight:700;color:var(--teal);margin-bottom:4px;">👥 Player matchati (${matchDetails.length})</div>`;
+            matchDetails.forEach(m => {
+                html += `<div style="padding:3px 8px;border-left:2px solid var(--teal);margin-left:4px;margin-bottom:2px;">
+                    <strong>${m.member_name}</strong> — ${m.email} <span style="color:var(--text2);">ID: ${m.player_id}</span>
+                </div>`;
+            });
+            html += `</div>`;
+        }
+
+        // All bookings found from Playtomic
+        if (allBk.length > 0) {
+            html += `<div style="margin-bottom:12px;">
+                <div style="font-weight:700;color:var(--teal);margin-bottom:4px;">📅 Tutte le prenotazioni trovate (${allBk.length})</div>`;
+            allBk.forEach(bk => {
+                const d = bk.date ? new Date(bk.date).toLocaleString('it-IT', {dateStyle:'short',timeStyle:'short'}) : '—';
+                const parts = bk.participants.map(pp => pp.email || pp.name || '?').join(', ');
+                html += `<div style="padding:3px 8px;border-left:2px solid var(--border);margin-left:4px;margin-bottom:2px;">
+                    <strong>${d}</strong> · ${bk.court} · ${bk.sport} · <span style="color:var(--text2);">${parts}</span>
+                </div>`;
+            });
+            html += `</div>`;
+        }
+
+        // Matched bookings (newly synced)
+        if (matchedBk.length > 0) {
+            html += `<div style="margin-bottom:12px;">
+                <div style="font-weight:700;color:#4CAF50;margin-bottom:4px;">✅ Nuove prenotazioni sincronizzate (${matchedBk.length})</div>`;
+            matchedBk.forEach(bk => {
+                const d = bk.date ? new Date(bk.date).toLocaleString('it-IT', {dateStyle:'short',timeStyle:'short'}) : '—';
+                html += `<div style="padding:3px 8px;border-left:2px solid #4CAF50;margin-left:4px;margin-bottom:2px;">
+                    <strong>${bk.member_name}</strong> · ${d} · ${bk.court}
+                </div>`;
+            });
+            html += `</div>`;
+        }
+
+        // Skipped (already synced)
+        if (skippedBk.length > 0) {
+            html += `<div style="margin-bottom:12px;">
+                <div style="font-weight:700;color:var(--text2);margin-bottom:4px;">⏭ Già sincronizzate (${skippedBk.length})</div>`;
+            skippedBk.forEach(bk => {
+                const d = bk.date ? new Date(bk.date).toLocaleString('it-IT', {dateStyle:'short',timeStyle:'short'}) : '—';
+                html += `<div style="padding:3px 8px;border-left:2px solid var(--border);margin-left:4px;margin-bottom:2px;color:var(--text2);">
+                    ${bk.member_name} · ${d} · ${bk.court} — <em>${bk.reason}</em>
+                </div>`;
+            });
+            html += `</div>`;
+        }
+
+        // Unmatched participants
+        if (unmatchedPt.length > 0) {
+            html += `<div style="margin-bottom:12px;">
+                <div style="font-weight:700;color:#FF9800;margin-bottom:4px;">⚠️ Partecipanti non matchati (${unmatchedPt.length})</div>`;
+            unmatchedPt.forEach(pt => {
+                const d = pt.date ? new Date(pt.date).toLocaleString('it-IT', {dateStyle:'short',timeStyle:'short'}) : '—';
+                html += `<div style="padding:3px 8px;border-left:2px solid #FF9800;margin-left:4px;margin-bottom:2px;">
+                    ${pt.email} · ${d} · ${pt.court}
+                </div>`;
+            });
+            html += `</div>`;
+        }
+
+        html += `</div></div>`;
+    }
+
     container.innerHTML = html;
 
     // Append log history below
