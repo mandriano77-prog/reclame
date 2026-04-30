@@ -338,6 +338,35 @@ async function getDb() {
       console.log('✓ playtomic_sync_log table ensured');
     } catch(e) { console.log('playtomic_sync_log migration note:', e.message); }
 
+    // Add trigger_type and trigger_config columns to challenges
+    try {
+      await pool.query(`ALTER TABLE challenges ADD COLUMN IF NOT EXISTS trigger_type TEXT DEFAULT 'manual'`);
+      await pool.query(`ALTER TABLE challenges ADD COLUMN IF NOT EXISTS trigger_config JSONB DEFAULT '{}'`);
+      console.log('✓ challenges trigger columns ensured');
+    } catch(e) { console.log('challenges trigger migration note:', e.message); }
+
+    // Create challenge_progress table for tracking per-member progress
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS challenge_progress (
+          id TEXT PRIMARY KEY,
+          challenge_id TEXT NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+          member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+          brand_id TEXT NOT NULL REFERENCES brands(id),
+          current_count INTEGER DEFAULT 0,
+          target_count INTEGER DEFAULT 1,
+          period_start TIMESTAMPTZ,
+          period_end TIMESTAMPTZ,
+          streak_weeks INTEGER DEFAULT 0,
+          last_booking_week TEXT,
+          status TEXT DEFAULT 'in_progress',
+          updated_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(challenge_id, member_id, period_start)
+        )
+      `);
+      console.log('✓ challenge_progress table ensured');
+    } catch(e) { console.log('challenge_progress migration note:', e.message); }
+
     // --- Seed default tiers for brands that have none ---
     try {
       const brandsWithoutTiers = await pool.query(`
@@ -1111,7 +1140,7 @@ async function deleteReward(id) {
  */
 async function createChallenge(data) {
   const id = data.id || uuidv4();
-  const { brand_id, title, description = '', points = 0, icon = '⭐', type = 'action', recurring = false, active = true } = data;
+  const { brand_id, title, description = '', points = 0, icon = '⭐', type = 'action', recurring = false, active = true, trigger_type = 'manual', trigger_config = {} } = data;
 
   if (!brand_id || !title) {
     throw new Error('Brand ID and title are required');
@@ -1119,11 +1148,11 @@ async function createChallenge(data) {
 
   try {
     await pool.query(
-      `INSERT INTO challenges (id, brand_id, title, description, points, icon, type, recurring, active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [id, brand_id, title, description, points, icon, type, recurring, active]
+      `INSERT INTO challenges (id, brand_id, title, description, points, icon, type, recurring, active, trigger_type, trigger_config)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [id, brand_id, title, description, points, icon, type, recurring, active, trigger_type, JSON.stringify(trigger_config)]
     );
-    return { id, brand_id, title, description, points, icon, type, recurring, active };
+    return { id, brand_id, title, description, points, icon, type, recurring, active, trigger_type, trigger_config };
   } catch (error) {
     throw new Error(`Failed to create challenge: ${error.message}`);
   }
@@ -1203,6 +1232,16 @@ async function updateChallenge(id, data) {
       paramCount++;
       updates.push(`active = $${paramCount}`);
       values.push(data.active);
+    }
+    if (data.trigger_type !== undefined) {
+      paramCount++;
+      updates.push(`trigger_type = $${paramCount}`);
+      values.push(data.trigger_type);
+    }
+    if (data.trigger_config !== undefined) {
+      paramCount++;
+      updates.push(`trigger_config = $${paramCount}`);
+      values.push(JSON.stringify(data.trigger_config));
     }
 
     if (updates.length === 0) return getChallenge(id);
@@ -1629,6 +1668,197 @@ async function listCompletions(brandId, passId = null) {
     return result.rows;
   } catch (error) {
     throw new Error(`Failed to list completions: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// CHALLENGE PROGRESS
+// ============================================================================
+
+/**
+ * Upsert challenge progress for a member
+ */
+async function upsertChallengeProgress(data) {
+  const id = uuidv4();
+  const { challenge_id, member_id, brand_id, current_count = 0, target_count = 1, period_start = null, period_end = null, streak_weeks = 0, last_booking_week = null, status = 'in_progress' } = data;
+
+  try {
+    const result = await pool.query(`
+      INSERT INTO challenge_progress (id, challenge_id, member_id, brand_id, current_count, target_count, period_start, period_end, streak_weeks, last_booking_week, status, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+      ON CONFLICT (challenge_id, member_id, period_start)
+      DO UPDATE SET current_count = $5, target_count = $6, period_end = $8, streak_weeks = $9, last_booking_week = $10, status = $11, updated_at = NOW()
+      RETURNING *
+    `, [id, challenge_id, member_id, brand_id, current_count, target_count, period_start, period_end, streak_weeks, last_booking_week, status]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Failed to upsert challenge progress: ${error.message}`);
+  }
+}
+
+/**
+ * Get challenge progress for a member
+ */
+async function getChallengeProgress(member_id, brand_id) {
+  try {
+    const result = await pool.query(`
+      SELECT cp.*, c.title, c.description, c.points, c.icon, c.trigger_type, c.trigger_config, c.recurring
+      FROM challenge_progress cp
+      JOIN challenges c ON c.id = cp.challenge_id
+      WHERE cp.member_id = $1 AND cp.brand_id = $2
+      ORDER BY cp.updated_at DESC
+    `, [member_id, brand_id]);
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to get challenge progress: ${error.message}`);
+  }
+}
+
+/**
+ * Get all active progress for a specific challenge (across all members)
+ */
+async function getProgressForChallenge(challenge_id) {
+  try {
+    const result = await pool.query(`
+      SELECT cp.*, m.first_name, m.last_name, m.email
+      FROM challenge_progress cp
+      JOIN members m ON m.id = cp.member_id
+      WHERE cp.challenge_id = $1
+      ORDER BY cp.current_count DESC
+    `, [challenge_id]);
+    return result.rows;
+  } catch (error) {
+    throw new Error(`Failed to get progress for challenge: ${error.message}`);
+  }
+}
+
+/**
+ * Complete a challenge for a member (via auto-evaluation)
+ * Works with member_id instead of pass_id
+ */
+async function completeChallengeForMember(data) {
+  const id = uuidv4();
+  const { challenge_id, member_id, brand_id } = data;
+
+  try {
+    const challenge = await getChallenge(challenge_id);
+    if (!challenge) throw new Error('Challenge not found');
+
+    // Find member's active pass
+    const passes = await listPasses(brand_id);
+    const memberPass = passes.find(p => p.member_id === member_id && p.status === 'active');
+    if (!memberPass) return null; // No active pass, skip
+
+    // Check if already completed for this period (non-recurring)
+    if (!challenge.recurring) {
+      const existing = await pool.query(
+        'SELECT id FROM challenge_completions WHERE challenge_id = $1 AND pass_id = $2',
+        [challenge_id, memberPass.id]
+      );
+      if (existing.rows.length > 0) return null; // Already completed
+    }
+
+    // Create completion record
+    await pool.query(
+      'INSERT INTO challenge_completions (id, challenge_id, pass_id, brand_id) VALUES ($1, $2, $3, $4)',
+      [id, challenge_id, memberPass.id, brand_id]
+    );
+
+    // Award points to pass
+    const currentPoints = parseInt(memberPass.field_values?.punti) || 0;
+    const newPoints = currentPoints + challenge.points;
+    const updatedFieldValues = { ...memberPass.field_values, punti: String(newPoints) };
+    await updatePassInstance(memberPass.id, { field_values: updatedFieldValues });
+
+    console.log(`[Challenges] ✓ ${challenge.title} completed for member ${member_id} (+${challenge.points} pts)`);
+    return { id, challenge_id, member_id, pass_id: memberPass.id, points: challenge.points };
+  } catch (error) {
+    throw new Error(`Failed to complete challenge for member: ${error.message}`);
+  }
+}
+
+/**
+ * Count bookings for a member in a date range with optional filters
+ */
+async function countMemberBookings(brand_id, member_id, startDate, endDate, filters = {}) {
+  try {
+    let query = `
+      SELECT COUNT(*) as count,
+             json_agg(json_build_object(
+               'booking_date', booking_date,
+               'sport_id', sport_id,
+               'resource_name', resource_name
+             )) as bookings
+      FROM playtomic_sync_log
+      WHERE brand_id = $1 AND member_id = $2 AND synced_at >= $3 AND synced_at <= $4
+    `;
+    const params = [brand_id, member_id, startDate, endDate];
+
+    const result = await pool.query(query, params);
+    const row = result.rows[0];
+    return { count: parseInt(row.count) || 0, bookings: row.bookings || [] };
+  } catch (error) {
+    throw new Error(`Failed to count member bookings: ${error.message}`);
+  }
+}
+
+/**
+ * Count distinct booking weeks for streak calculation
+ */
+async function getMemberBookingWeeks(brand_id, member_id, weeksBack = 8) {
+  try {
+    const result = await pool.query(`
+      SELECT DISTINCT to_char(booking_date, 'IYYY-IW') as week_key
+      FROM playtomic_sync_log
+      WHERE brand_id = $1 AND member_id = $2 AND booking_date >= NOW() - interval '${weeksBack} weeks'
+      ORDER BY week_key DESC
+    `, [brand_id, member_id]);
+    return result.rows.map(r => r.week_key);
+  } catch (error) {
+    throw new Error(`Failed to get member booking weeks: ${error.message}`);
+  }
+}
+
+/**
+ * Count total bookings for a member (lifetime)
+ */
+async function countMemberTotalBookings(brand_id, member_id) {
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*) as count FROM playtomic_sync_log WHERE brand_id = $1 AND member_id = $2',
+      [brand_id, member_id]
+    );
+    return parseInt(result.rows[0].count) || 0;
+  } catch (error) {
+    throw new Error(`Failed to count total bookings: ${error.message}`);
+  }
+}
+
+/**
+ * Count unique partners for a member in a period
+ */
+async function countMemberUniquePartners(brand_id, member_id, startDate, endDate) {
+  try {
+    // Find all booking_ids where this member participated
+    const memberBookings = await pool.query(`
+      SELECT DISTINCT booking_id FROM playtomic_sync_log
+      WHERE brand_id = $1 AND member_id = $2 AND booking_date >= $3 AND booking_date <= $4
+    `, [brand_id, member_id, startDate, endDate]);
+
+    if (memberBookings.rows.length === 0) return 0;
+
+    const bookingIds = memberBookings.rows.map(r => r.booking_id);
+
+    // Count distinct other members in those same bookings
+    const result = await pool.query(`
+      SELECT COUNT(DISTINCT member_id) as count
+      FROM playtomic_sync_log
+      WHERE brand_id = $1 AND booking_id = ANY($2) AND member_id != $3
+    `, [brand_id, bookingIds, member_id]);
+
+    return parseInt(result.rows[0].count) || 0;
+  } catch (error) {
+    throw new Error(`Failed to count unique partners: ${error.message}`);
   }
 }
 
@@ -2084,7 +2314,17 @@ module.exports = {
   listClaims,
   // Challenge Completions
   completeChallenge,
+  completeChallengeForMember,
   listCompletions,
+  // Challenge Progress
+  upsertChallengeProgress,
+  getChallengeProgress,
+  getProgressForChallenge,
+  // Booking Analytics (for challenge evaluation)
+  countMemberBookings,
+  getMemberBookingWeeks,
+  countMemberTotalBookings,
+  countMemberUniquePartners,
   // Push Log
   logPush,
   listPushes,

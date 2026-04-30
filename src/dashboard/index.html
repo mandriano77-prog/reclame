@@ -126,7 +126,7 @@
         <div class="nav-item" onclick="nav('create-pass')">Crea Pass</div>
         <div class="nav-label">Loyalty</div>
         <div class="nav-item" onclick="nav('tiers')">Livelli</div>
-        <div class="nav-item" onclick="nav('challenges')">Sfide</div>
+        <div class="nav-item" onclick="nav('challenges')">Missioni</div>
         <div class="nav-item" onclick="nav('rewards')">Premi</div>
         <div class="nav-item" onclick="nav('vip-cards')">Carte VIP</div>
         <div class="nav-label">Comunicazione</div>
@@ -277,10 +277,22 @@
             <!-- CHALLENGES -->
             <div id="challenges" class="section">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <div class="sec-title" style="margin-bottom:0">Sfide & Missioni</div>
-                    <button class="btn" onclick="openChallengeModal()">+ Nuova Sfida</button>
+                    <div class="sec-title" style="margin-bottom:0">Missioni</div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn sec small" onclick="triggerChallengeEval()" id="evalChallengesBtn" title="Ricalcola il progresso di tutte le missioni Playtomic">🔄 Ricalcola</button>
+                        <button class="btn" onclick="openChallengeModal('playtomic')">+ Playtomic</button>
+                        <button class="btn purple" onclick="openChallengeModal('manual')">+ Ad Hoc</button>
+                    </div>
                 </div>
-                <div id="challengesList"></div>
+
+                <!-- Tab switcher -->
+                <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--bg3);border-radius:8px;padding:3px;">
+                    <button class="btn small" id="tabPlaytomic" onclick="switchChallengeTab('playtomic')" style="flex:1;border-radius:6px;">🎾 Missioni Playtomic</button>
+                    <button class="btn small sec" id="tabManual" onclick="switchChallengeTab('manual')" style="flex:1;border-radius:6px;">✋ Missioni Ad Hoc</button>
+                </div>
+
+                <div id="challengesPlaytomicList"></div>
+                <div id="challengesManualList" style="display:none;"></div>
             </div>
 
             <!-- REWARDS -->
@@ -673,10 +685,11 @@
 <div id="challengeModal" class="modal">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal('challengeModal')">&times;</button>
-        <div class="modal-header" id="challengeModalTitle">Nuova Sfida</div>
+        <div class="modal-header" id="challengeModalTitle">Nuova Missione</div>
         <input type="hidden" id="challengeEditId">
-        <div class="form-group"><label class="form-label">Titolo</label><input type="text" id="chTitle" placeholder="es. Recensione Google"></div>
-        <div class="form-group"><label class="form-label">Descrizione</label><input type="text" id="chDesc" placeholder="es. Lascia una recensione"></div>
+        <input type="hidden" id="chTriggerType" value="manual">
+        <div class="form-group"><label class="form-label">Titolo</label><input type="text" id="chTitle" placeholder="es. Warm Up"></div>
+        <div class="form-group"><label class="form-label">Descrizione</label><input type="text" id="chDesc" placeholder="es. Gioca la tua prima partita"></div>
         <div class="form-row">
             <div class="form-group"><label class="form-label">Punti</label><input type="number" id="chPoints" placeholder="30"></div>
             <div class="form-group"><label class="form-label">Icona</label><input type="text" id="chIcon" placeholder="⭐" value="⭐"></div>
@@ -689,7 +702,54 @@
                 <select id="chRecurring"><option value="false">No (una tantum)</option><option value="true">Si (ripetibile)</option></select>
             </div>
         </div>
-        <button class="btn" onclick="saveChallenge()">Salva Sfida</button>
+        <!-- Playtomic trigger config (shown only for playtomic missions) -->
+        <div id="chTriggerSection" style="display:none;margin-top:8px;padding:16px;background:var(--bg3);border-radius:8px;">
+            <div class="form-label" style="margin-bottom:10px;">Configurazione Trigger Automatico</div>
+            <div class="form-group"><label class="form-label">Trigger</label>
+                <select id="chTriggerSelect" onchange="updateTriggerFields()">
+                    <option value="booking_count">Numero prenotazioni</option>
+                    <option value="booking_streak">Streak settimanale</option>
+                    <option value="booking_time">Fascia oraria</option>
+                    <option value="booking_day">Giorno della settimana</option>
+                    <option value="booking_partners">Partner diversi</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group" id="chCountGroup"><label class="form-label">Obiettivo (numero)</label><input type="number" id="chTriggerCount" min="1" value="1" placeholder="es. 3"></div>
+                <div class="form-group" id="chPeriodGroup"><label class="form-label">Periodo</label>
+                    <select id="chTriggerPeriod" onchange="updateTriggerFields()">
+                        <option value="week">Settimana</option>
+                        <option value="month">Mese</option>
+                        <option value="lifetime">Sempre (lifetime)</option>
+                        <option value="custom">Personalizzato</option>
+                    </select>
+                </div>
+            </div>
+            <div id="chTimeFields" style="display:none;" class="form-row">
+                <div class="form-group"><label class="form-label">Dalle</label><input type="time" id="chTimeStart" value="08:00"></div>
+                <div class="form-group"><label class="form-label">Alle</label><input type="time" id="chTimeEnd" value="12:00"></div>
+            </div>
+            <div id="chDayFields" style="display:none;">
+                <label class="form-label">Giorni ammessi</label>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+                    <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" value="1" class="chDayCheck" checked> Lun</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" value="2" class="chDayCheck" checked> Mar</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" value="3" class="chDayCheck" checked> Mer</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" value="4" class="chDayCheck" checked> Gio</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" value="5" class="chDayCheck"> Ven</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" value="6" class="chDayCheck"> Sab</label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" value="0" class="chDayCheck"> Dom</label>
+                </div>
+            </div>
+            <div id="chStreakFields" style="display:none;" class="form-group">
+                <label class="form-label">Settimane consecutive</label><input type="number" id="chStreakWeeks" min="2" value="4" placeholder="es. 4">
+            </div>
+            <div id="chCustomFields" style="display:none;" class="form-row">
+                <div class="form-group"><label class="form-label">Mese inizio</label><input type="number" id="chCustomStartMonth" min="1" max="12" placeholder="es. 6"></div>
+                <div class="form-group"><label class="form-label">Mese fine</label><input type="number" id="chCustomEndMonth" min="1" max="12" placeholder="es. 8"></div>
+            </div>
+        </div>
+        <button class="btn" onclick="saveChallenge()" style="margin-top:16px;">Salva Missione</button>
     </div>
 </div>
 
@@ -2032,35 +2092,137 @@ async function confirmClaim() {
     } catch(e) { alert('Errore: ' + e.message); }
 }
 
-// ==================== CHALLENGES ====================
+// ==================== CHALLENGES (MISSIONI) ====================
+let currentChallengeTab = 'playtomic';
+
+function switchChallengeTab(tab) {
+    currentChallengeTab = tab;
+    document.getElementById('challengesPlaytomicList').style.display = tab === 'playtomic' ? 'block' : 'none';
+    document.getElementById('challengesManualList').style.display = tab === 'manual' ? 'block' : 'none';
+    document.getElementById('tabPlaytomic').className = tab === 'playtomic' ? 'btn small' : 'btn small sec';
+    document.getElementById('tabManual').className = tab === 'manual' ? 'btn small' : 'btn small sec';
+}
+
+const TRIGGER_LABELS = {
+    booking_count: 'Prenotazioni',
+    booking_streak: 'Streak settimane',
+    booking_time: 'Fascia oraria',
+    booking_day: 'Giorno settimana',
+    booking_partners: 'Partner diversi',
+    manual: 'Manuale'
+};
+
+const PERIOD_LABELS = { week: 'settimana', month: 'mese', lifetime: 'sempre', custom: 'personalizzato' };
+
+function renderChallengeCard(c, isPlaytomic) {
+    const triggerLabel = TRIGGER_LABELS[c.trigger_type] || c.trigger_type;
+    const config = c.trigger_config || {};
+    let configDesc = '';
+    if (isPlaytomic) {
+        if (c.trigger_type === 'booking_streak') {
+            configDesc = `${config.weeks || 4} settimane consecutive`;
+        } else if (c.trigger_type === 'booking_time') {
+            configDesc = `${config.count || 1}x/${PERIOD_LABELS[config.period]||''} (${config.time_start}-${config.time_end})`;
+        } else if (c.trigger_type === 'booking_day') {
+            const dayNames = {0:'Dom',1:'Lun',2:'Mar',3:'Mer',4:'Gio',5:'Ven',6:'Sab'};
+            const days = (config.days||[]).map(d => dayNames[d]).join(',');
+            configDesc = `${config.count || 1}x/${PERIOD_LABELS[config.period]||''} (${days})`;
+        } else {
+            configDesc = `${config.count || 1}x/${PERIOD_LABELS[config.period]||''}`;
+        }
+    }
+    const metaLine = isPlaytomic
+        ? `+${c.points} punti &middot; ${triggerLabel} &middot; ${configDesc} ${c.recurring?'(ricorrente)':''}`
+        : `+${c.points} punti &middot; ${c.type} ${c.recurring?'(ricorrente)':''}`;
+
+    const assignBtn = !isPlaytomic ? `<button class="btn small" onclick="openCompleteModal('${c.id}','${c.title.replace(/'/g,"\\'")}',${c.points})">Assegna</button>` : '';
+    const autoBadge = isPlaytomic ? '<span style="background:rgba(0,212,170,0.2);color:var(--teal);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">AUTO</span>' : '';
+
+    return `<div class="card card-row">
+        <div style="display:flex;align-items:center;gap:14px;flex:1;">
+            <div class="card-icon">${c.icon||'⭐'}</div>
+            <div class="card-info">
+                <div class="card-title">${c.title} ${autoBadge}</div>
+                <div class="card-desc">${c.description||''}</div>
+                <div class="card-meta">${metaLine}</div>
+            </div>
+        </div>
+        <div class="card-actions">
+            ${assignBtn}
+            <button class="btn small sec" onclick="editChallenge('${c.id}')">Modifica</button>
+            <button class="btn small danger" onclick="deleteChallenge('${c.id}')">Elimina</button>
+        </div>
+    </div>`;
+}
+
 async function loadChallenges() {
     if (!brandId) return;
     const res = await fetch(`${API}/challenges?brand_id=${brandId}`);
     const challenges = await res.json();
-    document.getElementById('challengesList').innerHTML = challenges.length === 0
-        ? '<p style="color:var(--text2)">Nessuna sfida configurata.</p>'
-        : challenges.map(c => `<div class="card card-row">
-            <div style="display:flex;align-items:center;gap:14px;">
-                <div class="card-icon">${c.icon||'⭐'}</div>
-                <div class="card-info"><div class="card-title">${c.title}</div><div class="card-desc">${c.description||''}</div><div class="card-meta">+${c.points} punti &middot; ${c.type} ${c.recurring?'(ricorrente)':''}</div></div>
-            </div>
-            <div class="card-actions">
-                <button class="btn small" onclick="openCompleteModal('${c.id}','${c.title.replace(/'/g,"\\'")}',${c.points})">Assegna</button>
-                <button class="btn small sec" onclick="editChallenge('${c.id}')">Modifica</button>
-                <button class="btn small danger" onclick="deleteChallenge('${c.id}')">Elimina</button>
-            </div>
-        </div>`).join('');
+
+    const playtomic = challenges.filter(c => c.trigger_type && c.trigger_type !== 'manual');
+    const manual = challenges.filter(c => !c.trigger_type || c.trigger_type === 'manual');
+
+    document.getElementById('challengesPlaytomicList').innerHTML = playtomic.length === 0
+        ? '<p style="color:var(--text2);padding:16px;">Nessuna missione Playtomic configurata. Le missioni Playtomic si completano automaticamente in base alle prenotazioni.</p>'
+        : playtomic.map(c => renderChallengeCard(c, true)).join('');
+
+    document.getElementById('challengesManualList').innerHTML = manual.length === 0
+        ? '<p style="color:var(--text2);padding:16px;">Nessuna missione ad hoc. Queste missioni vengono assegnate manualmente dall\'operatore.</p>'
+        : manual.map(c => renderChallengeCard(c, false)).join('');
 }
 
-function openChallengeModal(data) {
+function updateTriggerFields() {
+    const trigger = document.getElementById('chTriggerSelect').value;
+    document.getElementById('chTimeFields').style.display = trigger === 'booking_time' ? 'grid' : 'none';
+    document.getElementById('chDayFields').style.display = trigger === 'booking_day' ? 'block' : 'none';
+    document.getElementById('chStreakFields').style.display = trigger === 'booking_streak' ? 'block' : 'none';
+    document.getElementById('chCountGroup').style.display = trigger === 'booking_streak' ? 'none' : 'block';
+    document.getElementById('chPeriodGroup').style.display = trigger === 'booking_streak' ? 'none' : 'block';
+    document.getElementById('chCustomFields').style.display = document.getElementById('chTriggerPeriod').value === 'custom' && trigger !== 'booking_streak' ? 'grid' : 'none';
+}
+
+function openChallengeModal(dataOrType) {
+    const isEdit = typeof dataOrType === 'object' && dataOrType !== null && dataOrType.id;
+    const data = isEdit ? dataOrType : null;
+    const modalType = isEdit ? (data.trigger_type && data.trigger_type !== 'manual' ? 'playtomic' : 'manual') : dataOrType;
+
     document.getElementById('challengeEditId').value = data?.id || '';
-    document.getElementById('challengeModalTitle').textContent = data ? 'Modifica Sfida' : 'Nuova Sfida';
+    document.getElementById('challengeModalTitle').textContent = isEdit ? 'Modifica Missione' : (modalType === 'playtomic' ? 'Nuova Missione Playtomic' : 'Nuova Missione Ad Hoc');
     document.getElementById('chTitle').value = data?.title || '';
     document.getElementById('chDesc').value = data?.description || '';
     document.getElementById('chPoints').value = data?.points || '';
     document.getElementById('chIcon').value = data?.icon || '⭐';
     document.getElementById('chType').value = data?.type || 'action';
     document.getElementById('chRecurring').value = data?.recurring ? 'true' : 'false';
+
+    const isPlaytomic = modalType === 'playtomic';
+    document.getElementById('chTriggerType').value = isPlaytomic ? 'playtomic' : 'manual';
+    document.getElementById('chTriggerSection').style.display = isPlaytomic ? 'block' : 'none';
+
+    if (isPlaytomic && data) {
+        const config = data.trigger_config || {};
+        document.getElementById('chTriggerSelect').value = data.trigger_type || 'booking_count';
+        document.getElementById('chTriggerCount').value = config.count || 1;
+        document.getElementById('chTriggerPeriod').value = config.period || 'week';
+        if (config.time_start) document.getElementById('chTimeStart').value = config.time_start;
+        if (config.time_end) document.getElementById('chTimeEnd').value = config.time_end;
+        if (config.weeks) document.getElementById('chStreakWeeks').value = config.weeks;
+        if (config.days) {
+            document.querySelectorAll('.chDayCheck').forEach(cb => {
+                cb.checked = config.days.includes(parseInt(cb.value));
+            });
+        }
+        if (config.start_month) document.getElementById('chCustomStartMonth').value = config.start_month;
+        if (config.end_month) document.getElementById('chCustomEndMonth').value = config.end_month;
+        updateTriggerFields();
+    } else if (isPlaytomic) {
+        document.getElementById('chTriggerSelect').value = 'booking_count';
+        document.getElementById('chTriggerCount').value = 1;
+        document.getElementById('chTriggerPeriod').value = 'week';
+        updateTriggerFields();
+    }
+
     document.getElementById('challengeModal').classList.add('active');
 }
 
@@ -2071,19 +2233,77 @@ async function editChallenge(id) {
     if (c) openChallengeModal(c);
 }
 
+function buildTriggerConfig() {
+    const trigger = document.getElementById('chTriggerSelect').value;
+    const config = {};
+
+    if (trigger === 'booking_streak') {
+        config.weeks = parseInt(document.getElementById('chStreakWeeks').value) || 4;
+    } else {
+        config.count = parseInt(document.getElementById('chTriggerCount').value) || 1;
+        config.period = document.getElementById('chTriggerPeriod').value;
+
+        if (trigger === 'booking_time') {
+            config.time_start = document.getElementById('chTimeStart').value;
+            config.time_end = document.getElementById('chTimeEnd').value;
+        }
+        if (trigger === 'booking_day') {
+            config.days = Array.from(document.querySelectorAll('.chDayCheck:checked')).map(cb => parseInt(cb.value));
+        }
+        if (config.period === 'custom') {
+            config.start_month = parseInt(document.getElementById('chCustomStartMonth').value) || 1;
+            config.end_month = parseInt(document.getElementById('chCustomEndMonth').value) || 12;
+        }
+    }
+    return { trigger_type: trigger, trigger_config: config };
+}
+
 async function saveChallenge() {
     const id = document.getElementById('challengeEditId').value;
-    const body = { brand_id: brandId, title: document.getElementById('chTitle').value, description: document.getElementById('chDesc').value, points: parseInt(document.getElementById('chPoints').value)||0, icon: document.getElementById('chIcon').value, type: document.getElementById('chType').value, recurring: document.getElementById('chRecurring').value === 'true' };
+    const isPlaytomic = document.getElementById('chTriggerType').value === 'playtomic';
+
+    const body = {
+        brand_id: brandId,
+        title: document.getElementById('chTitle').value,
+        description: document.getElementById('chDesc').value,
+        points: parseInt(document.getElementById('chPoints').value) || 0,
+        icon: document.getElementById('chIcon').value,
+        type: document.getElementById('chType').value,
+        recurring: document.getElementById('chRecurring').value === 'true'
+    };
+
+    if (isPlaytomic) {
+        const triggerData = buildTriggerConfig();
+        body.trigger_type = triggerData.trigger_type;
+        body.trigger_config = triggerData.trigger_config;
+    } else {
+        body.trigger_type = 'manual';
+        body.trigger_config = {};
+    }
+
     if (!body.title) return alert('Inserisci un titolo');
     if (id) { await fetch(`${API}/challenges/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
     else { await fetch(`${API}/challenges`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); }
-    toast('Sfida salvata!'); closeModal('challengeModal'); loadChallenges();
+    toast('Missione salvata!'); closeModal('challengeModal'); loadChallenges();
 }
 
 async function deleteChallenge(id) {
-    if (!confirm('Eliminare questa sfida?')) return;
+    if (!confirm('Eliminare questa missione?')) return;
     await fetch(`${API}/challenges/${id}`, {method:'DELETE'});
-    toast('Sfida eliminata'); loadChallenges();
+    toast('Missione eliminata'); loadChallenges();
+}
+
+async function triggerChallengeEval() {
+    if (!brandId) return;
+    const btn = document.getElementById('evalChallengesBtn');
+    btn.disabled = true; btn.textContent = 'Valutazione...';
+    try {
+        const res = await fetch(`${API}/challenges/evaluate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({brand_id: brandId})});
+        const result = await res.json();
+        toast(`Valutazione completata: ${result.evaluated} valutate, ${result.completed} completate`);
+        loadChallenges();
+    } catch(e) { toast('Errore valutazione: ' + e.message); }
+    btn.disabled = false; btn.textContent = '🔄 Ricalcola';
 }
 
 let completeChallengeId = null;

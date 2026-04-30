@@ -12,6 +12,7 @@
  */
 
 const db = require('../db');
+const { evaluateChallenges } = require('./challenges');
 
 const PLAYTOMIC_BASE = 'https://thirdparty.playtomic.io';
 
@@ -306,10 +307,15 @@ async function runFullSync(brand_id) {
   const bookingResult = await syncBookings(brand_id, config);
   console.log(`[Playtomic] Booking sync: ${bookingResult.processed} bookings processed, ${bookingResult.points_awarded} points awarded`);
 
+  // Step 3: Evaluate challenges based on booking data
+  const challengeResult = await evaluateChallenges(brand_id);
+  console.log(`[Playtomic] Challenge eval: ${challengeResult.evaluated} evaluated, ${challengeResult.completed} completed`);
+
   return {
     success: true,
     players: playerResult,
     bookings: bookingResult,
+    challenges: challengeResult,
     synced_at: new Date().toISOString()
   };
 }
