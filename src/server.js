@@ -11,6 +11,7 @@ const { startScheduler } = require('./engine/scheduler');
 const { runPlaytomicCron } = require('./engine/playtomic');
 const { runStripPromoCheck } = require('./engine/strip-promo');
 const { startRecapCrons } = require('./engine/email-recap');
+const { startDecayCron } = require('./engine/points-decay');
 
 // Load certificates: prefer FILE-BASED certs (from repo), fallback to env vars
 function loadCerts() {
@@ -141,6 +142,9 @@ getDb().then(db => {
 
     // Email recap cron — weekly (Mon 9:00) and monthly (1st 9:00)
     startRecapCrons();
+
+    // Points decay cron — 1st of every month at 3:00 AM
+    startDecayCron();
   });
 }).catch(err => {
   console.error('Failed to initialize database:', err);

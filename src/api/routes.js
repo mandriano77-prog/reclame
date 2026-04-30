@@ -117,6 +117,7 @@ const { sendPushUpdate } = require('../engine/apns');
 const { runFullSync } = require('../engine/playtomic');
 const { evaluateChallenges } = require('../engine/challenges');
 const { runRecap, sendBrandRecap } = require('../engine/email-recap');
+const { runPointsDecay } = require('../engine/points-decay');
 const sharp = require('sharp');
 const XLSX = require('xlsx');
 const jwt = require('jsonwebtoken');
@@ -3383,6 +3384,17 @@ router.post('/scratch-cards/:id/play', async (req, res) => {
     res.json({ won, prize, play_id: play.id });
   } catch (err) {
     console.error('[ScratchCard] Play error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Loop: Points Decay (manual trigger) ───────────────────────
+
+router.post('/decay/run', authMiddleware, async (req, res) => {
+  try {
+    const count = await runPointsDecay();
+    res.json({ ok: true, decayed: count });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
