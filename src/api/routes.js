@@ -2800,11 +2800,87 @@ router.post('/members/import', async (req, res) => {
 });
 
 /**
- * POST /api/v1/members - Create a new member
+ * POST /api/v1/members - Create a new member (from back office)
+ * Also creates pass, assigns welcome points, sends welcome email
  */
 router.post('/members', async (req, res) => {
   try {
-    const member = await createMember(req.body);
+    const { brand_id, first_name, last_name, email, phone, playtomic_email, notes } = req.body;
+    if (!brand_id || !first_name) return res.status(400).json({ error: 'brand_id and first_name are required' });
+
+    // Create the member
+    const member = await createMember({ brand_id, first_name, last_name, email, phone, playtomic_email, notes });
+
+    // Try to also create a pass + welcome points (like self-service signup)
+    try {
+      const brand = await getBrand(brand_id);
+      const templates = await listTemplates(brand_id);
+      const template = templates[0];
+
+      if (brand && template) {
+        const tiers = await listTiers(brand_id);
+        const firstTier = tiers.length > 0 ? tiers[0].name : '';
+        const fullName = [first_name, last_name].filter(Boolean).join(' ');
+
+        const passInstance = await createPassInstance({
+          template_id: template.id,
+          brand_id: brand.id,
+          customer_data: { email, phone, name: fullName },
+          field_values: { nome: fullName, name: fullName, livello: firstTier, punti: '10' },
+          member_id: member.id
+        });
+
+        // Generate and cache .pkpass
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const pkpassBuffer = await createPkpass(template, passInstance, brand, { baseUrl });
+        const cacheDir = ensureCacheDir();
+        fs.writeFileSync(path.join(cacheDir, `${passInstance.id}.pkpass`), pkpassBuffer);
+
+        await logEvent({
+          pass_id: passInstance.id,
+          brand_id: brand.id,
+          event_type: 'pass_created',
+          metadata: { source: 'backoffice', email, welcome_points: 10 }
+        });
+
+        // Log welcome points
+        try {
+          await logPoints({
+            brand_id: brand.id,
+            member_id: member.id,
+            pass_id: passInstance.id,
+            points: 10,
+            reason: 'signup',
+            details: 'Punti di benvenuto'
+          });
+        } catch(e) { console.log('[PointsLog] Error logging welcome points:', e.message); }
+
+        // Send welcome email if member has email
+        if (email) {
+          const CUSTOM_DOMAIN = (process.env.CUSTOM_DOMAIN || 'www.nudj.studio').replace(/^nudj\.studio$/, 'www.nudj.studio');
+          const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
+          sendWelcomeEmail({
+            to: email,
+            name: fullName,
+            brandName: brand.name,
+            brandColor: brand.config?.backgroundColor || '#000000',
+            points: 10,
+            downloadUrl
+          }).catch(err => console.error('Welcome email error (backoffice):', err));
+        }
+
+        // Log analytics
+        await logAnalyticsEvent({
+          event_type: 'member_signup',
+          brand_id: brand.id,
+          metadata: { source: 'backoffice', member_id: member.id }
+        });
+      }
+    } catch(passErr) {
+      // Pass creation failed but member was created — log and continue
+      console.error('[Members] Pass creation from backoffice failed:', passErr.message);
+    }
+
     res.status(201).json(member);
   } catch (error) {
     res.status(400).json({ error: error.message });
