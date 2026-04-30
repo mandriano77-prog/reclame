@@ -222,4 +222,105 @@ async function sendUserInviteEmail({ to, name, password, role, brandName, dashbo
   return result;
 }
 
-module.exports = { sendWelcomeEmail, sendUserInviteEmail };
+/**
+ * Send points recap email (weekly or monthly)
+ */
+async function sendRecapEmail({ to, brandName, brandColor, memberName, periodLabel, periodPoints, pointsDetails, totalPoints, tierName }) {
+  const resend = getResend();
+  if (!resend) {
+    console.log('[Mailer] RESEND_API_KEY not set — skipping recap email to', to);
+    return { skipped: true, reason: 'RESEND_API_KEY not set' };
+  }
+
+  const fromEmail = getFromEmail();
+  const fromName = getFromName();
+  const bg = brandColor || '#000000';
+  const accent = '#CCFF00';
+  const firstName = memberName.split(/\s+/)[0];
+
+  // Build points detail rows
+  const rows = (pointsDetails || []).map(d => {
+    const icon = d.reason === 'challenge' ? '🏆' : d.reason === 'manual' ? '✋' : d.reason === 'signup' ? '🎉' : '📌';
+    const date = new Date(d.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+    return `<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #222;font-size:13px;color:#ccc;">${icon} ${d.details || d.reason}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #222;font-size:13px;color:${accent};font-weight:700;text-align:right;">+${d.points}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #222;font-size:11px;color:#666;text-align:right;">${date}</td>
+    </tr>`;
+  }).join('');
+
+  const detailsSection = pointsDetails && pointsDetails.length > 0 ? `
+    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+      <thead><tr style="background:#1a1a1a;">
+        <th style="padding:10px 12px;text-align:left;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;">Attivita</th>
+        <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;text-transform:uppercase;">Punti</th>
+        <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;text-transform:uppercase;">Data</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : `<p style="color:#666;font-size:13px;text-align:center;padding:20px 0;">Nessuna attivita in questo periodo. Gioca e completa missioni per guadagnare punti!</p>`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#111;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:500px;margin:0 auto;padding:32px 20px;">
+
+  <!-- Header -->
+  <div style="text-align:center;padding:40px 24px;background:${bg};border-radius:16px 16px 0 0;">
+    <h1 style="color:#fff;font-size:24px;margin:0 0 8px;font-weight:700;">${brandName}</h1>
+    <p style="color:${accent};font-size:14px;margin:0;font-weight:600;">Riepilogo Punti ${periodLabel}</p>
+  </div>
+
+  <!-- Body -->
+  <div style="background:#1a1a1a;padding:32px 24px;border-radius:0 0 16px 16px;">
+    <p style="color:#e0e0e0;font-size:16px;line-height:1.6;margin:0 0 20px;">
+      Ciao <strong style="color:#fff;">${firstName}</strong>,
+    </p>
+    <p style="color:#bbb;font-size:14px;line-height:1.6;margin:0 0 24px;">
+      Ecco il tuo riepilogo punti ${periodLabel.toLowerCase()}.
+    </p>
+
+    <!-- Summary card -->
+    <div style="background:linear-gradient(135deg,${bg},#1a1a2e);border:1px solid ${accent}33;border-radius:12px;padding:28px;margin:0 0 24px;text-align:center;">
+      <p style="margin:0;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Punti guadagnati</p>
+      <p style="margin:8px 0;font-size:48px;font-weight:800;color:${accent};line-height:1;">${periodPoints > 0 ? '+' : ''}${periodPoints}</p>
+      <p style="margin:0;color:#888;font-size:13px;">Totale attuale: <strong style="color:#fff;">${totalPoints} punti</strong>${tierName ? ` — Livello <span style="color:${accent};">${tierName}</span>` : ''}</p>
+    </div>
+
+    ${detailsSection}
+
+    <p style="margin:20px 0 0;font-size:13px;color:#666;text-align:center;">
+      ${periodPoints > 0 ? 'Ottimo lavoro! Continua cosi per sbloccare nuovi premi.' : 'Torna a giocare per accumulare punti e salire di livello!'}
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center;padding:24px 0 0;">
+    <p style="color:#444;font-size:11px;margin:0;">Powered by Precise Consulting</p>
+    <p style="color:#333;font-size:10px;margin:6px 0 0;">Ricevi questa email perche fai parte del programma fedelta di ${brandName}.</p>
+  </div>
+
+</div>
+</body>
+</html>`;
+
+  const subject = periodPoints > 0
+    ? `${brandName} — Hai guadagnato ${periodPoints} punti ${periodLabel.toLowerCase()}!`
+    : `${brandName} — Il tuo riepilogo ${periodLabel.toLowerCase()}`;
+
+  try {
+    const result = await resend.emails.send({
+      from: `${fromName} <${fromEmail}>`,
+      to: [to],
+      subject,
+      html
+    });
+    console.log(`[Mailer] ✓ Recap email sent to ${to}: ${subject}`);
+    return result;
+  } catch(e) {
+    console.error(`[Mailer] ✗ Failed to send recap to ${to}:`, e.message);
+    return { error: e.message };
+  }
+}
+
+module.exports = { sendWelcomeEmail, sendUserInviteEmail, sendRecapEmail };

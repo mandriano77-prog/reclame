@@ -413,6 +413,41 @@ async function getDb() {
       console.log('✓ analytics_events table ensured');
     } catch(e) { console.log('analytics_events migration note:', e.message); }
 
+    // --- Points log table (tracks every point change for recap emails) ---
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS points_log (
+          id TEXT PRIMARY KEY,
+          brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+          pass_id TEXT,
+          points INTEGER NOT NULL,
+          reason TEXT NOT NULL DEFAULT 'manual',
+          details TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_points_log_brand_member ON points_log(brand_id, member_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_points_log_created ON points_log(created_at)`);
+      console.log('✓ points_log table ensured');
+    } catch(e) { console.log('points_log migration note:', e.message); }
+
+    // --- Email log table (tracks sent recap emails) ---
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS email_log (
+          id TEXT PRIMARY KEY,
+          brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          member_id TEXT REFERENCES members(id) ON DELETE SET NULL,
+          email_type TEXT NOT NULL,
+          subject TEXT,
+          status TEXT DEFAULT 'sent',
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      console.log('✓ email_log table ensured');
+    } catch(e) { console.log('email_log migration note:', e.message); }
+
     // --- Generate referral codes for existing members that don't have one ---
     try {
       const membersNoCode = await pool.query(`SELECT id FROM members WHERE referral_code IS NULL`);
@@ -1838,6 +1873,18 @@ async function completeChallengeForMember(data) {
     const updatedFieldValues = { ...memberPass.field_values, punti: String(newPoints) };
     await updatePassInstance(memberPass.id, { field_values: updatedFieldValues });
 
+    // Log points for recap emails
+    try {
+      await logPoints({
+        brand_id,
+        member_id,
+        pass_id: memberPass.id,
+        points: challenge.points,
+        reason: 'challenge',
+        details: challenge.title
+      });
+    } catch(e) { console.log('[PointsLog] Error logging challenge points:', e.message); }
+
     console.log(`[Challenges] ✓ ${challenge.title} completed for member ${member_id} (+${challenge.points} pts)`);
     return { id, challenge_id, member_id, pass_id: memberPass.id, points: challenge.points };
   } catch (error) {
@@ -2373,6 +2420,64 @@ async function incrementReferralCount(member_id) {
   await pool.query(`UPDATE members SET referral_count = COALESCE(referral_count, 0) + 1 WHERE id = $1`, [member_id]);
 }
 
+// ─── Points Log ──────────────────────────────────────
+
+async function logPoints({ brand_id, member_id, pass_id, points, reason, details }) {
+  const id = uuidv4();
+  await pool.query(
+    `INSERT INTO points_log (id, brand_id, member_id, pass_id, points, reason, details) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [id, brand_id, member_id, pass_id || null, points, reason || 'manual', details || null]
+  );
+  return id;
+}
+
+async function getPointsLogForPeriod(brand_id, startDate, endDate) {
+  const res = await pool.query(
+    `SELECT pl.*, m.first_name, m.last_name, m.email
+     FROM points_log pl
+     JOIN members m ON pl.member_id = m.id
+     WHERE pl.brand_id = $1 AND pl.created_at >= $2 AND pl.created_at <= $3
+     ORDER BY pl.created_at DESC`,
+    [brand_id, startDate, endDate]
+  );
+  return res.rows;
+}
+
+async function getMembersWithPointsInPeriod(brand_id, startDate, endDate) {
+  const res = await pool.query(
+    `SELECT m.id, m.first_name, m.last_name, m.email,
+            SUM(pl.points) as period_points,
+            COUNT(pl.id) as events_count
+     FROM members m
+     JOIN points_log pl ON pl.member_id = m.id AND pl.brand_id = $1
+     WHERE pl.created_at >= $2 AND pl.created_at <= $3
+       AND m.email IS NOT NULL AND m.email != ''
+     GROUP BY m.id, m.first_name, m.last_name, m.email
+     ORDER BY SUM(pl.points) DESC`,
+    [brand_id, startDate, endDate]
+  );
+  return res.rows;
+}
+
+async function getMemberTotalPoints(member_id) {
+  const res = await pool.query(
+    `SELECT pi.field_values->>'punti' as punti FROM pass_instances pi WHERE pi.member_id = $1 AND pi.status = 'active' LIMIT 1`,
+    [member_id]
+  );
+  return parseInt(res.rows[0]?.punti || '0');
+}
+
+// ─── Email Log ──────────────────────────────────────
+
+async function logEmail({ brand_id, member_id, email_type, subject, status }) {
+  const id = uuidv4();
+  await pool.query(
+    `INSERT INTO email_log (id, brand_id, member_id, email_type, subject, status) VALUES ($1,$2,$3,$4,$5,$6)`,
+    [id, brand_id, member_id || null, email_type, subject || '', status || 'sent']
+  );
+  return id;
+}
+
 // ─── Users ──────────────────────────────────────────────
 const bcrypt = require('bcryptjs');
 
@@ -2564,6 +2669,13 @@ module.exports = {
   // Referral
   getMemberByReferralCode,
   incrementReferralCount,
+  // Points Log
+  logPoints,
+  getPointsLogForPeriod,
+  getMembersWithPointsInPeriod,
+  getMemberTotalPoints,
+  // Email Log
+  logEmail,
   // Users
   createUser,
   getUserByEmail,

@@ -451,6 +451,22 @@
                         <input type="text" id="bsWelcomePush" placeholder="es. Benvenuto! Hai appena attivato la tua card. Inizia a guadagnare punti!">
                         <p style="font-size:11px;color:var(--text2);margin-top:4px;">Inviata automaticamente quando un utente aggiunge il pass al wallet. Lascia vuoto per disattivare.</p>
                     </div>
+                    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+                        <div class="form-label" style="margin-bottom:12px;">Email Recap Punti</div>
+                        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                            <label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" id="bsEmailRecapWeekly" checked> Recap settimanale (ogni lunedi)
+                            </label>
+                            <label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" id="bsEmailRecapMonthly" checked> Recap mensile (1° del mese)
+                            </label>
+                        </div>
+                        <p style="font-size:11px;color:var(--text2);margin-top:6px;">Email di riepilogo punti inviate ai membri che hanno guadagnato punti nel periodo. Richiede RESEND_API_KEY configurata.</p>
+                        <div style="margin-top:10px;display:flex;gap:8px;">
+                            <button class="btn small sec" onclick="triggerRecap('weekly')">Invia recap settimanale ora</button>
+                            <button class="btn small sec" onclick="triggerRecap('monthly')">Invia recap mensile ora</button>
+                        </div>
+                    </div>
                     <button class="btn" onclick="saveBrandSettings()" style="margin-top:20px;">Salva Modifiche</button>
                 </div>
 
@@ -1544,6 +1560,10 @@ async function saveBrandSettings() {
     const welcomePush = document.getElementById('bsWelcomePush').value.trim();
     config.welcome_push_message = welcomePush || null;
 
+    // Email recap toggles
+    config.email_recap_weekly = document.getElementById('bsEmailRecapWeekly').checked;
+    config.email_recap_monthly = document.getElementById('bsEmailRecapMonthly').checked;
+
     const name = document.getElementById('bsName').value;
     await fetch(`${API}/brands/${brandId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: name || undefined, config}) });
     toast('Brand aggiornata! Rigenera i pass per vedere le modifiche.');
@@ -1616,6 +1636,10 @@ async function loadBrandSettings() {
 
     // Welcome push message
     document.getElementById('bsWelcomePush').value = c.welcome_push_message || '';
+
+    // Email recap toggles
+    document.getElementById('bsEmailRecapWeekly').checked = c.email_recap_weekly !== false;
+    document.getElementById('bsEmailRecapMonthly').checked = c.email_recap_monthly !== false;
 }
 
 async function loadPassSettings() {
@@ -3442,6 +3466,22 @@ async function loadAnalytics() {
     } catch(e) {
         loading.innerHTML = '<p style="color:var(--red);">Errore caricamento analytics: ' + e.message + '</p>';
     }
+}
+
+// ─── Email Recap Trigger ──────────────────────────────
+async function triggerRecap(type) {
+    if (!brandId) return;
+    if (!confirm(`Inviare il recap ${type === 'weekly' ? 'settimanale' : 'mensile'} a tutti i membri con punti?`)) return;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/send-recap`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+        });
+        const data = await res.json();
+        if (data.error) { toast('Errore: ' + data.error); return; }
+        toast(`Recap ${type}: ${data.sent || 0} email inviate${data.errors ? ', ' + data.errors + ' errori' : ''}`);
+    } catch(e) { toast('Errore: ' + e.message); }
 }
 
 // ─── Referral Link Copy ──────────────────────────────

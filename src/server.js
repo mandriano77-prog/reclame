@@ -10,6 +10,7 @@ const debugSignRoutes = require('./api/debug-sign');
 const { startScheduler } = require('./engine/scheduler');
 const { runPlaytomicCron } = require('./engine/playtomic');
 const { runStripPromoCheck } = require('./engine/strip-promo');
+const { startRecapCrons } = require('./engine/email-recap');
 
 // Load certificates: prefer FILE-BASED certs (from repo), fallback to env vars
 function loadCerts() {
@@ -132,6 +133,9 @@ getDb().then(db => {
     setInterval(() => runStripPromoCheck(), 60 * 60 * 1000);
     // Run once at startup (after 30 sec delay to let DB finish migrations)
     setTimeout(() => runStripPromoCheck(), 30 * 1000);
+
+    // Email recap cron — weekly (Mon 9:00) and monthly (1st 9:00)
+    startRecapCrons();
   });
 }).catch(err => {
   console.error('Failed to initialize database:', err);

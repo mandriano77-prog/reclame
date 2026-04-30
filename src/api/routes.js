@@ -99,12 +99,15 @@ const {
   // Analytics
   logAnalyticsEvent,
   getAnalyticsStats,
+  // Points Log
+  logPoints,
   pool
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
 const { sendPushUpdate } = require('../engine/apns');
 const { runFullSync } = require('../engine/playtomic');
 const { evaluateChallenges } = require('../engine/challenges');
+const { runRecap, sendBrandRecap } = require('../engine/email-recap');
 const sharp = require('sharp');
 const XLSX = require('xlsx');
 const jwt = require('jsonwebtoken');
@@ -948,6 +951,25 @@ router.put('/passes/:id', async (req, res) => {
       status: status || passInstance.status
     });
 
+    // Log points change if punti field was updated
+    if (field_values && field_values.punti !== undefined) {
+      const oldPunti = parseInt(passInstance.field_values?.punti) || 0;
+      const newPunti = parseInt(field_values.punti) || 0;
+      const diff = newPunti - oldPunti;
+      if (diff !== 0) {
+        try {
+          await logPoints({
+            brand_id: passInstance.brand_id,
+            member_id: passInstance.member_id || null,
+            pass_id: req.params.id,
+            points: diff,
+            reason: 'manual',
+            details: 'Punti aggiornati manualmente'
+          });
+        } catch(e) { console.log('[PointsLog] Error logging manual points:', e.message); }
+      }
+    }
+
     // Clear cache to force regeneration
     const cacheDir = ensureCacheDir();
     const pkpassPath = path.join(cacheDir, `${req.params.id}.pkpass`);
@@ -1527,6 +1549,18 @@ router.post('/passes/signup', async (req, res) => {
       event_type: 'pass_created',
       metadata: { source: 'landing_signup', email, welcome_points: 10 }
     });
+
+    // Log welcome points for recap emails
+    try {
+      await logPoints({
+        brand_id: brand.id,
+        member_id: member.id,
+        pass_id: passInstance.id,
+        points: 10,
+        reason: 'signup',
+        details: 'Punti di benvenuto'
+      });
+    } catch(e) { console.log('[PointsLog] Error logging welcome points:', e.message); }
 
     const downloadUrl = `${baseUrl}/api/v1/passes/${passInstance.id}/download`;
     const landingUrl = `https://${CUSTOM_DOMAIN}/${brand.slug || ''}`;
@@ -3076,6 +3110,45 @@ router.get('/brands/:id/analytics/full', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting analytics:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// EMAIL RECAP
+// ============================================================================
+
+/**
+ * POST /api/v1/brands/:id/send-recap - Manually trigger a recap email for a brand
+ */
+router.post('/brands/:id/send-recap', authMiddleware, async (req, res) => {
+  try {
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    const { type } = req.body; // 'weekly' or 'monthly'
+    if (!type || !['weekly', 'monthly'].includes(type)) {
+      return res.status(400).json({ error: 'type must be "weekly" or "monthly"' });
+    }
+    const result = await sendBrandRecap(brand, type);
+    res.json(result);
+  } catch (error) {
+    console.error('Error sending recap:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/recap/run - Manually trigger recap for all brands
+ */
+router.post('/recap/run', authMiddleware, async (req, res) => {
+  try {
+    const { type } = req.body;
+    if (!type || !['weekly', 'monthly'].includes(type)) {
+      return res.status(400).json({ error: 'type must be "weekly" or "monthly"' });
+    }
+    const results = await runRecap(type);
+    res.json({ results });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
