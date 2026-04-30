@@ -126,7 +126,7 @@ function authMiddleware(req, res, next) {
     '/brands/',             // brand slug lookup (used by landing page)
     '/landing/',            // landing page API (brand by slug, pass info)
     '/passes/signup',       // public signup endpoint
-    '/rewards/seed', '/challenges/seed', '/rewards/check', '/rewards/fix-brand'
+    '/rewards/seed', '/challenges/seed', '/challenges/migrate-triggers', '/rewards/check', '/rewards/fix-brand'
   ];
   // Apple Wallet device registration paths & pass downloads
   if (req.path.match(/\/devices\//) || req.path.match(/\/passes\/.*\/pkpass/) || req.path.match(/\/passes\/.*\/download/)) return next();
@@ -1563,6 +1563,46 @@ router.get('/challenges/seed', async (req, res) => {
     res.json({ message: `Created ${created.length} challenges`, count: created.length });
   } catch (error) {
     console.error('Error seeding challenges:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/challenges/migrate-triggers - Update existing challenges with trigger_type/config
+ */
+router.get('/challenges/migrate-triggers', async (req, res) => {
+  try {
+    const TRIGGER_MAP = {
+      'Warm Up':            { trigger_type: 'booking_count', trigger_config: { count: 1, period: 'lifetime' } },
+      'Settimana Calda':    { trigger_type: 'booking_count', trigger_config: { count: 3, period: 'week' } },
+      'Maratoneta del Mese':{ trigger_type: 'booking_count', trigger_config: { count: 10, period: 'month' } },
+      'Streak Machine':     { trigger_type: 'booking_streak', trigger_config: { weeks: 4 } },
+      'Doppio Misto':       { trigger_type: 'booking_partners', trigger_config: { count: 5, period: 'month' } },
+      'Early Bird':         { trigger_type: 'booking_time', trigger_config: { count: 3, period: 'month', time_start: '08:00', time_end: '12:00' } },
+      'Midweek Warrior':    { trigger_type: 'booking_day', trigger_config: { count: 1, period: 'week', days: [1, 2, 3, 4] } },
+      'Estate in Campo':    { trigger_type: 'booking_count', trigger_config: { count: 20, period: 'custom', start_month: 6, end_month: 8 } },
+    };
+
+    let updated = 0;
+    const results = [];
+
+    // Get all challenges across all brands
+    const allBrands = await pool.query('SELECT id, name FROM brands');
+    for (const brand of allBrands.rows) {
+      const challenges = await listChallenges(brand.id);
+      for (const c of challenges) {
+        const mapping = TRIGGER_MAP[c.title];
+        if (mapping) {
+          await updateChallenge(c.id, mapping);
+          updated++;
+          results.push({ brand: brand.name, title: c.title, trigger_type: mapping.trigger_type });
+        }
+      }
+    }
+
+    res.json({ message: `Updated ${updated} challenges with triggers`, updated, results });
+  } catch (error) {
+    console.error('Error migrating triggers:', error);
     res.status(500).json({ error: error.message });
   }
 });
