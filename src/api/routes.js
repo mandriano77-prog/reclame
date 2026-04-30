@@ -569,7 +569,7 @@ router.post('/brands/:id/ai-strip', async (req, res) => {
       nature: 'natural outdoor scenery, organic textures, warm light'
     };
     const styleText = styleHints[style] || styleHints.dark;
-    const fullPrompt = `Ultra-wide horizontal banner image for a digital loyalty card. ${styleText}. Subject: ${prompt}. Brand: ${brand.name}. No text, no logos, no words. Cinematic composition, 3:1 aspect ratio, high quality.`;
+    const fullPrompt = `Ultra-wide horizontal banner image, purely visual, NO text, NO letters, NO numbers, NO words, NO logos, NO watermarks, NO typography of any kind. ${styleText}. Subject: ${prompt}. Cinematic composition, 3:1 aspect ratio, high quality, photographic.`;
 
     console.log('🎨 AI Strip generation — brand:', brand.name, 'prompt:', prompt, 'style:', style);
 
