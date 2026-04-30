@@ -384,6 +384,37 @@
 
                 <div class="sec-title" style="margin-top:24px;">Storico Notifiche</div>
                 <div id="pushHistory"></div>
+
+                <!-- WELCOME PUSH + EMAIL RECAP CONFIG -->
+                <div class="card" style="padding:20px;margin-top:24px;">
+                    <div style="font-size:15px;font-weight:600;margin-bottom:12px;">Messaggio di Benvenuto</div>
+                    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Push notification inviata automaticamente quando un nuovo membro registra la card.</p>
+                    <div class="form-group">
+                        <label class="form-label">Messaggio welcome push</label>
+                        <input type="text" id="pushWelcomeMsg" placeholder="es. Benvenuto! Hai 10 punti di partenza." style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.15);">
+                    </div>
+                </div>
+
+                <div class="card" style="padding:20px;margin-top:12px;">
+                    <div style="font-size:15px;font-weight:600;margin-bottom:12px;">Email Recap Automatiche</div>
+                    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Riepilogo punti inviato via email ai membri che hanno guadagnato punti nel periodo.</p>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                            <input type="checkbox" id="pushRecapWeekly" checked style="width:auto;accent-color:var(--teal);">
+                            <span>Recap settimanale (ogni Lunedì ore 9:00)</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                            <input type="checkbox" id="pushRecapMonthly" checked style="width:auto;accent-color:var(--teal);">
+                            <span>Recap mensile (1° del mese ore 9:00)</span>
+                        </label>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:14px;">
+                        <button class="btn btn-sm" onclick="triggerRecap('weekly')" style="font-size:12px;padding:6px 14px;">Invia recap settimanale ora</button>
+                        <button class="btn btn-sm" onclick="triggerRecap('monthly')" style="font-size:12px;padding:6px 14px;">Invia recap mensile ora</button>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="savePushConfig()" style="margin-top:16px;">Salva Configurazione Push</button>
             </div>
 
             <!-- ANALYTICS -->
@@ -445,27 +476,6 @@
                         <div id="landingLogoPreview" style="margin-bottom:10px;"></div>
                         <input type="file" id="landingLogoUpload" accept="image/png,image/jpeg" onchange="previewLandingLogo(this)" style="font-size:13px;">
                         <p style="font-size:11px;color:var(--text2);margin-top:4px;">Logo grande per la pagina di onboarding. PNG consigliato, almeno 400x400 px.</p>
-                    </div>
-                    <div class="form-group" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-                        <label class="form-label">Welcome Push (messaggio benvenuto)</label>
-                        <input type="text" id="bsWelcomePush" placeholder="es. Benvenuto! Hai appena attivato la tua card. Inizia a guadagnare punti!">
-                        <p style="font-size:11px;color:var(--text2);margin-top:4px;">Inviata automaticamente quando un utente aggiunge il pass al wallet. Lascia vuoto per disattivare.</p>
-                    </div>
-                    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-                        <div class="form-label" style="margin-bottom:12px;">Email Recap Punti</div>
-                        <div style="display:flex;gap:20px;flex-wrap:wrap;">
-                            <label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;">
-                                <input type="checkbox" id="bsEmailRecapWeekly" checked> Recap settimanale (ogni lunedi)
-                            </label>
-                            <label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;">
-                                <input type="checkbox" id="bsEmailRecapMonthly" checked> Recap mensile (1° del mese)
-                            </label>
-                        </div>
-                        <p style="font-size:11px;color:var(--text2);margin-top:6px;">Email di riepilogo punti inviate ai membri che hanno guadagnato punti nel periodo. Richiede RESEND_API_KEY configurata.</p>
-                        <div style="margin-top:10px;display:flex;gap:8px;">
-                            <button class="btn small sec" onclick="triggerRecap('weekly')">Invia recap settimanale ora</button>
-                            <button class="btn small sec" onclick="triggerRecap('monthly')">Invia recap mensile ora</button>
-                        </div>
                     </div>
                     <button class="btn" onclick="saveBrandSettings()" style="margin-top:20px;">Salva Modifiche</button>
                 </div>
@@ -1031,7 +1041,7 @@ function nav(id) {
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (event && event.target) event.target.classList.add('active');
-    const loaders = { members: loadMembers, 'create-pass': () => { loadTemplateSelect(); loadCreatedPasses(); }, rewards: loadRewards, challenges: loadChallenges, tiers: loadTiers, 'vip-cards': loadVipCards, push: () => { loadPushHistory(); loadScheduledPush(); }, analytics: loadAnalytics, templates: loadTemplates, 'brand-settings': loadBrandSettings, 'pass-settings': loadPassSettings, 'api-integration': loadApiIntegration, users: loadUsers };
+    const loaders = { members: loadMembers, 'create-pass': () => { loadTemplateSelect(); loadCreatedPasses(); }, rewards: loadRewards, challenges: loadChallenges, tiers: loadTiers, 'vip-cards': loadVipCards, push: () => { loadPushHistory(); loadScheduledPush(); loadPushConfig(); }, analytics: loadAnalytics, templates: loadTemplates, 'brand-settings': loadBrandSettings, 'pass-settings': loadPassSettings, 'api-integration': loadApiIntegration, users: loadUsers };
     if (loaders[id]) loaders[id]();
     // Leaflet needs invalidateSize after section becomes visible
     if (id === 'pass-settings' && geoMap) setTimeout(() => geoMap.invalidateSize(), 400);
@@ -1556,14 +1566,6 @@ async function saveBrandSettings() {
         config.logos.landing_logo = pendingLandingLogoBase64;
     }
 
-    // Welcome push message
-    const welcomePush = document.getElementById('bsWelcomePush').value.trim();
-    config.welcome_push_message = welcomePush || null;
-
-    // Email recap toggles
-    config.email_recap_weekly = document.getElementById('bsEmailRecapWeekly').checked;
-    config.email_recap_monthly = document.getElementById('bsEmailRecapMonthly').checked;
-
     const name = document.getElementById('bsName').value;
     await fetch(`${API}/brands/${brandId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: name || undefined, config}) });
     toast('Brand aggiornata! Rigenera i pass per vedere le modifiche.');
@@ -1634,12 +1636,6 @@ async function loadBrandSettings() {
         landingLogoPrev.innerHTML = '<span style="font-size:12px;color:var(--text2);">Nessun logo landing caricato (verra usato il logo del pass)</span>';
     }
 
-    // Welcome push message
-    document.getElementById('bsWelcomePush').value = c.welcome_push_message || '';
-
-    // Email recap toggles
-    document.getElementById('bsEmailRecapWeekly').checked = c.email_recap_weekly !== false;
-    document.getElementById('bsEmailRecapMonthly').checked = c.email_recap_monthly !== false;
 }
 
 async function loadPassSettings() {
@@ -3482,6 +3478,41 @@ async function triggerRecap(type) {
         if (data.error) { toast('Errore: ' + data.error); return; }
         toast(`Recap ${type}: ${data.sent || 0} email inviate${data.errors ? ', ' + data.errors + ' errori' : ''}`);
     } catch(e) { toast('Errore: ' + e.message); }
+}
+
+// ─── Push Config (welcome push + email recap) ────────
+async function loadPushConfig() {
+    if (!brandId) return;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}`);
+        const brand = await res.json();
+        const c = brand.config || {};
+        const wEl = document.getElementById('pushWelcomeMsg');
+        if (wEl) wEl.value = c.welcome_push_message || '';
+        const rwEl = document.getElementById('pushRecapWeekly');
+        if (rwEl) rwEl.checked = c.email_recap_weekly !== false;
+        const rmEl = document.getElementById('pushRecapMonthly');
+        if (rmEl) rmEl.checked = c.email_recap_monthly !== false;
+    } catch(e) { console.error('loadPushConfig error:', e); }
+}
+
+async function savePushConfig() {
+    if (!brandId) return;
+    const config = {};
+    const wEl = document.getElementById('pushWelcomeMsg');
+    config.welcome_push_message = wEl ? wEl.value.trim() || null : null;
+    const rwEl = document.getElementById('pushRecapWeekly');
+    config.email_recap_weekly = rwEl ? rwEl.checked : true;
+    const rmEl = document.getElementById('pushRecapMonthly');
+    config.email_recap_monthly = rmEl ? rmEl.checked : true;
+    try {
+        await fetch(`${API}/brands/${brandId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config })
+        });
+        toast('Configurazione push salvata!');
+    } catch(e) { toast('Errore salvataggio: ' + e.message); }
 }
 
 // ─── Referral Link Copy ──────────────────────────────
