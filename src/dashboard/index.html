@@ -3514,7 +3514,7 @@ async function loadAnalytics() {
 async function loadRFM() {
     if (!brandId) return;
     try {
-        const res = await fetch(`${API}/brands/${brandId}/analytics/rfm`, { headers: authHeaders() });
+        const res = await fetch(`${API}/brands/${brandId}/analytics/rfm`, { headers: getAuthHeaders() });
         const data = await res.json();
 
         const segEl = document.getElementById('rfmSegments');
@@ -3658,7 +3658,7 @@ let scratchPrizesCount = 0;
 async function loadScratchCards() {
     if (!brandId) { console.log('[Scratch] No brandId'); return; }
     try {
-        const res = await fetch(`${API}/brands/${brandId}/scratch-cards`, { headers: authHeaders() });
+        const res = await fetch(`${API}/brands/${brandId}/scratch-cards`, { headers: getAuthHeaders() });
         if (!res.ok) { console.error('[Scratch] API error:', res.status); return; }
         const campaigns = await res.json();
         console.log('[Scratch] Loaded', campaigns.length, 'campaigns');
@@ -3764,7 +3764,7 @@ function openScratchModal(data) {
 
 async function editScratchCard(id) {
     try {
-        const res = await fetch(`${API}/brands/${brandId}/scratch-cards`, { headers: authHeaders() });
+        const res = await fetch(`${API}/brands/${brandId}/scratch-cards`, { headers: getAuthHeaders() });
         const campaigns = await res.json();
         const c = campaigns.find(x => x.id === id);
         if (c) openScratchModal(c);
@@ -3786,9 +3786,9 @@ async function saveScratchCard() {
     try {
         let res;
         if (id) {
-            res = await fetch(`${API}/scratch-cards/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) });
+            res = await fetch(`${API}/scratch-cards/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(body) });
         } else {
-            res = await fetch(`${API}/brands/${brandId}/scratch-cards`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) });
+            res = await fetch(`${API}/brands/${brandId}/scratch-cards`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(body) });
         }
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + (data.error || 'Salvataggio fallito')); return; }
@@ -3801,7 +3801,7 @@ async function saveScratchCard() {
 async function deleteScratchCard(id) {
     if (!confirm('Eliminare questa campagna scratch card?')) return;
     try {
-        await fetch(`${API}/scratch-cards/${id}`, { method: 'DELETE', headers: authHeaders() });
+        await fetch(`${API}/scratch-cards/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         toast('Campagna eliminata');
         loadScratchCards();
     } catch(e) { toast('Errore: ' + e.message); }
