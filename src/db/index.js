@@ -928,29 +928,17 @@ async function getDevicesForBrand(brandId) {
  */
 async function getAnalytics(brandId) {
   try {
-    // Total passes
-    const passResult = await pool.query(
-      `SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1`, [brandId]
-    );
+    const [passResult, statusResult, eventResult] = await Promise.all([
+      pool.query(`SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1`, [brandId]),
+      pool.query(`SELECT status, COUNT(*) as count FROM pass_instances WHERE brand_id = $1 GROUP BY status`, [brandId]),
+      pool.query(`SELECT event_type, COUNT(*) as count FROM events WHERE brand_id = $1 GROUP BY event_type`, [brandId])
+    ]);
+
     const totalPasses = parseInt(passResult.rows[0].count) || 0;
-
-    // Passes by status
-    const statusResult = await pool.query(
-      `SELECT status, COUNT(*) as count FROM pass_instances WHERE brand_id = $1 GROUP BY status`, [brandId]
-    );
     const byStatus = {};
-    statusResult.rows.forEach(row => {
-      byStatus[row.status] = parseInt(row.count);
-    });
-
-    // Event counts by type
-    const eventResult = await pool.query(
-      `SELECT event_type, COUNT(*) as count FROM events WHERE brand_id = $1 GROUP BY event_type`, [brandId]
-    );
+    statusResult.rows.forEach(row => { byStatus[row.status] = parseInt(row.count); });
     const events = {};
-    eventResult.rows.forEach(row => {
-      events[row.event_type] = parseInt(row.count);
-    });
+    eventResult.rows.forEach(row => { events[row.event_type] = parseInt(row.count); });
 
     return { totalPasses, byStatus, events };
   } catch (error) {

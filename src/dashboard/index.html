@@ -1091,6 +1091,17 @@ function toast(msg) {
 }
 
 // ==================== BRANDS ====================
+let _brandAbort = null;
+
+function syncBrandUrl() {
+    if (!brandId) return;
+    const u = new URLSearchParams(window.location.search);
+    if (u.get('brand_id') !== brandId) {
+        u.set('brand_id', brandId);
+        history.replaceState(null, '', '?' + u.toString() + window.location.hash);
+    }
+}
+
 async function loadBrands() {
     const res = await fetch(`${API}/brands`);
     const brands = await res.json();
@@ -1101,18 +1112,40 @@ async function loadBrands() {
     // If manager with assigned brand, force that brand
     if (currentUser && currentUser.role === 'manager' && currentUser.brand_id) {
         const match = brands.find(b => b.id === currentUser.brand_id);
-        if (match) {
-            sel.value = match.id;
-            brandId = match.id;
-        }
-    } else if (brands.length > 0) {
-        sel.value = brands[0].id;
-        brandId = brands[0].id;
+        if (match) { sel.value = match.id; brandId = match.id; }
+    } else {
+        // Try URL param first
+        const urlBrand = new URLSearchParams(window.location.search).get('brand_id');
+        const fromUrl = urlBrand && brands.find(b => b.id === urlBrand);
+        if (fromUrl) { sel.value = fromUrl.id; brandId = fromUrl.id; }
+        else if (brands.length > 0) { sel.value = brands[0].id; brandId = brands[0].id; }
     }
-    if (brandId) { refreshOverview(); loadTemplateSelect(); applyBrandTheme(); }
+    if (brandId) {
+        syncBrandUrl();
+        // Parallel init: overview + templates + theme
+        applyBrandTheme();
+        await Promise.all([refreshOverview(), loadTemplateSelect()]);
+    }
     if (!window._refreshInterval) { window._refreshInterval = setInterval(refreshOverview, 30000); }
 }
-function changeBrand() { brandId = document.getElementById('brandSelector').value; refreshOverview(); applyBrandTheme(); }
+
+function changeBrand() {
+    if (_brandAbort) { _brandAbort.abort(); _brandAbort = null; }
+    brandId = document.getElementById('brandSelector').value;
+    if (!brandId) return;
+    syncBrandUrl();
+    // Show loading state immediately
+    document.getElementById('statsGrid').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px;text-align:center;">Caricamento...</div>';
+    document.getElementById('topMembers').innerHTML = '';
+    document.getElementById('tierDistribution').innerHTML = '';
+    applyBrandTheme();
+    const ctrl = new AbortController();
+    _brandAbort = ctrl;
+    Promise.all([
+        refreshOverview(ctrl.signal),
+        loadTemplateSelect()
+    ]).catch(e => { if (e.name !== 'AbortError') console.error('changeBrand error:', e); });
+}
 
 function applyBrandTheme() {
     if (!brandId) return;
@@ -1169,9 +1202,13 @@ async function createBrand() {
     const name = document.getElementById('newBrandName').value;
     const slug = document.getElementById('newBrandSlug').value;
     if (!name || !slug) return alert('Compila nome e slug');
-    await fetch(`${API}/brands`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, slug, config: {}}) });
+    const res = await fetch(`${API}/brands`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, slug, config: {}}) });
+    const newBrand = await res.json();
     toast('Brand creata!'); document.getElementById('newBrandName').value = ''; document.getElementById('newBrandSlug').value = '';
-    document.getElementById('brandSelector').innerHTML = ''; await loadBrands();
+    document.getElementById('brandSelector').innerHTML = '';
+    if (newBrand?.id) brandId = newBrand.id;
+    await loadBrands();
+    syncBrandUrl();
 }
 
 async function deleteBrandAction() {
@@ -1994,13 +2031,14 @@ async function loadPlaytomicLogs(appendMode = false) {
 }
 
 // ==================== OVERVIEW ====================
-async function refreshOverview() {
+async function refreshOverview(signal) {
     if (!brandId) return;
     try {
+        const opts = signal ? { signal } : {};
         const [anaRes, passRes, rwRes, chRes, trRes] = await Promise.all([
-            fetch(`${API}/analytics/${brandId}`), fetch(`${API}/passes?brand_id=${brandId}`),
-            fetch(`${API}/rewards?brand_id=${brandId}`), fetch(`${API}/challenges?brand_id=${brandId}`),
-            fetch(`${API}/tiers?brand_id=${brandId}`)
+            fetch(`${API}/analytics/${brandId}`, opts), fetch(`${API}/passes?brand_id=${brandId}`, opts),
+            fetch(`${API}/rewards?brand_id=${brandId}`, opts), fetch(`${API}/challenges?brand_id=${brandId}`, opts),
+            fetch(`${API}/tiers?brand_id=${brandId}`, opts)
         ]);
         const analytics = await anaRes.json();
         const passes = await passRes.json();
@@ -2050,7 +2088,7 @@ async function refreshOverview() {
         } else {
             document.getElementById('tierDistribution').innerHTML = '<p style="color:var(--text2);font-size:13px;">Nessun livello configurato</p>';
         }
-    } catch(e) { console.error('Overview error:', e); }
+    } catch(e) { if (e.name !== 'AbortError') console.error('Overview error:', e); }
 }
 
 // ==================== MEMBERS ====================
