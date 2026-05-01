@@ -1856,28 +1856,18 @@ async function loadPassSettings() {
 
 // ─── Integration Catalog ─────────────────────────────
 const INTEGRATIONS = [
+    // ── Attivi ──
     { slug: 'playtomic', name: 'Playtomic', icon: '🎾', gradient: 'linear-gradient(135deg,#00D4AA,#0088CC)', cat: 'Booking', desc: 'Punti automatici da prenotazioni padel, tennis e sport.', status: 'available', configurable: true },
     { slug: 'sumup', name: 'SumUp', icon: '💳', gradient: 'linear-gradient(135deg,#0055DE,#00A3FF)', cat: 'POS & Pagamenti', desc: 'Punti su ogni transazione POS. 1 euro = N punti, automatico.', status: 'available', configurable: true },
+    { slug: 'shopify', name: 'Shopify', icon: '🛒', gradient: 'linear-gradient(135deg,#95BF47,#5E8E3E)', cat: 'E-commerce', desc: 'Punti su ordini completati. Usa punti come sconto al checkout.', status: 'available', configurable: true },
+    { slug: 'webhook', name: 'Webhook Custom', icon: '🔗', gradient: 'linear-gradient(135deg,#607D8B,#455A64)', cat: 'Automazione', desc: 'Endpoint generico: ricevi eventi da qualsiasi sistema.', status: 'available', configurable: true },
+    // ── Coming Soon ──
     { slug: 'square', name: 'Square', icon: '◻️', gradient: 'linear-gradient(135deg,#333,#666)', cat: 'POS & Pagamenti', desc: 'Loyalty integrato con il POS Square. Sync vendite e scontrini.', status: 'coming_soon' },
     { slug: 'satispay', name: 'Satispay', icon: '🔴', gradient: 'linear-gradient(135deg,#E63946,#FF6B6B)', cat: 'POS & Pagamenti', desc: 'Pagamenti mobile con accumulo punti automatico.', status: 'coming_soon' },
-    { slug: 'shopify', name: 'Shopify', icon: '🛒', gradient: 'linear-gradient(135deg,#95BF47,#5E8E3E)', cat: 'E-commerce', desc: 'Punti su ordini completati. Usa punti come sconto al checkout.', status: 'available', configurable: true },
     { slug: 'woocommerce', name: 'WooCommerce', icon: '🟣', gradient: 'linear-gradient(135deg,#7F54B3,#9B6BC4)', cat: 'E-commerce', desc: 'Plugin WordPress per loyalty su acquisti e-commerce.', status: 'coming_soon' },
-    { slug: 'prestashop', name: 'PrestaShop', icon: '🔵', gradient: 'linear-gradient(135deg,#2493D6,#1A6FA3)', cat: 'E-commerce', desc: 'Modulo loyalty per PrestaShop con sync ordini.', status: 'coming_soon' },
     { slug: 'google-reviews', name: 'Google Reviews', icon: '⭐', gradient: 'linear-gradient(135deg,#FBBC04,#EA4335)', cat: 'Recensioni', desc: 'Incentiva recensioni: lasci una review, guadagni punti.', status: 'coming_soon' },
-    { slug: 'trustpilot', name: 'Trustpilot', icon: '🟢', gradient: 'linear-gradient(135deg,#00B67A,#005128)', cat: 'Recensioni', desc: 'Premia chi lascia recensioni verificate su Trustpilot.', status: 'coming_soon' },
-    { slug: 'tripadvisor', name: 'TripAdvisor', icon: '🦉', gradient: 'linear-gradient(135deg,#34E0A1,#00AA6C)', cat: 'Recensioni', desc: 'Punti per recensioni su TripAdvisor. Perfetto per hospitality.', status: 'coming_soon' },
     { slug: 'whatsapp', name: 'WhatsApp Business', icon: '💬', gradient: 'linear-gradient(135deg,#25D366,#128C7E)', cat: 'Messaging', desc: 'Invia scratch card, recap punti e promo via WhatsApp.', status: 'coming_soon' },
-    { slug: 'telegram', name: 'Telegram Bot', icon: '✈️', gradient: 'linear-gradient(135deg,#0088CC,#229ED9)', cat: 'Messaging', desc: 'Bot Telegram per notifiche e interazioni con i membri.', status: 'coming_soon' },
-    { slug: 'thefork', name: 'TheFork', icon: '🍴', gradient: 'linear-gradient(135deg,#00665C,#009E8E)', cat: 'Booking', desc: 'Punti su prenotazioni ristorante via TheFork/OpenTable.', status: 'coming_soon' },
-    { slug: 'treatwell', name: 'Treatwell', icon: '💆', gradient: 'linear-gradient(135deg,#FF6B81,#FF4757)', cat: 'Booking', desc: 'Loyalty per saloni beauty e spa. Punti su appuntamenti.', status: 'coming_soon' },
-    { slug: 'mindbody', name: 'Mindbody', icon: '🧘', gradient: 'linear-gradient(135deg,#00BCD4,#0097A7)', cat: 'Booking', desc: 'Punti su classi fitness, yoga, CrossFit, pilates.', status: 'coming_soon' },
-    { slug: 'eventbrite', name: 'Eventbrite', icon: '🎟', gradient: 'linear-gradient(135deg,#F05537,#D84315)', cat: 'Eventi', desc: 'Punti per partecipazione a eventi del brand.', status: 'coming_soon' },
-    { slug: 'glovo', name: 'Glovo', icon: '🛵', gradient: 'linear-gradient(135deg,#FFC244,#F9A825)', cat: 'Food & Delivery', desc: 'Accumula punti anche su ordini delivery.', status: 'coming_soon' },
-    { slug: 'deliveroo', name: 'Deliveroo', icon: '🥡', gradient: 'linear-gradient(135deg,#00CCBC,#00A89D)', cat: 'Food & Delivery', desc: 'Loyalty cross-canale: in-store + delivery.', status: 'coming_soon' },
-    { slug: 'wifi-captive', name: 'WiFi Check-in', icon: '📶', gradient: 'linear-gradient(135deg,#7C4DFF,#536DFE)', cat: 'Check-in', desc: 'Check-in automatico via WiFi captive portal. Zero frizione.', status: 'coming_soon' },
     { slug: 'zapier', name: 'Zapier', icon: '⚡', gradient: 'linear-gradient(135deg,#FF4A00,#FF6D3A)', cat: 'Automazione', desc: 'Connetti Nudj a 5000+ app tramite workflow Zapier.', status: 'coming_soon' },
-    { slug: 'webhook', name: 'Webhook Custom', icon: '🔗', gradient: 'linear-gradient(135deg,#607D8B,#455A64)', cat: 'Automazione', desc: 'Endpoint generico: ricevi eventi da qualsiasi sistema.', status: 'available', configurable: true },
-    { slug: 'fatture-in-cloud', name: 'Fatture in Cloud', icon: '📄', gradient: 'linear-gradient(135deg,#2196F3,#1565C0)', cat: 'Contabilita', desc: 'Revenue loyalty vs non-loyalty. Analytics su fatturato.', status: 'coming_soon' },
 ];
 
 let _integrationFilter = 'all';
