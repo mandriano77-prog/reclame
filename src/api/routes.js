@@ -332,6 +332,89 @@ router.put('/auth/change-password', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── Public scratch card play endpoint (BEFORE auth middleware) ──
+router.post('/scratch-cards/:id/play', async (req, res) => {
+  try {
+    const { member_id } = req.body;
+    if (!member_id) return res.status(400).json({ error: 'Missing member_id' });
+
+    const campaign = await getInstantWinCampaign(req.params.id);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    if (!campaign.active) return res.status(400).json({ error: 'Campagna non attiva' });
+
+    // Check date range
+    const now = new Date();
+    if (campaign.start_date && new Date(campaign.start_date) > now) {
+      return res.status(400).json({ error: 'Campagna non ancora iniziata' });
+    }
+    if (campaign.end_date && new Date(campaign.end_date) < now) {
+      return res.status(400).json({ error: 'Campagna scaduta' });
+    }
+
+    // Check max plays per member
+    const playCount = await getMemberPlays(req.params.id, member_id);
+    if (playCount >= (campaign.max_plays_per_member || 1)) {
+      return res.status(400).json({ error: 'Hai già giocato il numero massimo di volte', already_played: true });
+    }
+
+    // Determine win/lose based on probability
+    const roll = Math.random() * 100;
+    const won = roll < parseFloat(campaign.win_probability);
+
+    // Pick a prize if won
+    let prize = null;
+    if (won && campaign.prizes && campaign.prizes.length > 0) {
+      const prizes = campaign.prizes.filter(p => p.active !== false);
+      if (prizes.length > 0) {
+        const totalWeight = prizes.reduce((sum, p) => sum + (p.weight || 1), 0);
+        let r = Math.random() * totalWeight;
+        for (const p of prizes) {
+          r -= (p.weight || 1);
+          if (r <= 0) { prize = p; break; }
+        }
+        if (!prize) prize = prizes[0];
+      }
+    }
+
+    const play = await createInstantWinPlay({
+      campaign_id: req.params.id,
+      member_id,
+      brand_id: campaign.brand_id,
+      won,
+      prize
+    });
+
+    // If won and prize has points, credit them
+    if (won && prize && prize.points && prize.points > 0) {
+      try {
+        const memberPasses = await listPasses(campaign.brand_id);
+        const memberPass = memberPasses.find(p => p.customer_data?.member_id === member_id || p.field_values?.member_id === member_id);
+        if (memberPass) {
+          await logPoints({
+            brand_id: campaign.brand_id,
+            member_id,
+            pass_id: memberPass.id,
+            points: prize.points,
+            reason: 'instant_win',
+            details: `Scratch card: ${campaign.title} — ${prize.name}`
+          });
+          const currentPunti = parseInt(memberPass.field_values?.punti || '0');
+          const newPunti = currentPunti + prize.points;
+          await updatePassInstance(memberPass.id, {
+            field_values: { ...memberPass.field_values, punti: String(newPunti) }
+          });
+          console.log(`[ScratchCard] Awarded ${prize.points} points to member ${member_id}`);
+        }
+      } catch (e) { console.error('[ScratchCard] Error awarding points:', e.message); }
+    }
+
+    res.json({ won, prize, play_id: play.id });
+  } catch (err) {
+    console.error('[ScratchCard] Play error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Apply auth + brand filter to all routes below
 router.use(authMiddleware);
 router.use(brandFilter);
@@ -3442,93 +3525,6 @@ router.get('/scratch-cards/:id/plays', authMiddleware, async (req, res) => {
     const plays = await listInstantWinPlays(req.params.id);
     res.json(plays);
   } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// Public play endpoint — called from scratch card page
-router.post('/scratch-cards/:id/play', async (req, res) => {
-  try {
-    const { member_id } = req.body;
-    if (!member_id) return res.status(400).json({ error: 'Missing member_id' });
-
-    const campaign = await getInstantWinCampaign(req.params.id);
-    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
-    if (!campaign.active) return res.status(400).json({ error: 'Campagna non attiva' });
-
-    // Check date range
-    const now = new Date();
-    if (campaign.start_date && new Date(campaign.start_date) > now) {
-      return res.status(400).json({ error: 'Campagna non ancora iniziata' });
-    }
-    if (campaign.end_date && new Date(campaign.end_date) < now) {
-      return res.status(400).json({ error: 'Campagna scaduta' });
-    }
-
-    // Check max plays per member
-    const playCount = await getMemberPlays(req.params.id, member_id);
-    if (playCount >= (campaign.max_plays_per_member || 1)) {
-      return res.status(400).json({ error: 'Hai già giocato il numero massimo di volte', already_played: true });
-    }
-
-    // Determine win/lose based on probability
-    const roll = Math.random() * 100;
-    const won = roll < parseFloat(campaign.win_probability);
-
-    // Pick a prize if won
-    let prize = null;
-    if (won && campaign.prizes && campaign.prizes.length > 0) {
-      // Weighted random pick from prizes array
-      // Each prize: { name, description, points, weight }
-      const prizes = campaign.prizes.filter(p => p.active !== false);
-      if (prizes.length > 0) {
-        const totalWeight = prizes.reduce((sum, p) => sum + (p.weight || 1), 0);
-        let r = Math.random() * totalWeight;
-        for (const p of prizes) {
-          r -= (p.weight || 1);
-          if (r <= 0) { prize = p; break; }
-        }
-        if (!prize) prize = prizes[0];
-      }
-    }
-
-    const play = await createInstantWinPlay({
-      campaign_id: req.params.id,
-      member_id,
-      brand_id: campaign.brand_id,
-      won,
-      prize
-    });
-
-    // If won and prize has points, credit them
-    if (won && prize && prize.points && prize.points > 0) {
-      try {
-        // Find member's pass to log points
-        const memberPasses = await listPasses(campaign.brand_id);
-        const memberPass = memberPasses.find(p => p.customer_data?.member_id === member_id || p.field_values?.member_id === member_id);
-        if (memberPass) {
-          await logPoints({
-            brand_id: campaign.brand_id,
-            member_id,
-            pass_id: memberPass.id,
-            points: prize.points,
-            reason: 'instant_win',
-            details: `Scratch card: ${campaign.title} — ${prize.name}`
-          });
-          // Update pass field_values.punti
-          const currentPunti = parseInt(memberPass.field_values?.punti || '0');
-          const newPunti = currentPunti + prize.points;
-          await updatePassInstance(memberPass.id, {
-            field_values: { ...memberPass.field_values, punti: String(newPunti) }
-          });
-          console.log(`[ScratchCard] Awarded ${prize.points} points to member ${member_id}`);
-        }
-      } catch (e) { console.error('[ScratchCard] Error awarding points:', e.message); }
-    }
-
-    res.json({ won, prize, play_id: play.id });
-  } catch (err) {
-    console.error('[ScratchCard] Play error:', err);
-    res.status(500).json({ error: err.message });
-  }
 });
 
 // ─── Scratch Card: send email invitations ───────────────────────
