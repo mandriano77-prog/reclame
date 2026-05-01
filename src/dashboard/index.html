@@ -646,59 +646,47 @@
 
             <!-- API INTEGRATION -->
             <div id="api-integration" class="section">
-                <div class="sec-title">Bridge — Integrazioni</div>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:24px;">Collega servizi esterni per automatizzare il programma fedeltà.</p>
+                <div class="sec-title">Bridge — Marketplace Integrazioni</div>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:8px;">Collega servizi esterni per automatizzare punti, engagement e comunicazione.</p>
 
-                <!-- Empty state for brands without integrations -->
-                <div id="apiEmptyState" style="display:none;padding:40px;text-align:center;border:1px dashed var(--border);border-radius:12px;margin-bottom:24px;">
-                    <div style="font-size:32px;margin-bottom:12px;">🔌</div>
-                    <div style="font-size:15px;color:var(--text2);">Nessuna integrazione configurata per questo brand.</div>
-                    <div style="font-size:12px;color:var(--text2);opacity:0.6;margin-top:8px;">Le integrazioni disponibili verranno mostrate qui quando attivate.</div>
+                <!-- Category filter -->
+                <div id="integrationFilters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+                    <button class="btn small" onclick="filterIntegrations('all')" data-cat="all" style="font-size:11px;">Tutte</button>
                 </div>
 
-                <!-- Playtomic (shown only for brands with playtomic config) -->
-                <div id="playtomicSection" style="display:none;">
-                    <div class="card" style="padding:24px;">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-                            <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#00D4AA,#0088CC);display:flex;align-items:center;justify-content:center;font-size:24px;">🎾</div>
-                            <div>
-                                <div style="font-weight:700;font-size:16px;">Playtomic</div>
-                                <div style="font-size:12px;color:var(--text2);">Punti automatici da prenotazioni completate</div>
-                            </div>
-                            <div style="margin-left:auto;" id="ptStatusBadge">
-                                <span class="badge inactive">Non configurato</span>
-                            </div>
-                        </div>
+                <!-- Marketplace grid -->
+                <div id="integrationGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;"></div>
 
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                            <div class="form-group"><label class="form-label">Client ID</label><input type="text" id="ptClientId" placeholder="Il tuo client_id Playtomic"></div>
-                            <div class="form-group"><label class="form-label">Secret</label><input type="password" id="ptSecret" placeholder="La tua password Playtomic"></div>
+                <!-- Playtomic detail panel (hidden by default) -->
+                <div id="playtomicDetail" class="card" style="display:none;padding:24px;margin-top:24px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#00D4AA,#0088CC);display:flex;align-items:center;justify-content:center;font-size:20px;">🎾</div>
+                            <div style="font-weight:700;font-size:16px;">Configurazione Playtomic</div>
                         </div>
-                        <div class="form-group"><label class="form-label">Tenant ID (Venue)</label><input type="text" id="ptTenantId" placeholder="ID del tuo club"></div>
-                        <div class="form-group" style="margin-top:4px;">
-                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                                <input type="checkbox" id="ptSyncEnabled" style="width:18px;height:18px;accent-color:var(--teal);">
-                                <span style="font-size:13px;">Abilita sync automatico (ogni giorno alle 10:00)</span>
-                            </label>
-                        </div>
-                        <div style="display:flex;gap:12px;margin-top:16px;">
-                            <button class="btn" onclick="savePlaytomicConfig()">Salva Configurazione</button>
-                            <button class="btn sec" onclick="triggerPlaytomicSync()" id="ptSyncBtn">🔄 Sync Ora</button>
-                        </div>
+                        <button class="btn small sec" onclick="document.getElementById('playtomicDetail').style.display='none';">&times; Chiudi</button>
                     </div>
-
-                    <!-- Sync Log -->
-                    <div style="margin-top:24px;">
-                        <div class="sec-title" style="font-size:15px;">Storico Sync Playtomic</div>
-                        <div id="ptSyncLog" class="card" style="padding:16px;font-size:12px;color:var(--text2);max-height:400px;overflow-y:auto;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group"><label class="form-label">Client ID</label><input type="text" id="ptClientId" placeholder="Il tuo client_id Playtomic"></div>
+                        <div class="form-group"><label class="form-label">Secret</label><input type="password" id="ptSecret" placeholder="La tua password Playtomic"></div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Tenant ID (Venue)</label><input type="text" id="ptTenantId" placeholder="ID del tuo club"></div>
+                    <div class="form-group" style="margin-top:4px;">
+                        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                            <input type="checkbox" id="ptSyncEnabled" style="width:18px;height:18px;accent-color:var(--teal);">
+                            <span style="font-size:13px;">Abilita sync automatico (ogni giorno alle 10:00)</span>
+                        </label>
+                    </div>
+                    <div style="display:flex;gap:12px;margin-top:16px;">
+                        <button class="btn" onclick="savePlaytomicConfig()">Salva Configurazione</button>
+                        <button class="btn sec" onclick="triggerPlaytomicSync()" id="ptSyncBtn">Sync Ora</button>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Storico Sync</div>
+                        <div id="ptSyncLog" style="padding:12px;font-size:12px;color:var(--text2);max-height:300px;overflow-y:auto;background:var(--bg);border-radius:8px;border:1px solid var(--border);">
                             Nessun sync ancora effettuato.
                         </div>
                     </div>
-                </div>
-
-                <!-- Future integrations placeholder -->
-                <div style="margin-top:24px;padding:20px;border:1px dashed var(--border);border-radius:12px;text-align:center;">
-                    <div style="font-size:14px;color:var(--text2);opacity:0.5;">Altre integrazioni in arrivo...</div>
                 </div>
             </div>
 
@@ -1750,36 +1738,123 @@ async function loadPassSettings() {
     loadStripPromos();
 }
 
+// ─── Integration Catalog ─────────────────────────────
+const INTEGRATIONS = [
+    { slug: 'playtomic', name: 'Playtomic', icon: '🎾', gradient: 'linear-gradient(135deg,#00D4AA,#0088CC)', cat: 'Booking', desc: 'Punti automatici da prenotazioni padel, tennis e sport.', status: 'available', configurable: true },
+    { slug: 'sumup', name: 'SumUp', icon: '💳', gradient: 'linear-gradient(135deg,#0055DE,#00A3FF)', cat: 'POS & Pagamenti', desc: 'Punti su ogni transazione POS. 1 euro = N punti, automatico.', status: 'coming_soon' },
+    { slug: 'square', name: 'Square', icon: '◻️', gradient: 'linear-gradient(135deg,#333,#666)', cat: 'POS & Pagamenti', desc: 'Loyalty integrato con il POS Square. Sync vendite e scontrini.', status: 'coming_soon' },
+    { slug: 'satispay', name: 'Satispay', icon: '🔴', gradient: 'linear-gradient(135deg,#E63946,#FF6B6B)', cat: 'POS & Pagamenti', desc: 'Pagamenti mobile con accumulo punti automatico.', status: 'coming_soon' },
+    { slug: 'shopify', name: 'Shopify', icon: '🛒', gradient: 'linear-gradient(135deg,#95BF47,#5E8E3E)', cat: 'E-commerce', desc: 'Punti su ordini completati. Usa punti come sconto al checkout.', status: 'coming_soon' },
+    { slug: 'woocommerce', name: 'WooCommerce', icon: '🟣', gradient: 'linear-gradient(135deg,#7F54B3,#9B6BC4)', cat: 'E-commerce', desc: 'Plugin WordPress per loyalty su acquisti e-commerce.', status: 'coming_soon' },
+    { slug: 'prestashop', name: 'PrestaShop', icon: '🔵', gradient: 'linear-gradient(135deg,#2493D6,#1A6FA3)', cat: 'E-commerce', desc: 'Modulo loyalty per PrestaShop con sync ordini.', status: 'coming_soon' },
+    { slug: 'google-reviews', name: 'Google Reviews', icon: '⭐', gradient: 'linear-gradient(135deg,#FBBC04,#EA4335)', cat: 'Recensioni', desc: 'Incentiva recensioni: lasci una review, guadagni punti.', status: 'coming_soon' },
+    { slug: 'trustpilot', name: 'Trustpilot', icon: '🟢', gradient: 'linear-gradient(135deg,#00B67A,#005128)', cat: 'Recensioni', desc: 'Premia chi lascia recensioni verificate su Trustpilot.', status: 'coming_soon' },
+    { slug: 'tripadvisor', name: 'TripAdvisor', icon: '🦉', gradient: 'linear-gradient(135deg,#34E0A1,#00AA6C)', cat: 'Recensioni', desc: 'Punti per recensioni su TripAdvisor. Perfetto per hospitality.', status: 'coming_soon' },
+    { slug: 'whatsapp', name: 'WhatsApp Business', icon: '💬', gradient: 'linear-gradient(135deg,#25D366,#128C7E)', cat: 'Messaging', desc: 'Invia scratch card, recap punti e promo via WhatsApp.', status: 'coming_soon' },
+    { slug: 'telegram', name: 'Telegram Bot', icon: '✈️', gradient: 'linear-gradient(135deg,#0088CC,#229ED9)', cat: 'Messaging', desc: 'Bot Telegram per notifiche e interazioni con i membri.', status: 'coming_soon' },
+    { slug: 'thefork', name: 'TheFork', icon: '🍴', gradient: 'linear-gradient(135deg,#00665C,#009E8E)', cat: 'Booking', desc: 'Punti su prenotazioni ristorante via TheFork/OpenTable.', status: 'coming_soon' },
+    { slug: 'treatwell', name: 'Treatwell', icon: '💆', gradient: 'linear-gradient(135deg,#FF6B81,#FF4757)', cat: 'Booking', desc: 'Loyalty per saloni beauty e spa. Punti su appuntamenti.', status: 'coming_soon' },
+    { slug: 'mindbody', name: 'Mindbody', icon: '🧘', gradient: 'linear-gradient(135deg,#00BCD4,#0097A7)', cat: 'Booking', desc: 'Punti su classi fitness, yoga, CrossFit, pilates.', status: 'coming_soon' },
+    { slug: 'eventbrite', name: 'Eventbrite', icon: '🎟', gradient: 'linear-gradient(135deg,#F05537,#D84315)', cat: 'Eventi', desc: 'Punti per partecipazione a eventi del brand.', status: 'coming_soon' },
+    { slug: 'glovo', name: 'Glovo', icon: '🛵', gradient: 'linear-gradient(135deg,#FFC244,#F9A825)', cat: 'Food & Delivery', desc: 'Accumula punti anche su ordini delivery.', status: 'coming_soon' },
+    { slug: 'deliveroo', name: 'Deliveroo', icon: '🥡', gradient: 'linear-gradient(135deg,#00CCBC,#00A89D)', cat: 'Food & Delivery', desc: 'Loyalty cross-canale: in-store + delivery.', status: 'coming_soon' },
+    { slug: 'wifi-captive', name: 'WiFi Check-in', icon: '📶', gradient: 'linear-gradient(135deg,#7C4DFF,#536DFE)', cat: 'Check-in', desc: 'Check-in automatico via WiFi captive portal. Zero frizione.', status: 'coming_soon' },
+    { slug: 'zapier', name: 'Zapier', icon: '⚡', gradient: 'linear-gradient(135deg,#FF4A00,#FF6D3A)', cat: 'Automazione', desc: 'Connetti Nudj a 5000+ app tramite workflow Zapier.', status: 'coming_soon' },
+    { slug: 'webhook', name: 'Webhook Custom', icon: '🔗', gradient: 'linear-gradient(135deg,#607D8B,#455A64)', cat: 'Automazione', desc: 'Endpoint generico: ricevi eventi da qualsiasi sistema.', status: 'coming_soon' },
+    { slug: 'fatture-in-cloud', name: 'Fatture in Cloud', icon: '📄', gradient: 'linear-gradient(135deg,#2196F3,#1565C0)', cat: 'Contabilita', desc: 'Revenue loyalty vs non-loyalty. Analytics su fatturato.', status: 'coming_soon' },
+];
+
+let _integrationFilter = 'all';
+
+function filterIntegrations(cat) {
+    _integrationFilter = cat;
+    document.querySelectorAll('#integrationFilters button').forEach(b => {
+        b.style.background = b.dataset.cat === cat ? 'var(--teal)' : 'var(--bg3)';
+        b.style.color = b.dataset.cat === cat ? '#000' : 'var(--text2)';
+    });
+    renderIntegrationGrid();
+}
+
+function renderIntegrationGrid() {
+    const grid = document.getElementById('integrationGrid');
+    const items = _integrationFilter === 'all' ? INTEGRATIONS : INTEGRATIONS.filter(i => i.cat === _integrationFilter);
+
+    grid.innerHTML = items.map(i => {
+        const isConnected = _connectedIntegrations.includes(i.slug);
+        const isSoon = i.status === 'coming_soon';
+        const statusBadge = isConnected
+            ? '<span style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(52,232,158,0.15);color:#34e89e;font-weight:600;">Connesso</span>'
+            : isSoon
+            ? '<span style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.08);color:var(--text2);font-weight:600;">Coming Soon</span>'
+            : '<span style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(212,230,0,0.15);color:var(--teal);font-weight:600;">Disponibile</span>';
+
+        const action = isConnected
+            ? `<button class="btn small" onclick="openIntegration('${i.slug}')" style="font-size:11px;">Configura</button>`
+            : isSoon
+            ? `<button class="btn small sec" onclick="requestIntegration('${i.slug}')" style="font-size:11px;opacity:0.5;">Richiedi</button>`
+            : `<button class="btn small" onclick="openIntegration('${i.slug}')" style="font-size:11px;">Connetti</button>`;
+
+        return `<div class="card" style="padding:18px;border:1px solid ${isConnected ? 'rgba(52,232,158,0.2)' : 'var(--border)'};transition:border-color 0.2s;${isSoon ? 'opacity:0.6;' : ''}" ${!isSoon ? 'onmouseenter="this.style.borderColor=\'var(--teal)\'" onmouseleave="this.style.borderColor=\'' + (isConnected ? 'rgba(52,232,158,0.2)' : 'var(--border)') + '\'"' : ''}>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:40px;height:40px;border-radius:10px;background:${i.gradient};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${i.icon}</div>
+                    <div>
+                        <div style="font-weight:700;font-size:14px;">${i.name}</div>
+                        <div style="font-size:10px;color:var(--text2);letter-spacing:0.5px;text-transform:uppercase;margin-top:2px;">${i.cat}</div>
+                    </div>
+                </div>
+                ${statusBadge}
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px;min-height:36px;">${i.desc}</div>
+            <div style="display:flex;justify-content:flex-end;">${action}</div>
+        </div>`;
+    }).join('');
+}
+
+let _connectedIntegrations = [];
+
 async function loadApiIntegration() {
     if (!brandId) return;
     const res = await fetch(`${API}/brands/${brandId}`);
     const brand = await res.json();
     const c = brand.config || {};
-    const hasPlaytomic = !!c.playtomic;
 
-    // Show/hide sections based on brand integrations
-    document.getElementById('playtomicSection').style.display = hasPlaytomic ? 'block' : 'none';
-    document.getElementById('apiEmptyState').style.display = hasPlaytomic ? 'none' : 'block';
+    // Determine which integrations are connected
+    _connectedIntegrations = [];
+    if (c.playtomic && c.playtomic.client_id) _connectedIntegrations.push('playtomic');
 
-    if (hasPlaytomic) {
-        const pt = c.playtomic || {};
+    // Build category filter buttons
+    const cats = [...new Set(INTEGRATIONS.map(i => i.cat))];
+    const filterEl = document.getElementById('integrationFilters');
+    filterEl.innerHTML = `<button class="btn small" onclick="filterIntegrations('all')" data-cat="all" style="font-size:11px;background:var(--teal);color:#000;">Tutte</button>` +
+        cats.map(cat => `<button class="btn small sec" onclick="filterIntegrations('${cat}')" data-cat="${cat}" style="font-size:11px;">${cat}</button>`).join('');
+
+    // Render grid
+    renderIntegrationGrid();
+
+    // Pre-fill Playtomic if configured
+    if (c.playtomic) {
+        const pt = c.playtomic;
         document.getElementById('ptClientId').value = pt.client_id || '';
         document.getElementById('ptSecret').value = pt.secret || '';
         document.getElementById('ptTenantId').value = pt.tenant_id || '';
         document.getElementById('ptSyncEnabled').checked = pt.sync_enabled || false;
-
-        // Update status badge
-        const badge = document.getElementById('ptStatusBadge');
-        if (pt.client_id && pt.secret && pt.tenant_id) {
-            badge.innerHTML = pt.sync_enabled
-                ? '<span class="badge active">Attivo</span>'
-                : '<span class="badge" style="background:rgba(255,200,0,0.2);color:#FFD700;">Configurato (sync off)</span>';
-        } else {
-            badge.innerHTML = '<span class="badge inactive">Non configurato</span>';
-        }
-
-        loadPlaytomicLogs();
     }
+}
+
+function openIntegration(slug) {
+    if (slug === 'playtomic') {
+        document.getElementById('playtomicDetail').style.display = 'block';
+        document.getElementById('playtomicDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        loadPlaytomicLogs();
+    } else {
+        toast('Integrazione ' + slug + ' in arrivo! Ti notificheremo quando disponibile.');
+    }
+}
+
+function requestIntegration(slug) {
+    const i = INTEGRATIONS.find(x => x.slug === slug);
+    toast('Richiesta inviata per ' + (i?.name || slug) + '!');
 }
 
 async function savePlaytomicConfig() {
