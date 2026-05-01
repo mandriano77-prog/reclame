@@ -391,6 +391,80 @@ router.post('/webhook/:key', async (req, res) => {
   }
 });
 
+// ─── Public Shopify webhook receiver (BEFORE auth middleware) ──
+router.post('/shopify-webhook/:key', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const brandRes = await pool.query(`SELECT * FROM brands WHERE config->>'shopifyKey' = $1`, [key]);
+    const brand = brandRes.rows[0];
+    if (!brand) return res.status(404).json({ error: 'Invalid shopify key' });
+
+    const order = req.body;
+    const email = order.email || order.customer?.email;
+    if (!email) { console.log('[Shopify] Order without email, skipping'); return res.json({ ok: true, skipped: true }); }
+
+    const member = await getMemberByEmail(brand.id, email);
+    if (!member) { console.log(`[Shopify] No member for ${email}`); return res.json({ ok: true, skipped: true, reason: 'no_member' }); }
+
+    const totalPrice = parseFloat(order.total_price || order.subtotal_price || 0);
+    const pointsPerEuro = parseInt(brand.config?.shopify?.pointsPerEuro) || 1;
+    const pts = Math.floor(totalPrice * pointsPerEuro);
+    if (pts <= 0) return res.json({ ok: true, skipped: true, reason: 'zero_points' });
+
+    const passes = await listPasses(brand.id);
+    const memberPass = passes.find(p => p.member_id === member.id && p.status === 'active');
+    if (memberPass) {
+      await logPoints({ brand_id: brand.id, member_id: member.id, pass_id: memberPass.id, points: pts, reason: 'shopify', details: `Ordine #${order.order_number || order.id} — €${totalPrice}` });
+      const newPunti = (parseInt(memberPass.field_values?.punti || '0') + pts);
+      await updatePassInstance(memberPass.id, { field_values: { ...memberPass.field_values, punti: String(newPunti) } });
+      console.log(`[Shopify] +${pts} pts to ${email} (order #${order.order_number || order.id})`);
+    }
+    await logEvent({ brand_id: brand.id, pass_id: memberPass?.id, event_type: 'shopify_order', event_data: { email, total: totalPrice, points: pts, order_id: order.id } });
+
+    res.json({ ok: true, member_id: member.id, points_added: pts });
+  } catch (err) {
+    console.error('[Shopify] Webhook error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Public SumUp webhook receiver (BEFORE auth middleware) ──
+router.post('/sumup-webhook/:key', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const brandRes = await pool.query(`SELECT * FROM brands WHERE config->>'sumupKey' = $1`, [key]);
+    const brand = brandRes.rows[0];
+    if (!brand) return res.status(404).json({ error: 'Invalid sumup key' });
+
+    const tx = req.body;
+    const email = tx.receipt_email || tx.customer_email || tx.email;
+    if (!email) { console.log('[SumUp] Transaction without email, skipping'); return res.json({ ok: true, skipped: true }); }
+
+    const member = await getMemberByEmail(brand.id, email);
+    if (!member) { console.log(`[SumUp] No member for ${email}`); return res.json({ ok: true, skipped: true, reason: 'no_member' }); }
+
+    const amount = parseFloat(tx.amount || tx.total || 0);
+    const pointsPerEuro = parseInt(brand.config?.sumup?.pointsPerEuro) || 1;
+    const pts = Math.floor(amount * pointsPerEuro);
+    if (pts <= 0) return res.json({ ok: true, skipped: true, reason: 'zero_points' });
+
+    const passes = await listPasses(brand.id);
+    const memberPass = passes.find(p => p.member_id === member.id && p.status === 'active');
+    if (memberPass) {
+      await logPoints({ brand_id: brand.id, member_id: member.id, pass_id: memberPass.id, points: pts, reason: 'sumup', details: `SumUp tx ${tx.transaction_id || tx.id || ''} — €${amount}` });
+      const newPunti = (parseInt(memberPass.field_values?.punti || '0') + pts);
+      await updatePassInstance(memberPass.id, { field_values: { ...memberPass.field_values, punti: String(newPunti) } });
+      console.log(`[SumUp] +${pts} pts to ${email} (€${amount})`);
+    }
+    await logEvent({ brand_id: brand.id, pass_id: memberPass?.id, event_type: 'sumup_transaction', event_data: { email, amount, points: pts, tx_id: tx.transaction_id || tx.id } });
+
+    res.json({ ok: true, member_id: member.id, points_added: pts });
+  } catch (err) {
+    console.error('[SumUp] Webhook error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Public scratch card play endpoint (BEFORE auth middleware) ──
 router.post('/scratch-cards/:id/play', async (req, res) => {
   try {
@@ -3641,6 +3715,58 @@ router.post('/brands/:id/webhook-key', authMiddleware, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── Bridge: Shopify key management ─────────────────────────────
+router.post('/brands/:id/shopify-key', authMiddleware, async (req, res) => {
+  try {
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    const config = brand.config || {};
+    config.shopifyKey = require('crypto').randomBytes(20).toString('hex');
+    if (!config.shopify) config.shopify = {};
+    config.shopify.pointsPerEuro = req.body.pointsPerEuro || config.shopify.pointsPerEuro || 1;
+    await updateBrand(brand.id, { config });
+    res.json({ shopifyKey: config.shopifyKey });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/brands/:id/shopify-config', authMiddleware, async (req, res) => {
+  try {
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    const config = brand.config || {};
+    if (!config.shopify) config.shopify = {};
+    if (req.body.pointsPerEuro) config.shopify.pointsPerEuro = parseInt(req.body.pointsPerEuro) || 1;
+    await updateBrand(brand.id, { config });
+    res.json({ ok: true, shopify: config.shopify });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── Bridge: SumUp key management ─────────────────────────────
+router.post('/brands/:id/sumup-key', authMiddleware, async (req, res) => {
+  try {
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    const config = brand.config || {};
+    config.sumupKey = require('crypto').randomBytes(20).toString('hex');
+    if (!config.sumup) config.sumup = {};
+    config.sumup.pointsPerEuro = req.body.pointsPerEuro || config.sumup.pointsPerEuro || 1;
+    await updateBrand(brand.id, { config });
+    res.json({ sumupKey: config.sumupKey });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/brands/:id/sumup-config', authMiddleware, async (req, res) => {
+  try {
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    const config = brand.config || {};
+    if (!config.sumup) config.sumup = {};
+    if (req.body.pointsPerEuro) config.sumup.pointsPerEuro = parseInt(req.body.pointsPerEuro) || 1;
+    await updateBrand(brand.id, { config });
+    res.json({ ok: true, sumup: config.sumup });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─── Loop: Points Decay (manual trigger) ───────────────────────

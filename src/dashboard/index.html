@@ -701,6 +701,78 @@ Content-Type: application/json
                     </div>
                 </div>
 
+                <!-- Shopify detail panel -->
+                <div id="shopifyDetail" class="card" style="display:none;padding:24px;margin-top:24px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#95BF47,#5E8E3E);display:flex;align-items:center;justify-content:center;font-size:20px;">🛒</div>
+                            <div style="font-weight:700;font-size:16px;">Configurazione Shopify</div>
+                        </div>
+                        <button class="btn small sec" onclick="document.getElementById('shopifyDetail').style.display='none';">&times; Chiudi</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Punti per ogni euro speso</label>
+                        <input type="number" id="shopifyPPE" value="1" min="1" max="100" style="width:120px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Webhook URL (da incollare in Shopify)</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="shopifyUrlDisplay" readonly style="font-family:monospace;font-size:12px;background:var(--bg);flex:1;" value="Genera una chiave per attivare">
+                            <button class="btn small" onclick="copyToClip('shopifyUrlDisplay')" title="Copia">📋</button>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;margin-top:12px;">
+                        <button class="btn" onclick="generateShopifyKey()">Genera / Rigenera URL</button>
+                        <button class="btn sec" onclick="saveShopifyConfig()">Salva Impostazioni</button>
+                    </div>
+                    <div style="margin-top:20px;padding:16px;background:var(--bg);border-radius:8px;border:1px solid var(--border);">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:10px;">Setup in Shopify</div>
+                        <ol style="font-size:12px;color:var(--text2);line-height:2;padding-left:18px;margin:0;">
+                            <li>Vai su <strong>Shopify Admin → Settings → Notifications</strong></li>
+                            <li>Scorri fino a <strong>Webhooks</strong> → clicca <strong>Create webhook</strong></li>
+                            <li>Event: <strong>Order payment</strong> · Format: <strong>JSON</strong></li>
+                            <li>URL: incolla il webhook URL qui sopra</li>
+                            <li>Salva. Ogni ordine pagato accrediterà punti automaticamente.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- SumUp detail panel -->
+                <div id="sumupDetail" class="card" style="display:none;padding:24px;margin-top:24px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#0055DE,#00A3FF);display:flex;align-items:center;justify-content:center;font-size:20px;">💳</div>
+                            <div style="font-weight:700;font-size:16px;">Configurazione SumUp</div>
+                        </div>
+                        <button class="btn small sec" onclick="document.getElementById('sumupDetail').style.display='none';">&times; Chiudi</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Punti per ogni euro speso</label>
+                        <input type="number" id="sumupPPE" value="1" min="1" max="100" style="width:120px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Webhook URL (da configurare su SumUp)</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="sumupUrlDisplay" readonly style="font-family:monospace;font-size:12px;background:var(--bg);flex:1;" value="Genera una chiave per attivare">
+                            <button class="btn small" onclick="copyToClip('sumupUrlDisplay')" title="Copia">📋</button>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;margin-top:12px;">
+                        <button class="btn" onclick="generateSumupKey()">Genera / Rigenera URL</button>
+                        <button class="btn sec" onclick="saveSumupConfig()">Salva Impostazioni</button>
+                    </div>
+                    <div style="margin-top:20px;padding:16px;background:var(--bg);border-radius:8px;border:1px solid var(--border);">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:10px;">Setup in SumUp</div>
+                        <ol style="font-size:12px;color:var(--text2);line-height:2;padding-left:18px;margin:0;">
+                            <li>Vai su <strong>sumup.com/developers</strong> → il tuo profilo</li>
+                            <li>Nella sezione <strong>Webhooks</strong>, aggiungi un nuovo webhook</li>
+                            <li>Event: <strong>Transaction completed</strong></li>
+                            <li>URL: incolla il webhook URL qui sopra</li>
+                            <li>Assicurati di inviare la <strong>ricevuta via email</strong> ai clienti — usiamo quell'email per il match.</li>
+                        </ol>
+                    </div>
+                </div>
+
                 <!-- Playtomic detail panel (hidden by default) -->
                 <div id="playtomicDetail" class="card" style="display:none;padding:24px;margin-top:24px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
@@ -1785,10 +1857,10 @@ async function loadPassSettings() {
 // ─── Integration Catalog ─────────────────────────────
 const INTEGRATIONS = [
     { slug: 'playtomic', name: 'Playtomic', icon: '🎾', gradient: 'linear-gradient(135deg,#00D4AA,#0088CC)', cat: 'Booking', desc: 'Punti automatici da prenotazioni padel, tennis e sport.', status: 'available', configurable: true },
-    { slug: 'sumup', name: 'SumUp', icon: '💳', gradient: 'linear-gradient(135deg,#0055DE,#00A3FF)', cat: 'POS & Pagamenti', desc: 'Punti su ogni transazione POS. 1 euro = N punti, automatico.', status: 'coming_soon' },
+    { slug: 'sumup', name: 'SumUp', icon: '💳', gradient: 'linear-gradient(135deg,#0055DE,#00A3FF)', cat: 'POS & Pagamenti', desc: 'Punti su ogni transazione POS. 1 euro = N punti, automatico.', status: 'available', configurable: true },
     { slug: 'square', name: 'Square', icon: '◻️', gradient: 'linear-gradient(135deg,#333,#666)', cat: 'POS & Pagamenti', desc: 'Loyalty integrato con il POS Square. Sync vendite e scontrini.', status: 'coming_soon' },
     { slug: 'satispay', name: 'Satispay', icon: '🔴', gradient: 'linear-gradient(135deg,#E63946,#FF6B6B)', cat: 'POS & Pagamenti', desc: 'Pagamenti mobile con accumulo punti automatico.', status: 'coming_soon' },
-    { slug: 'shopify', name: 'Shopify', icon: '🛒', gradient: 'linear-gradient(135deg,#95BF47,#5E8E3E)', cat: 'E-commerce', desc: 'Punti su ordini completati. Usa punti come sconto al checkout.', status: 'coming_soon' },
+    { slug: 'shopify', name: 'Shopify', icon: '🛒', gradient: 'linear-gradient(135deg,#95BF47,#5E8E3E)', cat: 'E-commerce', desc: 'Punti su ordini completati. Usa punti come sconto al checkout.', status: 'available', configurable: true },
     { slug: 'woocommerce', name: 'WooCommerce', icon: '🟣', gradient: 'linear-gradient(135deg,#7F54B3,#9B6BC4)', cat: 'E-commerce', desc: 'Plugin WordPress per loyalty su acquisti e-commerce.', status: 'coming_soon' },
     { slug: 'prestashop', name: 'PrestaShop', icon: '🔵', gradient: 'linear-gradient(135deg,#2493D6,#1A6FA3)', cat: 'E-commerce', desc: 'Modulo loyalty per PrestaShop con sync ordini.', status: 'coming_soon' },
     { slug: 'google-reviews', name: 'Google Reviews', icon: '⭐', gradient: 'linear-gradient(135deg,#FBBC04,#EA4335)', cat: 'Recensioni', desc: 'Incentiva recensioni: lasci una review, guadagni punti.', status: 'coming_soon' },
@@ -1867,6 +1939,8 @@ async function loadApiIntegration() {
     _connectedIntegrations = [];
     if (c.playtomic && c.playtomic.client_id) _connectedIntegrations.push('playtomic');
     if (c.webhookKey) _connectedIntegrations.push('webhook');
+    if (c.shopifyKey) _connectedIntegrations.push('shopify');
+    if (c.sumupKey) _connectedIntegrations.push('sumup');
 
     // Build category filter buttons
     const cats = [...new Set(INTEGRATIONS.map(i => i.cat))];
@@ -1889,17 +1963,16 @@ async function loadApiIntegration() {
 
 function openIntegration(slug) {
     // Close all detail panels first
-    document.getElementById('playtomicDetail').style.display = 'none';
-    document.getElementById('webhookDetail').style.display = 'none';
+    ['playtomicDetail','webhookDetail','shopifyDetail','sumupDetail'].forEach(id => document.getElementById(id).style.display = 'none');
 
-    if (slug === 'playtomic') {
-        document.getElementById('playtomicDetail').style.display = 'block';
-        document.getElementById('playtomicDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        loadPlaytomicLogs();
-    } else if (slug === 'webhook') {
-        document.getElementById('webhookDetail').style.display = 'block';
-        document.getElementById('webhookDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        loadWebhookDetail();
+    const panels = { playtomic: 'playtomicDetail', webhook: 'webhookDetail', shopify: 'shopifyDetail', sumup: 'sumupDetail' };
+    if (panels[slug]) {
+        document.getElementById(panels[slug]).style.display = 'block';
+        document.getElementById(panels[slug]).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (slug === 'playtomic') loadPlaytomicLogs();
+        if (slug === 'webhook') loadWebhookDetail();
+        if (slug === 'shopify') loadShopifyDetail();
+        if (slug === 'sumup') loadSumupDetail();
     } else {
         toast('Integrazione ' + slug + ' in arrivo! Ti notificheremo quando disponibile.');
     }
@@ -1947,6 +2020,78 @@ async function testWebhook() {
         if (data.ok) toast('Test OK! +1 punto a ' + email);
         else toast('Errore: ' + (data.error || 'Membro non trovato'));
     } catch(e) { toast('Errore: ' + e.message); }
+}
+
+function copyToClip(elId) {
+    const v = document.getElementById(elId).value;
+    if (!v || v.includes('Genera')) { toast('Genera prima una chiave'); return; }
+    navigator.clipboard.writeText(v).then(() => toast('URL copiato!')).catch(() => toast('Copia manuale'));
+}
+
+// ─── Shopify functions ───
+async function generateShopifyKey() {
+    if (!brandId) return;
+    const ppe = document.getElementById('shopifyPPE').value || 1;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/shopify-key`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ pointsPerEuro: ppe }) });
+        const data = await res.json();
+        if (data.shopifyKey) {
+            document.getElementById('shopifyUrlDisplay').value = `${window.location.origin}/api/v1/shopify-webhook/${data.shopifyKey}`;
+            if (!_connectedIntegrations.includes('shopify')) _connectedIntegrations.push('shopify');
+            renderIntegrationGrid();
+            toast('Shopify webhook URL generato!');
+        }
+    } catch(e) { toast('Errore: ' + e.message); }
+}
+
+async function saveShopifyConfig() {
+    if (!brandId) return;
+    const ppe = document.getElementById('shopifyPPE').value || 1;
+    try {
+        await fetch(`${API}/brands/${brandId}/shopify-config`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ pointsPerEuro: ppe }) });
+        toast('Configurazione Shopify salvata!');
+    } catch(e) { toast('Errore: ' + e.message); }
+}
+
+function loadShopifyDetail() {
+    fetch(`${API}/brands/${brandId}`).then(r => r.json()).then(brand => {
+        const c = brand.config || {};
+        if (c.shopifyKey) document.getElementById('shopifyUrlDisplay').value = `${window.location.origin}/api/v1/shopify-webhook/${c.shopifyKey}`;
+        if (c.shopify?.pointsPerEuro) document.getElementById('shopifyPPE').value = c.shopify.pointsPerEuro;
+    }).catch(() => {});
+}
+
+// ─── SumUp functions ───
+async function generateSumupKey() {
+    if (!brandId) return;
+    const ppe = document.getElementById('sumupPPE').value || 1;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/sumup-key`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ pointsPerEuro: ppe }) });
+        const data = await res.json();
+        if (data.sumupKey) {
+            document.getElementById('sumupUrlDisplay').value = `${window.location.origin}/api/v1/sumup-webhook/${data.sumupKey}`;
+            if (!_connectedIntegrations.includes('sumup')) _connectedIntegrations.push('sumup');
+            renderIntegrationGrid();
+            toast('SumUp webhook URL generato!');
+        }
+    } catch(e) { toast('Errore: ' + e.message); }
+}
+
+async function saveSumupConfig() {
+    if (!brandId) return;
+    const ppe = document.getElementById('sumupPPE').value || 1;
+    try {
+        await fetch(`${API}/brands/${brandId}/sumup-config`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ pointsPerEuro: ppe }) });
+        toast('Configurazione SumUp salvata!');
+    } catch(e) { toast('Errore: ' + e.message); }
+}
+
+function loadSumupDetail() {
+    fetch(`${API}/brands/${brandId}`).then(r => r.json()).then(brand => {
+        const c = brand.config || {};
+        if (c.sumupKey) document.getElementById('sumupUrlDisplay').value = `${window.location.origin}/api/v1/sumup-webhook/${c.sumupKey}`;
+        if (c.sumup?.pointsPerEuro) document.getElementById('sumupPPE').value = c.sumup.pointsPerEuro;
+    }).catch(() => {});
 }
 
 function loadWebhookDetail() {
