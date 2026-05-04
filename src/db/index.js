@@ -476,6 +476,24 @@ async function getDb() {
       console.log('✓ email_log table ensured');
     } catch(e) { console.log('email_log migration note:', e.message); }
 
+    // --- Leads table (from ads.nudj.it contact form) ---
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS leads (
+          id TEXT PRIMARY KEY,
+          first_name TEXT,
+          last_name TEXT,
+          email TEXT NOT NULL,
+          company TEXT,
+          interest TEXT,
+          message TEXT,
+          source TEXT DEFAULT 'ads.nudj.it',
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      console.log('✓ leads table ensured');
+    } catch(e) { console.log('leads migration note:', e.message); }
+
     // --- Generate referral codes for existing members that don't have one ---
     try {
       const membersNoCode = await pool.query(`SELECT id FROM members WHERE referral_code IS NULL`);
@@ -2717,6 +2735,44 @@ async function listInstantWinPlays(campaign_id) {
   return res.rows;
 }
 
+// ── Leads ──────────────────────────────────────────────
+async function createLead({ first_name, last_name, email, company, interest, message, source }) {
+  const id = require('crypto').randomUUID();
+  const res = await pool.query(
+    `INSERT INTO leads (id, first_name, last_name, email, company, interest, message, source)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [id, first_name, last_name, email, company, interest, message, source || 'ads.nudj.it']
+  );
+  return res.rows[0];
+}
+
+async function listLeads({ source, limit = 100, offset = 0 } = {}) {
+  let q = 'SELECT * FROM leads';
+  const params = [];
+  if (source) {
+    params.push(source);
+    q += ` WHERE source = $${params.length}`;
+  }
+  q += ' ORDER BY created_at DESC';
+  params.push(limit);
+  q += ` LIMIT $${params.length}`;
+  params.push(offset);
+  q += ` OFFSET $${params.length}`;
+  const res = await pool.query(q, params);
+  return res.rows;
+}
+
+async function getLeadCount(source) {
+  let q = 'SELECT COUNT(*)::int AS count FROM leads';
+  const params = [];
+  if (source) {
+    params.push(source);
+    q += ` WHERE source = $${params.length}`;
+  }
+  const res = await pool.query(q, params);
+  return res.rows[0].count;
+}
+
 module.exports = {
   getDb,
   saveDb,
@@ -2851,5 +2907,9 @@ module.exports = {
   createInstantWinPlay,
   getMemberPlays,
   listInstantWinPlays,
+  // Leads
+  createLead,
+  listLeads,
+  getLeadCount,
   pool
 };

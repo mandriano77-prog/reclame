@@ -111,6 +111,10 @@ const {
   createInstantWinPlay,
   getMemberPlays,
   listInstantWinPlays,
+  // Leads
+  createLead,
+  listLeads,
+  getLeadCount,
   pool
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
@@ -3778,6 +3782,48 @@ router.post('/decay/run', authMiddleware, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── Leads (public submit + admin view) ─────────────────────
+// PUBLIC — no auth, CORS enabled for ads.nudj.it
+router.options('/leads', (req, res) => {
+  res.set({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  });
+  res.sendStatus(204);
+});
+
+router.post('/leads', async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  try {
+    const { first, last, email, company, interest, message, source } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const lead = await createLead({
+      first_name: first || '',
+      last_name: last || '',
+      email,
+      company: company || '',
+      interest: interest || '',
+      message: message || '',
+      source: source || 'ads.nudj.it',
+    });
+    res.json({ ok: true, id: lead.id });
+  } catch (err) {
+    console.error('Lead creation error:', err);
+    res.status(500).json({ error: 'Failed to save lead' });
+  }
+});
+
+// Admin — list leads
+router.get('/leads', authMiddleware, async (req, res) => {
+  try {
+    const { source, limit, offset } = req.query;
+    const leads = await listLeads({ source, limit: parseInt(limit) || 100, offset: parseInt(offset) || 0 });
+    const count = await getLeadCount(source);
+    res.json({ leads, total: count });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;
