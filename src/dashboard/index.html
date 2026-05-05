@@ -207,25 +207,7 @@
                     <button class="btn" onclick="savePassDesign()" style="margin-top:12px;">Salva Immagini</button>
                 </div>
 
-                <div class="card" style="margin-top:16px;">
-                    <div class="sec-title" style="font-size:16px;">Strip Generator AI</div>
-                    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Genera un'immagine strip con AI descrivendo lo stile desiderato</p>
-                    <div class="form-row" style="align-items:flex-end;">
-                        <div class="form-group" style="flex:1;">
-                            <label class="form-label">Prompt</label>
-                            <input type="text" id="bsAiStripPrompt" placeholder="es. padel court at sunset, neon lights, sport atmosphere">
-                        </div>
-                        <button class="btn" id="bsAiStripBtn" onclick="generateAiStrip()" style="height:38px;white-space:nowrap;">Genera Strip AI</button>
-                    </div>
-                    <div id="bsAiStripPreview" style="display:none;margin-top:10px;">
-                        <img id="bsAiStripImg" style="width:100%;max-width:500px;border-radius:8px;border:1px solid var(--border);">
-                    </div>
-                    <div class="form-group" style="margin-top:16px;">
-                        <label class="form-label">AI Style Prompt <span style="opacity:0.5;font-size:11px;">(linee guida estetiche per generazione immagini AI)</span></label>
-                        <textarea id="bsAiStylePrompt" rows="3" placeholder="es. High-end sports photography, neon lighting, dark moody atmosphere, premium brand feel, clean composition..."></textarea>
-                    </div>
-                    <button class="btn" onclick="saveAiStylePrompt()" style="margin-top:8px;">Salva Style Prompt</button>
-                </div>
+                <!-- AI Strip Generator removed -->
             </div>
 
             <!-- PASSES -->
@@ -496,10 +478,7 @@
                     <button class="btn" onclick="saveBrandIdentity()">Salva Identità</button>
                     <button class="btn danger" onclick="deleteBrandAction()">Elimina Brand</button>
                 </div>
-                <div style="margin-top:16px;">
-                    <div style="font-size:12px;color:var(--text2);">Link landing: <a id="biLandingLink" href="#" target="_blank" style="color:var(--teal);"></a></div>
-                    <div style="margin-top:8px;" id="biQrArea"></div>
-                </div>
+                <!-- Landing link removed -->
             </div>
 
             <!-- MEDIA LIBRARY -->
@@ -527,7 +506,7 @@
                         <select id="mediaUploadType">
                             <option value="strip">Strip Image</option>
                             <option value="logo">Logo</option>
-                            <option value="background">Background Landing</option>
+                            <!-- Background Landing removed -->
                         </select>
                     </div>
                     <div class="form-group">
@@ -673,20 +652,7 @@
                         <input type="file" id="wzStripFile" accept="image/*,.pdf" style="display:none;" onchange="wzOnStripFile(this)">
                     </div>
 
-                    <div class="card" style="margin-top:12px;">
-                        <div class="sec-title" style="font-size:16px;">Strip Generator AI</div>
-                        <div class="form-row" style="align-items:flex-end;">
-                            <div class="form-group" style="flex:1;">
-                                <label class="form-label">Prompt</label>
-                                <input type="text" id="wzAiStripPrompt" placeholder="es. padel court at sunset, neon lights">
-                            </div>
-                            <button class="btn small" id="wzAiStripBtn" onclick="wzGenerateAiStrip()" style="height:38px;white-space:nowrap;">Genera AI</button>
-                        </div>
-                        <div id="wzAiStripResult" style="display:none;margin-top:10px;">
-                            <img id="wzAiStripImg" style="width:100%;max-width:500px;border-radius:8px;border:1px solid var(--border);">
-                            <button class="btn small" onclick="wzUseAiStrip()" style="margin-top:8px;">Usa questa strip</button>
-                        </div>
-                    </div>
+                    <!-- AI Strip Generator removed -->
 
                     <div style="display:flex;justify-content:space-between;margin-top:16px;">
                         <button class="btn sec" onclick="wzGoStep(1)">← Contenuto</button>
@@ -724,14 +690,7 @@
                                 <div class="sec-title" style="font-size:16px;">Riepilogo</div>
                                 <div id="wzSummary" style="font-size:13px;color:var(--text2);"></div>
                             </div>
-                            <div class="card" style="margin-top:12px;">
-                                <div class="sec-title" style="font-size:16px;">Landing Page</div>
-                                <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">Testi della pagina di download. L'AI può generarli in base al settore del brand.</p>
-                                <div class="form-group"><label class="form-label">Headline</label><input type="text" id="wzLandingHeadline" placeholder="es. Scarica Subito il Pass"></div>
-                                <div class="form-group"><label class="form-label">Sottotitolo</label><input type="text" id="wzLandingSubheadline" placeholder="es. Sblocca offerte speciali"></div>
-                                <div class="form-group"><label class="form-label">Testo CTA</label><input type="text" id="wzLandingCta" placeholder="es. Aggiungi al Wallet"></div>
-                                <button class="btn small sec" onclick="wzAiLanding()" style="margin-top:4px;">Genera con AI</button>
-                            </div>
+                            <!-- Landing Page section removed -->
                         </div>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-top:20px;">
