@@ -472,7 +472,7 @@
                             </div>
                         </div>
                     </div>
-                    <button class="btn sec small" onclick="alert('AI Palette — Coming soon!')" style="margin-top:8px;">Genera Palette AI</button>
+                    <!-- AI Palette removed -->
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:24px;">
@@ -571,9 +571,8 @@
                     <div style="display:flex;gap:20px;">
                         <div style="flex:1;">
                             <div class="card">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                                <div style="margin-bottom:12px;">
                                     <div class="sec-title" style="font-size:16px;margin-bottom:0;">Tipo & Nome</div>
-                                    <button class="btn small sec" onclick="wzAiGenerate()" id="wzAiBtn">Genera tutto con AI</button>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
@@ -592,9 +591,8 @@
                             </div>
 
                             <div class="card" style="margin-top:12px;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                                <div style="margin-bottom:12px;">
                                     <div class="sec-title" style="font-size:16px;margin-bottom:0;">Fronte Pass</div>
-                                    <button class="btn small sec" onclick="wzAiCopy('front')">AI Copy</button>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group"><label class="form-label">Header Label</label><input type="text" id="wzHeaderLabel" placeholder="es. PUNTI" oninput="wzUpdatePreview()"></div>
@@ -611,9 +609,8 @@
                             </div>
 
                             <div class="card" style="margin-top:12px;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                                <div style="margin-bottom:12px;">
                                     <div class="sec-title" style="font-size:16px;margin-bottom:0;">Retro Pass</div>
-                                    <button class="btn small sec" onclick="wzAiCopy('back')">AI Copy</button>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group"><label class="form-label">Link 1 — Testo</label><input type="text" id="wzLink1Label" placeholder="es. Sito Web"></div>
@@ -2436,15 +2433,19 @@ async function wzPublish() {
     };
 
     try {
-        const res = await fetch(`${API}/templates`, {
-            method: 'POST',
+        const editId = window.wzEditingTemplateId;
+        const url = editId ? `${API}/templates/${editId}` : `${API}/templates`;
+        const method = editId ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+            method,
             headers: {'Content-Type':'application/json', ...getAuthHeaders()},
             body: JSON.stringify(body)
         });
         const saved = await res.json();
+        const tplId = editId || saved.id;
 
         // Upload strip if selected
-        if (wzStripBase64 && saved.id) {
+        if (wzStripBase64 && tplId) {
             await fetch(`${API}/brands/${brandId}/strip`, {
                 method: 'POST',
                 headers: {'Content-Type':'application/json', ...getAuthHeaders()},
@@ -2452,7 +2453,7 @@ async function wzPublish() {
             });
         }
 
-        toast('Pass pubblicato!');
+        toast(editId ? 'Template aggiornato!' : 'Pass pubblicato!');
         window.wzEditingTemplateId = null;
         wzCurrentStep = 1;
         wzStripBase64 = null;
@@ -2521,15 +2522,21 @@ async function wzEditTemplate(id) {
             document.getElementById('wzAuxLabel').value = f.auxiliaryFields[0].label || '';
             document.getElementById('wzAuxValue').value = f.auxiliaryFields[0].value || '';
         }
-        if (f.backFields) {
+        // Load back fields — supports both formats (links array or backFields array)
+        const links = f.links || [];
+        if (links.length > 0) {
+            if (links[0]) { document.getElementById('wzLink1Label').value = links[0].label || ''; document.getElementById('wzLink1Url').value = links[0].url || ''; }
+            if (links[1]) { document.getElementById('wzLink2Label').value = links[1].label || ''; document.getElementById('wzLink2Url').value = links[1].url || ''; }
+            if (links[2]) { document.getElementById('wzLink3Label').value = links[2].label || ''; document.getElementById('wzLink3Url').value = links[2].url || ''; }
+        } else if (f.backFields) {
             f.backFields.forEach(bf => {
                 if (bf.key === 'link1') { document.getElementById('wzLink1Label').value = bf.label || ''; document.getElementById('wzLink1Url').value = bf.value || ''; }
                 if (bf.key === 'link2') { document.getElementById('wzLink2Label').value = bf.label || ''; document.getElementById('wzLink2Url').value = bf.value || ''; }
                 if (bf.key === 'link3') { document.getElementById('wzLink3Label').value = bf.label || ''; document.getElementById('wzLink3Url').value = bf.value || ''; }
-                if (bf.key === 'regolamento') { document.getElementById('wzRegolamento').value = bf.value || ''; }
-                if (bf.key === 'contatti') { document.getElementById('wzContatti').value = bf.value || ''; }
             });
         }
+        document.getElementById('wzRegolamento').value = f.regolamento || '';
+        document.getElementById('wzContatti').value = f.contatti || '';
         // Store template ID for update instead of create
         window.wzEditingTemplateId = id;
         wzGoStep(1);
