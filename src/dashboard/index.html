@@ -1356,7 +1356,7 @@ async function loadPasses() {
                     <td style="font-size:11px;">${p.install_date ? new Date(p.install_date).toLocaleDateString('it') : '<span style="opacity:0.3">-</span>'}</td>
                     <td style="display:flex;gap:4px;">
                         <button class="btn small sec" onclick="downloadPass('${p.id}')" title="Scarica .pkpass">DL</button>
-                        <!-- <button class="btn small danger" onclick="deletePassInstance('${p.id}')" title="Elimina pass">&#10005;</button> -->
+                        <button class="btn small danger" onclick="deletePassInstance('${p.id}')" title="Elimina pass">&#10005;</button>
                     </td>
                 </tr>`;
             }).join('')}</tbody>
