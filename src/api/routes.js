@@ -632,8 +632,7 @@ router.post('/leads', leadsCors, async (req, res) => {
   }
 });
 
-// Apply auth + brand filter to all routes below
-router.use(authMiddleware);
+// Apply brand filter to all routes below (no auth required)
 router.use(brandFilter);
 
 // Admin — list leads (after auth middleware, so it requires login)
