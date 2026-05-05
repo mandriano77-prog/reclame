@@ -3221,7 +3221,10 @@ async function loadUsers() {
             <td><span class="badge ${u.role==='admin'?'active':'inactive'}">${{admin:'Admin',manager:'Manager',viewer:'Viewer'}[u.role]||u.role}</span></td>
             <td>${u.brand_id ? esc(u.brand_id).substring(0,8)+'...' : 'Tutti'}</td>
             <td><span class="badge active">Attivo</span></td>
-            <td><button class="btn small danger" onclick="deleteUser('${u.id}')">Elimina</button></td>
+            <td style="display:flex;gap:6px;">
+                <button class="btn sec" style="font-size:11px;padding:4px 10px;" onclick="resendInvite('${u.id}')">Reinvia Mail</button>
+                <button class="btn small danger" onclick="deleteUser('${u.id}')">Elimina</button>
+            </td>
         </tr>
     `).join('');
 }
@@ -3252,6 +3255,14 @@ async function createUser() {
     closeModal('userModal');
     toast('Utente creato!');
     loadUsers();
+}
+
+async function resendInvite(id) {
+    try {
+        const res = await fetch(`${API}/users/${id}/resend-invite`, { method: 'POST', headers: getAuthHeaders() });
+        if (!res.ok) { const e = await res.json(); return toast('Errore: ' + (e.error || 'invio fallito')); }
+        toast('Email di invito reinviata!');
+    } catch(e) { toast('Errore: ' + e.message); }
 }
 
 async function deleteUser(id) {

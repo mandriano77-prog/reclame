@@ -674,6 +674,30 @@ router.post('/users', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.post('/users/:id/resend-invite', async (req, res) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+
+    // Generate new temp password
+    const tempPassword = Math.random().toString(36).slice(-10);
+    await updateUser(user.id, { password: tempPassword });
+
+    const { sendUserInviteEmail } = require('../engine/mailer');
+    const domain = process.env.CUSTOM_DOMAIN || req.headers.host;
+    await sendUserInviteEmail({
+      to: user.email,
+      name: user.name,
+      password: tempPassword,
+      role: user.role || 'manager',
+      brandName: 'Ads2Wallet',
+      dashboardUrl: `https://${domain}/dashboard`
+    });
+
+    res.json({ success: true, message: 'Email di invito reinviata' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.put('/users/:id', async (req, res) => {
   try {
     const user = await updateUser(req.params.id, req.body);
