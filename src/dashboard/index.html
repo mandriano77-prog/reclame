@@ -1328,6 +1328,7 @@ async function loadPasses() {
         <div class="stat-card"><div class="stat-label">Installati</div><div class="stat-value">${installed}</div></div>
         <div class="stat-card"><div class="stat-label">Raggiungibili (push)</div><div class="stat-value">${reachable}</div></div>
         <div class="stat-card"><div class="stat-label">Conv. Install</div><div class="stat-value">${passes.length > 0 ? ((installed/passes.length)*100).toFixed(0) : 0}%</div></div>
+        <div class="stat-card"><div class="stat-label">Push Inviati</div><div class="stat-value">${passes.filter(p => p.push_count > 0).length}</div></div>
     </div>`;
 
     el.innerHTML = statsHtml + `
@@ -1336,6 +1337,7 @@ async function loadPasses() {
             <thead><tr>
                 <th>Installato</th>
                 <th>Raggiungibile</th>
+                <th>Push</th>
                 <th>Device ID</th>
                 <th>Campagna</th>
                 <th>UTM</th>
@@ -1358,6 +1360,11 @@ async function loadPasses() {
                 return `<tr>
                     <td style="text-align:center;font-size:16px;">${isInstalled ? '<span title="Pass installato nel Wallet" style="color:var(--green);">&#9745;</span>' : '<span title="Solo scaricato" style="opacity:0.3;">&#9744;</span>'}</td>
                     <td style="text-align:center;font-size:16px;">${isReachable ? '<span title="Push token attivo" style="color:var(--green);">&#128276;</span>' : '<span title="Non raggiungibile" style="opacity:0.3;">&#128263;</span>'}</td>
+                    <td style="text-align:center;font-size:12px;">${p.push_count > 0 ? (() => {
+                        const statusIcon = p.last_push_status === 'delivered' ? '<span style="color:var(--green);" title="Ultima push consegnata">&#10004;</span>' : '<span style="color:#ff6b6b;" title="' + esc(p.last_push_status || 'errore') + '">&#10006;</span>';
+                        const pushDate = p.last_push_at ? new Date(p.last_push_at).toLocaleDateString('it') : '';
+                        return statusIcon + ' <span style="font-size:10px;opacity:0.6;" title="' + p.push_count + ' push inviate">' + p.push_count + 'x · ' + pushDate + '</span>';
+                    })() : '<span style="opacity:0.3;">-</span>'}</td>
                     <td style="font-family:monospace;font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.device_library_id||'')}">${p.device_library_id ? esc(p.device_library_id).substring(0,12)+'...' : '<span style="opacity:0.3">-</span>'}</td>
                     <td>${camp ? esc(camp.name) : '<span style="opacity:0.3">-</span>'}</td>
                     <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(utmParts.join(' / '))}">${esc(utmStr)}</td>

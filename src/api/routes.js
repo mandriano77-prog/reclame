@@ -1159,18 +1159,33 @@ router.post('/push/send', async (req, res) => {
       }
     }
 
-    // Send push to all devices — check actual APNs result
+    // Send push to all devices — track per-pass status
     let sentCount = 0;
     const pushResults = [];
     for (const device of devices) {
       try {
         const result = await sendPushUpdate(device.push_token);
         console.log(`[PUSH] token=${device.push_token.substring(0,12)}... result=${JSON.stringify(result)}`);
-        pushResults.push({ token: device.push_token.substring(0,12) + '...', ...result });
+        pushResults.push({ token: device.push_token.substring(0,12) + '...', serial: device.serial_number, ...result });
         if (result.success) sentCount++;
+
+        // Update per-pass push status
+        if (device.serial_number) {
+          const status = result.success ? 'delivered' : (result.reason || 'failed');
+          await pool.query(
+            `UPDATE pass_instances SET last_push_at = NOW(), last_push_status = $1, push_count = COALESCE(push_count, 0) + 1 WHERE serial_number = $2`,
+            [status, device.serial_number]
+          );
+        }
       } catch (pushErr) {
         console.error('Push error for token:', device.push_token, pushErr.message);
         pushResults.push({ token: device.push_token.substring(0,12) + '...', success: false, reason: pushErr.message });
+        if (device.serial_number) {
+          await pool.query(
+            `UPDATE pass_instances SET last_push_at = NOW(), last_push_status = $1, push_count = COALESCE(push_count, 0) + 1 WHERE serial_number = $2`,
+            ['error: ' + pushErr.message.substring(0, 100), device.serial_number]
+          );
+        }
       }
     }
 
