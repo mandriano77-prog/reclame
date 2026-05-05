@@ -143,6 +143,11 @@ app.get('/privacy/:slugOrId', (req, res) => {
   res.sendFile(path.join(__dirname, 'privacy', 'index.html'));
 });
 
+// ─── Instant Win game page ──────────────────────────────────
+app.get('/play/:serial_number', (req, res) => {
+  res.sendFile(path.join(__dirname, 'play', 'index.html'));
+});
+
 // ─── Direct Save — skip landing, serve .pkpass immediately ──────────────
 // URL: /save/{slug}/{campaignId}?utm_source=instagram&utm_medium=story&...
 // For social/digital ads: ad CTA → this URL → iOS opens pass preview → done

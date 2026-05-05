@@ -18,6 +18,9 @@ const {
   createMedia, listMedia, getMedia, deleteMedia,
   logAdEvent, getAdStats, getAdTimeline,
   createCreativeAsset, getCreativeAsset, listCreativeAssets, deleteCreativeAsset,
+  createInstantWinCampaign, getInstantWinCampaign, listInstantWinCampaigns,
+  updateInstantWinCampaign, deleteInstantWinCampaign,
+  createInstantWinPlay, listInstantWinPlays, countPlaysForUser, getInstantWinStats,
   pool
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
@@ -1837,6 +1840,171 @@ router.get('/videos/:id/serve', async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(videoBuf);
   } catch (err) { res.status(500).send('Error'); }
+});
+
+// ─── Instant Win ──────────────────────────────────────────────────────
+
+// List campaigns for a brand
+router.get('/instant-win', async (req, res) => {
+  try {
+    const brand_id = req.query.brand_id;
+    if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    const campaigns = await listInstantWinCampaigns(brand_id);
+    res.json(campaigns);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Stats for a brand
+router.get('/instant-win/stats', async (req, res) => {
+  try {
+    const brand_id = req.query.brand_id;
+    if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    const stats = await getInstantWinStats(brand_id);
+    res.json(stats);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Get single campaign
+router.get('/instant-win/:id', async (req, res) => {
+  try {
+    const campaign = await getInstantWinCampaign(req.params.id);
+    if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
+    res.json(campaign);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Create campaign
+router.post('/instant-win', async (req, res) => {
+  try {
+    const campaign = await createInstantWinCampaign(req.body);
+    res.json(campaign);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Update campaign
+router.put('/instant-win/:id', async (req, res) => {
+  try {
+    const campaign = await updateInstantWinCampaign(req.params.id, req.body);
+    if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
+    res.json(campaign);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Delete campaign
+router.delete('/instant-win/:id', async (req, res) => {
+  try {
+    await deleteInstantWinCampaign(req.params.id);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// List plays for a campaign
+router.get('/instant-win/:id/plays', async (req, res) => {
+  try {
+    const plays = await listInstantWinPlays(req.params.id);
+    res.json(plays);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── Play endpoint (public, no auth) ──────────────────────────────────
+// Called from the game page when user plays
+router.post('/play/:serial_number', async (req, res) => {
+  try {
+    const { serial_number } = req.params;
+    const { campaign_id } = req.body;
+
+    // Find the pass by serial
+    const pass = await getPassBySerial(serial_number);
+    if (!pass) return res.status(404).json({ error: 'Pass non trovato' });
+
+    // Get campaign
+    const campaign = await getInstantWinCampaign(campaign_id);
+    if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (campaign.status !== 'active') return res.status(400).json({ error: 'Campagna non attiva' });
+    if (campaign.brand_id !== pass.brand_id) return res.status(403).json({ error: 'Brand mismatch' });
+
+    // Check date range
+    const now = new Date();
+    if (campaign.start_date && new Date(campaign.start_date) > now)
+      return res.status(400).json({ error: 'Campagna non ancora iniziata' });
+    if (campaign.end_date && new Date(campaign.end_date) < now)
+      return res.status(400).json({ error: 'Campagna terminata' });
+
+    // Check max plays per user
+    const playCount = await countPlaysForUser(campaign_id, serial_number);
+    if (campaign.max_plays_per_user && playCount >= campaign.max_plays_per_user)
+      return res.status(400).json({ error: 'Hai già giocato il massimo numero di volte', already_played: true });
+
+    // Check budget
+    if (campaign.total_budget && campaign.total_wins >= campaign.total_budget)
+      return res.status(400).json({ error: 'Premi esauriti', budget_exhausted: true });
+
+    // Determine result
+    const rand = Math.random();
+    const isWin = rand < parseFloat(campaign.win_probability);
+    // If budget would be exceeded, force lose
+    const result = (isWin && (!campaign.total_budget || campaign.total_wins < campaign.total_budget))
+      ? 'win' : 'lose';
+
+    const play = await createInstantWinPlay({
+      campaign_id,
+      serial_number,
+      brand_id: pass.brand_id,
+      result,
+      prize_name: result === 'win' ? campaign.prize_name : null
+    });
+
+    // Log event
+    await logEvent({
+      pass_id: pass.id,
+      brand_id: pass.brand_id,
+      event_type: `instant_win_${result}`,
+      metadata: { campaign_id, game_type: campaign.game_type, prize_name: play.prize_name }
+    });
+
+    res.json({
+      result,
+      prize_name: result === 'win' ? campaign.prize_name : null,
+      prize_description: result === 'win' ? campaign.prize_description : null,
+      play_id: play.id
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── Game page info (public, no auth) ──────────────────────────────────
+// Returns campaign info for the game page to render
+router.get('/play/:serial_number/info', async (req, res) => {
+  try {
+    const { serial_number } = req.params;
+    const pass = await getPassBySerial(serial_number);
+    if (!pass) return res.status(404).json({ error: 'Pass non trovato' });
+
+    const brand = await getBrand(pass.brand_id);
+
+    // Find active campaign for this brand
+    const campaigns = await listInstantWinCampaigns(pass.brand_id);
+    const activeCampaign = campaigns.find(c => c.status === 'active');
+    if (!activeCampaign) return res.status(404).json({ error: 'Nessuna campagna attiva' });
+
+    // Check if user already played
+    const playCount = await countPlaysForUser(activeCampaign.id, serial_number);
+    const canPlay = !activeCampaign.max_plays_per_user || playCount < activeCampaign.max_plays_per_user;
+
+    res.json({
+      campaign_id: activeCampaign.id,
+      game_type: activeCampaign.game_type,
+      name: activeCampaign.name,
+      prize_name: activeCampaign.prize_name,
+      prize_description: activeCampaign.prize_description,
+      brand_name: brand?.name || 'Brand',
+      brand_colors: brand?.config?.colors || {},
+      can_play: canPlay,
+      plays_remaining: activeCampaign.max_plays_per_user
+        ? Math.max(0, activeCampaign.max_plays_per_user - playCount)
+        : null,
+      config: activeCampaign.config || {}
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;

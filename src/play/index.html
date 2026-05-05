@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Gioca & Vinci</title>
+<style>
+:root {
+  --bg: #0a0a0a; --card: #141414; --border: #222;
+  --teal: #3CDFFF; --purple: #A78BFA; --gold: #FFD700;
+  --green: #22c55e; --red: #ef4444; --text: #f0f0f0; --muted: #888;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.container { width: 100%; max-width: 420px; padding: 20px; text-align: center; }
+.brand-name { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 20px; }
+.game-title { font-size: 28px; font-weight: 800; margin: 8px 0 4px; }
+.prize-label { font-size: 16px; color: var(--purple); margin-bottom: 20px; }
+.game-area { position: relative; width: 100%; aspect-ratio: 4/3; border-radius: 16px; overflow: hidden; margin: 0 auto 24px; background: var(--card); border: 1px solid var(--border); }
+canvas { width: 100%; height: 100%; display: block; }
+.play-btn { background: linear-gradient(135deg, var(--teal), var(--purple)); color: #fff; border: none; padding: 16px 48px; font-size: 18px; font-weight: 700; border-radius: 50px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+.play-btn:hover { transform: scale(1.05); box-shadow: 0 8px 32px rgba(60,223,255,0.3); }
+.play-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.result-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 100; }
+.result-overlay.show { display: flex; }
+.result-card { background: var(--card); border-radius: 24px; padding: 40px 32px; text-align: center; max-width: 360px; width: 90%; border: 2px solid var(--border); animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.result-icon { font-size: 64px; margin-bottom: 16px; }
+.result-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.result-desc { font-size: 16px; color: var(--muted); margin-bottom: 24px; }
+.result-prize { font-size: 20px; color: var(--gold); font-weight: 700; margin-bottom: 24px; }
+.btn-close-result { background: var(--teal); color: #000; border: none; padding: 12px 32px; font-size: 16px; font-weight: 600; border-radius: 50px; cursor: pointer; }
+
+/* Loading */
+.loading { text-align: center; padding: 60px 20px; }
+.spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Error */
+.error-msg { background: rgba(239,68,68,0.1); border: 1px solid var(--red); padding: 20px; border-radius: 12px; margin: 20px 0; }
+
+/* Confetti */
+.confetti { position: fixed; width: 10px; height: 10px; top: -10px; animation: confettiFall 3s ease-out forwards; z-index: 200; pointer-events: none; }
+@keyframes confettiFall { to { top: 110vh; transform: rotate(720deg) translateX(50px); } }
+
+/* Wheel specific */
+.wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+.wheel-pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 32px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+
+/* Slot specific */
+.slot-row { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
+.slot-reel { width: 80px; height: 100px; background: var(--card); border: 2px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; overflow: hidden; }
+.slot-reel.spinning { animation: slotSpin 0.15s linear infinite; }
+@keyframes slotSpin { 0% { transform: translateY(-5px); } 50% { transform: translateY(5px); } 100% { transform: translateY(-5px); } }
+
+.plays-remaining { font-size: 13px; color: var(--muted); margin-top: 12px; }
+.powered-by { font-size: 11px; color: #444; margin-top: 40px; }
+.powered-by a { color: #555; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <p>Caricamento gioco...</p>
+  </div>
+</div>
+
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-card">
+    <div class="result-icon" id="resultIcon"></div>
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-desc" id="resultDesc"></div>
+    <div class="result-prize" id="resultPrize"></div>
+    <button class="btn-close-result" onclick="closeResult()">Chiudi</button>
+  </div>
+</div>
+
+<script>
+const serial = window.location.pathname.split('/play/')[1]?.split('?')[0];
+const API = '/api/v1';
+let gameInfo = null;
+let isPlaying = false;
+
+async function init() {
+  if (!serial) return showError('Link non valido');
+  try {
+    const res = await fetch(`${API}/play/${serial}/info`);
+    if (!res.ok) {
+      const err = await res.json();
+      return showError(err.error || 'Errore caricamento');
+    }
+    gameInfo = await res.json();
+    renderGame();
+  } catch (e) { showError('Errore di connessione'); }
+}
+
+function showError(msg) {
+  document.getElementById('loadingState').innerHTML = `<div class="error-msg">${msg}</div>`;
+}
+
+function renderGame() {
+  const app = document.getElementById('app');
+  const canPlayMsg = gameInfo.can_play
+    ? '' : '<div class="error-msg">Hai già giocato il numero massimo di volte!</div>';
+  const playsInfo = gameInfo.plays_remaining !== null
+    ? `<div class="plays-remaining">Tentativi rimasti: ${gameInfo.plays_remaining}</div>` : '';
+
+  let gameAreaHTML = '';
+  if (gameInfo.game_type === 'scratch') gameAreaHTML = renderScratchArea();
+  else if (gameInfo.game_type === 'wheel') gameAreaHTML = renderWheelArea();
+  else if (gameInfo.game_type === 'slots') gameAreaHTML = renderSlotsArea();
+
+  app.innerHTML = `
+    <div class="brand-name">${esc(gameInfo.brand_name)}</div>
+    <div class="game-title">${esc(gameInfo.name)}</div>
+    <div class="prize-label">In palio: ${esc(gameInfo.prize_name)}</div>
+    ${canPlayMsg}
+    ${gameAreaHTML}
+    <button class="play-btn" id="playBtn" onclick="play()" ${!gameInfo.can_play ? 'disabled' : ''}>
+      ${gameInfo.game_type === 'scratch' ? 'Gratta!' : gameInfo.game_type === 'wheel' ? 'Gira la Ruota!' : 'Tira la Leva!'}
+    </button>
+    ${playsInfo}
+    <div class="powered-by">Powered by <a href="https://www.nudj.studio" target="_blank">Ads2Wallet</a></div>
+  `;
+
+  if (gameInfo.game_type === 'scratch') initScratch();
+  else if (gameInfo.game_type === 'wheel') initWheel();
+  else if (gameInfo.game_type === 'slots') initSlots();
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+// ─── SCRATCH CARD ──────────────────────────────────────────
+function renderScratchArea() {
+  return `<div class="game-area" id="gameArea"><canvas id="scratchCanvas"></canvas></div>`;
+}
+
+let scratchCtx, scratchRevealed = false, scratchResult = null;
+function initScratch() {
+  const canvas = document.getElementById('scratchCanvas');
+  const area = document.getElementById('gameArea');
+  canvas.width = area.offsetWidth * 2;
+  canvas.height = area.offsetHeight * 2;
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  scratchCtx = canvas.getContext('2d');
+  drawScratchCover();
+}
+
+function drawScratchCover() {
+  const c = scratchCtx, w = c.canvas.width, h = c.canvas.height;
+  // Background pattern
+  const grad = c.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, '#1a1a2e');
+  grad.addColorStop(0.5, '#16213e');
+  grad.addColorStop(1, '#0f3460');
+  c.fillStyle = grad;
+  c.fillRect(0, 0, w, h);
+  // Stars
+  for (let i = 0; i < 30; i++) {
+    c.fillStyle = `rgba(255,255,255,${Math.random()*0.5+0.2})`;
+    c.beginPath();
+    c.arc(Math.random()*w, Math.random()*h, Math.random()*3+1, 0, Math.PI*2);
+    c.fill();
+  }
+  // Text
+  c.fillStyle = '#fff';
+  c.font = `bold ${w*0.06}px -apple-system, sans-serif`;
+  c.textAlign = 'center';
+  c.fillText('GRATTA QUI', w/2, h/2 - 10);
+  c.font = `${w*0.035}px -apple-system, sans-serif`;
+  c.fillStyle = 'rgba(255,255,255,0.6)';
+  c.fillText('Usa il dito per scoprire', w/2, h/2 + 30);
+}
+
+function enableScratch() {
+  const canvas = document.getElementById('scratchCanvas');
+  let isScratching = false;
+  const scratch = (x, y) => {
+    if (scratchRevealed) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = (x - rect.left) * (canvas.width / rect.width);
+    const sy = (y - rect.top) * (canvas.height / rect.height);
+    scratchCtx.globalCompositeOperation = 'destination-out';
+    scratchCtx.beginPath();
+    scratchCtx.arc(sx, sy, 40, 0, Math.PI*2);
+    scratchCtx.fill();
+    checkScratchProgress();
+  };
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); isScratching = true; }, { passive: false });
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); if (isScratching) { const t = e.touches[0]; scratch(t.clientX, t.clientY); } }, { passive: false });
+  canvas.addEventListener('touchend', () => isScratching = false);
+  canvas.addEventListener('mousedown', e => { isScratching = true; scratch(e.clientX, e.clientY); });
+  canvas.addEventListener('mousemove', e => { if (isScratching) scratch(e.clientX, e.clientY); });
+  canvas.addEventListener('mouseup', () => isScratching = false);
+}
+
+function checkScratchProgress() {
+  if (scratchRevealed) return;
+  const data = scratchCtx.getImageData(0, 0, scratchCtx.canvas.width, scratchCtx.canvas.height).data;
+  let transparent = 0, total = data.length / 4;
+  for (let i = 3; i < data.length; i += 4) { if (data[i] === 0) transparent++; }
+  if (transparent / total > 0.45) {
+    scratchRevealed = true;
+    showResult(scratchResult);
+  }
+}
+
+function drawScratchResult(result) {
+  const c = scratchCtx, w = c.canvas.width, h = c.canvas.height;
+  c.globalCompositeOperation = 'destination-over';
+  if (result.result === 'win') {
+    const grad = c.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
+    grad.addColorStop(0, '#2d1b00');
+    grad.addColorStop(1, '#1a1a00');
+    c.fillStyle = grad;
+    c.fillRect(0, 0, w, h);
+    c.fillStyle = '#FFD700';
+    c.font = `bold ${w*0.08}px -apple-system, sans-serif`;
+    c.textAlign = 'center';
+    c.fillText('HAI VINTO!', w/2, h/2 - 20);
+    c.font = `${w*0.05}px -apple-system, sans-serif`;
+    c.fillStyle = '#fff';
+    c.fillText(result.prize_name, w/2, h/2 + 30);
+  } else {
+    c.fillStyle = '#1a1a1a';
+    c.fillRect(0, 0, w, h);
+    c.fillStyle = '#666';
+    c.font = `bold ${w*0.06}px -apple-system, sans-serif`;
+    c.textAlign = 'center';
+    c.fillText('Ritenta!', w/2, h/2 - 10);
+    c.font = `${w*0.04}px -apple-system, sans-serif`;
+    c.fillText('La fortuna gira...', w/2, h/2 + 25);
+  }
+}
+
+// ─── SPIN THE WHEEL ──────────────────────────────────────────
+const WHEEL_SEGMENTS = ['VINCI!', 'Riprova', 'VINCI!', 'Quasi...', 'VINCI!', 'Riprova', 'VINCI!', 'Nope'];
+const WHEEL_COLORS = ['#FFD700', '#333', '#3CDFFF', '#333', '#A78BFA', '#333', '#22c55e', '#333'];
+
+function renderWheelArea() {
+  return `<div class="game-area" id="gameArea" style="background:transparent;border:none;">
+    <div class="wheel-container" id="wheelContainer">
+      <div class="wheel-pointer">▼</div>
+      <canvas id="wheelCanvas" width="600" height="600"></canvas>
+    </div>
+  </div>`;
+}
+
+let wheelAngle = 0, wheelSpinning = false;
+function initWheel() {
+  drawWheel(0);
+}
+
+function drawWheel(angle) {
+  const canvas = document.getElementById('wheelCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 300, cy = 300, r = 280;
+  ctx.clearRect(0, 0, 600, 600);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+  const seg = WHEEL_SEGMENTS.length;
+  const arc = (Math.PI * 2) / seg;
+  for (let i = 0; i < seg; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, r, i * arc, (i + 1) * arc);
+    ctx.closePath();
+    ctx.fillStyle = WHEEL_COLORS[i];
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Text
+    ctx.save();
+    ctx.rotate(i * arc + arc / 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = WHEEL_COLORS[i] === '#333' ? '#aaa' : '#000';
+    ctx.font = 'bold 18px -apple-system, sans-serif';
+    ctx.fillText(WHEEL_SEGMENTS[i], r * 0.65, 6);
+    ctx.restore();
+  }
+  // Center
+  ctx.beginPath();
+  ctx.arc(0, 0, 30, 0, Math.PI * 2);
+  ctx.fillStyle = '#222';
+  ctx.fill();
+  ctx.strokeStyle = '#3CDFFF';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function spinWheel(isWin) {
+  wheelSpinning = true;
+  const seg = WHEEL_SEGMENTS.length;
+  const arc = (Math.PI * 2) / seg;
+  // Pick target segment
+  let targetIdx;
+  if (isWin) {
+    const winIndices = WHEEL_SEGMENTS.map((s,i) => s === 'VINCI!' ? i : -1).filter(i => i >= 0);
+    targetIdx = winIndices[Math.floor(Math.random() * winIndices.length)];
+  } else {
+    const loseIndices = WHEEL_SEGMENTS.map((s,i) => s !== 'VINCI!' ? i : -1).filter(i => i >= 0);
+    targetIdx = loseIndices[Math.floor(Math.random() * loseIndices.length)];
+  }
+  // The pointer is at top (270deg = 3π/2). We need the target segment center to end up there.
+  const targetAngle = -(targetIdx * arc + arc / 2) + Math.PI * 1.5;
+  const totalRotation = targetAngle + Math.PI * 2 * (8 + Math.random() * 4); // 8-12 full spins
+  const duration = 4000;
+  const startAngle = wheelAngle;
+  const startTime = Date.now();
+  function animateWheel() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    wheelAngle = startAngle + totalRotation * eased;
+    drawWheel(wheelAngle);
+    if (progress < 1) requestAnimationFrame(animateWheel);
+    else { wheelSpinning = false; }
+  }
+  animateWheel();
+}
+
+// ─── SLOT MACHINE ──────────────────────────────────────────
+const SLOT_SYMBOLS = ['🍒', '🍋', '🔔', '💎', '⭐', '7️⃣', '🍀'];
+
+function renderSlotsArea() {
+  return `<div class="game-area" id="gameArea" style="background:transparent;border:none;aspect-ratio:auto;">
+    <div style="padding:30px 0;">
+      <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:16px;padding:24px;border:2px solid var(--gold);max-width:320px;margin:0 auto;">
+        <div style="font-size:20px;font-weight:800;color:var(--gold);margin-bottom:16px;">🎰 SLOT MACHINE</div>
+        <div class="slot-row" id="slotReels">
+          <div class="slot-reel" id="reel1">🍒</div>
+          <div class="slot-reel" id="reel2">🍋</div>
+          <div class="slot-reel" id="reel3">🔔</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px;">3 simboli uguali = VITTORIA!</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function initSlots() { /* ready to play */ }
+
+function spinSlots(isWin) {
+  const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+  reels.forEach(r => r.classList.add('spinning'));
+  let finalSymbols;
+  if (isWin) {
+    const sym = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+    finalSymbols = [sym, sym, sym];
+  } else {
+    // Ensure not all same
+    do {
+      finalSymbols = [0,1,2].map(() => SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)]);
+    } while (finalSymbols[0] === finalSymbols[1] && finalSymbols[1] === finalSymbols[2]);
+  }
+  // Stop reels sequentially
+  reels.forEach((reel, i) => {
+    const interval = setInterval(() => {
+      reel.textContent = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+    }, 80);
+    setTimeout(() => {
+      clearInterval(interval);
+      reel.classList.remove('spinning');
+      reel.textContent = finalSymbols[i];
+      if (i === 2 && isWin) reel.style.borderColor = 'var(--gold)';
+    }, 1000 + i * 600);
+  });
+}
+
+// ─── PLAY LOGIC ──────────────────────────────────────────
+async function play() {
+  if (isPlaying || !gameInfo?.can_play) return;
+  isPlaying = true;
+  const btn = document.getElementById('playBtn');
+  btn.disabled = true;
+  btn.textContent = 'Giocando...';
+
+  try {
+    const res = await fetch(`${API}/play/${serial}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: gameInfo.campaign_id })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      btn.textContent = data.error || 'Errore';
+      if (data.already_played) btn.textContent = 'Già giocato!';
+      isPlaying = false;
+      return;
+    }
+
+    // Animate based on game type
+    if (gameInfo.game_type === 'scratch') {
+      scratchResult = data;
+      drawScratchResult(data);
+      enableScratch();
+      btn.textContent = 'Gratta per scoprire!';
+      btn.disabled = true;
+    } else if (gameInfo.game_type === 'wheel') {
+      spinWheel(data.result === 'win');
+      setTimeout(() => showResult(data), 4200);
+    } else if (gameInfo.game_type === 'slots') {
+      spinSlots(data.result === 'win');
+      setTimeout(() => showResult(data), 3000);
+    }
+  } catch (e) {
+    btn.textContent = 'Errore connessione';
+    isPlaying = false;
+  }
+}
+
+function showResult(data) {
+  const overlay = document.getElementById('resultOverlay');
+  const icon = document.getElementById('resultIcon');
+  const title = document.getElementById('resultTitle');
+  const desc = document.getElementById('resultDesc');
+  const prize = document.getElementById('resultPrize');
+
+  if (data.result === 'win') {
+    icon.textContent = '🎉';
+    title.textContent = 'HAI VINTO!';
+    title.style.color = 'var(--gold)';
+    desc.textContent = data.prize_description || 'Complimenti!';
+    prize.textContent = data.prize_name;
+    prize.style.display = 'block';
+    launchConfetti();
+  } else {
+    icon.textContent = '😢';
+    title.textContent = 'Non hai vinto';
+    title.style.color = 'var(--muted)';
+    desc.textContent = 'La fortuna girerà la prossima volta!';
+    prize.style.display = 'none';
+  }
+  overlay.classList.add('show');
+}
+
+function closeResult() {
+  document.getElementById('resultOverlay').classList.remove('show');
+  // Reload to reflect updated plays count
+  setTimeout(() => location.reload(), 300);
+}
+
+function launchConfetti() {
+  const colors = ['#FFD700', '#3CDFFF', '#A78BFA', '#22c55e', '#ef4444', '#FF69B4'];
+  for (let i = 0; i < 40; i++) {
+    const conf = document.createElement('div');
+    conf.className = 'confetti';
+    conf.style.left = Math.random() * 100 + 'vw';
+    conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.animationDelay = Math.random() * 2 + 's';
+    conf.style.animationDuration = (2 + Math.random() * 2) + 's';
+    conf.style.width = (6 + Math.random() * 8) + 'px';
+    conf.style.height = (6 + Math.random() * 8) + 'px';
+    conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(conf);
+    setTimeout(() => conf.remove(), 5000);
+  }
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>

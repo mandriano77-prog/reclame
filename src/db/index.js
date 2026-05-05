@@ -190,6 +190,42 @@ CREATE TABLE IF NOT EXISTS media (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_media_brand ON media(brand_id);
+
+CREATE TABLE IF NOT EXISTS instant_win_campaigns (
+  id TEXT PRIMARY KEY,
+  brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  game_type TEXT NOT NULL CHECK (game_type IN ('scratch', 'wheel', 'slots')),
+  prize_name TEXT NOT NULL,
+  prize_description TEXT,
+  win_probability NUMERIC NOT NULL DEFAULT 0.1,
+  max_plays_per_user INTEGER DEFAULT 1,
+  total_budget INTEGER,
+  total_wins INTEGER DEFAULT 0,
+  start_date TIMESTAMPTZ,
+  end_date TIMESTAMPTZ,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'ended')),
+  strip_base64 TEXT,
+  push_message TEXT,
+  config JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_iw_campaigns_brand ON instant_win_campaigns(brand_id);
+CREATE INDEX IF NOT EXISTS idx_iw_campaigns_status ON instant_win_campaigns(status);
+
+CREATE TABLE IF NOT EXISTS instant_win_plays (
+  id TEXT PRIMARY KEY,
+  campaign_id TEXT NOT NULL REFERENCES instant_win_campaigns(id) ON DELETE CASCADE,
+  serial_number TEXT NOT NULL,
+  brand_id TEXT NOT NULL,
+  result TEXT NOT NULL CHECK (result IN ('win', 'lose')),
+  prize_name TEXT,
+  played_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_iw_plays_campaign ON instant_win_plays(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_iw_plays_serial ON instant_win_plays(serial_number);
+CREATE INDEX IF NOT EXISTS idx_iw_plays_brand ON instant_win_plays(brand_id);
 `;
 
 // ─── Init ──────────────────────────────────────────────
@@ -952,6 +988,125 @@ async function deleteCreativeAsset(id) {
   return { success: true };
 }
 
+// ─── Instant Win Campaigns ──────────────────────────────────
+
+async function createInstantWinCampaign(data) {
+  const id = data.id || uuidv4();
+  const { brand_id, name, game_type, prize_name, prize_description, win_probability = 0.1,
+    max_plays_per_user = 1, total_budget, start_date, end_date, status = 'draft',
+    strip_base64, push_message, config = {} } = data;
+  await pool.query(
+    `INSERT INTO instant_win_campaigns (id, brand_id, name, game_type, prize_name, prize_description,
+      win_probability, max_plays_per_user, total_budget, start_date, end_date, status,
+      strip_base64, push_message, config)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+    [id, brand_id, name, game_type, prize_name, prize_description,
+      win_probability, max_plays_per_user, total_budget, start_date || null, end_date || null,
+      status, strip_base64 || null, push_message || null, JSON.stringify(config)]
+  );
+  return getInstantWinCampaign(id);
+}
+
+async function getInstantWinCampaign(id) {
+  const r = await pool.query('SELECT * FROM instant_win_campaigns WHERE id = $1', [id]);
+  return r.rows[0] || null;
+}
+
+async function listInstantWinCampaigns(brandId) {
+  const r = await pool.query(
+    'SELECT * FROM instant_win_campaigns WHERE brand_id = $1 ORDER BY created_at DESC', [brandId]);
+  return r.rows;
+}
+
+async function updateInstantWinCampaign(id, data) {
+  const current = await getInstantWinCampaign(id);
+  if (!current) return null;
+  const fields = ['name', 'game_type', 'prize_name', 'prize_description', 'win_probability',
+    'max_plays_per_user', 'total_budget', 'start_date', 'end_date', 'status',
+    'strip_base64', 'push_message', 'config'];
+  const updated = { ...current };
+  for (const f of fields) {
+    if (data[f] !== undefined) updated[f] = data[f];
+  }
+  if (typeof updated.config === 'object') updated.config = JSON.stringify(updated.config);
+  await pool.query(
+    `UPDATE instant_win_campaigns SET name=$1, game_type=$2, prize_name=$3, prize_description=$4,
+      win_probability=$5, max_plays_per_user=$6, total_budget=$7, start_date=$8, end_date=$9,
+      status=$10, strip_base64=$11, push_message=$12, config=$13, updated_at=NOW()
+     WHERE id=$14`,
+    [updated.name, updated.game_type, updated.prize_name, updated.prize_description,
+      updated.win_probability, updated.max_plays_per_user, updated.total_budget,
+      updated.start_date, updated.end_date, updated.status, updated.strip_base64,
+      updated.push_message, updated.config, id]
+  );
+  return getInstantWinCampaign(id);
+}
+
+async function deleteInstantWinCampaign(id) {
+  await pool.query('DELETE FROM instant_win_plays WHERE campaign_id = $1', [id]);
+  await pool.query('DELETE FROM instant_win_campaigns WHERE id = $1', [id]);
+  return { success: true };
+}
+
+// ─── Instant Win Plays ──────────────────────────────────
+
+async function createInstantWinPlay(data) {
+  const id = data.id || uuidv4();
+  const { campaign_id, serial_number, brand_id, result, prize_name } = data;
+  await pool.query(
+    `INSERT INTO instant_win_plays (id, campaign_id, serial_number, brand_id, result, prize_name)
+     VALUES ($1,$2,$3,$4,$5,$6)`,
+    [id, campaign_id, serial_number, brand_id, result, prize_name || null]
+  );
+  // Increment total_wins if result is 'win'
+  if (result === 'win') {
+    await pool.query(
+      'UPDATE instant_win_campaigns SET total_wins = total_wins + 1 WHERE id = $1', [campaign_id]);
+  }
+  return { id, campaign_id, serial_number, brand_id, result, prize_name };
+}
+
+async function listInstantWinPlays(campaignId, options = {}) {
+  let query = 'SELECT * FROM instant_win_plays WHERE campaign_id = $1';
+  const params = [campaignId];
+  if (options.serial_number) {
+    query += ' AND serial_number = $2';
+    params.push(options.serial_number);
+  }
+  query += ' ORDER BY played_at DESC';
+  if (options.limit) { query += ` LIMIT $${params.length + 1}`; params.push(options.limit); }
+  const r = await pool.query(query, params);
+  return r.rows;
+}
+
+async function countPlaysForUser(campaignId, serialNumber) {
+  const r = await pool.query(
+    'SELECT COUNT(*) as count FROM instant_win_plays WHERE campaign_id = $1 AND serial_number = $2',
+    [campaignId, serialNumber]
+  );
+  return parseInt(r.rows[0].count, 10);
+}
+
+async function getInstantWinStats(brandId) {
+  const campaigns = await pool.query(
+    'SELECT COUNT(*) as total FROM instant_win_campaigns WHERE brand_id = $1', [brandId]);
+  const activeCampaigns = await pool.query(
+    "SELECT COUNT(*) as total FROM instant_win_campaigns WHERE brand_id = $1 AND status = 'active'", [brandId]);
+  const plays = await pool.query(
+    'SELECT COUNT(*) as total FROM instant_win_plays WHERE brand_id = $1', [brandId]);
+  const wins = await pool.query(
+    "SELECT COUNT(*) as total FROM instant_win_plays WHERE brand_id = $1 AND result = 'win'", [brandId]);
+  return {
+    campaigns: parseInt(campaigns.rows[0].total, 10),
+    active_campaigns: parseInt(activeCampaigns.rows[0].total, 10),
+    total_plays: parseInt(plays.rows[0].total, 10),
+    total_wins: parseInt(wins.rows[0].total, 10),
+    win_rate: parseInt(plays.rows[0].total, 10) > 0
+      ? (parseInt(wins.rows[0].total, 10) / parseInt(plays.rows[0].total, 10) * 100).toFixed(1)
+      : '0.0'
+  };
+}
+
 // ─── Exports ──────────────────────────────────────────────
 
 module.exports = {
@@ -1040,5 +1195,15 @@ module.exports = {
   createCreativeAsset,
   getCreativeAsset,
   listCreativeAssets,
-  deleteCreativeAsset
+  deleteCreativeAsset,
+  // Instant Win
+  createInstantWinCampaign,
+  getInstantWinCampaign,
+  listInstantWinCampaigns,
+  updateInstantWinCampaign,
+  deleteInstantWinCampaign,
+  createInstantWinPlay,
+  listInstantWinPlays,
+  countPlaysForUser,
+  getInstantWinStats
 };

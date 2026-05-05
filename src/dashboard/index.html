@@ -766,6 +766,39 @@
                     <thead><tr><th>Nome</th><th>Tipo</th><th>Premio</th><th>Probabilità</th><th>Giocate</th><th>Vincite</th><th>Stato</th><th>Azioni</th></tr></thead>
                     <tbody></tbody>
                 </table>
+
+                <!-- IW Modal -->
+                <div id="iwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
+                  <div style="background:var(--card);border-radius:16px;padding:28px;max-width:520px;width:95%;max-height:90vh;overflow-y:auto;border:1px solid var(--border);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                      <h3 id="iwModalTitle" style="margin:0;font-size:20px;">Nuova Campagna</h3>
+                      <button class="btn sec" onclick="closeIwModal()" style="font-size:18px;padding:4px 12px;">✕</button>
+                    </div>
+                    <input type="hidden" id="iwEditId">
+                    <div class="form-group"><label>Nome campagna</label><input id="iwName" placeholder="es. Vinci un aperitivo"></div>
+                    <div class="form-group"><label>Tipo gioco</label>
+                      <select id="iwGameType"><option value="scratch">Scratch Card (Gratta e Vinci)</option><option value="wheel">Spin the Wheel (Gira la Ruota)</option><option value="slots">Slot Machine</option></select>
+                    </div>
+                    <div class="form-group"><label>Nome premio</label><input id="iwPrizeName" placeholder="es. Aperitivo gratis"></div>
+                    <div class="form-group"><label>Descrizione premio</label><textarea id="iwPrizeDesc" rows="2" placeholder="es. Presenta questo al bar per un aperitivo omaggio"></textarea></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                      <div class="form-group"><label>Probabilità di vincita (%)</label><input type="number" id="iwWinProb" min="1" max="100" value="10"></div>
+                      <div class="form-group"><label>Max giocate per utente</label><input type="number" id="iwMaxPlays" min="1" value="1"></div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                      <div class="form-group"><label>Budget premi (totale vincite max)</label><input type="number" id="iwBudget" min="1" placeholder="es. 100"></div>
+                      <div class="form-group"><label>Stato</label>
+                        <select id="iwStatus"><option value="draft">Bozza</option><option value="active">Attiva</option><option value="paused">In pausa</option><option value="ended">Terminata</option></select>
+                      </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                      <div class="form-group"><label>Data inizio</label><input type="date" id="iwStartDate"></div>
+                      <div class="form-group"><label>Data fine</label><input type="date" id="iwEndDate"></div>
+                    </div>
+                    <div class="form-group"><label>Messaggio push (opzionale)</label><input id="iwPushMsg" placeholder="es. Hai un premio da scoprire!"></div>
+                    <button class="btn" onclick="saveIwCampaign()" style="width:100%;margin-top:12px;">Salva Campagna</button>
+                  </div>
+                </div>
             </div>
 
             <!-- GAMIFICATION -->
@@ -2307,36 +2340,37 @@ function populateCampaignSelect(selId, placeholder) {
 async function loadInstantWin() {
     if (!brandId) return;
     try {
+        // Load stats
+        const statsRes = await fetch(`${API}/instant-win/stats?brand_id=${brandId}`, { headers: getAuthHeaders() });
+        if (statsRes.ok) {
+            const stats = await statsRes.json();
+            document.getElementById('iwStatCampaigns').textContent = stats.active_campaigns;
+            document.getElementById('iwStatPlays').textContent = stats.total_plays;
+            document.getElementById('iwStatWins').textContent = stats.total_wins;
+            document.getElementById('iwStatRate').textContent = stats.win_rate + '%';
+        }
+
         const res = await fetch(`${API}/instant-win?brand_id=${brandId}`, { headers: getAuthHeaders() });
         if (!res.ok) { document.getElementById('iwTable').querySelector('tbody').innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna campagna</td></tr>'; return; }
         const campaigns = await res.json();
-
-        // Stats
-        const active = campaigns.filter(c => c.status === 'active').length;
-        const totalPlays = campaigns.reduce((s, c) => s + (c.total_plays || 0), 0);
-        const totalWins = campaigns.reduce((s, c) => s + (c.total_wins || 0), 0);
-        const winRate = totalPlays > 0 ? Math.round((totalWins / totalPlays) * 100) : 0;
-
-        document.getElementById('iwStatCampaigns').textContent = active;
-        document.getElementById('iwStatPlays').textContent = totalPlays;
-        document.getElementById('iwStatWins').textContent = totalWins;
-        document.getElementById('iwStatRate').textContent = winRate + '%';
 
         const tbody = document.getElementById('iwTable').querySelector('tbody');
         if (!campaigns.length) {
             tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna campagna Instant Win. Creane una per iniziare.</td></tr>';
             return;
         }
+        const gameLabels = { scratch: '🎫 Scratch', wheel: '🎡 Ruota', slots: '🎰 Slot' };
+        const statusLabels = { draft: 'Bozza', active: 'Attiva', paused: 'In pausa', ended: 'Terminata' };
         tbody.innerHTML = campaigns.map(c => `
             <tr>
                 <td><strong>${esc(c.name)}</strong></td>
-                <td>${esc(c.game_type || 'scratch')}</td>
+                <td>${gameLabels[c.game_type] || c.game_type}</td>
                 <td>${esc(c.prize_name || '—')}</td>
-                <td>${c.win_probability || 0}%</td>
-                <td>${c.total_plays || 0}</td>
+                <td>${Math.round((c.win_probability || 0) * 100)}%</td>
+                <td>${c.total_plays || 0}${c.total_budget ? '/' + c.total_budget : ''}</td>
                 <td>${c.total_wins || 0}</td>
-                <td><span class="badge ${c.status === 'active' ? 'active' : 'inactive'}">${c.status || 'draft'}</span></td>
-                <td>
+                <td><span class="badge ${c.status === 'active' ? 'active' : 'inactive'}">${statusLabels[c.status] || c.status}</span></td>
+                <td style="white-space:nowrap;">
                     <button class="btn sec" style="font-size:11px;padding:4px 10px;" onclick="editIwCampaign('${c.id}')">Modifica</button>
                     <button class="btn sec" style="font-size:11px;padding:4px 10px;color:var(--danger);" onclick="deleteIwCampaign('${c.id}')">Elimina</button>
                 </td>
@@ -2348,9 +2382,70 @@ async function loadInstantWin() {
     }
 }
 
-function openIwModal() { toast('Funzionalità Instant Win in arrivo — stay tuned!'); }
-function editIwCampaign(id) { toast('Editor campagna in sviluppo'); }
-async function deleteIwCampaign(id) { if (!confirm('Eliminare questa campagna?')) return; toast('Eliminazione in sviluppo'); }
+function openIwModal(campaign) {
+    document.getElementById('iwEditId').value = campaign ? campaign.id : '';
+    document.getElementById('iwName').value = campaign ? campaign.name : '';
+    document.getElementById('iwGameType').value = campaign ? campaign.game_type : 'scratch';
+    document.getElementById('iwPrizeName').value = campaign ? campaign.prize_name : '';
+    document.getElementById('iwPrizeDesc').value = campaign ? (campaign.prize_description || '') : '';
+    document.getElementById('iwWinProb').value = campaign ? Math.round(campaign.win_probability * 100) : 10;
+    document.getElementById('iwMaxPlays').value = campaign ? campaign.max_plays_per_user : 1;
+    document.getElementById('iwBudget').value = campaign ? (campaign.total_budget || '') : '';
+    document.getElementById('iwStatus').value = campaign ? campaign.status : 'draft';
+    document.getElementById('iwStartDate').value = campaign?.start_date ? campaign.start_date.split('T')[0] : '';
+    document.getElementById('iwEndDate').value = campaign?.end_date ? campaign.end_date.split('T')[0] : '';
+    document.getElementById('iwPushMsg').value = campaign ? (campaign.push_message || '') : '';
+    document.getElementById('iwModalTitle').textContent = campaign ? 'Modifica Campagna' : 'Nuova Campagna';
+    document.getElementById('iwModal').style.display = 'flex';
+}
+function closeIwModal() { document.getElementById('iwModal').style.display = 'none'; }
+
+async function saveIwCampaign() {
+    const editId = document.getElementById('iwEditId').value;
+    const data = {
+        brand_id: brandId,
+        name: document.getElementById('iwName').value,
+        game_type: document.getElementById('iwGameType').value,
+        prize_name: document.getElementById('iwPrizeName').value,
+        prize_description: document.getElementById('iwPrizeDesc').value,
+        win_probability: parseFloat(document.getElementById('iwWinProb').value) / 100,
+        max_plays_per_user: parseInt(document.getElementById('iwMaxPlays').value) || 1,
+        total_budget: parseInt(document.getElementById('iwBudget').value) || null,
+        status: document.getElementById('iwStatus').value,
+        start_date: document.getElementById('iwStartDate').value || null,
+        end_date: document.getElementById('iwEndDate').value || null,
+        push_message: document.getElementById('iwPushMsg').value || null
+    };
+    if (!data.name || !data.prize_name) return toast('Nome campagna e premio sono obbligatori');
+    try {
+        const url = editId ? `${API}/instant-win/${editId}` : `${API}/instant-win`;
+        const method = editId ? 'PUT' : 'POST';
+        const res = await fetch(url, { method, headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        if (!res.ok) { const e = await res.json(); return toast('Errore: ' + (e.error || 'salvataggio fallito')); }
+        toast(editId ? 'Campagna aggiornata!' : 'Campagna creata!');
+        closeIwModal();
+        loadInstantWin();
+    } catch(e) { toast('Errore di rete'); }
+}
+
+async function editIwCampaign(id) {
+    try {
+        const res = await fetch(`${API}/instant-win/${id}`, { headers: getAuthHeaders() });
+        if (!res.ok) return toast('Campagna non trovata');
+        const campaign = await res.json();
+        openIwModal(campaign);
+    } catch(e) { toast('Errore caricamento campagna'); }
+}
+
+async function deleteIwCampaign(id) {
+    if (!confirm('Eliminare questa campagna e tutte le giocate associate?')) return;
+    try {
+        const res = await fetch(`${API}/instant-win/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+        if (!res.ok) return toast('Errore eliminazione');
+        toast('Campagna eliminata');
+        loadInstantWin();
+    } catch(e) { toast('Errore di rete'); }
+}
 
 // ==================== GAMIFICATION ====================
 async function loadGamification() {
