@@ -308,6 +308,12 @@ async function getDb() {
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS result TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS prize_name TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS played_at TIMESTAMPTZ DEFAULT NOW()`).catch(()=>{});
+    // Player data collection (lead gen before game)
+    await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS player_email TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS player_phone TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS player_first_name TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS player_last_name TEXT`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_iw_plays_email ON instant_win_plays(player_email)`).catch(()=>{});
 
     // Indexes
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_passes_brand ON pass_instances(brand_id)`);
@@ -1083,18 +1089,22 @@ async function deleteInstantWinCampaign(id) {
 
 async function createInstantWinPlay(data) {
   const id = data.id || uuidv4();
-  const { campaign_id, serial_number, brand_id, result, prize_name } = data;
+  const { campaign_id, serial_number, brand_id, result, prize_name,
+          player_email, player_phone, player_first_name, player_last_name } = data;
   await pool.query(
-    `INSERT INTO instant_win_plays (id, campaign_id, serial_number, brand_id, result, prize_name)
-     VALUES ($1,$2,$3,$4,$5,$6)`,
-    [id, campaign_id, serial_number, brand_id, result, prize_name || null]
+    `INSERT INTO instant_win_plays (id, campaign_id, serial_number, brand_id, result, prize_name,
+     player_email, player_phone, player_first_name, player_last_name)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [id, campaign_id, serial_number, brand_id, result, prize_name || null,
+     player_email || null, player_phone || null, player_first_name || null, player_last_name || null]
   );
   // Increment total_wins if result is 'win'
   if (result === 'win') {
     await pool.query(
       'UPDATE instant_win_campaigns SET total_wins = total_wins + 1 WHERE id = $1', [campaign_id]);
   }
-  return { id, campaign_id, serial_number, brand_id, result, prize_name };
+  return { id, campaign_id, serial_number, brand_id, result, prize_name,
+           player_email, player_phone, player_first_name, player_last_name };
 }
 
 async function listInstantWinPlays(campaignId, options = {}) {

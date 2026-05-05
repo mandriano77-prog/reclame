@@ -43,6 +43,25 @@ canvas { width: 100%; height: 100%; display: block; }
 .confetti { position: fixed; width: 10px; height: 10px; top: -10px; animation: confettiFall 3s ease-out forwards; z-index: 200; pointer-events: none; }
 @keyframes confettiFall { to { top: 110vh; transform: rotate(720deg) translateX(50px); } }
 
+/* Form styles */
+.form-step { animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.form-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 32px 24px; margin: 16px 0; text-align: left; }
+.form-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; text-align: center; }
+.form-card .subtitle { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+.form-group input { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; transition: border-color 0.2s; -webkit-appearance: none; }
+.form-group input:focus { outline: none; border-color: var(--teal); }
+.form-group input::placeholder { color: #555; }
+.form-group .required { color: var(--red); }
+.form-error { color: var(--red); font-size: 13px; margin-top: 4px; display: none; }
+.form-privacy { font-size: 12px; color: var(--muted); margin-top: 16px; text-align: center; line-height: 1.5; }
+.form-privacy a { color: var(--teal); text-decoration: none; }
+.submit-btn { width: 100%; background: linear-gradient(135deg, var(--teal), var(--purple)); color: #fff; border: none; padding: 16px; font-size: 17px; font-weight: 700; border-radius: 50px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 20px; }
+.submit-btn:hover { transform: scale(1.02); box-shadow: 0 8px 32px rgba(60,223,255,0.3); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
 /* Wheel specific */
 .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto; }
 .wheel-pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 32px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
@@ -62,7 +81,7 @@ canvas { width: 100%; height: 100%; display: block; }
 <div class="container" id="app">
   <div class="loading" id="loadingState">
     <div class="spinner"></div>
-    <p>Caricamento gioco...</p>
+    <p>Caricamento...</p>
   </div>
 </div>
 
@@ -81,6 +100,7 @@ const serial = window.location.pathname.split('/play/')[1]?.split('?')[0];
 const API = '/api/v1';
 let gameInfo = null;
 let isPlaying = false;
+let playerData = {};
 
 async function init() {
   if (!serial) return showError('Link non valido');
@@ -91,7 +111,7 @@ async function init() {
       return showError(err.error || 'Errore caricamento');
     }
     gameInfo = await res.json();
-    renderGame();
+    renderForm();
   } catch (e) { showError('Errore di connessione'); }
 }
 
@@ -99,6 +119,97 @@ function showError(msg) {
   document.getElementById('loadingState').innerHTML = `<div class="error-msg">${msg}</div>`;
 }
 
+// ─── STEP 1: REGISTRATION FORM ──────────────────────────────────
+function renderForm() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="brand-name">${esc(gameInfo.brand_name)}</div>
+    <div class="game-title">${esc(gameInfo.name)}</div>
+    <div class="prize-label">In palio: ${esc(gameInfo.prize_name)}</div>
+
+    <div class="form-step">
+      <div class="form-card">
+        <h2>Registrati per giocare</h2>
+        <p class="subtitle">Compila i tuoi dati per partecipare e vincere</p>
+
+        <div class="form-group">
+          <label>Nome <span class="required">*</span></label>
+          <input type="text" id="pFirstName" placeholder="Il tuo nome" autocomplete="given-name" required>
+        </div>
+        <div class="form-group">
+          <label>Cognome <span class="required">*</span></label>
+          <input type="text" id="pLastName" placeholder="Il tuo cognome" autocomplete="family-name" required>
+        </div>
+        <div class="form-group">
+          <label>Email <span class="required">*</span></label>
+          <input type="email" id="pEmail" placeholder="la-tua@email.com" autocomplete="email" required>
+          <div class="form-error" id="emailError">Inserisci un'email valida</div>
+        </div>
+        <div class="form-group">
+          <label>Telefono</label>
+          <input type="tel" id="pPhone" placeholder="+39 333 1234567" autocomplete="tel">
+        </div>
+
+        <button class="submit-btn" id="submitBtn" onclick="submitForm()">
+          Partecipa e Gioca!
+        </button>
+
+        <p class="form-privacy">
+          Partecipando accetti il <a href="/privacy/${serial}" target="_blank">regolamento</a> e autorizzi il trattamento dei tuoi dati per la gestione del premio.
+        </p>
+      </div>
+    </div>
+
+    <div class="powered-by">Powered by <a href="https://www.nudj.studio" target="_blank">Ads2Wallet</a></div>
+  `;
+
+  // Auto-focus first field
+  setTimeout(() => document.getElementById('pFirstName')?.focus(), 300);
+}
+
+function submitForm() {
+  const firstName = document.getElementById('pFirstName').value.trim();
+  const lastName = document.getElementById('pLastName').value.trim();
+  const email = document.getElementById('pEmail').value.trim();
+  const phone = document.getElementById('pPhone').value.trim();
+
+  // Validation
+  if (!firstName || !lastName || !email) {
+    if (!firstName) shake('pFirstName');
+    if (!lastName) shake('pLastName');
+    if (!email) shake('pEmail');
+    return;
+  }
+
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    document.getElementById('emailError').style.display = 'block';
+    shake('pEmail');
+    return;
+  }
+  document.getElementById('emailError').style.display = 'none';
+
+  // Save player data
+  playerData = {
+    player_first_name: firstName,
+    player_last_name: lastName,
+    player_email: email,
+    player_phone: phone || null
+  };
+
+  // Proceed to game
+  renderGame();
+}
+
+function shake(id) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'var(--red)';
+  el.style.animation = 'shake 0.4s ease';
+  setTimeout(() => { el.style.animation = ''; }, 400);
+}
+
+// ─── STEP 2: GAME ──────────────────────────────────────────
 function renderGame() {
   const app = document.getElementById('app');
   const canPlayMsg = gameInfo.can_play
@@ -115,6 +226,7 @@ function renderGame() {
     <div class="brand-name">${esc(gameInfo.brand_name)}</div>
     <div class="game-title">${esc(gameInfo.name)}</div>
     <div class="prize-label">In palio: ${esc(gameInfo.prize_name)}</div>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">Ciao ${esc(playerData.player_first_name)}! Buona fortuna!</p>
     ${canPlayMsg}
     ${gameAreaHTML}
     <button class="play-btn" id="playBtn" onclick="play()" ${!gameInfo.can_play ? 'disabled' : ''}>
@@ -150,21 +262,18 @@ function initScratch() {
 
 function drawScratchCover() {
   const c = scratchCtx, w = c.canvas.width, h = c.canvas.height;
-  // Background pattern
   const grad = c.createLinearGradient(0, 0, w, h);
   grad.addColorStop(0, '#1a1a2e');
   grad.addColorStop(0.5, '#16213e');
   grad.addColorStop(1, '#0f3460');
   c.fillStyle = grad;
   c.fillRect(0, 0, w, h);
-  // Stars
   for (let i = 0; i < 30; i++) {
     c.fillStyle = `rgba(255,255,255,${Math.random()*0.5+0.2})`;
     c.beginPath();
     c.arc(Math.random()*w, Math.random()*h, Math.random()*3+1, 0, Math.PI*2);
     c.fill();
   }
-  // Text
   c.fillStyle = '#fff';
   c.font = `bold ${w*0.06}px -apple-system, sans-serif`;
   c.textAlign = 'center';
@@ -242,16 +351,14 @@ const WHEEL_COLORS = ['#FFD700', '#333', '#3CDFFF', '#333', '#A78BFA', '#333', '
 function renderWheelArea() {
   return `<div class="game-area" id="gameArea" style="background:transparent;border:none;">
     <div class="wheel-container" id="wheelContainer">
-      <div class="wheel-pointer">▼</div>
+      <div class="wheel-pointer">&#9660;</div>
       <canvas id="wheelCanvas" width="600" height="600"></canvas>
     </div>
   </div>`;
 }
 
 let wheelAngle = 0, wheelSpinning = false;
-function initWheel() {
-  drawWheel(0);
-}
+function initWheel() { drawWheel(0); }
 
 function drawWheel(angle) {
   const canvas = document.getElementById('wheelCanvas');
@@ -274,7 +381,6 @@ function drawWheel(angle) {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 2;
     ctx.stroke();
-    // Text
     ctx.save();
     ctx.rotate(i * arc + arc / 2);
     ctx.textAlign = 'center';
@@ -283,7 +389,6 @@ function drawWheel(angle) {
     ctx.fillText(WHEEL_SEGMENTS[i], r * 0.65, 6);
     ctx.restore();
   }
-  // Center
   ctx.beginPath();
   ctx.arc(0, 0, 30, 0, Math.PI * 2);
   ctx.fillStyle = '#222';
@@ -298,7 +403,6 @@ function spinWheel(isWin) {
   wheelSpinning = true;
   const seg = WHEEL_SEGMENTS.length;
   const arc = (Math.PI * 2) / seg;
-  // Pick target segment
   let targetIdx;
   if (isWin) {
     const winIndices = WHEEL_SEGMENTS.map((s,i) => s === 'VINCI!' ? i : -1).filter(i => i >= 0);
@@ -307,16 +411,14 @@ function spinWheel(isWin) {
     const loseIndices = WHEEL_SEGMENTS.map((s,i) => s !== 'VINCI!' ? i : -1).filter(i => i >= 0);
     targetIdx = loseIndices[Math.floor(Math.random() * loseIndices.length)];
   }
-  // The pointer is at top (270deg = 3π/2). We need the target segment center to end up there.
   const targetAngle = -(targetIdx * arc + arc / 2) + Math.PI * 1.5;
-  const totalRotation = targetAngle + Math.PI * 2 * (8 + Math.random() * 4); // 8-12 full spins
+  const totalRotation = targetAngle + Math.PI * 2 * (8 + Math.random() * 4);
   const duration = 4000;
   const startAngle = wheelAngle;
   const startTime = Date.now();
   function animateWheel() {
     const elapsed = Date.now() - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    // Ease out cubic
     const eased = 1 - Math.pow(1 - progress, 3);
     wheelAngle = startAngle + totalRotation * eased;
     drawWheel(wheelAngle);
@@ -327,13 +429,14 @@ function spinWheel(isWin) {
 }
 
 // ─── SLOT MACHINE ──────────────────────────────────────────
-const SLOT_SYMBOLS = ['🍒', '🍋', '🔔', '💎', '⭐', '7️⃣', '🍀'];
+const SLOT_SYMBOLS = ['&#127826;', '&#127819;', '&#128276;', '&#128142;', '&#11088;', '7&#65039;&#8419;', '&#127808;'];
+const SLOT_EMOJIS = ['🍒', '🍋', '🔔', '💎', '⭐', '7️⃣', '🍀'];
 
 function renderSlotsArea() {
   return `<div class="game-area" id="gameArea" style="background:transparent;border:none;aspect-ratio:auto;">
     <div style="padding:30px 0;">
       <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:16px;padding:24px;border:2px solid var(--gold);max-width:320px;margin:0 auto;">
-        <div style="font-size:20px;font-weight:800;color:var(--gold);margin-bottom:16px;">🎰 SLOT MACHINE</div>
+        <div style="font-size:20px;font-weight:800;color:var(--gold);margin-bottom:16px;">&#127920; SLOT MACHINE</div>
         <div class="slot-row" id="slotReels">
           <div class="slot-reel" id="reel1">🍒</div>
           <div class="slot-reel" id="reel2">🍋</div>
@@ -345,25 +448,23 @@ function renderSlotsArea() {
   </div>`;
 }
 
-function initSlots() { /* ready to play */ }
+function initSlots() { /* ready */ }
 
 function spinSlots(isWin) {
   const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
   reels.forEach(r => r.classList.add('spinning'));
   let finalSymbols;
   if (isWin) {
-    const sym = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+    const sym = SLOT_EMOJIS[Math.floor(Math.random() * SLOT_EMOJIS.length)];
     finalSymbols = [sym, sym, sym];
   } else {
-    // Ensure not all same
     do {
-      finalSymbols = [0,1,2].map(() => SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)]);
+      finalSymbols = [0,1,2].map(() => SLOT_EMOJIS[Math.floor(Math.random() * SLOT_EMOJIS.length)]);
     } while (finalSymbols[0] === finalSymbols[1] && finalSymbols[1] === finalSymbols[2]);
   }
-  // Stop reels sequentially
   reels.forEach((reel, i) => {
     const interval = setInterval(() => {
-      reel.textContent = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+      reel.textContent = SLOT_EMOJIS[Math.floor(Math.random() * SLOT_EMOJIS.length)];
     }, 80);
     setTimeout(() => {
       clearInterval(interval);
@@ -386,7 +487,10 @@ async function play() {
     const res = await fetch(`${API}/play/${serial}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campaign_id: gameInfo.campaign_id })
+      body: JSON.stringify({
+        campaign_id: gameInfo.campaign_id,
+        ...playerData
+      })
     });
     const data = await res.json();
     if (!res.ok) {
@@ -396,7 +500,6 @@ async function play() {
       return;
     }
 
-    // Animate based on game type
     if (gameInfo.game_type === 'scratch') {
       scratchResult = data;
       drawScratchResult(data);
@@ -443,7 +546,6 @@ function showResult(data) {
 
 function closeResult() {
   document.getElementById('resultOverlay').classList.remove('show');
-  // Reload to reflect updated plays count
   setTimeout(() => location.reload(), 300);
 }
 
@@ -463,6 +565,11 @@ function launchConfetti() {
     setTimeout(() => conf.remove(), 5000);
   }
 }
+
+// Add shake animation
+const style = document.createElement('style');
+style.textContent = '@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }';
+document.head.appendChild(style);
 
 // Boot
 init();

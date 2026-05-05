@@ -1929,7 +1929,12 @@ router.get('/instant-win/:id/plays', async (req, res) => {
 router.post('/play/:serial_number', async (req, res) => {
   try {
     const { serial_number } = req.params;
-    const { campaign_id } = req.body;
+    const { campaign_id, player_email, player_phone, player_first_name, player_last_name } = req.body;
+
+    // Validate player data (required before playing)
+    if (!player_email || !player_first_name || !player_last_name) {
+      return res.status(400).json({ error: 'Compila tutti i campi obbligatori (nome, cognome, email)' });
+    }
 
     // Find the pass by serial
     const pass = await getPassBySerial(serial_number);
@@ -1969,7 +1974,11 @@ router.post('/play/:serial_number', async (req, res) => {
       serial_number,
       brand_id: pass.brand_id,
       result,
-      prize_name: result === 'win' ? campaign.prize_name : null
+      prize_name: result === 'win' ? campaign.prize_name : null,
+      player_email: player_email || null,
+      player_phone: player_phone || null,
+      player_first_name: player_first_name || null,
+      player_last_name: player_last_name || null
     });
 
     // Log event
