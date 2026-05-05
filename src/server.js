@@ -192,20 +192,7 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
     await logEvent({ pass_id: passInstance.id, brand_id: brand.id, event_type: 'pass_created', metadata: { source: 'direct_save', campaign_id: campaignId, utm } });
     if (campaignId) await incrementCampaignDownloads(campaignId);
 
-    // Generate and serve .pkpass — MUST be HTTPS for Apple Wallet webServiceURL
-    const baseUrl = process.env.CUSTOM_DOMAIN
-      ? `https://${process.env.CUSTOM_DOMAIN}`
-      : (process.env.RAILWAY_PUBLIC_DOMAIN
-        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : `https://${req.get('host')}`);
-
-    const pkpassBuffer = await createPkpass(template, passInstance, brand, {
-      baseUrl,
-      passTypeIdentifier: process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj',
-      teamIdentifier: process.env.TEAM_IDENTIFIER || 'YOUR_TEAM_ID'
-    });
-
-    // Serve confirmation page that auto-downloads the .pkpass
+    // Serve confirmation page that auto-downloads the .pkpass via API
     const brandName = brand.name || slug;
     const bgColor = brand.config?.backgroundColor || '#0D0B1A';
     const fgColor = brand.config?.foregroundColor || '#FFFFFF';
@@ -326,27 +313,22 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
     };
     logoImg.src = '${logoUrl}';
 
-    // Auto-download the pass
-    (async () => {
-      try {
-        const res = await fetch('${passDownloadUrl}');
-        if (!res.ok) throw new Error('Download failed');
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '${slug}.pkpass';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-        // Show success
+    // Auto-trigger pass download via hidden iframe (iOS opens native "Add to Wallet" sheet)
+    // Then show success after a realistic delay
+    (function() {
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = '${passDownloadUrl}';
+      document.body.appendChild(iframe);
+
+      // Show success after pass has had time to generate + present the Wallet dialog
+      setTimeout(() => {
         document.getElementById('stateLoading').classList.add('hidden');
         document.getElementById('stateSuccess').classList.remove('hidden');
-      } catch (e) {
-        document.getElementById('stateLoading').classList.add('hidden');
-        document.getElementById('stateError').classList.remove('hidden');
-      }
+      }, 3500);
+
+      // Fallback: if page is still visible after 10s, something may have gone wrong
+      // but keep success state (user may have added pass and come back)
     })();
   </script>
 </body>
