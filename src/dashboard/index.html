@@ -2339,43 +2339,7 @@ function wzPickFromMedia(target) {
     }, target || 'strip');
 }
 
-async function wzGenerateAiStrip() {
-    const prompt = document.getElementById('wzAiStripPrompt').value;
-    if (!prompt) return toast('Inserisci un prompt');
-    const btn = document.getElementById('wzAiStripBtn');
-    btn.disabled = true; btn.textContent = 'Generando...';
-    try {
-        const res = await fetch(`${API}/brands/${brandId}/creatives/generate`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json', ...getAuthHeaders()},
-            body: JSON.stringify({ prompt, segment: 'social', format: '1200x394', headline: '', cta: '' })
-        });
-        if (!res.ok) throw new Error('Errore generazione');
-        const data = await res.json();
-        if (data.image_url) {
-            document.getElementById('wzAiStripImg').src = data.image_url;
-            document.getElementById('wzAiStripResult').style.display = 'block';
-        }
-    } catch(e) { toast('Errore: ' + e.message); }
-    btn.disabled = false; btn.textContent = 'Genera AI';
-}
-
-async function wzUseAiStrip() {
-    const img = document.getElementById('wzAiStripImg');
-    try {
-        const res = await fetch(img.src);
-        const blob = await res.blob();
-        const reader = new FileReader();
-        reader.onload = e => {
-            wzStripBase64 = e.target.result.split(',')[1];
-            document.getElementById('wzStripPreview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
-            document.getElementById('wzStripDeleteBtn').style.display = 'inline-block';
-            document.getElementById('wzAiStripResult').style.display = 'none';
-            toast('Strip AI applicata!');
-        };
-        reader.readAsDataURL(blob);
-    } catch(e) { toast('Errore caricamento immagine'); }
-}
+// AI strip functions removed
 
 async function wzAiGenerate() {
     const btn = document.getElementById('wzAiBtn');
@@ -2396,10 +2360,6 @@ async function wzAiGenerate() {
         const data = await aiRes.json();
         const opts = data.options || data;
         const copy = Array.isArray(opts) ? opts[0] : opts;
-        // Fill landing fields from AI
-        if (copy.headline) document.getElementById('wzLandingHeadline').value = copy.headline;
-        if (copy.subheadline) document.getElementById('wzLandingSubheadline').value = copy.subheadline;
-        if (copy.button_label) document.getElementById('wzLandingCta').value = copy.button_label;
         // Fill pass fields with sensible defaults based on settore
         if (!document.getElementById('wzHeaderLabel').value) document.getElementById('wzHeaderLabel').value = 'STATO';
         if (!document.getElementById('wzHeaderValue').value) document.getElementById('wzHeaderValue').value = 'Attivo';
@@ -2448,32 +2408,7 @@ async function wzAiCopy(section) {
     btn.disabled = false; btn.textContent = 'AI Copy';
 }
 
-async function wzAiLanding() {
-    if (!brandId) return toast('Seleziona un brand');
-    const btn = event.target;
-    btn.disabled = true; btn.textContent = 'Generando...';
-    try {
-        const res = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
-        const brand = await res.json();
-        const settore = brand.config?.settore || '';
-        const tono = brand.config?.tono || '';
-        const description = `Brand: ${brand.name}. Settore: ${settore || 'generico'}. Tono: ${tono || 'friendly'}.`;
-        const aiRes = await fetch(`${API}/brands/${brandId}/ai-copy`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json', ...getAuthHeaders()},
-            body: JSON.stringify({ description })
-        });
-        if (!aiRes.ok) throw new Error('Errore API AI ' + aiRes.status);
-        const data = await aiRes.json();
-        const opts = data.options || data;
-        const copy = Array.isArray(opts) ? opts[0] : opts;
-        if (copy.headline) document.getElementById('wzLandingHeadline').value = copy.headline;
-        if (copy.subheadline) document.getElementById('wzLandingSubheadline').value = copy.subheadline;
-        if (copy.button_label) document.getElementById('wzLandingCta').value = copy.button_label;
-        toast('Testi landing generati!');
-    } catch(e) { toast('Errore AI: ' + e.message); }
-    btn.disabled = false; btn.textContent = 'Genera con AI';
-}
+// wzAiLanding removed
 
 async function wzPublish() {
     if (!brandId) return toast('Seleziona un brand');
@@ -2516,21 +2451,6 @@ async function wzPublish() {
                 method: 'POST',
                 headers: {'Content-Type':'application/json', ...getAuthHeaders()},
                 body: JSON.stringify({ strip_base64: wzStripBase64 })
-            });
-        }
-
-        // Save landing page config
-        const headline = document.getElementById('wzLandingHeadline').value;
-        const subheadline = document.getElementById('wzLandingSubheadline').value;
-        const cta = document.getElementById('wzLandingCta').value;
-        if (headline || subheadline || cta) {
-            const brandRes = await fetch(`${API}/brands/${brandId}`);
-            const brand = await brandRes.json();
-            const config = { ...(brand.config || {}), headline, subheadline, button_label: cta };
-            await fetch(`${API}/brands/${brandId}`, {
-                method: 'PUT',
-                headers: {'Content-Type':'application/json', ...getAuthHeaders()},
-                body: JSON.stringify({ config })
             });
         }
 
@@ -2686,13 +2606,7 @@ async function loadBrandIdentity() {
         logoPreview.style.border = '2px dashed var(--border)';
         logoDeleteBtn.style.display = 'none';
     }
-    // Landing link
-    const link = `${location.origin}/${brand.slug}`;
-    const linkEl = document.getElementById('biLandingLink');
-    linkEl.href = link; linkEl.textContent = link;
-    const qrArea = document.getElementById('biQrArea');
-    qrArea.innerHTML = '';
-    new QRCode(qrArea, { text: link, width: 160, height: 160, colorDark: c.foregroundColor || '#FFF', colorLight: c.backgroundColor || '#0D0B1A' });
+    // Landing link removed
 }
 
 function previewBiLogo(input) {
@@ -2968,7 +2882,7 @@ async function loadPassDesign() {
         const r = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
         const brand = await r.json();
         const config = brand.config || {};
-        document.getElementById('bsAiStylePrompt').value = config.aiStylePrompt || '';
+        // AI style prompt removed
     } catch(e) { console.error('Load pass design error:', e); }
 }
 
@@ -2998,43 +2912,7 @@ async function savePassDesign() {
     toast('Immagini pass salvate!');
 }
 
-async function saveAiStylePrompt() {
-    if (!brandId) return;
-    const config = { aiStylePrompt: document.getElementById('bsAiStylePrompt').value };
-    await fetch(`${API}/brands/${brandId}`, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json', ...getAuthHeaders()},
-        body: JSON.stringify({ config })
-    });
-    toast('Style prompt salvato!');
-}
-
-async function generateAiStrip() {
-    const prompt = document.getElementById('bsAiStripPrompt').value.trim();
-    if (!prompt) return alert('Inserisci un prompt per generare la strip');
-    const btn = document.getElementById('bsAiStripBtn');
-    btn.disabled = true; btn.textContent = 'Generando...';
-    try {
-        const res = await fetch(`${API}/brands/${brandId}/ai-strip`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
-        });
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch(e) { throw new Error(text.substring(0, 200)); }
-        if (!res.ok) throw new Error(data.error || 'Errore generazione');
-        if (data.strip_base64) {
-            document.getElementById('bsAiStripImg').src = 'data:image/png;base64,' + data.strip_base64;
-            document.getElementById('bsAiStripPreview').style.display = 'block';
-            toast('Strip generata e salvata!');
-        }
-    } catch(err) {
-        alert('Errore: ' + err.message);
-    } finally {
-        btn.disabled = false; btn.textContent = 'Genera Strip AI';
-    }
-}
+// AI strip functions removed
 
 // ==================== USERS ====================
 async function loadUsers() {
