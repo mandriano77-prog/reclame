@@ -2670,7 +2670,16 @@ async function wzDeleteTemplate(id) {
 
 // ==================== BRAND IDENTITY ====================
 async function loadBrandIdentity() {
-    if (!brandId) return;
+    if (!brandId) {
+        // No brand yet — show empty form for creation
+        ['biName','biSlug','biSettore','biTono'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+        document.getElementById('biBg').value = '#0D0B1A'; document.getElementById('biBgPick').value = '#0D0B1A';
+        document.getElementById('biFg').value = '#FFFFFF'; document.getElementById('biFgPick').value = '#FFFFFF';
+        document.getElementById('biAcc').value = '#00D4AA'; document.getElementById('biAccPick').value = '#00D4AA';
+        const logoPreview = document.getElementById('biLogoPreview');
+        if (logoPreview) logoPreview.innerHTML = '<span style="color:var(--text2);font-size:11px;">Nessun logo</span>';
+        return;
+    }
     const res = await fetch(`${API}/brands/${brandId}`);
     const brand = await res.json();
     const c = brand.config || {};
@@ -2826,24 +2835,33 @@ async function deleteBiLogo() {
 }
 
 async function saveBrandIdentity() {
-    if (!brandId) return;
-    // Get existing config first to preserve other fields
-    const existing = await fetch(`${API}/brands/${brandId}`).then(r => r.json());
-    const config = { ...(existing.config || {}),
+    const name = document.getElementById('biName').value.trim();
+    if (!name) { toast('Inserisci il nome del brand'); return; }
+    const config = {
         backgroundColor: document.getElementById('biBg').value,
         foregroundColor: document.getElementById('biFg').value,
         labelColor: document.getElementById('biAcc').value,
         settore: document.getElementById('biSettore').value,
         tono: document.getElementById('biTono').value
     };
-    const body = {
-        name: document.getElementById('biName').value,
-        slug: document.getElementById('biSlug').value,
-        config
-    };
-    await fetch(`${API}/brands/${brandId}`, { method: 'PUT', headers: {'Content-Type':'application/json', ...getAuthHeaders()}, body: JSON.stringify(body) });
-    toast('Identità brand salvata!');
-    // Also update theme
+    const slug = document.getElementById('biSlug').value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (!brandId) {
+        // CREATE new brand
+        const res = await fetch(`${API}/brands`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, slug, config }) });
+        const newBrand = await res.json();
+        if (newBrand.id) {
+            brandId = newBrand.id;
+            toast('Brand creato!');
+            await loadBrands();
+            document.getElementById('brandSelector').value = brandId;
+        } else { toast('Errore creazione brand'); return; }
+    } else {
+        // UPDATE existing brand
+        const existing = await fetch(`${API}/brands/${brandId}`).then(r => r.json());
+        const mergedConfig = { ...(existing.config || {}), ...config };
+        await fetch(`${API}/brands/${brandId}`, { method: 'PUT', headers: {'Content-Type':'application/json', ...getAuthHeaders()}, body: JSON.stringify({ name, slug, config: mergedConfig }) });
+        toast('Identità brand salvata!');
+    }
     applyBrandTheme(config);
     loadBrandIdentity();
 }
