@@ -1,5 +1,5 @@
 // AI Copywriter — generates copy using Google Gemini (primary) or Anthropic Claude (fallback)
-// Produces catchy, conversion-focused text for Wallet Ads
+// Produces catchy, conversion-focused text for Ads2Wallet
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;

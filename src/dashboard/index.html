@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallet Ads by Underdogs</title>
+    <title>Ads2Wallet by Underdogs</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -147,7 +147,7 @@
 
 <div class="layout" id="mainLayout">
     <div class="sidebar">
-        <div class="logo">Wallet Ads <small>by Underdogs</small></div>
+        <div class="logo">Ads2Wallet <small>by Underdogs</small></div>
         <div class="nav-label">Brand</div>
         <div class="nav-item" onclick="nav('brand-identity')">Identità</div>
         <div class="nav-item" onclick="nav('media-library')">Media Library</div>
@@ -163,13 +163,13 @@
         <div class="nav-item" onclick="nav('users')">Utenti</div>
 
         <div style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border);">
-            <div style="font-size:11px; color:var(--text2);">Wallet Ads by Underdogs</div>
+            <div style="font-size:11px; color:var(--text2);">Ads2Wallet by Underdogs</div>
         </div>
     </div>
 
     <div class="main">
         <div class="header">
-            <div class="header-title" id="headerBrandTitle">Wallet Ads</div>
+            <div class="header-title" id="headerBrandTitle">Ads2Wallet</div>
             <div style="display:flex;align-items:center;gap:12px;">
                 <select class="brand-sel" id="brandSelector" onchange="changeBrand()">
                     <option value="">Seleziona Brand</option>
@@ -1034,8 +1034,8 @@ function applyBrandTheme() {
         root.setProperty('--border', adjustAlpha('#FFFFFF', 0.12));
         const style = document.getElementById('brandThemeStyle');
         if (style) style.textContent = '';
-        document.getElementById('headerBrandTitle').textContent = 'Wallet Ads';
-        document.title = 'Wallet Ads';
+        document.getElementById('headerBrandTitle').textContent = 'Ads2Wallet';
+        document.title = 'Ads2Wallet';
         return;
     }
     fetch(`${API}/brands/${brandId}`).then(r => r.json()).then(brand => {
@@ -1046,9 +1046,9 @@ function applyBrandTheme() {
         const lbl = c.labelColor || '#00D4AA';
         console.log('[Theme] Applying:', { bg, fg, lbl, fromConfig: !!c.backgroundColor });
         // Update brand name in header and page title
-        const name = brand.name || 'Wallet Ads';
+        const name = brand.name || 'Ads2Wallet';
         document.getElementById('headerBrandTitle').textContent = name;
-        document.title = name + ' — Wallet Ads';
+        document.title = name + ' — Ads2Wallet';
         // Derive palette from brand colors
         const root = document.documentElement.style;
         root.setProperty('--bg', bg);

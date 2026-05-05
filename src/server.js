@@ -1,4 +1,4 @@
-// Wallet Ads MVP v1.0
+// Ads2Wallet MVP v1.0
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -113,7 +113,7 @@ app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
 // Health check + wallet debug
 const BUILD_VERSION = '3.0.0-' + Date.now();
 app.get('/health', async (req, res) => {
-  const base = { status: 'ok', product: 'wallet-ads', version: BUILD_VERSION, timestamp: new Date().toISOString() };
+  const base = { status: 'ok', product: 'ads2wallet', version: BUILD_VERSION, timestamp: new Date().toISOString() };
   if (req.query.wallet) {
     try {
       const { pool } = require('./db');
@@ -298,7 +298,7 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
       <a href="${passDownloadUrl}" class="cta-btn">Riprova download</a>
     </div>
 
-    <div class="footer">Powered by Wallet Ads</div>
+    <div class="footer">Powered by Ads2Wallet</div>
   </div>
 
   <script>
@@ -353,7 +353,7 @@ app.get('/:slug', (req, res, next) => {
 getDb().then(db => {
   app.locals.db = db;
   app.listen(PORT, () => {
-    console.log('\n🚀 Wallet Ads server running on port ' + PORT);
+    console.log('\n🚀 Ads2Wallet server running on port ' + PORT);
     console.log('  Health: http://localhost:' + PORT + '/health');
     console.log('  API:    http://localhost:' + PORT + '/api/v1');
 

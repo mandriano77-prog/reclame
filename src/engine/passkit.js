@@ -287,7 +287,7 @@ function generatePassJson(template, instance, brand, options = {}) {
     orderedBackFields.push(field);
   });
 
-  // 2b. (scratch card removed — Wallet Ads non usa instant win)
+  // 2b. (scratch card removed — Ads2Wallet non usa instant win)
 
   // 3. REGOLAMENTO — from brand backContent OR template fields
   const backContent = brandConfig.backContent || {};

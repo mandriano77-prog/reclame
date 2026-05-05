@@ -196,7 +196,7 @@ CREATE INDEX IF NOT EXISTS idx_media_brand ON media(brand_id);
 async function getDb() {
   try {
     await pool.query(SCHEMA);
-    console.log('✓ Database schema initialized (PostgreSQL — Wallet Ads)');
+    console.log('✓ Database schema initialized (PostgreSQL — Ads2Wallet)');
 
     // Migrations
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS campaign_id TEXT`).catch(()=>{});

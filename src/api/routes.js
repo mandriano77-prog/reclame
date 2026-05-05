@@ -666,7 +666,7 @@ router.post('/users', async (req, res) => {
         name: user.name,
         password: tempPassword,
         role: req.body.role || 'manager',
-        brandName: 'Wallet Ads',
+        brandName: 'Ads2Wallet',
         dashboardUrl: `https://${domain}/dashboard`
       });
     } catch(emailErr) { console.error('Invite email failed:', emailErr.message); }
