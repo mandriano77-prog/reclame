@@ -1287,7 +1287,7 @@ async function renderQR() {
     document.getElementById('qrUrl').value = url;
     const canvas = document.getElementById('qrCanvas');
     canvas.innerHTML = '';
-    new QRCode(canvas, { text: url, width: 220, height: 220, colorDark: '#000000', colorLight: '#FFFFFF' });
+    new QRCode(canvas, { text: url, width: 220, height: 220, colorDark: '#000000', colorLight: '#FFFFFF', correctLevel: QRCode.CorrectLevel.L });
 }
 
 function downloadQR() {
