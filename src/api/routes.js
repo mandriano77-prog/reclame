@@ -621,7 +621,8 @@ function authMiddleware(req, res, next) {
   }
 }
 
-router.use(authMiddleware);
+// Auth middleware disabled — open access
+// router.use(authMiddleware);
 
 // ─── Auth (authenticated) ──────────────────
 router.get('/auth/me', (req, res) => {

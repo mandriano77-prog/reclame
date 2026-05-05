@@ -129,15 +129,6 @@
         .color-input-wrap { display: flex; gap: 8px; align-items: center; }
         .color-input-wrap input[type="color"] { width: 40px; height: 34px; border: none; border-radius: 6px; cursor: pointer; padding: 0; }
         .color-input-wrap input[type="text"] { flex: 1; }
-        .admin-only { display: none !important; }
-        .admin-only.role-visible { display: block !important; }
-        .login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        .login-screen.hidden { display: none; }
-        .login-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 380px; max-width: 92vw; text-align: center; }
-        .login-box h1 { font-size: 28px; color: var(--teal); margin-bottom: 6px; }
-        .login-box p { color: var(--text2); font-size: 13px; margin-bottom: 28px; }
-        .login-box input { margin-bottom: 14px; }
-        .login-box .btn { width: 100%; padding: 12px; font-size: 15px; }
         .login-error { color: var(--red); font-size: 12px; margin-bottom: 12px; display: none; }
         .user-badge { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); cursor: pointer; }
         .user-badge:hover { color: var(--teal); }
@@ -153,42 +144,25 @@
 </head>
 <body>
 
-<!-- Login Screen -->
-<div class="login-screen" id="loginScreen">
-    <div class="login-box">
-        <h1>Wallet Ads</h1>
-        <p style="font-size:11px;color:var(--purple);margin-top:-4px;margin-bottom:2px;">by Underdogs</p>
-        <p>Accedi alla dashboard</p>
-        <div class="login-error" id="loginError"></div>
-        <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
-        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-        <button class="btn" onclick="doLogin()">Accedi</button>
-    </div>
-</div>
-
-<div class="layout" id="mainLayout" style="display:none;">
+<div class="layout" id="mainLayout">
     <div class="sidebar">
         <div class="logo">Wallet Ads <small>by Underdogs</small></div>
-        <div class="nav-label brand-required admin-only">Brand</div>
-        <div class="nav-item brand-required admin-only" onclick="nav('brand-identity')">Identità</div>
-        <div class="nav-item brand-required admin-only" onclick="nav('media-library')">Media Library</div>
-        <div class="nav-label brand-required admin-only">Pass</div>
-        <div class="nav-item brand-required admin-only" onclick="nav('pass-wizard')">Crea Pass</div>
+        <div class="nav-label brand-required">Brand</div>
+        <div class="nav-item brand-required" onclick="nav('brand-identity')">Identità</div>
+        <div class="nav-item brand-required" onclick="nav('media-library')">Media Library</div>
+        <div class="nav-label brand-required">Pass</div>
+        <div class="nav-item brand-required" onclick="nav('pass-wizard')">Crea Pass</div>
         <div class="nav-item brand-required" onclick="nav('passes')">Pass Emessi</div>
         <div class="nav-label brand-required">Comunicazione</div>
         <div class="nav-item brand-required active" onclick="nav('campaigns')">Campagne</div>
         <div class="nav-item brand-required" onclick="nav('push')">Push Notification</div>
         <div class="nav-label brand-required">Insights</div>
         <div class="nav-item brand-required" onclick="nav('analytics')">Analytics</div>
-        <div class="nav-label admin-only">Setup</div>
-        <div class="nav-item admin-only" onclick="nav('users')">Utenti</div>
+        <div class="nav-label">Setup</div>
+        <div class="nav-item" onclick="nav('users')">Utenti</div>
 
         <div style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border);">
-            <div class="user-badge" onclick="doLogout()" title="Logout">
-                <span id="sidebarUserName">—</span>
-                <span class="role-tag" id="sidebarUserRole">—</span>
-            </div>
-            <div style="font-size:11px; color:var(--text2); margin-top:6px; cursor:pointer; opacity:0.6;" onclick="doLogout()">Logout &#8594;</div>
+            <div style="font-size:11px; color:var(--text2);">Wallet Ads by Underdogs</div>
         </div>
     </div>
 
@@ -1023,65 +997,9 @@ let currentBrandName = '';
 let currentBrandSlug = '';
 let campaignsCache = [];
 
-// ==================== AUTH ====================
-function getAuthHeaders() { return authToken ? { 'Authorization': 'Bearer ' + authToken } : {}; }
-
-const _origFetch = window.fetch;
-window.fetch = function(url, opts = {}) {
-    if (authToken && typeof url === 'string' && url.startsWith('/api/')) {
-        opts.headers = { ...(opts.headers || {}), ...getAuthHeaders() };
-    }
-    return _origFetch.call(this, url, opts);
-};
-
-async function doLogin() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errEl = document.getElementById('loginError');
-    errEl.style.display = 'none';
-    if (!email || !password) { errEl.textContent = 'Inserisci email e password.'; errEl.style.display = 'block'; return; }
-    try {
-        const res = await _origFetch(`${API}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-        const data = await res.json();
-        if (!res.ok) { errEl.textContent = data.error || 'Errore di login.'; errEl.style.display = 'block'; return; }
-        authToken = data.token; currentUser = data.user;
-        sessionStorage.setItem('wa_token', authToken);
-        sessionStorage.setItem('wa_user', JSON.stringify(currentUser));
-        showDashboard();
-    } catch (e) { errEl.textContent = 'Errore di connessione.'; errEl.style.display = 'block'; }
-}
-
-function doLogout() {
-    authToken = null; currentUser = null;
-    sessionStorage.removeItem('wa_token'); sessionStorage.removeItem('wa_user');
-    document.getElementById('loginScreen').classList.remove('hidden');
-    document.getElementById('mainLayout').style.display = 'none';
-    document.getElementById('loginEmail').value = ''; document.getElementById('loginPassword').value = '';
-}
-
-function showDashboard() {
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('mainLayout').style.display = 'grid';
-    document.getElementById('sidebarUserName').textContent = currentUser.name;
-    document.getElementById('sidebarUserRole').textContent = currentUser.role;
-    const isAdmin = currentUser.role === 'admin';
-    document.querySelectorAll('.admin-only').forEach(el => {
-        if (isAdmin) { el.classList.add('role-visible'); }
-        else { el.classList.remove('role-visible'); }
-    });
-    if (!isAdmin && currentUser.brand_id) document.getElementById('brandSelector').style.display = 'none';
-    loadBrands();
-}
-
 // ==================== INIT ====================
-document.addEventListener('DOMContentLoaded', async () => {
-    const savedToken = sessionStorage.getItem('wa_token');
-    const savedUser = sessionStorage.getItem('wa_user');
-    if (savedToken && savedUser) {
-        authToken = savedToken; currentUser = JSON.parse(savedUser);
-        try { const res = await fetch(`${API}/auth/me`); if (res.ok) { showDashboard(); return; } } catch(e) {}
-        doLogout();
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    loadBrands();
 });
 
 // ==================== NAV ====================
@@ -1102,13 +1020,7 @@ function updateNavState() {
     }
 }
 
-const ADMIN_ONLY_SECTIONS = ['brand-identity', 'media-library', 'pass-wizard', 'users'];
-
 function nav(id) {
-    // Block manager from accessing admin-only sections
-    if (currentUser?.role !== 'admin' && ADMIN_ONLY_SECTIONS.includes(id)) {
-        return nav('campaigns');
-    }
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id)?.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1138,15 +1050,10 @@ async function loadBrands() {
     const sel = document.getElementById('brandSelector');
     sel.innerHTML = '<option value="">Seleziona Brand</option>';
     brands.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name; sel.appendChild(o); });
-    if (currentUser && currentUser.role === 'manager' && currentUser.brand_id) {
-        const match = brands.find(b => b.id === currentUser.brand_id);
-        if (match) { sel.value = match.id; brandId = match.id; }
-    } else {
-        const urlBrand = new URLSearchParams(window.location.search).get('brand_id');
-        const fromUrl = urlBrand && brands.find(b => b.id === urlBrand);
-        if (fromUrl) { sel.value = fromUrl.id; brandId = fromUrl.id; }
-        else if (brands.length > 0) { sel.value = brands[0].id; brandId = brands[0].id; }
-    }
+    const urlBrand = new URLSearchParams(window.location.search).get('brand_id');
+    const fromUrl = urlBrand && brands.find(b => b.id === urlBrand);
+    if (fromUrl) { sel.value = fromUrl.id; brandId = fromUrl.id; }
+    else if (brands.length > 0) { sel.value = brands[0].id; brandId = brands[0].id; }
     updateNavState();
     if (brandId) { currentBrandName = sel.options[sel.selectedIndex]?.textContent || ''; syncBrandUrl(); applyBrandTheme(); await refreshOverview(); }
     else { applyBrandTheme(); }
@@ -1270,8 +1177,8 @@ async function loadCampaigns() {
                     <div class="card-desc">${esc(c.description||'')}</div>
                     <div class="card-meta">
                         ${c.total_downloads||0} download &middot; ${c.total_installs||0} install
-                        ${c.utm_source ? ' &middot; src=' + esc(c.utm_source) : ''}
-                        ${c.utm_medium ? ' &middot; med=' + esc(c.utm_medium) : ''}
+                        ${c.utm_source ? ' &middot; src=' + esc(c.utm_source)-->
+                        ${c.utm_medium ? ' &middot; med=' + esc(c.utm_medium)-->
                     </div>
                 </div>
                 <div class="card-actions">
@@ -1523,7 +1430,7 @@ async function loadPasses() {
                     <td style="font-size:11px;">${p.install_date ? new Date(p.install_date).toLocaleDateString('it') : '<span style="opacity:0.3">-</span>'}</td>
                     <td style="display:flex;gap:4px;">
                         <button class="btn small sec" onclick="downloadPass('${p.id}')" title="Scarica .pkpass">DL</button>
-                        ${currentUser?.role === 'admin' ? `<button class="btn small danger" onclick="deletePassInstance('${p.id}')" title="Elimina pass">&#10005;</button>` : ''}
+                        <!-- <button class="btn small danger" onclick="deletePassInstance('${p.id}')" title="Elimina pass">&#10005;</button>`-->
                     </td>
                 </tr>`;
             }).join('')}</tbody>
@@ -2242,7 +2149,7 @@ async function loadStripPromos() {
         else if (end && end < now) { status = 'expired'; statusLabel = 'Scaduta'; }
         const dateRange = (start ? start.toLocaleDateString('it') : '?') + ' — ' + (end ? end.toLocaleDateString('it') : '?');
         return `
-        <div class="strip-card ${status === 'active' ? 'strip-card-active' : ''}">
+        <div class="strip-card ${status === 'active' ? 'strip-card-active'-->">
             <img class="strip-card-img" src="${API}/strip-promos/${p.id}/image?raw=1" alt="${esc(p.title || p.name)}" loading="lazy">
             <div class="strip-card-body">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
