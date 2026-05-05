@@ -660,7 +660,8 @@
 
                 <!-- STEP 3: Anteprima & Pubblica -->
                 <div id="wzStep3" class="wz-step">
-                    <div style="display:flex;gap:24px;align-items:flex-start;">
+                    <!-- Preview + Summary layout -->
+                    <div id="wzPreviewArea" style="display:flex;gap:32px;align-items:flex-start;">
                         <div style="flex-shrink:0;">
                             <div class="sec-title" style="font-size:16px;">Anteprima Pass</div>
                             <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">Clicca per girare fronte/retro</p>
@@ -683,17 +684,49 @@
                                 </div>
                             </div>
                         </div>
-                        <div style="flex:1;">
-                            <div class="card">
-                                <div class="sec-title" style="font-size:16px;">Riepilogo</div>
-                                <div id="wzSummary" style="font-size:13px;color:var(--text2);"></div>
+                        <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+                            <div class="card" style="margin:0;">
+                                <div class="sec-title" style="font-size:16px;margin-bottom:12px;">Riepilogo</div>
+                                <div id="wzSummary" style="font-size:13px;color:var(--text2);line-height:1.8;"></div>
                             </div>
-                            <!-- Landing Page section removed -->
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <button class="btn sec" onclick="wzGoStep(2)">← Creatività</button>
+                                <button class="btn" id="wzPublishBtn" onclick="wzPublish()" style="font-size:16px;padding:14px 32px;">Pubblica Pass</button>
+                            </div>
                         </div>
                     </div>
-                    <div style="display:flex;justify-content:space-between;margin-top:20px;">
-                        <button class="btn sec" onclick="wzGoStep(2)">← Creatività</button>
-                        <button class="btn" onclick="wzPublish()" style="font-size:16px;padding:14px 32px;">Pubblica Pass</button>
+
+                    <!-- QR + Link area (shown after publish) -->
+                    <div id="wzPublishResult" style="display:none;margin-top:24px;">
+                        <div class="card" style="text-align:center;padding:32px;border:2px solid var(--accent);background:var(--bg2);">
+                            <div style="font-size:28px;margin-bottom:4px;">&#10003;</div>
+                            <div class="sec-title" style="font-size:20px;margin-bottom:4px;">Pass Pubblicato!</div>
+                            <p style="color:var(--text2);font-size:13px;margin-bottom:24px;">Condividi il QR code o il link diretto per scaricare il pass</p>
+                            <div style="display:flex;gap:32px;justify-content:center;align-items:flex-start;flex-wrap:wrap;">
+                                <div>
+                                    <div style="background:#fff;padding:16px;border-radius:12px;display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                                        <canvas id="wzQrCanvas" width="200" height="200"></canvas>
+                                    </div>
+                                    <p style="font-size:11px;color:var(--text2);margin-top:8px;">Scansiona per aggiungere a Wallet</p>
+                                </div>
+                                <div style="text-align:left;flex:1;min-width:240px;max-width:400px;">
+                                    <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">Link diretto download</label>
+                                    <div style="display:flex;gap:8px;margin-bottom:16px;">
+                                        <input type="text" id="wzPassLink" readonly style="flex:1;font-size:12px;padding:10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#333;">
+                                        <button class="btn sec" onclick="wzCopyLink()" style="white-space:nowrap;font-size:12px;">Copia</button>
+                                    </div>
+                                    <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">Landing page brand</label>
+                                    <div style="display:flex;gap:8px;margin-bottom:20px;">
+                                        <input type="text" id="wzLandingLink" readonly style="flex:1;font-size:12px;padding:10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#333;">
+                                        <button class="btn sec" onclick="wzCopyLanding()" style="white-space:nowrap;font-size:12px;">Copia</button>
+                                    </div>
+                                    <div style="display:flex;gap:8px;">
+                                        <button class="btn" onclick="wzNewPass()" style="font-size:13px;">Crea Nuovo Pass</button>
+                                        <button class="btn sec" onclick="nav('passes')" style="font-size:13px;">Vai ai Template</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2239,7 +2272,11 @@ function wzGoStep(step) {
         dot.classList.toggle('done', s < step);
     });
     document.getElementById('wzStepLabel').textContent = `Step ${step} di 3`;
-    if (step === 3) wzBuildPreview();
+    if (step === 3) {
+        wzBuildPreview();
+        document.getElementById('wzPublishResult').style.display = 'none';
+        document.getElementById('wzPublishBtn').style.display = '';
+    }
 }
 
 function wzUpdatePreview() {
@@ -2288,12 +2325,20 @@ function wzBuildPreview() {
     document.getElementById('wzPpBackContent').innerHTML = backHtml || '<div class="pp-back-empty">Nessun contenuto retro</div>';
 
     // Summary
+    const frontFields = [hLabel,sLabel,aLabel].filter(Boolean).length;
+    const backLinks = [1,2,3].filter(i => document.getElementById('wzLink'+i+'Label').value || document.getElementById('wzLink'+i+'Url').value).length;
+    const hasReg = !!document.getElementById('wzRegolamento').value.trim();
+    const hasCont = !!document.getElementById('wzContatti').value.trim();
     document.getElementById('wzSummary').innerHTML = `
-        <p><strong>Nome:</strong> ${esc(document.getElementById('wzName').value || '—')}</p>
-        <p><strong>Tipo:</strong> ${type}</p>
-        <p><strong>Campi fronte:</strong> ${[hLabel,sLabel,aLabel].filter(Boolean).length} configurati</p>
-        <p><strong>Link retro:</strong> ${[1,2,3].filter(i => document.getElementById('wzLink'+i+'Label').value || document.getElementById('wzLink'+i+'Url').value).length}</p>
-        <p><strong>Strip:</strong> ${wzStripBase64 ? 'Selezionata' : 'Nessuna'}</p>
+        <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 12px;font-size:13px;">
+            <span style="font-weight:600;color:var(--text1);">Nome</span><span>${esc(document.getElementById('wzName').value || '—')}</span>
+            <span style="font-weight:600;color:var(--text1);">Tipo</span><span>${type}</span>
+            <span style="font-weight:600;color:var(--text1);">Campi fronte</span><span>${frontFields} configurati</span>
+            <span style="font-weight:600;color:var(--text1);">Link retro</span><span>${backLinks} link</span>
+            <span style="font-weight:600;color:var(--text1);">Regolamento</span><span>${hasReg ? 'Presente' : 'Non configurato'}</span>
+            <span style="font-weight:600;color:var(--text1);">Contatti</span><span>${hasCont ? 'Presenti' : 'Non configurati'}</span>
+            <span style="font-weight:600;color:var(--text1);">Strip</span><span>${wzStripBase64 ? '&#10003; Selezionata' : 'Nessuna'}</span>
+        </div>
     `;
 }
 
@@ -2309,6 +2354,48 @@ function wzOnStripFile(input) {
         document.getElementById('wzStripDeleteBtn').style.display = 'inline-block';
     };
     reader.readAsDataURL(input.files[0]);
+}
+
+function wzCopyLink() {
+    const input = document.getElementById('wzPassLink');
+    navigator.clipboard.writeText(input.value).then(() => toast('Link copiato!')).catch(() => { input.select(); document.execCommand('copy'); toast('Link copiato!'); });
+}
+
+function wzCopyLanding() {
+    const input = document.getElementById('wzLandingLink');
+    navigator.clipboard.writeText(input.value).then(() => toast('Link copiato!')).catch(() => { input.select(); document.execCommand('copy'); toast('Link copiato!'); });
+}
+
+function wzNewPass() {
+    document.getElementById('wzPublishResult').style.display = 'none';
+    document.getElementById('wzPublishBtn').style.display = '';
+    loadPassWizard();
+}
+
+// Minimal QR Code generator (canvas-based, no external library)
+function wzDrawQR(canvas, text) {
+    // Use a simple QR approach: load via Google Charts API as image
+    const size = 200;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+    };
+    img.onerror = () => {
+        // Fallback: show the URL as text
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, size, size);
+        ctx.fillStyle = '#333';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('QR non disponibile', size/2, size/2 - 10);
+        ctx.fillText('Usa il link diretto', size/2, size/2 + 10);
+    };
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
 }
 
 function wzRemoveStrip() {
@@ -2454,11 +2541,33 @@ async function wzPublish() {
         }
 
         toast(editId ? 'Template aggiornato!' : 'Pass pubblicato!');
+
+        // Show QR + link for newly created template
+        const tplIdFinal = tplId;
+        try {
+            const brandRes = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
+            const brand = await brandRes.json();
+            const baseUrl = window.location.origin;
+            const slug = brand.slug || '';
+            const passLink = `${baseUrl}/save/${slug}`;
+            const landingLink = `${baseUrl}/${slug}`;
+
+            document.getElementById('wzPassLink').value = passLink;
+            document.getElementById('wzLandingLink').value = landingLink;
+
+            // Generate QR code on canvas
+            wzDrawQR(document.getElementById('wzQrCanvas'), passLink);
+
+            // Show result area, hide preview buttons
+            document.getElementById('wzPublishResult').style.display = 'block';
+            document.getElementById('wzPublishBtn').style.display = 'none';
+        } catch(qrErr) {
+            console.error('QR generation error:', qrErr);
+        }
+
         window.wzEditingTemplateId = null;
-        wzCurrentStep = 1;
         wzStripBase64 = null;
         loadWzTemplates();
-        nav('passes');
     } catch(e) { toast('Errore: ' + e.message); }
 }
 
