@@ -647,7 +647,6 @@ router.put('/auth/change-password', async (req, res) => {
 // ─── Users (admin only) ──────────────────
 router.get('/users', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Solo admin' });
     const users = await listUsers(req.query.brand_id || null);
     res.json(users);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -655,15 +654,28 @@ router.get('/users', async (req, res) => {
 
 router.post('/users', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Solo admin' });
+    const tempPassword = req.body.password || Math.random().toString(36).slice(-10);
+    req.body.password = tempPassword;
     const user = await createUser(req.body);
+    // Send invite email with temp password
+    try {
+      const { sendUserInviteEmail } = require('../engine/mailer');
+      const domain = process.env.CUSTOM_DOMAIN || req.headers.host;
+      await sendUserInviteEmail({
+        to: user.email,
+        name: user.name,
+        password: tempPassword,
+        role: req.body.role || 'manager',
+        brandName: 'Wallet Ads',
+        dashboardUrl: `https://${domain}/dashboard`
+      });
+    } catch(emailErr) { console.error('Invite email failed:', emailErr.message); }
     res.json(user);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.put('/users/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Solo admin' });
     const user = await updateUser(req.params.id, req.body);
     res.json(user);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -671,7 +683,6 @@ router.put('/users/:id', async (req, res) => {
 
 router.delete('/users/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Solo admin' });
     await deleteUser(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -682,12 +693,7 @@ router.delete('/users/:id', async (req, res) => {
 router.get('/brands', async (req, res) => {
   try {
     const brands = await listBrands();
-    // Filter by user's brand if not admin
-    if (req.user.role !== 'admin' && req.user.brand_id) {
-      res.json(brands.filter(b => b.id === req.user.brand_id));
-    } else {
-      res.json(brands);
-    }
+    res.json(brands);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -1510,7 +1516,7 @@ router.delete('/creative-assets/:id', async (req, res) => {
 // ─── Media Hub ──────────────────────────────────────────────────────────
 router.get('/media', async (req, res) => {
   try {
-    const brand_id = req.query.brand_id || req.user.brand_id;
+    const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
     const type = req.query.type || 'all';
     const items = await listMedia(brand_id, type);
@@ -1550,7 +1556,7 @@ router.delete('/media', async (req, res) => {
 // ─── Ad Serving Stats (protected) ────────────────────────────────────
 router.get('/ad-stats', async (req, res) => {
   try {
-    const brand_id = req.query.brand_id || req.user.brand_id;
+    const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
     const campaign_id = req.query.campaign_id || null;
     const days = parseInt(req.query.days) || 30;
@@ -1561,7 +1567,7 @@ router.get('/ad-stats', async (req, res) => {
 
 router.get('/ad-timeline', async (req, res) => {
   try {
-    const brand_id = req.query.brand_id || req.user.brand_id;
+    const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
     const campaign_id = req.query.campaign_id || null;
     const days = parseInt(req.query.days) || 30;

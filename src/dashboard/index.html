@@ -1177,8 +1177,8 @@ async function loadCampaigns() {
                     <div class="card-desc">${esc(c.description||'')}</div>
                     <div class="card-meta">
                         ${c.total_downloads||0} download &middot; ${c.total_installs||0} install
-                        ${c.utm_source ? ' &middot; src=' + esc(c.utm_source)-->
-                        ${c.utm_medium ? ' &middot; med=' + esc(c.utm_medium)-->
+                        ${c.utm_source ? ' &middot; src=' + esc(c.utm_source) : ''}
+                        ${c.utm_medium ? ' &middot; med=' + esc(c.utm_medium) : ''}
                     </div>
                 </div>
                 <div class="card-actions">
@@ -2149,7 +2149,7 @@ async function loadStripPromos() {
         else if (end && end < now) { status = 'expired'; statusLabel = 'Scaduta'; }
         const dateRange = (start ? start.toLocaleDateString('it') : '?') + ' — ' + (end ? end.toLocaleDateString('it') : '?');
         return `
-        <div class="strip-card ${status === 'active' ? 'strip-card-active'-->">
+        <div class="strip-card ${status === 'active' ? 'strip-card-active' : ''}">
             <img class="strip-card-img" src="${API}/strip-promos/${p.id}/image?raw=1" alt="${esc(p.title || p.name)}" loading="lazy">
             <div class="strip-card-body">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
