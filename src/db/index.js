@@ -280,6 +280,9 @@ async function getDb() {
     await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'`).catch(()=>{});
 
     // instant_win_campaigns — columns added after initial schema
+    await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''`).catch(()=>{});
+    await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS brand_id TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'draft'`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS game_type TEXT NOT NULL DEFAULT 'scratch'`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS prize_name TEXT NOT NULL DEFAULT ''`).catch(()=>{});
@@ -296,6 +299,7 @@ async function getDb() {
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(()=>{});
 
     // instant_win_plays — columns added after initial schema
+    await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS campaign_id TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS serial_number TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS brand_id TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS result TEXT`).catch(()=>{});

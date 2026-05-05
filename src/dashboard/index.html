@@ -782,27 +782,27 @@
                       <button class="btn sec" onclick="closeIwModal()" style="font-size:18px;padding:4px 12px;">✕</button>
                     </div>
                     <input type="hidden" id="iwEditId">
-                    <div class="form-group"><label>Nome campagna</label><input id="iwName" placeholder="es. Vinci un aperitivo"></div>
-                    <div class="form-group"><label>Tipo gioco</label>
+                    <div class="form-group"><label class="form-label">Nome campagna</label><input id="iwName" placeholder="es. Vinci un aperitivo"></div>
+                    <div class="form-group"><label class="form-label">Tipo gioco</label>
                       <select id="iwGameType"><option value="scratch">Scratch Card (Gratta e Vinci)</option><option value="wheel">Spin the Wheel (Gira la Ruota)</option><option value="slots">Slot Machine</option></select>
                     </div>
-                    <div class="form-group"><label>Nome premio</label><input id="iwPrizeName" placeholder="es. Aperitivo gratis"></div>
-                    <div class="form-group"><label>Descrizione premio</label><textarea id="iwPrizeDesc" rows="2" placeholder="es. Presenta questo al bar per un aperitivo omaggio"></textarea></div>
+                    <div class="form-group"><label class="form-label">Nome premio</label><input id="iwPrizeName" placeholder="es. Aperitivo gratis"></div>
+                    <div class="form-group"><label class="form-label">Descrizione premio</label><textarea id="iwPrizeDesc" rows="2" placeholder="es. Presenta questo al bar per un aperitivo omaggio"></textarea></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                      <div class="form-group"><label>Probabilità di vincita (%)</label><input type="number" id="iwWinProb" min="1" max="100" value="10"></div>
-                      <div class="form-group"><label>Max giocate per utente</label><input type="number" id="iwMaxPlays" min="1" value="1"></div>
+                      <div class="form-group"><label class="form-label">Probabilità di vincita (%)</label><input type="number" id="iwWinProb" min="1" max="100" value="10"></div>
+                      <div class="form-group"><label class="form-label">Max giocate per utente</label><input type="number" id="iwMaxPlays" min="1" value="1"></div>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                      <div class="form-group"><label>Budget premi (totale vincite max)</label><input type="number" id="iwBudget" min="1" placeholder="es. 100"></div>
-                      <div class="form-group"><label>Stato</label>
+                      <div class="form-group"><label class="form-label">Budget premi (totale vincite max)</label><input type="number" id="iwBudget" min="1" placeholder="es. 100"></div>
+                      <div class="form-group"><label class="form-label">Stato</label>
                         <select id="iwStatus"><option value="draft">Bozza</option><option value="active">Attiva</option><option value="paused">In pausa</option><option value="ended">Terminata</option></select>
                       </div>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                      <div class="form-group"><label>Data inizio</label><input type="date" id="iwStartDate"></div>
-                      <div class="form-group"><label>Data fine</label><input type="date" id="iwEndDate"></div>
+                      <div class="form-group"><label class="form-label">Data inizio</label><input type="date" id="iwStartDate"></div>
+                      <div class="form-group"><label class="form-label">Data fine</label><input type="date" id="iwEndDate"></div>
                     </div>
-                    <div class="form-group"><label>Messaggio push (opzionale)</label><input id="iwPushMsg" placeholder="es. Hai un premio da scoprire!"></div>
+                    <div class="form-group"><label class="form-label">Messaggio push (opzionale)</label><input id="iwPushMsg" placeholder="es. Hai un premio da scoprire!"></div>
                     <button class="btn" onclick="saveIwCampaign()" style="width:100%;margin-top:12px;">Salva Campagna</button>
                   </div>
                 </div>
