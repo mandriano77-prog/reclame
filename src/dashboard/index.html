@@ -157,6 +157,9 @@
         <div class="nav-label">Comunicazione</div>
         <div class="nav-item active" onclick="nav('campaigns')">Campagne</div>
         <div class="nav-item" onclick="nav('push')">Push Notification</div>
+        <div class="nav-label">Engagement</div>
+        <div class="nav-item" onclick="nav('instant-win')">Instant Win</div>
+        <div class="nav-item" onclick="nav('gamification')">Gamification</div>
         <div class="nav-label">Insights</div>
         <div class="nav-item" onclick="nav('analytics')">Analytics</div>
         <div class="nav-label">Setup</div>
@@ -738,6 +741,50 @@
                 </div>
             </div>
 
+            <!-- INSTANT WIN -->
+            <div id="instant-win" class="section">
+                <div class="sec-title">Instant Win</div>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne Instant Win per coinvolgere i tuoi utenti con premi immediati: scratch card, spin the wheel, slot machine.</p>
+
+                <div class="stats-grid" id="iwStats">
+                    <div class="stat-card"><div class="stat-value" id="iwStatCampaigns">0</div><div class="stat-label">Campagne attive</div></div>
+                    <div class="stat-card"><div class="stat-value" id="iwStatPlays">0</div><div class="stat-label">Giocate totali</div></div>
+                    <div class="stat-card"><div class="stat-value" id="iwStatWins">0</div><div class="stat-label">Vincite</div></div>
+                    <div class="stat-card"><div class="stat-value" id="iwStatRate">0%</div><div class="stat-label">Win Rate</div></div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Instant Win</div>
+                    <button class="btn" onclick="openIwModal()">+ Nuova Campagna</button>
+                </div>
+                <table class="table" id="iwTable">
+                    <thead><tr><th>Nome</th><th>Tipo</th><th>Premio</th><th>Probabilità</th><th>Giocate</th><th>Vincite</th><th>Stato</th><th>Azioni</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- GAMIFICATION -->
+            <div id="gamification" class="section">
+                <div class="sec-title">Gamification</div>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Sfide, missioni e obiettivi per aumentare l'engagement e il ritorno degli utenti sul pass.</p>
+
+                <div class="stats-grid" id="gamStats">
+                    <div class="stat-card"><div class="stat-value" id="gamStatChallenges">0</div><div class="stat-label">Sfide attive</div></div>
+                    <div class="stat-card"><div class="stat-value" id="gamStatCompletions">0</div><div class="stat-label">Completamenti</div></div>
+                    <div class="stat-card"><div class="stat-value" id="gamStatParticipants">0</div><div class="stat-label">Partecipanti</div></div>
+                    <div class="stat-card"><div class="stat-value" id="gamStatEngRate">0%</div><div class="stat-label">Engagement Rate</div></div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <div class="sec-title" style="font-size:18px;margin-bottom:0;">Sfide e Missioni</div>
+                    <button class="btn" onclick="openChallengeModal()">+ Nuova Sfida</button>
+                </div>
+                <table class="table" id="gamTable">
+                    <thead><tr><th>Nome</th><th>Tipo</th><th>Obiettivo</th><th>Premio</th><th>Partecipanti</th><th>Completamenti</th><th>Stato</th><th>Azioni</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
             <!-- ANALYTICS -->
             <div id="analytics" class="section">
                 <div class="sec-title">Analytics</div>
@@ -1009,6 +1056,8 @@ function nav(id) {
         'brand-identity': loadBrandIdentity,
         'media-library': loadMediaLibrary,
         'pass-wizard': loadPassWizard,
+        'instant-win': loadInstantWin,
+        'gamification': loadGamification,
         users: loadUsers
     };
     if (loaders[id]) loaders[id]();
@@ -2222,6 +2271,107 @@ function populateCampaignSelect(selId, placeholder) {
     sel.value = val;
 }
 
+
+// ==================== INSTANT WIN ====================
+async function loadInstantWin() {
+    if (!brandId) return;
+    try {
+        const res = await fetch(`${API}/instant-win?brand_id=${brandId}`, { headers: getAuthHeaders() });
+        if (!res.ok) { document.getElementById('iwTable').querySelector('tbody').innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna campagna</td></tr>'; return; }
+        const campaigns = await res.json();
+
+        // Stats
+        const active = campaigns.filter(c => c.status === 'active').length;
+        const totalPlays = campaigns.reduce((s, c) => s + (c.total_plays || 0), 0);
+        const totalWins = campaigns.reduce((s, c) => s + (c.total_wins || 0), 0);
+        const winRate = totalPlays > 0 ? Math.round((totalWins / totalPlays) * 100) : 0;
+
+        document.getElementById('iwStatCampaigns').textContent = active;
+        document.getElementById('iwStatPlays').textContent = totalPlays;
+        document.getElementById('iwStatWins').textContent = totalWins;
+        document.getElementById('iwStatRate').textContent = winRate + '%';
+
+        const tbody = document.getElementById('iwTable').querySelector('tbody');
+        if (!campaigns.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna campagna Instant Win. Creane una per iniziare.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = campaigns.map(c => `
+            <tr>
+                <td><strong>${esc(c.name)}</strong></td>
+                <td>${esc(c.game_type || 'scratch')}</td>
+                <td>${esc(c.prize_name || '—')}</td>
+                <td>${c.win_probability || 0}%</td>
+                <td>${c.total_plays || 0}</td>
+                <td>${c.total_wins || 0}</td>
+                <td><span class="badge ${c.status === 'active' ? 'active' : 'inactive'}">${c.status || 'draft'}</span></td>
+                <td>
+                    <button class="btn sec" style="font-size:11px;padding:4px 10px;" onclick="editIwCampaign('${c.id}')">Modifica</button>
+                    <button class="btn sec" style="font-size:11px;padding:4px 10px;color:var(--danger);" onclick="deleteIwCampaign('${c.id}')">Elimina</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) {
+        console.error('loadInstantWin error:', e);
+        document.getElementById('iwTable').querySelector('tbody').innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Errore caricamento</td></tr>';
+    }
+}
+
+function openIwModal() { toast('Funzionalità Instant Win in arrivo — stay tuned!'); }
+function editIwCampaign(id) { toast('Editor campagna in sviluppo'); }
+async function deleteIwCampaign(id) { if (!confirm('Eliminare questa campagna?')) return; toast('Eliminazione in sviluppo'); }
+
+// ==================== GAMIFICATION ====================
+async function loadGamification() {
+    if (!brandId) return;
+    try {
+        const res = await fetch(`${API}/challenges?brand_id=${brandId}`, { headers: getAuthHeaders() });
+        if (!res.ok) { document.getElementById('gamTable').querySelector('tbody').innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna sfida</td></tr>'; return; }
+        const challenges = await res.json();
+
+        // Stats
+        const active = challenges.filter(c => c.status === 'active' || !c.status).length;
+        const totalCompletions = challenges.reduce((s, c) => s + (c.completions || 0), 0);
+        const totalParticipants = challenges.reduce((s, c) => s + (c.participants || 0), 0);
+        const engRate = totalParticipants > 0 ? Math.round((totalCompletions / totalParticipants) * 100) : 0;
+
+        document.getElementById('gamStatChallenges').textContent = active;
+        document.getElementById('gamStatCompletions').textContent = totalCompletions;
+        document.getElementById('gamStatParticipants').textContent = totalParticipants;
+        document.getElementById('gamStatEngRate').textContent = engRate + '%';
+
+        const tbody = document.getElementById('gamTable').querySelector('tbody');
+        if (!challenges.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna sfida configurata. Creane una per gamificare l\'esperienza.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = challenges.map(c => {
+            const type = c.trigger_type || 'manual';
+            const typeLabel = { manual: 'Ad Hoc', playtomic_bookings: 'Playtomic', referral: 'Referral' }[type] || type;
+            return `
+            <tr>
+                <td><strong>${esc(c.name)}</strong></td>
+                <td>${typeLabel}</td>
+                <td>${c.target_value || '—'}</td>
+                <td>${c.reward_points || 0} punti</td>
+                <td>${c.participants || 0}</td>
+                <td>${c.completions || 0}</td>
+                <td><span class="badge ${c.status === 'active' || !c.status ? 'active' : 'inactive'}">${c.status || 'active'}</span></td>
+                <td>
+                    <button class="btn sec" style="font-size:11px;padding:4px 10px;" onclick="editChallenge('${c.id}')">Modifica</button>
+                    <button class="btn sec" style="font-size:11px;padding:4px 10px;color:var(--danger);" onclick="deleteChallenge('${c.id}')">Elimina</button>
+                </td>
+            </tr>
+        `}).join('');
+    } catch(e) {
+        console.error('loadGamification error:', e);
+        document.getElementById('gamTable').querySelector('tbody').innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Errore caricamento</td></tr>';
+    }
+}
+
+function openChallengeModal() { toast('Editor sfide in arrivo — stay tuned!'); }
+function editChallenge(id) { toast('Editor sfida in sviluppo'); }
+async function deleteChallenge(id) { if (!confirm('Eliminare questa sfida?')) return; toast('Eliminazione in sviluppo'); }
 
 // ==================== ANALYTICS ====================
 async function loadAnalytics() {
