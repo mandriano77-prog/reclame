@@ -24,7 +24,7 @@
         .nav-item { padding: 10px 12px; margin-bottom: 4px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.2s; }
         .nav-item:hover:not(.disabled) { background: var(--bg3); color: var(--teal); }
         .nav-item.active { background: var(--teal); color: var(--bg); font-weight: 600; }
-        .nav-item.disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
+        /* disabled state removed — all items always clickable */
         .nav-label.disabled { opacity: 0.25; }
         .main { display: flex; flex-direction: column; overflow: hidden; }
         .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; }
@@ -147,17 +147,17 @@
 <div class="layout" id="mainLayout">
     <div class="sidebar">
         <div class="logo">Wallet Ads <small>by Underdogs</small></div>
-        <div class="nav-label brand-required">Brand</div>
-        <div class="nav-item brand-required" onclick="nav('brand-identity')">Identità</div>
-        <div class="nav-item brand-required" onclick="nav('media-library')">Media Library</div>
-        <div class="nav-label brand-required">Pass</div>
-        <div class="nav-item brand-required" onclick="nav('pass-wizard')">Crea Pass</div>
-        <div class="nav-item brand-required" onclick="nav('passes')">Pass Emessi</div>
-        <div class="nav-label brand-required">Comunicazione</div>
-        <div class="nav-item brand-required active" onclick="nav('campaigns')">Campagne</div>
-        <div class="nav-item brand-required" onclick="nav('push')">Push Notification</div>
-        <div class="nav-label brand-required">Insights</div>
-        <div class="nav-item brand-required" onclick="nav('analytics')">Analytics</div>
+        <div class="nav-label">Brand</div>
+        <div class="nav-item" onclick="nav('brand-identity')">Identità</div>
+        <div class="nav-item" onclick="nav('media-library')">Media Library</div>
+        <div class="nav-label">Pass</div>
+        <div class="nav-item" onclick="nav('pass-wizard')">Crea Pass</div>
+        <div class="nav-item" onclick="nav('passes')">Pass Emessi</div>
+        <div class="nav-label">Comunicazione</div>
+        <div class="nav-item active" onclick="nav('campaigns')">Campagne</div>
+        <div class="nav-item" onclick="nav('push')">Push Notification</div>
+        <div class="nav-label">Insights</div>
+        <div class="nav-item" onclick="nav('analytics')">Analytics</div>
         <div class="nav-label">Setup</div>
         <div class="nav-item" onclick="nav('users')">Utenti</div>
 
@@ -1004,20 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ==================== NAV ====================
 function updateNavState() {
-    const disabled = !brandId;
-    document.querySelectorAll('.nav-item.brand-required').forEach(el => {
-        el.classList.toggle('disabled', disabled);
-    });
-    document.querySelectorAll('.nav-label.brand-required').forEach(el => {
-        el.classList.toggle('disabled', disabled);
-    });
-    // If no brand and currently on a brand-required section, go to users
-    if (disabled) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('users')?.classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.querySelector('.nav-item[onclick="nav(\'users\')"]')?.classList.add('active');
-    }
+    // All nav items always clickable — no brand-required gating
 }
 
 function nav(id) {
