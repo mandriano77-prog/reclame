@@ -1137,7 +1137,7 @@ router.post('/passes/:id/regenerate', async (req, res) => {
 
 router.post('/push/send', async (req, res) => {
   try {
-    const { brand_id, title, message, campaign_id, update_pass, field_values } = req.body;
+    const { brand_id, title, message, campaign_id, update_pass, field_values, instant_win_id } = req.body;
     if (!brand_id || !title || !message) return res.status(400).json({ error: 'brand_id, title, message richiesti' });
 
     console.log(`[PUSH DEBUG] brand_id from dashboard: "${brand_id}" | campaign_id: "${campaign_id || 'none'}"`);
@@ -1174,6 +1174,24 @@ router.post('/push/send', async (req, res) => {
       // to build the announcement field with changeMessage on the pass
       const config = brand.config || {};
       config.pushAnnouncement = { title, message, ts: Date.now() };
+
+      // Instant Win: inject play link into pass back field
+      if (instant_win_id) {
+        const iwCampaign = await getInstantWinCampaign(instant_win_id);
+        if (iwCampaign && iwCampaign.status === 'active') {
+          config.instantWinActive = {
+            campaign_id: iwCampaign.id,
+            label: iwCampaign.push_message || iwCampaign.name || 'Gioca e Vinci!',
+            game_type: iwCampaign.game_type
+          };
+          // If campaign has a strip image, inject it
+          if (iwCampaign.strip_base64) {
+            config.stripOverride = iwCampaign.strip_base64;
+          }
+          console.log(`[PUSH] Instant Win injected: campaign=${iwCampaign.id}, game=${iwCampaign.game_type}`);
+        }
+      }
+
       await updateBrand(brand_id, { config });
       console.log(`[PUSH] Updated brand.config.pushAnnouncement: "${title}: ${message}"`);
 
@@ -1968,6 +1986,25 @@ router.post('/play/:serial_number', async (req, res) => {
       prize_description: result === 'win' ? campaign.prize_description : null,
       play_id: play.id
     });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── Remove Instant Win from pass (resets brand config) ──────────────
+router.post('/instant-win/:id/deactivate', async (req, res) => {
+  try {
+    const campaign = await getInstantWinCampaign(req.params.id);
+    if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
+    // Remove instantWinActive from brand config
+    const brand = await getBrand(campaign.brand_id);
+    if (brand) {
+      const config = brand.config || {};
+      delete config.instantWinActive;
+      delete config.stripOverride;
+      await updateBrand(campaign.brand_id, { config });
+    }
+    // Set campaign status to ended
+    await updateInstantWinCampaign(req.params.id, { status: 'ended' });
+    res.json({ ok: true, message: 'Campagna disattivata e link rimosso dal pass' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

@@ -290,6 +290,13 @@
                             </div>
                             <img id="pushStripPreview" style="display:none;max-width:100%;height:60px;object-fit:cover;border-radius:6px;border:1px solid #333;">
                         </div>
+                        <div class="form-group" style="margin-top:8px;">
+                            <label class="form-label">Collega Instant Win (opzionale)</label>
+                            <select id="pushInstantWin">
+                                <option value="">— Nessuna campagna Instant Win —</option>
+                            </select>
+                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Se selezionata, il link al gioco verrà inserito automaticamente nel retro di ogni pass.</p>
+                        </div>
                         <button class="btn" style="width:100%;font-weight:700;margin-top:12px;" onclick="sendImmediatePush()">&#9889; Invia Notifica Ora</button>
                     </div>
                     <div class="sec-title" style="margin-top:24px;">Storico Notifiche</div>
@@ -1114,7 +1121,7 @@ function nav(id) {
         campaigns: loadCampaigns,
         passes: loadPasses,
         templates: loadTemplates,
-        push: () => { loadPushHistory(); loadScheduledPush(); loadPushCampaignSelect(); loadSchedCampaignSelect(); loadGeofencing(); loadStripPromos(); },
+        push: () => { loadPushHistory(); loadScheduledPush(); loadPushCampaignSelect(); loadSchedCampaignSelect(); loadPushIwSelect(); loadGeofencing(); loadStripPromos(); },
         analytics: loadAnalytics,
         'pass-design': loadPassDesign,
         'brand-identity': loadBrandIdentity,
@@ -1931,6 +1938,25 @@ async function loadPushCampaignSelect() {
     campaignsCache.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
 }
 
+async function loadPushIwSelect() {
+    const sel = document.getElementById('pushInstantWin');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Nessuna campagna Instant Win —</option>';
+    if (!brandId) return;
+    try {
+        const res = await fetch(`${API}/instant-win?brand_id=${brandId}`, { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        const campaigns = await res.json();
+        const gameLabels = { scratch: 'Scratch', wheel: 'Ruota', slots: 'Slot' };
+        campaigns.filter(c => c.status === 'active').forEach(c => {
+            const o = document.createElement('option');
+            o.value = c.id;
+            o.textContent = `${c.name} (${gameLabels[c.game_type] || c.game_type})`;
+            sel.appendChild(o);
+        });
+    } catch(e) { console.error('loadPushIwSelect error:', e); }
+}
+
 async function loadSchedCampaignSelect() {
     const sel = document.getElementById('schedCampaignTarget');
     if (!sel) return;
@@ -2010,6 +2036,8 @@ async function sendImmediatePush() {
 
     const body = { brand_id: brandId, title, message, update_pass: updatePass };
     if (campaignId) body.campaign_id = campaignId;
+    const iwId = document.getElementById('pushInstantWin').value;
+    if (iwId) body.instant_win_id = iwId;
     const res = await fetch(`${API}/push/send`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const data = await res.json();
     if (data.error) { alert('Errore push: ' + data.error); return; }
