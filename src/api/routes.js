@@ -2067,4 +2067,59 @@ router.get('/play/:serial_number/info', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── Leads Database (aggregated player data) ──────────────────────────────
+router.get('/brands/:brand_id/leads', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    const { pool } = require('../db');
+
+    // Get unique leads by serial_number with their latest player data,
+    // joined with pass_instances for pass_id and device_registrations for device_id
+    const result = await pool.query(`
+      SELECT
+        p.serial_number,
+        p.player_first_name,
+        p.player_last_name,
+        p.player_email,
+        p.player_phone,
+        p.play_count,
+        p.last_played,
+        pi.id AS pass_id,
+        dr.device_library_id AS device_id
+      FROM (
+        SELECT
+          serial_number,
+          MAX(player_first_name) AS player_first_name,
+          MAX(player_last_name) AS player_last_name,
+          MAX(player_email) AS player_email,
+          MAX(player_phone) AS player_phone,
+          COUNT(*) AS play_count,
+          MAX(played_at) AS last_played
+        FROM instant_win_plays
+        WHERE brand_id = $1 AND player_email IS NOT NULL
+        GROUP BY serial_number
+      ) p
+      LEFT JOIN pass_instances pi ON pi.serial_number = p.serial_number
+      LEFT JOIN device_registrations dr ON dr.serial_number = p.serial_number
+      ORDER BY p.last_played DESC
+    `, [brand_id]);
+
+    const leads = result.rows;
+
+    // Stats
+    const totalPlays = await pool.query(
+      'SELECT COUNT(*) AS total FROM instant_win_plays WHERE brand_id = $1', [brand_id]);
+    const withDevice = leads.filter(l => l.device_id).length;
+    const withPhone = leads.filter(l => l.player_phone).length;
+
+    res.json({
+      leads,
+      total_leads: leads.length,
+      with_device: withDevice,
+      with_phone: withPhone,
+      total_plays: parseInt(totalPlays.rows[0].total)
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;

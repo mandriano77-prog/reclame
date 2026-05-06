@@ -165,6 +165,8 @@
         <div class="nav-label">Engagement</div>
         <div class="nav-item" onclick="nav('instant-win')">Instant Win</div>
         <div class="nav-item" onclick="nav('gamification')">Gamification</div>
+        <div class="nav-label">Database</div>
+        <div class="nav-item" onclick="nav('leads')">Leads</div>
         <div class="nav-label">Insights</div>
         <div class="nav-item" onclick="nav('analytics')">Analytics</div>
         <div class="nav-label">Setup</div>
@@ -830,6 +832,26 @@
                 </table>
             </div>
 
+            <!-- LEADS DATABASE -->
+            <div id="leads" class="section">
+                <div class="sec-title">Database Leads</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+                    <p style="color:var(--text2);font-size:13px;">Contatti raccolti tramite Instant Win e registrazioni pass.</p>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="text" id="leadsSearch" placeholder="Cerca nome, email..." oninput="filterLeads()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px;">
+                        <button class="btn" onclick="exportLeadsCSV()" style="white-space:nowrap;">⬇ Export CSV</button>
+                    </div>
+                </div>
+                <div class="stats-grid" id="leadsStats"></div>
+                <table class="table" id="leadsTable">
+                    <thead><tr>
+                        <th>Nome</th><th>Cognome</th><th>Email</th><th>Telefono</th>
+                        <th>Device ID</th><th>Pass ID</th><th>Serial</th><th>Giocate</th><th>Ultimo gioco</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
             <!-- ANALYTICS -->
             <div id="analytics" class="section">
                 <div class="sec-title">Analytics</div>
@@ -1129,6 +1151,7 @@ function nav(id) {
         'pass-wizard': loadPassWizard,
         'instant-win': loadInstantWin,
         'gamification': loadGamification,
+        'leads': loadLeads,
         users: loadUsers
     };
     if (loaders[id]) loaders[id]();
@@ -2473,6 +2496,81 @@ async function deleteIwCampaign(id) {
         toast('Campagna eliminata');
         loadInstantWin();
     } catch(e) { toast('Errore di rete'); }
+}
+
+// ==================== LEADS DATABASE ====================
+let allLeads = [];
+
+async function loadLeads() {
+    if (!brandId) return;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/leads`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Failed to load leads');
+        const data = await res.json();
+        allLeads = data.leads || [];
+
+        // Stats
+        document.getElementById('leadsStats').innerHTML = `
+            <div class="stat-card"><div class="stat-num">${data.total_leads || 0}</div><div class="stat-label">Lead totali</div></div>
+            <div class="stat-card"><div class="stat-num">${data.with_device || 0}</div><div class="stat-label">Con device registrato</div></div>
+            <div class="stat-card"><div class="stat-num">${data.with_phone || 0}</div><div class="stat-label">Con telefono</div></div>
+            <div class="stat-card"><div class="stat-num">${data.total_plays || 0}</div><div class="stat-label">Giocate totali</div></div>
+        `;
+
+        renderLeadsTable(allLeads);
+    } catch(e) {
+        console.error('loadLeads error:', e);
+        document.getElementById('leadsTable').querySelector('tbody').innerHTML =
+            '<tr><td colspan="9" style="color:var(--text2);text-align:center;">Errore caricamento leads</td></tr>';
+    }
+}
+
+function renderLeadsTable(leads) {
+    const tbody = document.getElementById('leadsTable').querySelector('tbody');
+    if (!leads.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text2);text-align:center;">Nessun lead registrato</td></tr>';
+        return;
+    }
+    tbody.innerHTML = leads.map(l => `<tr>
+        <td>${esc(l.player_first_name || '-')}</td>
+        <td>${esc(l.player_last_name || '-')}</td>
+        <td><a href="mailto:${esc(l.player_email)}" style="color:var(--accent);">${esc(l.player_email)}</a></td>
+        <td>${esc(l.player_phone || '-')}</td>
+        <td style="font-size:11px;font-family:monospace;">${l.device_id ? esc(l.device_id.substring(0,12)) + '...' : '<span style="color:var(--text2);">—</span>'}</td>
+        <td style="font-size:11px;font-family:monospace;">${l.pass_id ? esc(l.pass_id.substring(0,8)) + '...' : '-'}</td>
+        <td style="font-size:11px;font-family:monospace;">${esc((l.serial_number || '').substring(0,12))}...</td>
+        <td style="text-align:center;">${l.play_count || 0}</td>
+        <td style="font-size:12px;">${l.last_played ? new Date(l.last_played).toLocaleDateString('it-IT') : '-'}</td>
+    </tr>`).join('');
+}
+
+function filterLeads() {
+    const q = document.getElementById('leadsSearch').value.toLowerCase();
+    if (!q) return renderLeadsTable(allLeads);
+    const filtered = allLeads.filter(l =>
+        (l.player_first_name || '').toLowerCase().includes(q) ||
+        (l.player_last_name || '').toLowerCase().includes(q) ||
+        (l.player_email || '').toLowerCase().includes(q) ||
+        (l.player_phone || '').toLowerCase().includes(q)
+    );
+    renderLeadsTable(filtered);
+}
+
+function exportLeadsCSV() {
+    if (!allLeads.length) return toast('Nessun lead da esportare');
+    const header = 'Nome,Cognome,Email,Telefono,Device ID,Pass ID,Serial,Giocate,Ultimo gioco';
+    const rows = allLeads.map(l => [
+        l.player_first_name || '', l.player_last_name || '', l.player_email || '',
+        l.player_phone || '', l.device_id || '', l.pass_id || '', l.serial_number || '',
+        l.play_count || 0, l.last_played ? new Date(l.last_played).toISOString().split('T')[0] : ''
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `leads_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('CSV esportato!');
 }
 
 // ==================== GAMIFICATION ====================
