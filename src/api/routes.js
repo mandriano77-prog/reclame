@@ -2082,8 +2082,7 @@ router.get('/brands/:brand_id/leads', async (req, res) => {
         p.player_last_name,
         p.player_email,
         p.player_phone,
-        p.play_count,
-        p.last_played,
+        p.registered_at,
         pi.id AS pass_id,
         dr.device_library_id AS device_id
       FROM (
@@ -2093,31 +2092,27 @@ router.get('/brands/:brand_id/leads', async (req, res) => {
           MAX(player_last_name) AS player_last_name,
           MAX(player_email) AS player_email,
           MAX(player_phone) AS player_phone,
-          COUNT(*) AS play_count,
-          MAX(played_at) AS last_played
+          MIN(played_at) AS registered_at
         FROM instant_win_plays
         WHERE brand_id = $1 AND player_email IS NOT NULL
         GROUP BY serial_number
       ) p
       LEFT JOIN pass_instances pi ON pi.serial_number = p.serial_number
       LEFT JOIN device_registrations dr ON dr.serial_number = p.serial_number
-      ORDER BY p.last_played DESC
+      ORDER BY p.registered_at DESC
     `, [brand_id]);
 
     const leads = result.rows;
-
-    // Stats
-    const totalPlays = await pool.query(
-      'SELECT COUNT(*) AS total FROM instant_win_plays WHERE brand_id = $1', [brand_id]);
     const withDevice = leads.filter(l => l.device_id).length;
     const withPhone = leads.filter(l => l.player_phone).length;
+    const withEmail = leads.filter(l => l.player_email).length;
 
     res.json({
       leads,
       total_leads: leads.length,
       with_device: withDevice,
       with_phone: withPhone,
-      total_plays: parseInt(totalPlays.rows[0].total)
+      with_email: withEmail
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

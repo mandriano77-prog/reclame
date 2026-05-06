@@ -846,7 +846,7 @@
                 <table class="table" id="leadsTable">
                     <thead><tr>
                         <th>Nome</th><th>Cognome</th><th>Email</th><th>Telefono</th>
-                        <th>Device ID</th><th>Pass ID</th><th>Serial</th><th>Giocate</th><th>Ultimo gioco</th>
+                        <th>Device ID</th><th>Pass ID</th><th>Data registrazione</th>
                     </tr></thead>
                     <tbody></tbody>
                 </table>
@@ -2514,7 +2514,7 @@ async function loadLeads() {
             <div class="stat-card"><div class="stat-num">${data.total_leads || 0}</div><div class="stat-label">Lead totali</div></div>
             <div class="stat-card"><div class="stat-num">${data.with_device || 0}</div><div class="stat-label">Con device registrato</div></div>
             <div class="stat-card"><div class="stat-num">${data.with_phone || 0}</div><div class="stat-label">Con telefono</div></div>
-            <div class="stat-card"><div class="stat-num">${data.total_plays || 0}</div><div class="stat-label">Giocate totali</div></div>
+            <div class="stat-card"><div class="stat-num">${data.with_email || 0}</div><div class="stat-label">Con email</div></div>
         `;
 
         renderLeadsTable(allLeads);
@@ -2528,7 +2528,7 @@ async function loadLeads() {
 function renderLeadsTable(leads) {
     const tbody = document.getElementById('leadsTable').querySelector('tbody');
     if (!leads.length) {
-        tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text2);text-align:center;">Nessun lead registrato</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text2);text-align:center;">Nessun lead registrato</td></tr>';
         return;
     }
     tbody.innerHTML = leads.map(l => `<tr>
@@ -2536,11 +2536,9 @@ function renderLeadsTable(leads) {
         <td>${esc(l.player_last_name || '-')}</td>
         <td><a href="mailto:${esc(l.player_email)}" style="color:var(--accent);">${esc(l.player_email)}</a></td>
         <td>${esc(l.player_phone || '-')}</td>
-        <td style="font-size:11px;font-family:monospace;">${l.device_id ? esc(l.device_id.substring(0,12)) + '...' : '<span style="color:var(--text2);">—</span>'}</td>
+        <td style="font-size:11px;font-family:monospace;">${l.device_id ? esc(l.device_id.substring(0,16)) + '...' : '<span style="color:var(--text2);">—</span>'}</td>
         <td style="font-size:11px;font-family:monospace;">${l.pass_id ? esc(l.pass_id.substring(0,8)) + '...' : '-'}</td>
-        <td style="font-size:11px;font-family:monospace;">${esc((l.serial_number || '').substring(0,12))}...</td>
-        <td style="text-align:center;">${l.play_count || 0}</td>
-        <td style="font-size:12px;">${l.last_played ? new Date(l.last_played).toLocaleDateString('it-IT') : '-'}</td>
+        <td style="font-size:12px;">${l.registered_at ? new Date(l.registered_at).toLocaleDateString('it-IT') : '-'}</td>
     </tr>`).join('');
 }
 
@@ -2558,11 +2556,11 @@ function filterLeads() {
 
 function exportLeadsCSV() {
     if (!allLeads.length) return toast('Nessun lead da esportare');
-    const header = 'Nome,Cognome,Email,Telefono,Device ID,Pass ID,Serial,Giocate,Ultimo gioco';
+    const header = 'Nome,Cognome,Email,Telefono,Device ID,Pass ID,Data registrazione';
     const rows = allLeads.map(l => [
         l.player_first_name || '', l.player_last_name || '', l.player_email || '',
-        l.player_phone || '', l.device_id || '', l.pass_id || '', l.serial_number || '',
-        l.play_count || 0, l.last_played ? new Date(l.last_played).toISOString().split('T')[0] : ''
+        l.player_phone || '', l.device_id || '', l.pass_id || '',
+        l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
     ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
     const csv = [header, ...rows].join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
