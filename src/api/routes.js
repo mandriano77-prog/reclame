@@ -2123,14 +2123,14 @@ router.get('/brands/:brand_id/leads', async (req, res) => {
 
 // ─── Gamification Campaigns CRUD ──────────────────────────────────────
 
-router.get('/gamification/campaigns/:brand_id', authMiddleware, async (req, res) => {
+router.get('/gamification/campaigns/:brand_id', async (req, res) => {
   try {
     const campaigns = await listGamificationCampaigns(req.params.brand_id);
     res.json(campaigns);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/gamification/campaign/:id', authMiddleware, async (req, res) => {
+router.get('/gamification/campaign/:id', async (req, res) => {
   try {
     const campaign = await getGamificationCampaign(req.params.id);
     if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
@@ -2138,14 +2138,14 @@ router.get('/gamification/campaign/:id', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/gamification/campaigns', authMiddleware, async (req, res) => {
+router.post('/gamification/campaigns', async (req, res) => {
   try {
     const campaign = await createGamificationCampaign(req.body);
     res.status(201).json(campaign);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/gamification/campaign/:id', authMiddleware, async (req, res) => {
+router.put('/gamification/campaign/:id', async (req, res) => {
   try {
     const campaign = await updateGamificationCampaign(req.params.id, req.body);
     if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
@@ -2153,21 +2153,21 @@ router.put('/gamification/campaign/:id', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/gamification/campaign/:id', authMiddleware, async (req, res) => {
+router.delete('/gamification/campaign/:id', async (req, res) => {
   try {
     await deleteGamificationCampaign(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/gamification/stats/:brand_id', authMiddleware, async (req, res) => {
+router.get('/gamification/stats/:brand_id', async (req, res) => {
   try {
     const stats = await getGamificationStats(req.params.brand_id);
     res.json(stats);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/gamification/plays/:campaign_id', authMiddleware, async (req, res) => {
+router.get('/gamification/plays/:campaign_id', async (req, res) => {
   try {
     const plays = await listGamificationPlays(req.params.campaign_id, {
       limit: parseInt(req.query.limit) || 100

@@ -3220,7 +3220,7 @@ async function loadBrandIdentity() {
             const blob = await logoRes.blob();
             const url = URL.createObjectURL(blob);
             logoPreview.innerHTML = '';
-            logoPreview.style.border = '2px solid var(--green)';
+            logoPreview.style.border = '2px solid var(--border)';
             const img = document.createElement('img');
             img.src = url;
             img.style.cssText = 'width:100%;height:100%;object-fit:contain;';
@@ -3303,7 +3303,7 @@ async function uploadBiLogo() {
             const blob = await verifyRes.blob();
             const url = URL.createObjectURL(blob);
             logoPreview.innerHTML = '';
-            logoPreview.style.border = '2px solid var(--green)';
+            logoPreview.style.border = '2px solid var(--border)';
             const img = document.createElement('img');
             img.src = url;
             img.style.cssText = 'width:100%;height:100%;object-fit:contain;';
