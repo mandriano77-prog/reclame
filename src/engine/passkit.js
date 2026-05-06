@@ -289,8 +289,7 @@ function generatePassJson(template, instance, brand, options = {}) {
 
   // 2b. INSTANT WIN LINK — auto-injected when a campaign is active
   if (brandConfig.instantWinActive && instance.serial_number) {
-    const domain = process.env.CUSTOM_DOMAIN || 'www.nudj.studio';
-    const playUrl = `https://${domain}/play/${instance.serial_number}`;
+    const playUrl = `${baseUrl}/play/${instance.serial_number}`;
     const iwLabel = brandConfig.instantWinActive.label || 'Gioca e Vinci!';
     orderedBackFields.push({
       key: 'instant_win_link',

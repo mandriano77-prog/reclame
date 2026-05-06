@@ -348,7 +348,7 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
 // Short URL: /:slug serves the landing page for that brand
 app.get('/:slug', (req, res, next) => {
   const slug = req.params.slug;
-  if (slug.includes('.') || ['api', 'dashboard', 'landing', 'debug', 'health', 'privacy'].includes(slug)) {
+  if (slug.includes('.') || ['api', 'dashboard', 'landing', 'debug', 'health', 'privacy', 'play', 'save'].includes(slug)) {
     return next();
   }
   res.sendFile(path.join(__dirname, 'landing', 'index.html'));
