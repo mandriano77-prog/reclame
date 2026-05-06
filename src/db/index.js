@@ -314,6 +314,8 @@ async function getDb() {
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS player_first_name TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS player_last_name TEXT`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_iw_plays_email ON instant_win_plays(player_email)`).catch(()=>{});
+    await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS privacy_accepted BOOLEAN DEFAULT FALSE`).catch(()=>{});
+    await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMPTZ`).catch(()=>{});
 
     // Indexes
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_passes_brand ON pass_instances(brand_id)`);
@@ -1101,13 +1103,14 @@ async function deleteInstantWinCampaign(id) {
 async function createInstantWinPlay(data) {
   const id = data.id || uuidv4();
   const { campaign_id, serial_number, brand_id, result, prize_name,
-          player_email, player_phone, player_first_name, player_last_name } = data;
+          player_email, player_phone, player_first_name, player_last_name, privacy_accepted } = data;
   await pool.query(
     `INSERT INTO instant_win_plays (id, campaign_id, serial_number, brand_id, result, prize_name,
-     player_email, player_phone, player_first_name, player_last_name)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+     player_email, player_phone, player_first_name, player_last_name, privacy_accepted, privacy_accepted_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
     [id, campaign_id, serial_number, brand_id, result, prize_name || null,
-     player_email || null, player_phone || null, player_first_name || null, player_last_name || null]
+     player_email || null, player_phone || null, player_first_name || null, player_last_name || null,
+     privacy_accepted || false, privacy_accepted ? new Date().toISOString() : null]
   );
   // Increment total_wins if result is 'win'
   if (result === 'win') {

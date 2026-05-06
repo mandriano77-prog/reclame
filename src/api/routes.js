@@ -1929,7 +1929,7 @@ router.get('/instant-win/:id/plays', async (req, res) => {
 router.post('/play/:serial_number', async (req, res) => {
   try {
     const { serial_number } = req.params;
-    const { campaign_id, player_email, player_phone, player_first_name, player_last_name } = req.body;
+    const { campaign_id, player_email, player_phone, player_first_name, player_last_name, privacy_accepted } = req.body;
 
     // Validate player data (required before playing)
     if (!player_email || !player_first_name || !player_last_name) {
@@ -1978,7 +1978,8 @@ router.post('/play/:serial_number', async (req, res) => {
       player_email: player_email || null,
       player_phone: player_phone || null,
       player_first_name: player_first_name || null,
-      player_last_name: player_last_name || null
+      player_last_name: player_last_name || null,
+      privacy_accepted: privacy_accepted || false
     });
 
     // Log event

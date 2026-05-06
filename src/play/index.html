@@ -162,13 +162,17 @@ function renderForm() {
           <input type="tel" id="pPhone" placeholder="+39 333 1234567" autocomplete="tel">
         </div>
 
+        <div class="form-group" style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;">
+          <input type="checkbox" id="pPrivacy" style="margin-top:3px;width:18px;height:18px;accent-color:var(--teal);cursor:pointer;flex-shrink:0;">
+          <label for="pPrivacy" style="font-size:12px;color:var(--muted);line-height:1.5;cursor:pointer;">
+            Acconsento al trattamento dei miei dati personali ai sensi del <a href="/privacy/${serial}" target="_blank" style="color:var(--teal);">Regolamento Privacy</a> e autorizzo l'utilizzo per la gestione del premio e comunicazioni relative. <span class="required">*</span>
+          </label>
+        </div>
+        <div class="form-error" id="privacyError" style="display:none;text-align:center;">Devi accettare la privacy policy per partecipare</div>
+
         <button class="submit-btn" id="submitBtn" onclick="submitForm()">
           Partecipa e Gioca!
         </button>
-
-        <p class="form-privacy">
-          Partecipando accetti il <a href="/privacy/${serial}" target="_blank">regolamento</a> e autorizzi il trattamento dei tuoi dati per la gestione del premio.
-        </p>
       </div>
     </div>
 
@@ -185,11 +189,16 @@ function submitForm() {
   const email = document.getElementById('pEmail').value.trim();
   const phone = document.getElementById('pPhone').value.trim();
 
+  // Privacy checkbox
+  const privacy = document.getElementById('pPrivacy').checked;
+  document.getElementById('privacyError').style.display = 'none';
+
   // Validation
-  if (!firstName || !lastName || !email) {
+  if (!firstName || !lastName || !email || !privacy) {
     if (!firstName) shake('pFirstName');
     if (!lastName) shake('pLastName');
     if (!email) shake('pEmail');
+    if (!privacy) document.getElementById('privacyError').style.display = 'block';
     return;
   }
 
@@ -207,7 +216,8 @@ function submitForm() {
     player_first_name: firstName,
     player_last_name: lastName,
     player_email: email,
-    player_phone: phone || null
+    player_phone: phone || null,
+    privacy_accepted: true
   };
 
   // Proceed to game
