@@ -328,6 +328,9 @@ async function getDb() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_iw_plays_serial ON instant_win_plays(serial_number)`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_iw_plays_brand ON instant_win_plays(brand_id)`).catch(()=>{});
 
+    // Drop legacy member_id NOT NULL constraint (plays use serial_number, not member_id)
+    await pool.query(`ALTER TABLE instant_win_plays ALTER COLUMN member_id DROP NOT NULL`).catch(()=>{});
+
     // Seed admin
     await seedAdminUser();
 
