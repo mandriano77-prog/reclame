@@ -1,22 +1,20 @@
-# Nudj MVP — Apple Wallet CRM Platform
+# Ads2Wallet / Nudj — Apple Wallet CRM Platform
 
 ## What this is
 
-Nudj is a multi-tenant SaaS that lets brands create loyalty programs via Apple Wallet passes (.pkpass). Each brand gets a back office dashboard to manage members, points, rewards, push notifications, and pass design. Members receive a storeCard-type Apple Wallet pass with real-time updates.
-
-Current live client: **Hirostar Hangar Padel Club** (padel center in Origgio, VA).
+Multi-tenant SaaS: brands run loyalty programs via Apple Wallet passes (`.pkpass`) and related flows. Back office dashboard for templates, passes, push, campaigns, analytics. Members get a store-card style pass with updates.
 
 ## Stack
 
-- **Runtime**: Node.js 20+ / Express
-- **Database**: PostgreSQL (Railway managed), `pg` driver, schema auto-migrated on boot via `getDb()`
-- **Hosting**: Railway (Nixpacks builder, auto-deploy from `main`)
-- **Domain**: `www.nudj.studio` (CUSTOM_DOMAIN env var)
-- **Pass signing**: openssl `cms -sign` (NOT node-forge — it was unreliable)
-- **Push**: APNs HTTP/2 via native Node (no library), JWT-based auth
-- **Email**: Resend API (`resend` npm), domain-verified `nudj.studio`
-- **Image processing**: Sharp (logo/icon/strip generation for passes)
-- **AI**: Replicate API for AI-generated strip images
+- **Runtime**: Node.js 20+ / Express (`src/server.js`)
+- **Database**: PostgreSQL (`pg`), schema auto-applied on boot via `getDb()` in `src/db/index.js`
+- **Hosting**: **DigitalOcean** — App Platform or Droplet (+ optional Managed PostgreSQL); deploy from GitHub (`main` or your release branch)
+- **Domain**: public hostname set in **`CUSTOM_DOMAIN`** (no scheme), e.g. `app.example.com` — used for pass `webServiceURL`, landing links, Google Wallet image URLs
+- **Pass signing**: OpenSSL `cms -sign` (not node-forge)
+- **Push**: APNs HTTP/2 (native Node), JWT auth
+- **Email**: Resend (`resend` npm)
+- **Images**: Sharp
+- **AI strips**: fal / creative stack as configured (`FAL_API_KEY`, etc.)
 
 ## Architecture
 
@@ -24,121 +22,109 @@ Current live client: **Hirostar Hangar Padel Club** (padel center in Origgio, VA
 src/
 ├── server.js          # Express app, middleware, static routes, cron boot
 ├── api/
-│   ├── routes.js      # ALL API endpoints (~3200 lines, single file)
-│   └── debug-sign.js  # /debug/sign-test diagnostic endpoint
+│   ├── routes.js      # REST endpoints (monolith)
+│   └── debug-sign.js  # /debug/sign-test
 ├── dashboard/
-│   └── index.html     # Single-page admin dashboard (vanilla JS, no framework)
+│   └── index.html     # Admin UI (vanilla JS)
 ├── landing/
-│   └── index.html     # Public signup page per brand (slug-routed)
+│   └── index.html
 ├── privacy/
-│   └── index.html     # Privacy policy page
+│   └── index.html
 ├── db/
-│   └── index.js       # PostgreSQL pool, schema DDL, all CRUD functions
+│   └── index.js       # PostgreSQL pool, DDL, migrations inline
 └── engine/
-    ├── passkit.js      # .pkpass builder + openssl signing
-    ├── apns.js         # APNs push notification sender
-    ├── mailer.js       # Resend email (welcome + recap templates)
-    ├── email-recap.js  # Weekly/monthly points recap cron
-    ├── scheduler.js    # Scheduled push notification cron
-    ├── playtomic.js    # Playtomic API sync engine
-    ├── challenges.js   # Auto-challenge evaluator
-    ├── strip-promo.js  # Scheduled strip image rotation
-    └── templates.js    # Default pass template factory
+    ├── passkit.js, apns.js, mailer.js, scheduler.js, strip-promo.js, google-wallet.js, …
 ```
 
-## Key files
+## Key endpoints (see `routes.js`)
 
-### `src/api/routes.js` — the monolith
-All REST endpoints in one file. Main groups:
-- **Auth**: `/auth/login`, `/auth/me`, `/auth/change-password`
-- **Users**: CRUD `/users` (admin-only)
-- **Brands**: CRUD `/brands`, logo/strip upload, AI strip generation
-- **Templates**: CRUD `/templates`
-- **Passes**: CRUD `/passes`, `/passes/signup` (self-service), `/passes/:id/download`, `/passes/:id/regenerate`
-- **Apple Wallet protocol**: `POST/DELETE /devices/:did/registrations/:ptid/:sn`, `GET /devices/:did/registrations/:ptid`, `GET /passes/:ptid/:sn`
-- **Members**: CRUD `/members`, import/export CSV
-- **Push**: `/push/send` (manual), `/push/scheduled` (cron), `/push/history`
-- **Rewards/Challenges/Tiers/VIP Cards**: full CRUD each
-- **Analytics**: `/analytics/:brand_id`, `/brands/:id/analytics/full`
-- **Playtomic**: `/brands/:id/playtomic/sync`, `/brands/:id/playtomic/logs`
-- **Strip Promos**: CRUD `/brands/:id/strip-promos`
-- **Email Recap**: `/brands/:id/send-recap`, `/recap/run`
-
-### `src/db/index.js` — database layer
-Single file with schema DDL + all query functions. Tables:
-`brands`, `pass_templates`, `pass_instances`, `events`, `device_registrations`, `rewards`, `challenges`, `tiers`, `vip_cards`, `reward_claims`, `challenge_completions`, `members`, `playtomic_sync_log`, `scheduled_push`, `push_log`, `users`
-
-Schema is auto-applied on every boot (`getDb()`). Migrations are inline SQL after the CREATE TABLE block.
-
-### `src/engine/passkit.js` — pass generation
-Builds .pkpass ZIP: pass.json + manifest.json + signature + icon/logo/strip images. Signing uses `openssl cms -sign` with temp files in `/tmp/pkpass-sign-*`. Falls back to `smime` if `cms` fails. PEM cleaning strips Bag Attributes from exported certs.
-
-### `src/dashboard/index.html` — admin UI
-Single HTML file, vanilla JS, no build step. Uses fetch to call API. Tab-based navigation: Brand, Pass, Members, Rewards, Challenges, Tiers, VIP, Push, Playtomic, Strip Promo, Analytics, Users.
-
-## Three pass creation flows
-
-All three must assign welcome points + send welcome email + log events:
-
-1. **Self-service signup** — `POST /passes/signup` — public, from landing page
-2. **Backoffice new member** — `POST /members` — creates member + pass + points + email
-3. **Crea Pass for existing member** — `POST /passes` — from dashboard, member already exists
+Auth, brands, templates, passes, signup, Apple Wallet device protocol, push, analytics, campaigns, Google Wallet signup/callback/status, ecc.
 
 ## Environment variables
 
-Required:
-- `DATABASE_URL` — PostgreSQL connection string (Railway auto-sets)
-- `PASS_TYPE_IDENTIFIER` — Apple pass type ID (e.g. `pass.com.nudj`)
-- `TEAM_IDENTIFIER` — Apple Developer Team ID
-- `JWT_SECRET` — for dashboard auth tokens
-- `RESEND_API_KEY` — Resend email API key
-- `CUSTOM_DOMAIN` — production domain (`www.nudj.studio`)
+**Required**
 
-Certificates (file-based preferred, env fallback):
-- `certs/signerCert.pem`, `certs/signerKey.pem`, `certs/wwdr.pem` — in repo
-- `SIGNER_CERT_BASE64`, `SIGNER_KEY_BASE64`, `WWDR_CERT_BASE64` — env var fallback
+- `DATABASE_URL` — PostgreSQL connection string (DigitalOcean Managed Database or other)
+- `PASS_TYPE_IDENTIFIER` — Apple pass type ID
+- `TEAM_IDENTIFIER` — Apple Team ID
+- `JWT_SECRET` — dashboard/session tokens
+- `RESEND_API_KEY` — email
+- `CUSTOM_DOMAIN` — production hostname (**without** `https://`)
 
-Optional:
-- `APNS_ENV` — `production` or `development` (defaults to production)
-- `FROM_EMAIL`, `FROM_NAME` — email sender identity
-- `REPLICATE_API_TOKEN` — for AI strip image generation
-- `PORT` — defaults to 3000
+**Certificates** (Apple signing): repo `certs/*.pem` or `SIGNER_*_BASE64` / `WWDR_CERT_BASE64`
+
+**Google Wallet** (optional): `GOOGLE_WALLET_ISSUER_ID`, service account (`GOOGLE_WALLET_SA_BASE64` or `GOOGLE_WALLET_SERVICE_ACCOUNT_JSON`)
+
+**Optional**: `APNS_ENV`, `FROM_EMAIL`, `FROM_NAME`, `PORT` (default 3000), `FAL_API_KEY`, `REPLICATE_API_TOKEN`, …
 
 ## Development
 
 ```bash
 npm install
-# Set DATABASE_URL to a local PostgreSQL
-npm run dev    # node --watch src/server.js
+export DATABASE_URL="postgres://..."
+npm run dev   # node --watch src/server.js
 ```
 
-Dashboard at `http://localhost:3000/dashboard`
-Landing at `http://localhost:3000/{brand-slug}`
+Dashboard: `http://localhost:3000/dashboard`  
+Landing: `http://localhost:3000/{brand-slug}`
+
+## Deploy on DigitalOcean
+
+Pick one pattern (both work):
+
+### A) App Platform (managed)
+
+1. Create **PostgreSQL** (Managed Database) or use existing; note connection string → `DATABASE_URL` (often requires TLS).
+2. **App** → GitHub repo → branch `main`.
+3. **Build command**: `npm install` (or default Nix/npm build).
+4. **Run command**: `npm start` or `node src/server.js` (match `package.json`).
+5. **Env vars**: set `DATABASE_URL`, `CUSTOM_DOMAIN`, `JWT_SECRET`, Apple/Resend/Google keys as needed.
+6. Attach DB to app or paste `DATABASE_URL` from DB dashboard.
+7. Custom domain → point DNS → enable HTTPS (handled by App Platform).
+8. **Health check**: HTTP GET `/health` (or `/` behaviour you configure).
+
+Redeploy: push to tracked branch or “Deploy” in UI.
+
+### B) Droplet (VPS)
+
+1. Install Node 20+, `git`, optionally **Nginx** + **Certbot** (Let’s Encrypt).
+2. Clone repo, `npm install`, `pm2 start src/server.js` (or systemd unit) with env file (`/etc/...env` — **never commit secrets**).
+3. Nginx reverse proxy → `proxy_pass http://127.0.0.1:3000`, forward `Host`, `X-Forwarded-Proto`, `X-Forwarded-For`.
+4. `CUSTOM_DOMAIN` = the public hostname users hit (matches TLS cert SAN).
+5. Managed Postgres on DO: same `DATABASE_URL` pattern as App Platform.
+
+### Proxy / HTTPS
+
+`server.js` uses `trust proxy` so `req.protocol` and HTTPS redirects work behind Nginx/App Platform load balancers.
+
+### Filesystem
+
+`.pkpass` generation may use `/tmp`; **downloads regenerate** on demand. On a Droplet, `/tmp` clears on reboot — same idea: no long-term reliance on generated files on disk.
 
 ## Conventions and gotchas
 
-- **Multi-tenant isolation**: every query filters by `brand_id`. Never forget it.
-- **Railway ephemeral filesystem**: generated .pkpass files in `/tmp` are wiped on redeploy. Pass download regenerates on-the-fly.
-- **Pass signing**: uses `openssl cms` CLI, NOT node-forge. The `cleanPem()` function strips Bag Attributes that break signing.
-- **APNs push**: `sendPushUpdate(pushToken)` takes a plain string, NOT an object.
-- **Dashboard is one big HTML file**: all JS inline, no framework. Search for function names.
-- **DB schema evolves inline**: migrations are raw SQL in `getDb()` after the schema block. No migration framework.
-- **brand.config is JSONB**: stores colors, links, welcome messages, recap settings, Playtomic credentials, strip promo schedule — everything brand-specific.
-- **Email**: Resend with domain `nudj.studio`. Templates are inline HTML in `mailer.js`.
-- **Cron jobs boot in `server.js`**: scheduler (push), playtomic sync, strip promo check, email recap.
+- **Multi-tenant**: always filter by `brand_id`.
+- **Signing**: `openssl cms`; `cleanPem()` strips Bag Attributes.
+- **APNs**: `sendPushUpdate(pushToken)` expects a **string** token.
+- **Dashboard**: single `index.html`, inline JS.
+- **Schema**: incremental `ALTER`/DDL in `getDb()` — no separate migration CLI.
+- **Cron**: started from `server.js` (scheduler, strip promo, email recap, etc.).
 
 ## Testing
 
-No test framework. Test by deploying to Railway and checking:
-1. Dashboard loads and CRUD works
-2. Pass downloads and installs on iPhone
-3. Push notifications arrive
-4. Email delivers (check Resend dashboard for failures)
-5. `/debug/sign-test` endpoint for signing diagnostics
+Smoke test after deploy:
 
-## Repo & deploy
+1. Dashboard loads, login, basic CRUD
+2. Pass download / install iOS
+3. Push receives update
+4. Email via Resend
+5. `/debug/sign-test` if enabled
 
-- **GitHub**: `mandriano77-prog/nudj-mvp`
-- **Branch**: `main` (auto-deploy to Railway)
-- **Deploy**: `git push origin main` triggers Railway build
-- Always commit + push together. Railway deploys on every push to main.
+## Repo & GitHub
+
+- **Remote**: `https://github.com/mandriano77-prog/Wallet_Ads` (verify with `git remote -v`)
+- **Branch**: merge to **`main`** for production deploy workflow you configure on DigitalOcean.
+
+---
+
+*Legacy*: `railway.json` may remain in repo for historical tooling; production target is DigitalOcean.

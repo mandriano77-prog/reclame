@@ -39,7 +39,7 @@ loadCerts();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Trust reverse proxy (Railway, Heroku, etc.) for correct req.protocol
+// Trust reverse proxy (Nginx, DigitalOcean App Platform load balancer, etc.) for correct req.protocol
 app.set('trust proxy', true);
 
 // Force HTTPS in production
@@ -373,10 +373,13 @@ getDb().then(db => {
     console.log('  Health: http://localhost:' + PORT + '/health');
     console.log('  API:    http://localhost:' + PORT + '/api/v1');
 
-    // Start push notification scheduler
-    const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
-      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-      : `http://localhost:${PORT}`;
+    // Start push notification scheduler (absolute URLs in scheduled jobs)
+    const baseUrl =
+      process.env.CUSTOM_DOMAIN
+        ? `https://${process.env.CUSTOM_DOMAIN}`
+        : process.env.RAILWAY_PUBLIC_DOMAIN
+          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          : `http://localhost:${PORT}`;
     startScheduler(baseUrl);
 
     // Strip Promo cron — check every hour

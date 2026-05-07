@@ -1,3 +1,6 @@
+NOTE (May 2026): This milestone summary references an older SQLite-based setup.
+Current production stack is PostgreSQL + DigitalOcean deployment — see CLAUDE.md.
+
 ================================================================================
 NUDJ MVP - DATABASE & APPLE WALLET PASS ENGINE
 Build Summary - April 24, 2026

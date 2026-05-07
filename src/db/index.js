@@ -1,12 +1,21 @@
 const { Pool } = require('pg');
 const { v4: uuidv4 } = require('uuid');
 
-// Use DATABASE_URL from Railway (or local dev)
+function dbUrlNeedsFlexibleSsl(url) {
+  if (!url) return false;
+  return (
+    url.includes('railway.app') ||
+    url.includes('ondigitalocean.com') ||
+    /\bsslmode=require\b/i.test(url)
+  );
+}
+
+// DATABASE_URL — managed Postgres on DigitalOcean, Railway-style hosts, etc.
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('railway')
+  ssl: dbUrlNeedsFlexibleSsl(process.env.DATABASE_URL)
     ? { rejectUnauthorized: false }
-    : false
+    : false,
 });
 
 // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Schema Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ

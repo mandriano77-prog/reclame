@@ -19,7 +19,7 @@ const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID || '';
 
 // Support both raw JSON and base64-encoded JSON
 function loadServiceAccount() {
-  // Option 1: base64 encoded (recommended for Railway)
+  // Option 1: base64 encoded (recommended in managed hosting env files)
   if (process.env.GOOGLE_WALLET_SA_BASE64) {
     try {
       const decoded = Buffer.from(process.env.GOOGLE_WALLET_SA_BASE64, 'base64').toString('utf8');
