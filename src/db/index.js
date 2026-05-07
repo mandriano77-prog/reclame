@@ -9,7 +9,7 @@ const pool = new Pool({
     : false
 });
 
-// âââ Schema ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Schema Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS brands (
   id TEXT PRIMARY KEY,
@@ -263,11 +263,11 @@ CREATE TABLE IF NOT EXISTS gamification_plays (
 );
 `;
 
-// âââ Init ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Init Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 async function getDb() {
   try {
     await pool.query(SCHEMA);
-    console.log('â Database schema initialized (PostgreSQL â Ads2Wallet)');
+    console.log('Ã¢ÂÂ Database schema initialized (PostgreSQL Ã¢ÂÂ Ads2Wallet)');
 
     // Migrations
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS campaign_id TEXT`).catch(()=>{});
@@ -291,21 +291,21 @@ async function getDb() {
     await pool.query(`ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true`).catch(()=>{});
     await pool.query(`ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(()=>{});
 
-    // pass_instances â columns added after initial schema
+    // pass_instances Ã¢ÂÂ columns added after initial schema
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS auth_token TEXT DEFAULT gen_random_uuid()::text`).catch(()=>{});
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`).catch(()=>{});
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS last_updated TIMESTAMPTZ DEFAULT NOW()`).catch(()=>{});
 
-    // pass_instances â push tracking per pass
+    // pass_instances Ã¢ÂÂ push tracking per pass
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS last_push_at TIMESTAMPTZ`).catch(()=>{});
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS last_push_status TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS push_count INTEGER DEFAULT 0`).catch(()=>{});
 
-    // push_log â columns added after initial schema
+    // push_log Ã¢ÂÂ columns added after initial schema
     await pool.query(`ALTER TABLE push_log ADD COLUMN IF NOT EXISTS campaign_id TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE push_log ADD COLUMN IF NOT EXISTS sent_count INTEGER DEFAULT 0`).catch(()=>{});
 
-    // scheduled_push â columns added after initial schema
+    // scheduled_push Ã¢ÂÂ columns added after initial schema
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS campaign_id TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS schedule_type TEXT DEFAULT 'once'`).catch(()=>{});
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS schedule_time TEXT DEFAULT '09:00'`).catch(()=>{});
@@ -315,12 +315,12 @@ async function getDb() {
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true`).catch(()=>{});
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS update_pass BOOLEAN DEFAULT true`).catch(()=>{});
 
-    // events â columns added after initial schema
+    // events Ã¢ÂÂ columns added after initial schema
     await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS device_id TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'`).catch(()=>{});
 
-    // instant_win_campaigns â columns added after initial schema
-    // Old schema had "title" NOT NULL â drop constraint, keep column for compat
+    // instant_win_campaigns Ã¢ÂÂ columns added after initial schema
+    // Old schema had "title" NOT NULL Ã¢ÂÂ drop constraint, keep column for compat
     await pool.query(`ALTER TABLE instant_win_campaigns ALTER COLUMN title DROP NOT NULL`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_campaigns ALTER COLUMN title SET DEFAULT ''`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''`).catch(()=>{});
@@ -341,7 +341,7 @@ async function getDb() {
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(()=>{});
 
-    // instant_win_plays â columns added after initial schema
+    // instant_win_plays Ã¢ÂÂ columns added after initial schema
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS campaign_id TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS serial_number TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE instant_win_plays ADD COLUMN IF NOT EXISTS brand_id TEXT`).catch(()=>{});
@@ -378,6 +378,10 @@ async function getDb() {
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS google_wallet_saved BOOLEAN DEFAULT FALSE`);
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS google_installed_at TIMESTAMPTZ`);
 
+    // Unified device tracking
+    await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS device_id TEXT`);
+    await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS device_source TEXT`);
+
     // Gamification indexes
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_gam_campaigns_brand ON gamification_campaigns(brand_id)`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_gam_campaigns_status ON gamification_campaigns(status)`).catch(()=>{});
@@ -399,7 +403,7 @@ function saveDb() {
   // No-op: PostgreSQL persists automatically
 }
 
-// âââ Brands ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Brands Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createBrand(data) {
   const id = data.id || uuidv4();
@@ -462,7 +466,7 @@ async function deleteBrand(id) {
   return { success: true };
 }
 
-// âââ Templates ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Templates Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createTemplate(data) {
   const id = data.id || uuidv4();
@@ -527,7 +531,7 @@ async function deleteTemplate(id) {
   return { success: true };
 }
 
-// âââ Campaigns ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Campaigns Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createCampaign(data) {
   const id = data.id || uuidv4();
@@ -580,7 +584,7 @@ async function incrementCampaignInstalls(id) {
   await pool.query('UPDATE campaigns SET total_installs = total_installs + 1 WHERE id = $1', [id]);
 }
 
-// âââ Pass Instances ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Pass Instances Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createPassInstance(data) {
   const id = data.id || uuidv4();
@@ -632,9 +636,7 @@ async function touchPass(id) {
 async function listPasses(brandId, options = {}) {
   let query = `SELECT p.*,
     c.name as campaign_name,
-    dr.device_library_id,
-    dr.push_token,
-    dr.created_at as install_date
+    dr.push_token
     FROM pass_instances p
     LEFT JOIN campaigns c ON p.campaign_id = c.id
     LEFT JOIN device_registrations dr ON dr.serial_number = p.serial_number
@@ -658,7 +660,7 @@ async function deletePass(id) {
   return { success: true };
 }
 
-// âââ Events ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Events Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function logEvent(data) {
   const { pass_id, brand_id, event_type, device_id = null, metadata = {} } = data;
@@ -678,7 +680,7 @@ async function listEvents(brandId, limit = 50) {
   return result.rows;
 }
 
-// âââ Device Registrations (Apple Wallet Protocol) ââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Device Registrations (Apple Wallet Protocol) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function registerDevice(data) {
   const { device_library_id, push_token, serial_number } = data;
@@ -718,7 +720,7 @@ async function unregisterDevice(deviceLibraryId, serialNumber) {
 async function getSerialsForDevice(deviceLibraryId, passesUpdatedSince) {
   let query, params;
   if (passesUpdatedSince) {
-    // Apple sends this tag â only return passes updated after that timestamp
+    // Apple sends this tag Ã¢ÂÂ only return passes updated after that timestamp
     query = `SELECT dr.serial_number FROM device_registrations dr
              JOIN pass_instances pi ON dr.serial_number = pi.serial_number
              WHERE dr.device_library_id = $1 AND pi.last_updated > $2`;
@@ -731,7 +733,7 @@ async function getSerialsForDevice(deviceLibraryId, passesUpdatedSince) {
   return result.rows.map(r => r.serial_number);
 }
 
-// âââ Analytics ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Analytics Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function getAnalytics(brandId) {
   const [passResult, statusResult, eventResult, deviceResult] = await Promise.all([
@@ -758,7 +760,7 @@ async function getCampaignAnalytics(brandId) {
   return result.rows;
 }
 
-// âââ Push ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Push Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function logPush(data) {
   const { brand_id, title, message, campaign_id = null, sent_count = 0 } = data;
@@ -786,7 +788,7 @@ async function clearPushHistory(brandId) {
   return { success: true, deleted: result.rowCount };
 }
 
-// âââ Scheduled Push ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Scheduled Push Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createScheduledPush(data) {
   const id = data.id || uuidv4();
@@ -834,7 +836,7 @@ async function getDueScheduledPush() {
   return result.rows;
 }
 
-// âââ Strip Promos ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Strip Promos Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createStripPromo({ brand_id, title, strip_base64, start_date, end_date, push_message, push_frequency }) {
   const id = uuidv4();
@@ -887,7 +889,7 @@ async function getActiveStripPromos() {
   return res.rows;
 }
 
-// âââ Users ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Users Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 const bcrypt = require('bcryptjs');
 
 async function createUser({ email, password, name, role, brand_id }) {
@@ -965,12 +967,12 @@ async function seedAdminUser() {
         role: 'admin',
         brand_id: null
       });
-      console.log('â Seeded default admin user: admin@ads2wallet.com / Ads2Wallet2026!');
+      console.log('Ã¢ÂÂ Seeded default admin user: admin@ads2wallet.com / Ads2Wallet2026!');
     }
   } catch(e) { console.log('Admin seed note:', e.message); }
 }
 
-// âââ Media Hub ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Media Hub Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createMedia({ brand_id, type, title, image_base64, width, height }) {
   const id = uuidv4();
@@ -999,7 +1001,7 @@ async function deleteMedia(id) {
   await pool.query('DELETE FROM media WHERE id = $1', [id]);
 }
 
-// âââ Ad Events (Ad Serving Tracking) ââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Ad Events (Ad Serving Tracking) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function logAdEvent({ brand_id, campaign_id, creative_id, event_type, ip, user_agent, referer, metadata }) {
   await pool.query(
@@ -1045,7 +1047,7 @@ async function getAdTimeline(brand_id, campaign_id, days = 30) {
   return rows;
 }
 
-// âââ Creative Assets ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Creative Assets Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createCreativeAsset(data) {
   const id = uuidv4();
@@ -1083,7 +1085,7 @@ async function deleteCreativeAsset(id) {
   return { success: true };
 }
 
-// âââ Instant Win Campaigns ââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Instant Win Campaigns Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createInstantWinCampaign(data) {
   const id = data.id || uuidv4();
@@ -1151,7 +1153,7 @@ async function deleteInstantWinCampaign(id) {
   return { success: true };
 }
 
-// âââ Instant Win Plays ââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Instant Win Plays Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createInstantWinPlay(data) {
   const id = data.id || uuidv4();
@@ -1215,7 +1217,7 @@ async function getInstantWinStats(brandId) {
   };
 }
 
-// âââ Gamification Campaigns ââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Gamification Campaigns Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createGamificationCampaign(data) {
   const id = data.id || uuidv4();
@@ -1293,7 +1295,7 @@ async function deleteGamificationCampaign(id) {
   return { success: true };
 }
 
-// âââ Gamification Plays ââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Gamification Plays Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function createGamificationPlay(data) {
   const id = data.id || uuidv4();
@@ -1350,14 +1352,14 @@ async function getGamificationStats(brandId) {
   };
 }
 
-// âââ Exports ââââââââââââââââââââââââââââââââââââââââââââââ
+// Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Exports Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 // ---- Google Wallet status tracking ----
 async function updateGoogleWalletStatus(objectId, installed) {
   try {
     if (installed) {
       await pool.query(
-        `UPDATE pass_instances SET google_wallet_saved = TRUE, google_installed_at = NOW(), last_updated = NOW() WHERE google_wallet_object_id = $1`,
+        `UPDATE pass_instances SET google_wallet_saved = TRUE, google_installed_at = NOW(), device_source = 'google', last_updated = NOW() WHERE google_wallet_object_id = $1`,
         [objectId]
       );
     } else {
@@ -1372,6 +1374,13 @@ async function updateGoogleWalletStatus(objectId, installed) {
     console.error('[DB] updateGoogleWalletStatus error:', error.message);
     return null;
   }
+}
+
+async function updatePassDeviceId(serialNumber, deviceId, source) {
+  await pool.query(
+    `UPDATE pass_instances SET device_id = $1, device_source = $2, last_updated = NOW() WHERE serial_number = $3`,
+    [deviceId, source, serialNumber]
+  );
 }
 
 module.exports = {
@@ -1481,5 +1490,6 @@ module.exports = {
   listGamificationPlays,
   countGamificationPlaysForUser,
   getGamificationStats,
-  updateGoogleWalletStatus
+  updateGoogleWalletStatus,
+  updatePassDeviceId
 };
