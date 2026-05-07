@@ -27,6 +27,7 @@ const {
   pool
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
+const googleWallet = require('../engine/google-wallet');
 const { getFormats, getFormat, generateWithFal, composeCreative } = require('../engine/creative-ai');
 const { generateBanner, BANNER_TEMPLATES, IAB_FORMATS } = require('../engine/banner-builder');
 const { generateVideo, cleanupVideo, VIDEO_FORMATS, VIDEO_TEMPLATES } = require('../engine/video-builder');
@@ -65,7 +66,7 @@ async function pdfToPngIfNeeded(base64Data) {
     try { fs.unlinkSync(pngPath); } catch(e) {}
     return pngBuf.toString('base64');
   } catch (err) {
-    console.error('PDF→PNG conversion error:', err.message);
+    console.error('PDFâPNG conversion error:', err.message);
     try { fs.unlinkSync(pdfPath); } catch(e) {}
     throw new Error('Impossibile convertire il PDF in immagine. Verifica che il file sia un PDF valido.');
   }
@@ -78,7 +79,7 @@ const JWT_EXPIRES = '7d';
 // PUBLIC ENDPOINTS (before auth middleware)
 // ============================================================================
 
-// ─── Auth ──────────────────────────────────────────────
+// âââ Auth ââââââââââââââââââââââââââââââââââââââââââââââ
 router.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -95,7 +96,7 @@ router.post('/auth/login', async (req, res) => {
   }
 });
 
-// ─── Debug: Full push diagnostics ──────────────────
+// âââ Debug: Full push diagnostics ââââââââââââââââââ
 router.get('/debug/push-diagnostics', async (req, res) => {
   try {
     const fs = require('fs');
@@ -173,12 +174,12 @@ router.get('/debug/push-diagnostics', async (req, res) => {
   }
 });
 
-// ─── Brand lookup by slug (used by landing page) ──────────────────
+// âââ Brand lookup by slug (used by landing page) ââââââââââââââââââ
 router.get('/brands/by-slug/:slug', async (req, res) => {
   try {
     const brand = await getBrandBySlug(req.params.slug);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
-    // Strip heavy base64 data from public response — images served via dedicated endpoints
+    // Strip heavy base64 data from public response â images served via dedicated endpoints
     const safeConfig = { ...(brand.config || {}) };
     delete safeConfig.logos;
     delete safeConfig.landingBg;
@@ -188,7 +189,7 @@ router.get('/brands/by-slug/:slug', async (req, res) => {
   }
 });
 
-// ─── Brand logo by slug (public, for landing page) ──────────────────
+// âââ Brand logo by slug (public, for landing page) ââââââââââââââââââ
 router.get('/brands/by-slug/:slug/logo', async (req, res) => {
   try {
     const brand = await getBrandBySlug(req.params.slug);
@@ -200,7 +201,7 @@ router.get('/brands/by-slug/:slug/logo', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Brand landing background by slug (public) ──────────────────
+// âââ Brand landing background by slug (public) ââââââââââââââââââ
 router.get('/brands/by-slug/:slug/landing-bg', async (req, res) => {
   try {
     const brand = await getBrandBySlug(req.params.slug);
@@ -212,7 +213,7 @@ router.get('/brands/by-slug/:slug/landing-bg', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Anonymous signup — zero data, just download .pkpass ──────────────────
+// âââ Anonymous signup â zero data, just download .pkpass ââââââââââââââââââ
 router.post('/signup', async (req, res) => {
   try {
     const { brand_slug, campaign_id, utm } = req.body;
@@ -278,7 +279,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// ─── Pass download ──────────────────
+// âââ Pass download ââââââââââââââââââ
 router.get('/passes/:id/download', async (req, res) => {
   try {
     const passInstance = await getPassInstance(req.params.id);
@@ -311,7 +312,7 @@ router.get('/passes/:id/download', async (req, res) => {
   }
 });
 
-// ─── Apple Wallet Protocol ──────────────────
+// âââ Apple Wallet Protocol ââââââââââââââââââ
 
 // Log all Apple Wallet protocol calls for debugging
 router.all('/devices/*', (req, res, next) => {
@@ -340,9 +341,9 @@ router.post('/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber',
     if (pass) {
       await logEvent({ pass_id: pass.id, brand_id: pass.brand_id, event_type: 'pass_installed', device_id: deviceLibraryId });
       if (pass.campaign_id) await incrementCampaignInstalls(pass.campaign_id);
-      console.log(`[Apple Wallet] ✓ Device registered for pass ${pass.id}`);
+      console.log(`[Apple Wallet] â Device registered for pass ${pass.id}`);
     } else {
-      console.warn(`[Apple Wallet] ⚠️ No pass found for serial ${serialNumber}`);
+      console.warn(`[Apple Wallet] â ï¸ No pass found for serial ${serialNumber}`);
     }
 
     res.status(201).send();
@@ -416,7 +417,7 @@ router.get('/passes/:passTypeId/:serialNumber', async (req, res) => {
   }
 });
 
-// ─── Creative asset image (public, used by <img> tags) ──────────────────
+// âââ Creative asset image (public, used by <img> tags) ââââââââââââââââââ
 router.get('/creative-assets/:id/image', async (req, res) => {
   try {
     const asset = await getCreativeAsset(req.params.id);
@@ -430,7 +431,7 @@ router.get('/creative-assets/:id/image', async (req, res) => {
   }
 });
 
-// ─── Media image (public, used by <img> tags) ──────────────────
+// âââ Media image (public, used by <img> tags) ââââââââââââââââââ
 router.get('/media/:id/image', async (req, res) => {
   try {
     const item = await getMedia(req.params.id);
@@ -444,11 +445,11 @@ router.get('/media/:id/image', async (req, res) => {
   }
 });
 
-// ─── Ad Serving (public) ──────────────────────────────────────────
+// âââ Ad Serving (public) ââââââââââââââââââââââââââââââââââââââââââ
 
 const PIXEL_1x1 = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
-// Serve ad tag — returns HTML snippet with creative + impression pixel
+// Serve ad tag â returns HTML snippet with creative + impression pixel
 router.get('/serve/:campaign_id', async (req, res) => {
   try {
     const campaign = await getCampaign(req.params.campaign_id);
@@ -611,7 +612,7 @@ router.get('/click/:campaign_id', async (req, res) => {
 });
 
 // ============================================================================
-// AUTH MIDDLEWARE — everything below requires JWT
+// AUTH MIDDLEWARE â everything below requires JWT
 // ============================================================================
 
 function authMiddleware(req, res, next) {
@@ -627,10 +628,10 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Auth middleware disabled — open access
+// Auth middleware disabled â open access
 // router.use(authMiddleware);
 
-// ─── Auth (authenticated) ──────────────────
+// âââ Auth (authenticated) ââââââââââââââââââ
 router.get('/auth/me', (req, res) => {
   res.json({ user: req.user });
 });
@@ -650,7 +651,7 @@ router.put('/auth/change-password', async (req, res) => {
   }
 });
 
-// ─── Users (admin only) ──────────────────
+// âââ Users (admin only) ââââââââââââââââââ
 router.get('/users', async (req, res) => {
   try {
     const users = await listUsers(req.query.brand_id || null);
@@ -718,7 +719,7 @@ router.delete('/users/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Brands ──────────────────
+// âââ Brands ââââââââââââââââââ
 
 router.get('/brands', async (req, res) => {
   try {
@@ -756,7 +757,7 @@ router.delete('/brands/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Brand logo upload ──────────────────
+// âââ Brand logo upload ââââââââââââââââââ
 router.post('/brands/:id/logo', async (req, res) => {
   try {
     const brand = await getBrand(req.params.id);
@@ -802,7 +803,7 @@ router.get('/brands/:id/logo', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Brand landing background upload ──────────────────
+// âââ Brand landing background upload ââââââââââââââââââ
 router.post('/brands/:id/landing-bg', async (req, res) => {
   try {
     const brand = await getBrand(req.params.id);
@@ -824,7 +825,7 @@ router.post('/brands/:id/landing-bg', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Brand strip upload ──────────────────
+// âââ Brand strip upload ââââââââââââââââââ
 router.post('/brands/:id/strip', async (req, res) => {
   try {
     const brand = await getBrand(req.params.id);
@@ -856,7 +857,7 @@ router.delete('/brands/:id/strip', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── AI strip generation ──────────────────
+// âââ AI strip generation ââââââââââââââââââ
 router.post('/brands/:id/ai-strip', async (req, res) => {
   try {
     const brand = await getBrand(req.params.id);
@@ -890,7 +891,7 @@ router.post('/brands/:id/ai-strip', async (req, res) => {
   }
 });
 
-// ─── AI landing page copy ──────────────────
+// âââ AI landing page copy ââââââââââââââââââ
 router.post('/brands/:id/ai-copy', async (req, res) => {
   try {
     const brand = await getBrand(req.params.id);
@@ -904,7 +905,7 @@ router.post('/brands/:id/ai-copy', async (req, res) => {
   }
 });
 
-// ─── AI Creative Generator (copy + image in one shot) ──────────────────
+// âââ AI Creative Generator (copy + image in one shot) ââââââââââââââââââ
 router.post('/brands/:id/ai-creative', async (req, res) => {
   try {
     const brand = await getBrand(req.params.id);
@@ -941,7 +942,7 @@ router.post('/brands/:id/ai-creative', async (req, res) => {
         console.log(`[AI Creative] Image generated and saved as media ${media.id}`);
       } catch (imgErr) {
         console.error('[AI Creative] Image generation failed:', imgErr.message);
-        // Continue without image — copy is still useful
+        // Continue without image â copy is still useful
       }
     }
 
@@ -952,7 +953,7 @@ router.post('/brands/:id/ai-creative', async (req, res) => {
   }
 });
 
-// ─── Templates ──────────────────
+// âââ Templates ââââââââââââââââââ
 
 router.get('/templates', async (req, res) => {
   try {
@@ -985,7 +986,7 @@ router.put('/templates/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Template image upload (base64 in style JSONB) ──────────
+// âââ Template image upload (base64 in style JSONB) ââââââââââ
 router.post('/templates/:id/images', async (req, res) => {
   try {
     const template = await getTemplate(req.params.id);
@@ -1024,7 +1025,7 @@ router.delete('/templates/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Campaigns ──────────────────
+// âââ Campaigns ââââââââââââââââââ
 
 router.get('/campaigns', async (req, res) => {
   try {
@@ -1064,7 +1065,7 @@ router.delete('/campaigns/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Passes (backoffice) ──────────────────
+// âââ Passes (backoffice) ââââââââââââââââââ
 
 router.get('/passes', async (req, res) => {
   try {
@@ -1136,7 +1137,7 @@ router.post('/passes/:id/regenerate', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Push Notifications ──────────────────
+// âââ Push Notifications ââââââââââââââââââ
 
 router.post('/push/send', async (req, res) => {
   try {
@@ -1173,7 +1174,7 @@ router.post('/push/send', async (req, res) => {
     if (update_pass !== false) {
       const brand = await getBrand(brand_id);
 
-      // Update brand.config.pushAnnouncement — this is what passkit.js reads
+      // Update brand.config.pushAnnouncement â this is what passkit.js reads
       // to build the announcement field with changeMessage on the pass
       const config = brand.config || {};
       config.pushAnnouncement = { title, message, ts: Date.now() };
@@ -1225,7 +1226,7 @@ router.post('/push/send', async (req, res) => {
       }
     }
 
-    // Send push to all devices — track per-pass status
+    // Send push to all devices â track per-pass status
     let sentCount = 0;
     const pushResults = [];
     for (const device of devices) {
@@ -1286,7 +1287,7 @@ router.delete('/push/clear/:brand_id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Scheduled Push ──────────────────
+// âââ Scheduled Push ââââââââââââââââââ
 
 router.get('/push/scheduled', async (req, res) => {
   try {
@@ -1318,7 +1319,7 @@ router.delete('/push/scheduled/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Geofencing Locations ──────────────────
+// âââ Geofencing Locations ââââââââââââââââââ
 
 router.get('/brands/:id/geofencing', async (req, res) => {
   try {
@@ -1367,7 +1368,7 @@ router.put('/brands/:id/geofencing', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Analytics ──────────────────
+// âââ Analytics ââââââââââââââââââ
 
 router.get('/analytics/:brand_id', async (req, res) => {
   try {
@@ -1390,7 +1391,7 @@ router.get('/events/:brand_id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Strip Promos ──────────────────
+// âââ Strip Promos ââââââââââââââââââ
 
 router.get('/brands/:id/strip-promos', async (req, res) => {
   try {
@@ -1436,7 +1437,7 @@ router.get('/strip-promos/:id/image', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Creative Assets ──────────────────────────────────────────────
+// âââ Creative Assets ââââââââââââââââââââââââââââââââââââââââââââââ
 
 // Get available formats (optionally filter by segment)
 router.get('/creative-formats', (req, res) => {
@@ -1451,7 +1452,7 @@ router.get('/creative-assets', async (req, res) => {
   const assets = await listCreativeAssets(brand_id, {
     segment, campaign_id, limit: limit ? parseInt(limit) : undefined
   });
-  // Don't send image_base64 in list (too heavy) — send thumbnail info
+  // Don't send image_base64 in list (too heavy) â send thumbnail info
   const light = assets.map(a => ({ ...a, image_base64: a.image_base64 ? '[has_image]' : null }));
   res.json(light);
 });
@@ -1594,7 +1595,7 @@ router.delete('/creative-assets/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Media Hub ──────────────────────────────────────────────────────────
+// âââ Media Hub ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 router.get('/media', async (req, res) => {
   try {
     const brand_id = req.query.brand_id;
@@ -1634,7 +1635,7 @@ router.delete('/media', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Ad Serving Stats (protected) ────────────────────────────────────
+// âââ Ad Serving Stats (protected) ââââââââââââââââââââââââââââââââââââ
 router.get('/ad-stats', async (req, res) => {
   try {
     const brand_id = req.query.brand_id;
@@ -1657,7 +1658,7 @@ router.get('/ad-timeline', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Ad tag generator — returns embeddable code for a campaign
+// Ad tag generator â returns embeddable code for a campaign
 router.get('/ad-tag/:campaign_id', async (req, res) => {
   try {
     const campaign = await getCampaign(req.params.campaign_id);
@@ -1687,7 +1688,7 @@ router.get('/ad-tag/:campaign_id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Banner Builder endpoints ──────────────────────────────────────
+// âââ Banner Builder endpoints ââââââââââââââââââââââââââââââââââââââ
 
 // Get available templates & formats
 router.get('/banners/templates', (req, res) => {
@@ -1776,7 +1777,7 @@ router.get('/banners/:id/serve', async (req, res) => {
   } catch (err) { res.status(500).send('Error'); }
 });
 
-// ─── Video Builder endpoints ───────────────────────────────────────
+// âââ Video Builder endpoints âââââââââââââââââââââââââââââââââââââââ
 
 // Get available video templates & formats
 router.get('/videos/templates', (req, res) => {
@@ -1881,7 +1882,7 @@ router.get('/videos/:id/serve', async (req, res) => {
   } catch (err) { res.status(500).send('Error'); }
 });
 
-// ─── Instant Win ──────────────────────────────────────────────────────
+// âââ Instant Win ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 // List campaigns for a brand
 router.get('/instant-win', async (req, res) => {
@@ -1945,7 +1946,7 @@ router.get('/instant-win/:id/plays', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Play endpoint (public, no auth) ──────────────────────────────────
+// âââ Play endpoint (public, no auth) ââââââââââââââââââââââââââââââââââ
 // Called from the game page when user plays
 router.post('/play/:serial_number', async (req, res) => {
   try {
@@ -1977,7 +1978,7 @@ router.post('/play/:serial_number', async (req, res) => {
     // Check max plays per user
     const playCount = await countPlaysForUser(campaign_id, serial_number);
     if (campaign.max_plays_per_user && playCount >= campaign.max_plays_per_user)
-      return res.status(400).json({ error: 'Hai già giocato il massimo numero di volte', already_played: true });
+      return res.status(400).json({ error: 'Hai giÃ  giocato il massimo numero di volte', already_played: true });
 
     // Check budget
     if (campaign.total_budget && campaign.total_wins >= campaign.total_budget)
@@ -2020,7 +2021,7 @@ router.post('/play/:serial_number', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Remove Instant Win from pass (resets brand config) ──────────────
+// âââ Remove Instant Win from pass (resets brand config) ââââââââââââââ
 router.post('/instant-win/:id/deactivate', async (req, res) => {
   try {
     const campaign = await getInstantWinCampaign(req.params.id);
@@ -2039,7 +2040,7 @@ router.post('/instant-win/:id/deactivate', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Game page info (public, no auth) ──────────────────────────────────
+// âââ Game page info (public, no auth) ââââââââââââââââââââââââââââââââââ
 // Returns campaign info for the game page to render
 router.get('/play/:serial_number/info', async (req, res) => {
   try {
@@ -2089,7 +2090,7 @@ router.get('/play/:serial_number/info', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Leads Database (aggregated player data) ──────────────────────────────
+// âââ Leads Database (aggregated player data) ââââââââââââââââââââââââââââââ
 router.get('/brands/:brand_id/leads', async (req, res) => {
   try {
     const { brand_id } = req.params;
@@ -2139,7 +2140,7 @@ router.get('/brands/:brand_id/leads', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Gamification Campaigns CRUD ──────────────────────────────────────
+// âââ Gamification Campaigns CRUD ââââââââââââââââââââââââââââââââââââââ
 
 router.get('/gamification/campaigns/:brand_id', async (req, res) => {
   try {
@@ -2194,7 +2195,7 @@ router.get('/gamification/plays/:campaign_id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Gamification Game Info (public, no auth) ──────────────────────────────
+// âââ Gamification Game Info (public, no auth) ââââââââââââââââââââââââââââââ
 
 router.get('/game/:serial_number/info', async (req, res) => {
   try {
@@ -2239,7 +2240,7 @@ router.get('/game/:serial_number/info', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Gamification Play endpoint (public, no auth) ──────────────────────────
+// âââ Gamification Play endpoint (public, no auth) ââââââââââââââââââââââââââ
 
 router.post('/game/:serial_number', async (req, res) => {
   try {
@@ -2265,7 +2266,7 @@ router.post('/game/:serial_number', async (req, res) => {
     // Check max plays per user
     const playCount = await countGamificationPlaysForUser(campaign_id, serial_number);
     if (campaign.max_plays_per_user && playCount >= campaign.max_plays_per_user)
-      return res.status(400).json({ error: 'Hai già giocato il massimo numero di volte', already_played: true });
+      return res.status(400).json({ error: 'Hai giÃ  giocato il massimo numero di volte', already_played: true });
 
     // Determine tier based on completion time
     const timeSecs = parseFloat(completion_time_secs);
@@ -2313,6 +2314,53 @@ router.post('/game/:serial_number', async (req, res) => {
       play_id: play.id
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+// ── Google Wallet ────────────────────────────────────────────────────
+
+/**
+ * GET /api/v1/passes/:id/google-wallet - Get "Add to Google Wallet" link
+ */
+router.get('/passes/:id/google-wallet', async (req, res) => {
+  try {
+    if (!googleWallet.isConfigured()) {
+      return res.status(501).json({ error: 'Google Wallet not configured' });
+    }
+
+    const instance = await getPassInstance(req.params.id);
+    if (!instance) return res.status(404).json({ error: 'Pass not found' });
+
+    const template = await getTemplate(instance.template_id);
+    const brand = await getBrand(instance.brand_id);
+
+    await googleWallet.createOrUpdatePassClass(brand, template);
+
+    const passObject = googleWallet.buildPassObject(brand, template, instance, instance.customer_data);
+
+    await googleWallet.createPassObjectOnServer(passObject);
+
+    const saveLink = googleWallet.generateSaveLink(passObject);
+
+    await logEvent({
+      brand_id: instance.brand_id,
+      pass_id: instance.id,
+      event_type: 'google_wallet_link_generated',
+      data: {}
+    });
+
+    res.json({ save_link: saveLink });
+  } catch (err) {
+    console.error('[GoogleWallet] Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/v1/google-wallet/status - Check if Google Wallet is configured
+ */
+router.get('/google-wallet/status', (req, res) => {
+  res.json({ configured: googleWallet.isConfigured() });
 });
 
 module.exports = router;
