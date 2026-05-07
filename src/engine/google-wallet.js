@@ -152,7 +152,11 @@ async function createOrUpdatePassClass(brand, template) {
     },
     imageModulesData: [],
     textModulesData: [],
-    linksModuleData: { uris: [] }
+    linksModuleData: { uris: [] },
+    // Callback for save/delete events — Google POSTs here when user adds/removes pass
+    callbackOptions: {
+      url: `https://${process.env.CUSTOM_DOMAIN || 'studio.ads2wallet.com'}/api/v1/google-wallet/callback`
+    }
   };
 
   // Brand logo
