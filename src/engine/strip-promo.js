@@ -26,6 +26,7 @@ const {
 } = require('../db');
 const { createPkpass } = require('./passkit');
 const { sendPushUpdate } = require('./apns');
+const googleWallet = require('./google-wallet');
 const path = require('path');
 const fs = require('fs');
 
@@ -223,24 +224,29 @@ async function regenerateBrandPasses(brand_id) {
 
     if (!activePasses.length || !brand) return;
 
-    const template = await getTemplate(activePasses[0].template_id);
-    if (!template) return;
-
     const cacheDir = CACHE_DIR;
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
     let regenerated = 0;
+    let googleSynced = 0;
     for (const pass of activePasses) {
       try {
-        const pkpassPath = await createPkpass(template, pass, brand);
+        const template = await getTemplate(pass.template_id);
+        if (!template) continue;
+        await createPkpass(template, pass, brand);
         await touchPass(pass.id);
+        if (googleWallet.isConfigured() && pass.google_wallet_object_id) {
+          const passObject = googleWallet.buildPassObject(brand, template, pass, pass.customer_data || {});
+          await googleWallet.createPassObjectOnServer(passObject);
+          googleSynced++;
+        }
         regenerated++;
       } catch (e) {
         // Skip failed passes silently
       }
     }
 
-    console.log(`[StripPromo] Regenerated ${regenerated}/${activePasses.length} passes for brand ${brand.name}`);
+    console.log(`[StripPromo] Regenerated ${regenerated}/${activePasses.length} passes for brand ${brand.name} (google synced: ${googleSynced})`);
 
     // Send push to all devices so they update
     const devices = await getDevicesForBrand(brand_id);

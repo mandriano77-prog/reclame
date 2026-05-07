@@ -617,6 +617,9 @@ async function updatePassInstance(id, data) {
   if (data.status) { p++; updates.push(`status = $${p}`); values.push(data.status); }
   if (data.device_token !== undefined) { p++; updates.push(`device_token = $${p}`); values.push(data.device_token); }
   if (data.field_values) { p++; updates.push(`field_values = $${p}`); values.push(JSON.stringify(data.field_values)); }
+  if (data.google_wallet_object_id !== undefined) { p++; updates.push(`google_wallet_object_id = $${p}`); values.push(data.google_wallet_object_id); }
+  if (data.google_wallet_saved !== undefined) { p++; updates.push(`google_wallet_saved = $${p}`); values.push(!!data.google_wallet_saved); }
+  if (data.google_installed_at !== undefined) { p++; updates.push(`google_installed_at = $${p}`); values.push(data.google_installed_at); }
   if (updates.length === 0) return getPassInstance(id);
   updates.push('last_updated = NOW()');
   p++; values.push(id);

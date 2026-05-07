@@ -18,6 +18,7 @@ const {
 } = require('../db');
 const { createPkpass } = require('./passkit');
 const { sendPushUpdate } = require('./apns');
+const googleWallet = require('./google-wallet');
 const path = require('path');
 const fs = require('fs');
 
@@ -114,6 +115,28 @@ async function executeScheduledPush(schedule, baseUrl) {
       } catch (err) {
         console.error(`Error regenerating pass ${pass.id}:`, err.message);
       }
+    }
+  }
+
+  // Keep Google Wallet objects in sync when pass content changes.
+  if (update_pass && googleWallet.isConfigured()) {
+    try {
+      const passes = await listPasses(brand_id);
+      const syncedBrand = await getBrand(brand_id);
+      for (const pass of passes) {
+        if (!pass.google_wallet_object_id) continue;
+        try {
+          const template = await getTemplate(pass.template_id);
+          if (!template) continue;
+          const passObject = googleWallet.buildPassObject(syncedBrand, template, pass, pass.customer_data || {});
+          await googleWallet.createPassObjectOnServer(passObject);
+          await googleWallet.updatePassMessage(pass.serial_number, message);
+        } catch (e) {
+          console.error(`[GoogleWallet] Scheduled sync failed for ${pass.serial_number}:`, e.message);
+        }
+      }
+    } catch (e) {
+      console.error('[GoogleWallet] Scheduled sync error:', e.message);
     }
   }
 

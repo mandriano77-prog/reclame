@@ -42,6 +42,7 @@ const SERVICE_ACCOUNT_JSON = loadServiceAccount();
 
 const WALLET_API_BASE = 'https://walletobjects.googleapis.com/walletobjects/v1';
 const SAVE_LINK_BASE = 'https://pay.google.com/gp/v/save';
+const API_BASE = `https://${process.env.CUSTOM_DOMAIN || 'www.nudj.studio'}/api/v1`;
 
 // ── JWT helpers ───────────────────────────────────────────────────────
 
@@ -155,22 +156,22 @@ async function createOrUpdatePassClass(brand, template) {
     linksModuleData: { uris: [] },
     // Callback for save/delete events — Google POSTs here when user adds/removes pass
     callbackOptions: {
-      url: `https://${process.env.CUSTOM_DOMAIN || 'studio.ads2wallet.com'}/api/v1/google-wallet/callback`
+      url: `${API_BASE}/google-wallet/callback`
     }
   };
 
   // Brand logo
-  if (brand.config?.logo_base64) {
+  if (brand.config?.logo_base64 || brand.config?.logos?.logo) {
     classObj.logo = {
-      sourceUri: { uri: `https://${process.env.CUSTOM_DOMAIN || 'www.nudj.studio'}/api/brands/${brand.id}/logo` },
+      sourceUri: { uri: `${API_BASE}/brands/${brand.id}/logo` },
       contentDescription: { defaultValue: { language: 'it', value: brand.name } }
     };
   }
 
   // Hero image (strip equivalent)
-  if (brand.config?.strip_base64 || template.style?.stripImage) {
+  if (brand.config?.strip_base64 || brand.config?.logos?.strip || template.style?.stripImage) {
     classObj.heroImage = {
-      sourceUri: { uri: `https://${process.env.CUSTOM_DOMAIN || 'www.nudj.studio'}/api/brands/${brand.id}/strip` },
+      sourceUri: { uri: `${API_BASE}/brands/${brand.id}/strip` },
       contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
     };
   }
@@ -265,17 +266,17 @@ function buildPassObject(brand, template, instance, member) {
   }
 
   // Hero image
-  if (brand.config?.strip_base64 || template.style?.stripImage) {
+  if (brand.config?.strip_base64 || brand.config?.logos?.strip || template.style?.stripImage) {
     obj.heroImage = {
-      sourceUri: { uri: `https://${process.env.CUSTOM_DOMAIN || 'www.nudj.studio'}/api/brands/${brand.id}/strip` },
+      sourceUri: { uri: `${API_BASE}/brands/${brand.id}/strip` },
       contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
     };
   }
 
   // Logo
-  if (brand.config?.logo_base64) {
+  if (brand.config?.logo_base64 || brand.config?.logos?.logo) {
     obj.logo = {
-      sourceUri: { uri: `https://${process.env.CUSTOM_DOMAIN || 'www.nudj.studio'}/api/brands/${brand.id}/logo` },
+      sourceUri: { uri: `${API_BASE}/brands/${brand.id}/logo` },
       contentDescription: { defaultValue: { language: 'it', value: brand.name } }
     };
   }

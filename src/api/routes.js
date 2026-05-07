@@ -72,6 +72,35 @@ async function pdfToPngIfNeeded(base64Data) {
   }
 }
 
+async function syncGoogleWalletObjectsForPasses({ brand, passes, message }) {
+  if (!googleWallet.isConfigured()) return { attempted: 0, updated: 0, errors: 0, skipped: true };
+  if (!Array.isArray(passes) || passes.length === 0) return { attempted: 0, updated: 0, errors: 0, skipped: false };
+
+  let attempted = 0;
+  let updated = 0;
+  let errors = 0;
+
+  for (const pass of passes) {
+    if (!pass.google_wallet_object_id) continue;
+    attempted++;
+    try {
+      const template = await getTemplate(pass.template_id);
+      if (!template) continue;
+      const passObject = googleWallet.buildPassObject(brand, template, pass, pass.customer_data || {});
+      await googleWallet.createPassObjectOnServer(passObject);
+      if (message) {
+        await googleWallet.updatePassMessage(pass.serial_number, message);
+      }
+      updated++;
+    } catch (err) {
+      errors++;
+      console.error('[GoogleWallet] Sync error for serial', pass.serial_number, err.message);
+    }
+  }
+
+  return { attempted, updated, errors, skipped: false };
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'nudj-secret-change-me-in-prod';
 const JWT_EXPIRES = '7d';
 
@@ -325,6 +354,7 @@ router.post('/signup/google-wallet', async (req, res) => {
     await googleWallet.createOrUpdatePassClass(brand, template);
     const passObject = googleWallet.buildPassObject(brand, template, passInstance, passInstance.customer_data || {});
     await googleWallet.createPassObjectOnServer(passObject);
+    await updatePassInstance(passInstance.id, { google_wallet_object_id: passObject.id, google_wallet_saved: false, google_installed_at: null });
     const saveLink = googleWallet.generateSaveLink(passObject);
 
     await logEvent({ brand_id: brand.id, pass_id: passInstance.id, event_type: 'google_wallet_link_generated', metadata: {} });
@@ -903,6 +933,17 @@ router.post('/brands/:id/strip', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.get('/brands/:id/strip', async (req, res) => {
+  try {
+    const brand = await getBrand(req.params.id);
+    const stripBase64 = brand?.config?.logos?.strip || brand?.config?.strip_base64 || null;
+    if (!stripBase64) return res.status(404).json({ error: 'Nessuna strip' });
+    const buf = Buffer.from(stripBase64, 'base64');
+    res.set('Content-Type', 'image/png');
+    res.send(buf);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.delete('/brands/:id/strip', async (req, res) => {
   try {
     const brand = await getBrand(req.params.id);
@@ -1276,11 +1317,18 @@ router.post('/push/send', async (req, res) => {
 
       // Touch all affected passes to trigger Apple Wallet refresh
       const passQuery = campaign_id
-        ? await pool.query('SELECT id FROM pass_instances WHERE brand_id = $1 AND campaign_id = $2', [brand_id, campaign_id])
-        : await pool.query('SELECT id FROM pass_instances WHERE brand_id = $1', [brand_id]);
+        ? await pool.query('SELECT * FROM pass_instances WHERE brand_id = $1 AND campaign_id = $2', [brand_id, campaign_id])
+        : await pool.query('SELECT * FROM pass_instances WHERE brand_id = $1', [brand_id]);
       for (const p of passQuery.rows) {
         await touchPass(p.id);
       }
+
+      const googleSync = await syncGoogleWalletObjectsForPasses({
+        brand,
+        passes: passQuery.rows,
+        message
+      });
+      console.log('[GoogleWallet] Push sync', googleSync);
     }
 
     // Send push to all devices ÃÂ¢ÃÂÃÂ track per-pass status
@@ -2396,6 +2444,7 @@ router.get('/google-wallet/pass/:id', async (req, res) => {
     const passObject = googleWallet.buildPassObject(brand, template, instance, instance.customer_data);
 
     await googleWallet.createPassObjectOnServer(passObject);
+    await updatePassInstance(instance.id, { google_wallet_object_id: passObject.id });
 
     const saveLink = googleWallet.generateSaveLink(passObject);
 
@@ -2403,7 +2452,7 @@ router.get('/google-wallet/pass/:id', async (req, res) => {
       brand_id: instance.brand_id,
       pass_id: instance.id,
       event_type: 'google_wallet_link_generated',
-      data: {}
+      metadata: {}
     });
 
     res.json({ save_link: saveLink });
@@ -2467,7 +2516,7 @@ router.post('/google-wallet/callback', async (req, res) => {
       } else {
         console.log('[GoogleWallet Callback] No pass found for objectId: ' + evtObjectId);
       }
-    } else if (evtType === 'del' || evtType === 'DELETE') {
+    } else if (evtType === 'del' || evtType === 'DEL' || evtType === 'delete' || evtType === 'DELETE') {
       const pass = await updateGoogleWalletStatus(evtObjectId, false);
       if (pass) {
         await logEvent({

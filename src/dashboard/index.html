@@ -1147,6 +1147,9 @@ let currentUser = null;
 let currentBrandName = '';
 let currentBrandSlug = '';
 let campaignsCache = [];
+const LAST_BRAND_KEY = 'ads2wallet:lastBrandId';
+const BRAND_CACHE_TTL_MS = 10000;
+const brandDataCache = new Map();
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1188,7 +1191,13 @@ function nav(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id)?.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    if (event && event.target) event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        const navItem = Array.from(document.querySelectorAll('.nav-item'))
+            .find(n => (n.getAttribute('onclick') || '').includes(`'${id}'`));
+        if (navItem) navItem.classList.add('active');
+    }
     const loaders = {
         campaigns: loadCampaigns,
         passes: loadPasses,
@@ -1207,23 +1216,91 @@ function nav(id) {
     if (loaders[id]) loaders[id]();
 }
 
+function getActiveSectionId() {
+    return document.querySelector('.section.active')?.id || 'campaigns';
+}
+
+function refreshActiveSection() {
+    const activeId = getActiveSectionId();
+    nav(activeId);
+}
+
+function cacheKey(url) {
+    return `${brandId || 'no-brand'}:${url}`;
+}
+
+async function fetchCachedJson(url, options = {}, ttlMs = BRAND_CACHE_TTL_MS) {
+    const key = cacheKey(url);
+    const now = Date.now();
+    const cached = brandDataCache.get(key);
+    if (cached && (now - cached.ts) < ttlMs) return cached.data;
+    const res = await fetch(url, options);
+    const data = await res.json();
+    brandDataCache.set(key, { ts: now, data });
+    return data;
+}
+
+function invalidateBrandCache() {
+    const prefix = `${brandId || 'no-brand'}:`;
+    for (const key of brandDataCache.keys()) {
+        if (key.startsWith(prefix)) brandDataCache.delete(key);
+    }
+}
+
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 function toast(msg) { const t = document.getElementById('toastEl'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 
 // ==================== BRANDS ====================
 async function loadBrands() {
-    const res = await fetch(`${API}/brands`);
+    const res = await fetch(`${API}/brands`, { headers: { ...getAuthHeaders() } });
     const brands = await res.json();
     const sel = document.getElementById('brandSelector');
     sel.innerHTML = '<option value="">Seleziona Brand</option>';
-    brands.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name; sel.appendChild(o); });
+    const frag = document.createDocumentFragment();
+    brands.forEach(b => {
+        const o = document.createElement('option');
+        o.value = b.id;
+        o.textContent = b.name;
+        frag.appendChild(o);
+    });
+    sel.appendChild(frag);
+
     const urlBrand = new URLSearchParams(window.location.search).get('brand_id');
+    const lastBrand = localStorage.getItem(LAST_BRAND_KEY);
     const fromUrl = urlBrand && brands.find(b => b.id === urlBrand);
-    if (fromUrl) { sel.value = fromUrl.id; brandId = fromUrl.id; }
-    else if (brands.length > 0) { sel.value = brands[0].id; brandId = brands[0].id; }
+    const fromLast = !fromUrl && lastBrand && brands.find(b => b.id === lastBrand);
+    const keepCurrent = !fromUrl && !fromLast && brandId && brands.find(b => b.id === brandId);
+
+    if (fromUrl) {
+        sel.value = fromUrl.id;
+        brandId = fromUrl.id;
+    } else if (fromLast) {
+        sel.value = fromLast.id;
+        brandId = fromLast.id;
+    } else if (keepCurrent) {
+        sel.value = keepCurrent.id;
+        brandId = keepCurrent.id;
+    } else if (brands.length > 0) {
+        sel.value = brands[0].id;
+        brandId = brands[0].id;
+    } else {
+        brandId = null;
+    }
+
     updateNavState();
-    if (brandId) { currentBrandName = sel.options[sel.selectedIndex]?.textContent || ''; syncBrandUrl(); applyBrandTheme(); await refreshOverview(); }
-    else { applyBrandTheme(); }
+    if (brandId) {
+        currentBrandName = sel.options[sel.selectedIndex]?.textContent || '';
+        localStorage.setItem(LAST_BRAND_KEY, brandId);
+        syncBrandUrl();
+        applyBrandTheme();
+        await refreshOverview();
+        refreshActiveSection();
+    } else {
+        currentBrandName = '';
+        localStorage.removeItem(LAST_BRAND_KEY);
+        applyBrandTheme();
+        refreshActiveSection();
+    }
 }
 
 function changeBrand() {
@@ -1233,16 +1310,23 @@ function changeBrand() {
     applyBrandTheme();
     updateNavState();
     if (!brandId) {
+        localStorage.removeItem(LAST_BRAND_KEY);
         return;
     }
+    localStorage.setItem(LAST_BRAND_KEY, brandId);
     syncBrandUrl();
-    refreshOverview();
+    refreshOverview().then(() => refreshActiveSection());
 }
 
 function syncBrandUrl() {
-    if (!brandId) return;
     const u = new URLSearchParams(window.location.search);
-    if (u.get('brand_id') !== brandId) { u.set('brand_id', brandId); history.replaceState(null, '', '?' + u.toString()); }
+    if (!brandId) {
+        u.delete('brand_id');
+    } else if (u.get('brand_id') !== brandId) {
+        u.set('brand_id', brandId);
+    }
+    const qs = u.toString();
+    history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
 }
 
 // ==================== BRAND THEMING ====================
@@ -1318,12 +1402,11 @@ async function deleteBrandAction() {
 async function refreshOverview() {
     if (!brandId) return;
     try {
-        const [analyticsRes, campaignsRes] = await Promise.all([
-            fetch(`${API}/analytics/${brandId}`),
-            fetch(`${API}/campaigns?brand_id=${brandId}`)
+        const [analytics, campaigns] = await Promise.all([
+            fetchCachedJson(`${API}/analytics/${brandId}`, { headers: { ...getAuthHeaders() } }),
+            fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } })
         ]);
-        const analytics = await analyticsRes.json();
-        campaignsCache = await campaignsRes.json();
+        campaignsCache = campaigns;
     } catch(e) { console.error('refreshOverview:', e); }
 }
 
@@ -1331,8 +1414,7 @@ async function refreshOverview() {
 // ==================== CAMPAIGNS ====================
 async function loadCampaigns() {
     if (!brandId) return;
-    const res = await fetch(`${API}/campaigns?brand_id=${brandId}`);
-    campaignsCache = await res.json();
+    campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('campaignsList');
     if (!campaignsCache.length) { el.innerHTML = '<p style="color:var(--text2)">Nessuna campagna. Crea la prima!</p>'; return; }
     el.innerHTML = campaignsCache.map(c => `
@@ -1373,8 +1455,7 @@ async function loadTemplateSelectorForCampaign() {
     const sel = document.getElementById('campTemplate');
     sel.innerHTML = '<option value="">-- Default --</option>';
     if (!brandId) return;
-    const res = await fetch(`${API}/templates?brand_id=${brandId}`);
-    const templates = await res.json();
+    const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     templates.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = t.name; sel.appendChild(o); });
 }
 
@@ -1424,6 +1505,7 @@ async function saveCampaign() {
         }
         closeModal('campaignModal');
         toast(editId ? 'Campagna aggiornata!' : 'Campagna creata!');
+        invalidateBrandCache();
         loadCampaigns();
     } catch (err) {
         alert('Errore salvataggio campagna: ' + err.message);
@@ -1433,6 +1515,7 @@ async function saveCampaign() {
 async function toggleCampaign(id, active) {
     await fetch(`${API}/campaigns/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active }) });
     toast(active ? 'Campagna attivata' : 'Campagna in pausa');
+    invalidateBrandCache();
     loadCampaigns();
 }
 
@@ -1440,6 +1523,7 @@ async function deleteCampaign(id) {
     if (!confirm('Eliminare questa campagna?')) return;
     await fetch(`${API}/campaigns/${id}`, { method: 'DELETE' });
     toast('Campagna eliminata');
+    invalidateBrandCache();
     loadCampaigns();
 }
 
@@ -1653,8 +1737,7 @@ async function deletePassInstance(id) {
 // ==================== TEMPLATES ====================
 async function loadTemplates() {
     if (!brandId) return;
-    const res = await fetch(`${API}/templates?brand_id=${brandId}`);
-    const templates = await res.json();
+    const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('templatesList');
     if (!templates.length) { el.innerHTML = '<p style="color:var(--text2)">Nessun template. Crea il primo!</p>'; return; }
     el.innerHTML = templates.map(t => `
@@ -1768,6 +1851,7 @@ async function saveTemplate() {
     }
     closeModal('templateModal');
     toast(editId ? 'Template aggiornato!' : 'Template creato!');
+    invalidateBrandCache();
     loadTemplates();
 }
 
@@ -1984,6 +2068,7 @@ async function deleteTemplate(id) {
     if (!confirm('Eliminare questo template?')) return;
     await fetch(`${API}/templates/${id}`, { method: 'DELETE' });
     toast('Template eliminato');
+    invalidateBrandCache();
     loadTemplates();
 }
 
@@ -2772,12 +2857,10 @@ async function deleteGamCampaign(id) {
 // ==================== ANALYTICS ====================
 async function loadAnalytics() {
     if (!brandId) return;
-    const [analyticsRes, campaignsRes] = await Promise.all([
-        fetch(`${API}/analytics/${brandId}`),
-        fetch(`${API}/campaigns?brand_id=${brandId}`)
+    const [analytics, campaigns] = await Promise.all([
+        fetchCachedJson(`${API}/analytics/${brandId}`, { headers: { ...getAuthHeaders() } }),
+        fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } })
     ]);
-    const analytics = await analyticsRes.json();
-    const campaigns = await campaignsRes.json();
 
     const totalDL = campaigns.reduce((s,c) => s + (c.total_downloads||0), 0);
     const totalIN = campaigns.reduce((s,c) => s + (c.total_installs||0), 0);
