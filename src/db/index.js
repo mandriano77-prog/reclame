@@ -376,6 +376,7 @@ async function getDb() {
     // Google Wallet columns
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS google_wallet_object_id TEXT`);
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS google_wallet_saved BOOLEAN DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS google_installed_at TIMESTAMPTZ`);
 
     // Gamification indexes
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_gam_campaigns_brand ON gamification_campaigns(brand_id)`).catch(()=>{});
@@ -1351,6 +1352,28 @@ async function getGamificationStats(brandId) {
 
 // âââ Exports ââââââââââââââââââââââââââââââââââââââââââââââ
 
+// ---- Google Wallet status tracking ----
+async function updateGoogleWalletStatus(objectId, installed) {
+  try {
+    if (installed) {
+      await pool.query(
+        `UPDATE pass_instances SET google_wallet_saved = TRUE, google_installed_at = NOW(), last_updated = NOW() WHERE google_wallet_object_id = $1`,
+        [objectId]
+      );
+    } else {
+      await pool.query(
+        `UPDATE pass_instances SET google_wallet_saved = FALSE, google_installed_at = NULL, last_updated = NOW() WHERE google_wallet_object_id = $1`,
+        [objectId]
+      );
+    }
+    const result = await pool.query(`SELECT * FROM pass_instances WHERE google_wallet_object_id = $1`, [objectId]);
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('[DB] updateGoogleWalletStatus error:', error.message);
+    return null;
+  }
+}
+
 module.exports = {
   getDb,
   saveDb,
@@ -1457,5 +1480,6 @@ module.exports = {
   createGamificationPlay,
   listGamificationPlays,
   countGamificationPlaysForUser,
-  getGamificationStats
+  getGamificationStats,
+  updateGoogleWalletStatus
 };
