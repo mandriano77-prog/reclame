@@ -158,7 +158,7 @@
     <div class="text-section">
       <h1 id="headline">
         <span id="brandName">Aggiungi al Wallet</span>
-        <small id="subheadline">Sblocca offerte e novitÃ  sul tuo iPhone</small>
+        <small id="subheadline">Sblocca offerte e novitÃÂ  sul tuo iPhone</small>
       </h1>
       <p class="claim" id="claim"></p>
     </div>
@@ -185,7 +185,7 @@
     </div>
 
     <div class="footnote">
-      Nessun dato richiesto Â· Nessun account Â· Cancellabile in qualsiasi momento
+      Nessun dato richiesto ÃÂ· Nessun account ÃÂ· Cancellabile in qualsiasi momento
     </div>
   </div>
 
@@ -242,7 +242,7 @@
           if (brand.name) {
             el.logoLetter.textContent = brand.name.charAt(0).toUpperCase();
             el.brandName.textContent = brand.name;
-            document.title = `${brand.name} Â· Ads2Wallet`;
+            document.title = `${brand.name} ÃÂ· Ads2Wallet`;
           }
           if (c.headline) el.brandName.textContent = c.headline;
           if (c.subheadline) el.sub.textContent = c.subheadline;
@@ -337,7 +337,7 @@
       btn.querySelector('span').textContent = 'Caricamento...';
       try {
         var passId = new URLSearchParams(window.location.search).get('id');
-        var res = await fetch('/api/v1/passes/' + passId + '/google-wallet');
+        var res = await fetch('/api/v1/google-wallet/pass/' + passId);
         var data = await res.json();
         if (data.save_link) {
           window.location.href = data.save_link;
