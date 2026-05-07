@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ads2Wallet — by Underdogs Group</title>
+    <title>Ads2Wallet â by Underdogs Group</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -24,7 +24,7 @@
         .nav-item { padding: 10px 12px; margin-bottom: 4px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.2s; }
         .nav-item:hover:not(.disabled) { background: var(--bg3); color: var(--teal); }
         .nav-item.active { background: var(--teal); color: var(--bg); font-weight: 600; }
-        /* disabled state removed — all items always clickable */
+        /* disabled state removed â all items always clickable */
         .nav-label.disabled { opacity: 0.25; }
         .main { display: flex; flex-direction: column; overflow: hidden; }
         .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; }
@@ -154,7 +154,7 @@
     <div class="sidebar">
         <div class="logo">Ads2Wallet<small>by Underdogs Group</small></div>
         <div class="nav-label">Brand</div>
-        <div class="nav-item" onclick="nav('brand-identity')">Identità</div>
+        <div class="nav-item" onclick="nav('brand-identity')">IdentitÃ </div>
         <div class="nav-item" onclick="nav('media-library')">Media Library</div>
         <div class="nav-label">Pass</div>
         <div class="nav-item" onclick="nav('pass-wizard')">Crea Pass</div>
@@ -246,7 +246,7 @@
             <!-- PUSH NOTIFICATIONS -->
             <div id="push" class="section">
                 <div class="sec-title">Push &amp; Notifiche</div>
-                <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Gestisci le 3 modalità di notifica: push diretta, programmata nel tempo, e prossimità geofencing.</p>
+                <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Gestisci le 3 modalitÃ  di notifica: push diretta, programmata nel tempo, e prossimitÃ  geofencing.</p>
 
                 <!-- Sub-tab navigation -->
                 <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
@@ -295,16 +295,16 @@
                         <div class="form-group" style="margin-top:8px;">
                             <label class="form-label">Collega Instant Win (opzionale)</label>
                             <select id="pushInstantWin">
-                                <option value="">— Nessuna campagna Instant Win —</option>
+                                <option value="">â Nessuna campagna Instant Win â</option>
                             </select>
-                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Se selezionata, il link al gioco verrà inserito automaticamente nel retro di ogni pass.</p>
+                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Se selezionata, il link al gioco verrÃ  inserito automaticamente nel retro di ogni pass.</p>
                         </div>
                         <div class="form-group" style="margin-top:8px;">
                             <label class="form-label">Collega Gamification (opzionale)</label>
                             <select id="pushGamification">
-                                <option value="">— Nessuna campagna Gamification —</option>
+                                <option value="">â Nessuna campagna Gamification â</option>
                             </select>
-                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Quiz, Memory o Puzzle — il link al gioco verrà inserito nel retro di ogni pass.</p>
+                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Quiz, Memory o Puzzle â il link al gioco verrÃ  inserito nel retro di ogni pass.</p>
                         </div>
                         <button class="btn" style="width:100%;font-weight:700;margin-top:12px;" onclick="sendImmediatePush()">&#9889; Invia Notifica Ora</button>
                     </div>
@@ -327,7 +327,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Messaggio</label>
-                            <textarea id="schedMessage" rows="3" placeholder="es. Non perderti le novità di questa settimana!" style="resize:vertical;"></textarea>
+                            <textarea id="schedMessage" rows="3" placeholder="es. Non perderti le novitÃ  di questa settimana!" style="resize:vertical;"></textarea>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Frequenza</label>
@@ -371,7 +371,7 @@
 
                 <!-- TAB 3: Geofencing -->
                 <div id="pushPanel_geofencing" class="push-panel" style="display:none;">
-                    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Aggiungi punti di interesse (POI). Quando un utente con il pass si avvicina a queste coordinate, iOS mostra automaticamente il pass sulla lock screen con il messaggio che imposti. Nessun server coinvolto — è il device che rileva la prossimità.</p>
+                    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Aggiungi punti di interesse (POI). Quando un utente con il pass si avvicina a queste coordinate, iOS mostra automaticamente il pass sulla lock screen con il messaggio che imposti. Nessun server coinvolto â Ã¨ il device che rileva la prossimitÃ .</p>
 
                     <div class="push-card">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -380,7 +380,7 @@
                         </div>
                         <div id="geoLocationsList"></div>
                         <div id="geoEmptyMsg" style="padding:20px;text-align:center;color:var(--text2);font-size:13px;border:1px dashed var(--border);border-radius:8px;">
-                            Nessun punto di prossimità configurato. Clicca "+ Aggiungi POI" per iniziare.
+                            Nessun punto di prossimitÃ  configurato. Clicca "+ Aggiungi POI" per iniziare.
                         </div>
                     </div>
 
@@ -398,9 +398,9 @@
                         <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--teal);">Come funziona il Geofencing Wallet</div>
                         <ul style="font-size:12px;color:var(--text2);margin:0;padding-left:16px;line-height:1.8;">
                             <li>Le coordinate vengono incluse nel file <code>pass.json</code> del wallet pass</li>
-                            <li>iOS controlla la prossimità in background — zero batteria, zero server</li>
-                            <li>Quando l'utente è nel raggio, il pass appare sulla lock screen</li>
-                            <li>Il <strong>relevantText</strong> è il messaggio che l'utente vede</li>
+                            <li>iOS controlla la prossimitÃ  in background â zero batteria, zero server</li>
+                            <li>Quando l'utente Ã¨ nel raggio, il pass appare sulla lock screen</li>
+                            <li>Il <strong>relevantText</strong> Ã¨ il messaggio che l'utente vede</li>
                             <li>Massimo <strong>10 locations</strong> per pass (limite Apple)</li>
                             <li>Dopo il salvataggio, tutti i pass attivi vengono aggiornati via push</li>
                         </ul>
@@ -418,8 +418,8 @@
 
             <!-- BRAND IDENTITY -->
             <div id="brand-identity" class="section">
-                <div class="sec-title">Identità Brand</div>
-                <p style="font-size:12px;color:var(--text2);margin-bottom:20px;">Profilo del brand: identità visiva, settore e tono di voce. Queste impostazioni vengono ereditate dal pass.</p>
+                <div class="sec-title">IdentitÃ  Brand</div>
+                <p style="font-size:12px;color:var(--text2);margin-bottom:20px;">Profilo del brand: identitÃ  visiva, settore e tono di voce. Queste impostazioni vengono ereditate dal pass.</p>
 
                 <div class="card">
                     <div class="sec-title" style="font-size:16px;">Informazioni</div>
@@ -431,7 +431,7 @@
                         <div class="form-group">
                             <label class="form-label">Settore</label>
                             <select id="biSettore">
-                                <option value="">— Seleziona —</option>
+                                <option value="">â Seleziona â</option>
                                 <option value="ristorazione">Ristorazione</option>
                                 <option value="retail">Retail</option>
                                 <option value="beauty">Beauty / Wellness</option>
@@ -446,7 +446,7 @@
                         <div class="form-group">
                             <label class="form-label">Tono di voce</label>
                             <select id="biTono">
-                                <option value="">— Seleziona —</option>
+                                <option value="">â Seleziona â</option>
                                 <option value="professionale">Professionale</option>
                                 <option value="friendly">Friendly</option>
                                 <option value="bold">Bold / Urban</option>
@@ -500,7 +500,7 @@
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:24px;">
-                    <button class="btn" onclick="saveBrandIdentity()">Salva Identità</button>
+                    <button class="btn" onclick="saveBrandIdentity()">Salva IdentitÃ </button>
                     <button class="btn danger" onclick="deleteBrandAction()">Elimina Brand</button>
                 </div>
                 <!-- Landing link removed -->
@@ -586,7 +586,7 @@
                 <!-- Step indicators -->
                 <div style="display:flex;gap:4px;margin-bottom:24px;">
                     <div class="wz-step-dot active" id="wzDot1" onclick="wzGoStep(1)">1. Contenuto</div>
-                    <div class="wz-step-dot" id="wzDot2" onclick="wzGoStep(2)">2. Creatività</div>
+                    <div class="wz-step-dot" id="wzDot2" onclick="wzGoStep(2)">2. CreativitÃ </div>
                     <div class="wz-step-dot" id="wzDot3" onclick="wzGoStep(3)">3. Anteprima</div>
                 </div>
 
@@ -637,16 +637,16 @@
                                     <div class="sec-title" style="font-size:16px;margin-bottom:0;">Retro Pass</div>
                                 </div>
                                 <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 1 — Testo</label><input type="text" id="wzLink1Label" placeholder="es. Sito Web"></div>
-                                    <div class="form-group"><label class="form-label">Link 1 — URL</label><input type="text" id="wzLink1Url" placeholder="https://..."></div>
+                                    <div class="form-group"><label class="form-label">Link 1 â Testo</label><input type="text" id="wzLink1Label" placeholder="es. Sito Web"></div>
+                                    <div class="form-group"><label class="form-label">Link 1 â URL</label><input type="text" id="wzLink1Url" placeholder="https://..."></div>
                                 </div>
                                 <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 2 — Testo</label><input type="text" id="wzLink2Label"></div>
-                                    <div class="form-group"><label class="form-label">Link 2 — URL</label><input type="text" id="wzLink2Url"></div>
+                                    <div class="form-group"><label class="form-label">Link 2 â Testo</label><input type="text" id="wzLink2Label"></div>
+                                    <div class="form-group"><label class="form-label">Link 2 â URL</label><input type="text" id="wzLink2Url"></div>
                                 </div>
                                 <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 3 — Testo</label><input type="text" id="wzLink3Label"></div>
-                                    <div class="form-group"><label class="form-label">Link 3 — URL</label><input type="text" id="wzLink3Url"></div>
+                                    <div class="form-group"><label class="form-label">Link 3 â Testo</label><input type="text" id="wzLink3Label"></div>
+                                    <div class="form-group"><label class="form-label">Link 3 â URL</label><input type="text" id="wzLink3Url"></div>
                                 </div>
                                 <div class="form-group"><label class="form-label">Regolamento</label><textarea id="wzRegolamento" rows="2" placeholder="Condizioni di utilizzo..."></textarea></div>
                                 <div class="form-group"><label class="form-label">Contatti</label><textarea id="wzContatti" rows="2" placeholder="Email, telefono..."></textarea></div>
@@ -654,11 +654,11 @@
                         </div>
                     </div>
                     <div style="display:flex;justify-content:flex-end;margin-top:16px;">
-                        <button class="btn" onclick="wzGoStep(2)">Avanti: Creatività →</button>
+                        <button class="btn" onclick="wzGoStep(2)">Avanti: CreativitÃ  â</button>
                     </div>
                 </div>
 
-                <!-- STEP 2: Creatività -->
+                <!-- STEP 2: CreativitÃ  -->
                 <div id="wzStep2" class="wz-step">
                     <div class="card">
                         <div class="sec-title" style="font-size:16px;">Strip Image</div>
@@ -677,8 +677,8 @@
                     <!-- AI Strip Generator removed -->
 
                     <div style="display:flex;justify-content:space-between;margin-top:16px;">
-                        <button class="btn sec" onclick="wzGoStep(1)">← Contenuto</button>
-                        <button class="btn" onclick="wzGoStep(3)">Avanti: Anteprima →</button>
+                        <button class="btn sec" onclick="wzGoStep(1)">â Contenuto</button>
+                        <button class="btn" onclick="wzGoStep(3)">Avanti: Anteprima â</button>
                     </div>
                 </div>
 
@@ -714,7 +714,7 @@
                                 <div id="wzSummary" style="font-size:13px;color:var(--text2);line-height:1.8;"></div>
                             </div>
                             <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <button class="btn sec" onclick="wzGoStep(2)">← Creatività</button>
+                                <button class="btn sec" onclick="wzGoStep(2)">â CreativitÃ </button>
                                 <button class="btn" id="wzPublishBtn" onclick="wzPublish()" style="font-size:16px;padding:14px 32px;">Pubblica Pass</button>
                             </div>
                         </div>
@@ -779,7 +779,7 @@
                     <button class="btn" onclick="openIwModal()">+ Nuova Campagna</button>
                 </div>
                 <table class="table" id="iwTable">
-                    <thead><tr><th>Nome</th><th>Tipo</th><th>Premio</th><th>Probabilità</th><th>Giocate</th><th>Vincite</th><th>Stato</th><th>Azioni</th></tr></thead>
+                    <thead><tr><th>Nome</th><th>Tipo</th><th>Premio</th><th>ProbabilitÃ </th><th>Giocate</th><th>Vincite</th><th>Stato</th><th>Azioni</th></tr></thead>
                     <tbody></tbody>
                 </table>
 
@@ -788,7 +788,7 @@
                   <div style="background:var(--card);border-radius:16px;padding:28px;max-width:520px;width:95%;max-height:90vh;overflow-y:auto;border:1px solid var(--border);">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                       <h3 id="iwModalTitle" style="margin:0;font-size:20px;">Nuova Campagna</h3>
-                      <button class="btn sec" onclick="closeIwModal()" style="font-size:18px;padding:4px 12px;">✕</button>
+                      <button class="btn sec" onclick="closeIwModal()" style="font-size:18px;padding:4px 12px;">â</button>
                     </div>
                     <input type="hidden" id="iwEditId">
                     <div class="form-group"><label class="form-label">Nome campagna</label><input id="iwName" placeholder="es. Vinci un aperitivo"></div>
@@ -798,7 +798,7 @@
                     <div class="form-group"><label class="form-label">Nome premio</label><input id="iwPrizeName" placeholder="es. Aperitivo gratis"></div>
                     <div class="form-group"><label class="form-label">Descrizione premio</label><textarea id="iwPrizeDesc" rows="2" placeholder="es. Presenta questo al bar per un aperitivo omaggio"></textarea></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                      <div class="form-group"><label class="form-label">Probabilità di vincita (%)</label><input type="number" id="iwWinProb" min="1" max="100" value="10"></div>
+                      <div class="form-group"><label class="form-label">ProbabilitÃ  di vincita (%)</label><input type="number" id="iwWinProb" min="1" max="100" value="10"></div>
                       <div class="form-group"><label class="form-label">Max giocate per utente</label><input type="number" id="iwMaxPlays" min="1" value="1"></div>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -842,7 +842,7 @@
                   <div style="background:var(--card);border-radius:16px;padding:28px;max-width:560px;width:95%;max-height:90vh;overflow-y:auto;border:1px solid var(--border);">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                       <h3 id="gamModalTitle" style="margin:0;font-size:20px;">Nuova Campagna Gamification</h3>
-                      <button class="btn sec" onclick="closeGamModal()" style="font-size:18px;padding:4px 12px;">✕</button>
+                      <button class="btn sec" onclick="closeGamModal()" style="font-size:18px;padding:4px 12px;">â</button>
                     </div>
                     <input type="hidden" id="gamEditId">
                     <div class="form-group"><label class="form-label">Nome campagna</label><input id="gamName" placeholder="es. Quiz Natale 2026"></div>
@@ -853,16 +853,16 @@
                     <div style="background:var(--bg2);border-radius:12px;padding:16px;margin:16px 0;border:1px solid var(--border);">
                       <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Fasce Premio (in base al tempo)</div>
                       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div class="form-group"><label class="form-label">🥇 Soglia Oro (secondi)</label><input type="number" id="gamGoldSecs" min="1" value="15" step="1"></div>
-                        <div class="form-group"><label class="form-label">🥇 Premio Oro</label><input id="gamGoldPrize" placeholder="es. Sconto 30%"></div>
+                        <div class="form-group"><label class="form-label">ð¥ Soglia Oro (secondi)</label><input type="number" id="gamGoldSecs" min="1" value="15" step="1"></div>
+                        <div class="form-group"><label class="form-label">ð¥ Premio Oro</label><input id="gamGoldPrize" placeholder="es. Sconto 30%"></div>
                       </div>
                       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div class="form-group"><label class="form-label">🥈 Soglia Argento (secondi)</label><input type="number" id="gamSilverSecs" min="1" value="30" step="1"></div>
-                        <div class="form-group"><label class="form-label">🥈 Premio Argento</label><input id="gamSilverPrize" placeholder="es. Sconto 15%"></div>
+                        <div class="form-group"><label class="form-label">ð¥ Soglia Argento (secondi)</label><input type="number" id="gamSilverSecs" min="1" value="30" step="1"></div>
+                        <div class="form-group"><label class="form-label">ð¥ Premio Argento</label><input id="gamSilverPrize" placeholder="es. Sconto 15%"></div>
                       </div>
                       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div class="form-group"><label class="form-label">🥉 Soglia Bronzo (secondi)</label><input type="number" id="gamBronzeSecs" min="1" value="60" step="1"></div>
-                        <div class="form-group"><label class="form-label">🥉 Premio Bronzo</label><input id="gamBronzePrize" placeholder="es. Sconto 5%"></div>
+                        <div class="form-group"><label class="form-label">ð¥ Soglia Bronzo (secondi)</label><input type="number" id="gamBronzeSecs" min="1" value="60" step="1"></div>
+                        <div class="form-group"><label class="form-label">ð¥ Premio Bronzo</label><input id="gamBronzePrize" placeholder="es. Sconto 5%"></div>
                       </div>
                     </div>
 
@@ -889,7 +889,7 @@
                     <p style="color:var(--text2);font-size:13px;">Contatti raccolti tramite Instant Win e registrazioni pass.</p>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <input type="text" id="leadsSearch" placeholder="Cerca nome, email..." oninput="filterLeads()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px;">
-                        <button class="btn" onclick="exportLeadsCSV()" style="white-space:nowrap;">⬇ Export CSV</button>
+                        <button class="btn" onclick="exportLeadsCSV()" style="white-space:nowrap;">â¬ Export CSV</button>
                     </div>
                 </div>
                 <div class="stats-grid" id="leadsStats"></div>
@@ -972,7 +972,7 @@
             <div style="flex:1;min-width:0;">
                 <div class="form-group"><label class="form-label">Nome</label><input type="text" id="tplName" placeholder="es. Coupon -20%" oninput="updatePassPreview()"></div>
                 <div class="form-row">
-                    <div class="form-group"><label class="form-label">Tipo Pass <span class="pass-type-info-btn" onclick="togglePassTypeInfo()" title="Info sul tipo di pass">ⓘ</span></label>
+                    <div class="form-group"><label class="form-label">Tipo Pass <span class="pass-type-info-btn" onclick="togglePassTypeInfo()" title="Info sul tipo di pass">â</span></label>
                         <select id="tplType" onchange="onPassTypeChange()"><option value="storeCard">Store Card</option><option value="coupon">Coupon</option><option value="eventTicket">Event Ticket</option></select>
                     </div>
                     <div class="form-group"><label class="form-label">Descrizione</label><input type="text" id="tplDescription" placeholder="es. Sconto benvenuto" oninput="updatePassPreview()"></div>
@@ -981,10 +981,10 @@
                     <div id="passTypeInfoContent"></div>
                 </div>
 
-                <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Fronte — Campi</div>
+                <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Fronte â Campi</div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">Header Label</label><input type="text" id="tplHeaderLabel" placeholder="es. INFO" oninput="updatePassPreview()"></div>
-                    <div class="form-group"><label class="form-label">Header Valore</label><input type="text" id="tplHeaderValue" placeholder="es. Scopri di più" oninput="updatePassPreview()"></div>
+                    <div class="form-group"><label class="form-label">Header Valore</label><input type="text" id="tplHeaderValue" placeholder="es. Scopri di piÃ¹" oninput="updatePassPreview()"></div>
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">Secondary Label</label><input type="text" id="tplSecLabel" placeholder="es. VALIDO FINO AL" oninput="updatePassPreview()"></div>
@@ -1020,21 +1020,21 @@
                     </div>
                     <div class="form-row" id="tplImgThumbRow" style="display:none;">
                         <div class="form-group" style="flex:1;">
-                            <label class="form-label">Thumbnail (PNG, 90x90 — mostrato sul fronte)</label>
+                            <label class="form-label">Thumbnail (PNG, 90x90 â mostrato sul fronte)</label>
                             <input type="file" id="tplImgThumb" accept="image/*,.pdf" onchange="previewTplImage(this,'thumbnail')" style="font-size:12px;">
                             <img id="tplImgThumbPreview" style="display:none;width:60px;height:60px;object-fit:cover;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
                     <div class="form-row" id="tplImgBgRow" style="display:none;">
                         <div class="form-group" style="flex:1;">
-                            <label class="form-label">Background (PNG, 360x440 — sfondo intero pass)</label>
+                            <label class="form-label">Background (PNG, 360x440 â sfondo intero pass)</label>
                             <input type="file" id="tplImgBg" accept="image/*,.pdf" onchange="previewTplImage(this,'background')" style="font-size:12px;">
                             <img id="tplImgBgPreview" style="display:none;width:100px;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
                 </div>
 
-                <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Retro — Contenuti</div>
+                <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Retro â Contenuti</div>
                 <div class="form-group"><label class="form-label">Link 1</label>
                     <div class="form-row"><input type="text" id="tplLink1Label" placeholder="Label es. Sito Web" oninput="updatePassPreview()"><input type="text" id="tplLink1Url" placeholder="https://..." oninput="updatePassPreview()"></div>
                 </div>
@@ -1108,7 +1108,7 @@
     <div class="modal-content" style="text-align:center;">
         <button class="modal-close" onclick="closeModal('qrModal')">&times;</button>
         <div class="modal-header">QR Code Campagna</div>
-        <div id="qrModeLabel" style="font-size:11px;color:var(--text2);margin-bottom:8px;">Scansione → il pass si scarica subito</div>
+        <div id="qrModeLabel" style="font-size:11px;color:var(--text2);margin-bottom:8px;">Scansione â il pass si scarica subito</div>
         <div style="padding:20px;background:#FFFFFF;border-radius:8px;margin:16px 0;display:inline-block;"><div id="qrCanvas"></div></div>
         <input type="text" id="qrUrl" readonly style="margin-bottom:10px;">
         <div style="display:flex;gap:8px;">
@@ -1274,7 +1274,7 @@ function applyBrandTheme() {
         // Update brand name in header and page title
         const name = brand.name || 'Ads2Wallet';
         document.getElementById('headerBrandTitle').textContent = name;
-        document.title = name + ' — Ads2Wallet';
+        document.title = name + ' â Ads2Wallet';
         // Derive palette from brand colors
         const root = document.documentElement.style;
         root.setProperty('--bg', bg);
@@ -1350,7 +1350,7 @@ async function loadCampaigns() {
                 </div>
                 <div class="card-actions">
                     <button class="btn small sec" onclick="showCampaignQR('${c.id}')">QR</button>
-                    <button class="btn small purple" onclick="copyCampaignDirect('${c.id}')" title="Link diretto — salva pass senza landing">Link</button>
+                    <button class="btn small purple" onclick="copyCampaignDirect('${c.id}')" title="Link diretto â salva pass senza landing">Link</button>
                     <button class="btn small" onclick="editCampaign('${c.id}')">Modifica</button>
                     <button class="btn small ${c.active ? 'purple' : 'sec'}" onclick="toggleCampaign('${c.id}', ${!c.active})">${c.active ? 'Pausa' : 'Attiva'}</button>
                     <button class="btn small danger" onclick="deleteCampaign('${c.id}')">Elimina</button>
@@ -1586,7 +1586,7 @@ async function loadPasses() {
                     <td style="text-align:center;font-size:12px;">${p.push_count > 0 ? (() => {
                         const statusIcon = p.last_push_status === 'delivered' ? '<span style="color:var(--green);" title="Ultima push consegnata">&#10004;</span>' : '<span style="color:#ff6b6b;" title="' + esc(p.last_push_status || 'errore') + '">&#10006;</span>';
                         const pushDate = p.last_push_at ? new Date(p.last_push_at).toLocaleDateString('it') : '';
-                        return statusIcon + ' <span style="font-size:10px;opacity:0.6;" title="' + p.push_count + ' push inviate">' + p.push_count + 'x · ' + pushDate + '</span>';
+                        return statusIcon + ' <span style="font-size:10px;opacity:0.6;" title="' + p.push_count + ' push inviate">' + p.push_count + 'x Â· ' + pushDate + '</span>';
                     })() : '<span style="opacity:0.3;">-</span>'}</td>
                     <td style="font-family:monospace;font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.device_library_id||'')}">${p.device_library_id ? esc(p.device_library_id).substring(0,12)+'...' : '<span style="opacity:0.3">-</span>'}</td>
                     <td>${camp ? esc(camp.name) : '<span style="opacity:0.3">-</span>'}</td>
@@ -1621,7 +1621,11 @@ function parseUserAgent(ua) {
     const iosMatch = ua.match(/OS (\d+[_\.]\d+)/);
     if (iosMatch) os += ' ' + iosMatch[1].replace('_', '.');
     // Extract browser
-    let browser = '';
+    const androidMatch = ua.match(/Android (\d+[.\d]*)/);
+        if (androidMatch) os = 'Android ' + androidMatch[1];
+        const modelMatch = ua.match(/; ([^;)]+)\) AppleWebKit/);
+        if (modelMatch && ua.includes('Android')) os += ' (' + modelMatch[1].trim() + ')';
+        let browser = '';
     if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
     else if (ua.includes('Chrome')) browser = 'Chrome';
     else if (ua.includes('Firefox')) browser = 'Firefox';
@@ -1641,7 +1645,7 @@ function downloadPass(id) {
 }
 
 async function deletePassInstance(id) {
-    if (!confirm('Eliminare questo pass? L\'azione è irreversibile.')) return;
+    if (!confirm('Eliminare questo pass? L\'azione Ã¨ irreversibile.')) return;
     try {
         const res = await fetch(`${API}/passes/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Errore eliminazione');
@@ -1856,30 +1860,30 @@ const PASS_IMAGE_SLOTS = {
 const PASS_TYPE_INFO = {
     storeCard: {
         title: 'Store Card',
-        desc: 'Ideale per carte fedeltà, membership e programmi punti. Il layout mostra un banner strip in alto, logo del brand e campi informativi sotto.',
-        slots: 'Logo (in alto a sinistra) · Strip (banner largo sotto l\'header, 750x246px)',
-        fields: 'Header (alto dx) · Secondary (sotto la strip) · Auxiliary (campo extra) · Retro (link, regolamento, contatti)',
+        desc: 'Ideale per carte fedeltÃ , membership e programmi punti. Il layout mostra un banner strip in alto, logo del brand e campi informativi sotto.',
+        slots: 'Logo (in alto a sinistra) Â· Strip (banner largo sotto l\'header, 750x246px)',
+        fields: 'Header (alto dx) Â· Secondary (sotto la strip) Â· Auxiliary (campo extra) Â· Retro (link, regolamento, contatti)',
         use: 'Loyalty card, tessere club, abbonamenti, carte VIP'
     },
     coupon: {
         title: 'Coupon',
         desc: 'Perfetto per sconti, promozioni e offerte a tempo. Simile allo Store Card ma con bordo tratteggiato che richiama il coupon cartaceo.',
-        slots: 'Logo (in alto a sinistra) · Strip (banner promozionale, 750x246px)',
-        fields: 'Header (alto dx) · Secondary (dettagli offerta) · Auxiliary (scadenza, codice) · Retro (T&C, link)',
+        slots: 'Logo (in alto a sinistra) Â· Strip (banner promozionale, 750x246px)',
+        fields: 'Header (alto dx) Â· Secondary (dettagli offerta) Â· Auxiliary (scadenza, codice) Â· Retro (T&C, link)',
         use: 'Sconti benvenuto, promozioni stagionali, codici promo, offerte flash'
     },
     eventTicket: {
         title: 'Event Ticket',
-        desc: 'Per eventi, biglietti e prenotazioni. Il layout più flessibile: puoi usare strip banner OPPURE background + thumbnail per un look più immersivo.',
-        slots: 'Logo · Strip (banner) OPPURE Background (sfondo intero, 360x440px) + Thumbnail (90x90px, mostrato sul fronte)',
-        fields: 'Header (alto dx) · Secondary (data, luogo) · Auxiliary (posto, fila) · Retro (info evento, mappa, contatti)',
+        desc: 'Per eventi, biglietti e prenotazioni. Il layout piÃ¹ flessibile: puoi usare strip banner OPPURE background + thumbnail per un look piÃ¹ immersivo.',
+        slots: 'Logo Â· Strip (banner) OPPURE Background (sfondo intero, 360x440px) + Thumbnail (90x90px, mostrato sul fronte)',
+        fields: 'Header (alto dx) Â· Secondary (data, luogo) Â· Auxiliary (posto, fila) Â· Retro (info evento, mappa, contatti)',
         use: 'Biglietti concerti, ingressi fiera, prenotazioni ristorante, pass evento'
     },
     generic: {
         title: 'Generic',
-        desc: 'Il formato più pulito e minimale. Nessun banner strip — solo logo, testo e opzionalmente un thumbnail quadrato sul fronte.',
-        slots: 'Logo (in alto a sinistra) · Thumbnail (quadrato 90x90px, opzionale)',
-        fields: 'Header (alto dx) · Secondary · Auxiliary · Retro (link, info, contatti)',
+        desc: 'Il formato piÃ¹ pulito e minimale. Nessun banner strip â solo logo, testo e opzionalmente un thumbnail quadrato sul fronte.',
+        slots: 'Logo (in alto a sinistra) Â· Thumbnail (quadrato 90x90px, opzionale)',
+        fields: 'Header (alto dx) Â· Secondary Â· Auxiliary Â· Retro (link, info, contatti)',
         use: 'Badge identificativi, pass accesso, card informative, boarding pass custom'
     }
 };
@@ -2014,7 +2018,7 @@ async function loadPushCampaignSelect() {
 async function loadPushIwSelect() {
     const sel = document.getElementById('pushInstantWin');
     if (!sel) return;
-    sel.innerHTML = '<option value="">— Nessuna campagna Instant Win —</option>';
+    sel.innerHTML = '<option value="">â Nessuna campagna Instant Win â</option>';
     if (!brandId) return;
     try {
         const res = await fetch(`${API}/instant-win?brand_id=${brandId}`, { headers: getAuthHeaders() });
@@ -2033,7 +2037,7 @@ async function loadPushIwSelect() {
 async function loadPushGamSelect() {
     const sel = document.getElementById('pushGamification');
     if (!sel) return;
-    sel.innerHTML = '<option value="">— Nessuna campagna Gamification —</option>';
+    sel.innerHTML = '<option value="">â Nessuna campagna Gamification â</option>';
     if (!brandId) return;
     try {
         const res = await fetch(`${API}/gamification/campaigns/${brandId}`, { headers: getAuthHeaders() });
@@ -2357,7 +2361,7 @@ async function loadStripPromos() {
         let status = 'scheduled', statusLabel = 'Programmata';
         if (start && end && start <= now && end >= now && p.active) { status = 'active'; statusLabel = 'Attiva'; }
         else if (end && end < now) { status = 'expired'; statusLabel = 'Scaduta'; }
-        const dateRange = (start ? start.toLocaleDateString('it') : '?') + ' — ' + (end ? end.toLocaleDateString('it') : '?');
+        const dateRange = (start ? start.toLocaleDateString('it') : '?') + ' â ' + (end ? end.toLocaleDateString('it') : '?');
         return `
         <div class="strip-card ${status === 'active' ? 'strip-card-active' : ''}">
             <img class="strip-card-img" src="${API}/strip-promos/${p.id}/image?raw=1" alt="${esc(p.title || p.name)}" loading="lazy">
@@ -2481,13 +2485,13 @@ async function loadInstantWin() {
             tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna campagna Instant Win. Creane una per iniziare.</td></tr>';
             return;
         }
-        const gameLabels = { scratch: '🎫 Scratch', wheel: '🎡 Ruota', slots: '🎰 Slot' };
+        const gameLabels = { scratch: 'ð« Scratch', wheel: 'ð¡ Ruota', slots: 'ð° Slot' };
         const statusLabels = { draft: 'Bozza', active: 'Attiva', paused: 'In pausa', ended: 'Terminata' };
         tbody.innerHTML = campaigns.map(c => `
             <tr>
                 <td><strong>${esc(c.name)}</strong></td>
                 <td>${gameLabels[c.game_type] || c.game_type}</td>
-                <td>${esc(c.prize_name || '—')}</td>
+                <td>${esc(c.prize_name || 'â')}</td>
                 <td>${Math.round((c.win_probability || 0) * 100)}%</td>
                 <td>${c.total_plays || 0}${c.total_budget ? '/' + c.total_budget : ''}</td>
                 <td>${c.total_wins || 0}</td>
@@ -2607,7 +2611,7 @@ function renderLeadsTable(leads) {
         <td>${esc(l.player_last_name || '-')}</td>
         <td><a href="mailto:${esc(l.player_email)}" style="color:var(--accent);">${esc(l.player_email)}</a></td>
         <td>${esc(l.player_phone || '-')}</td>
-        <td style="font-size:11px;font-family:monospace;">${l.device_id ? esc(l.device_id.substring(0,16)) + '...' : '<span style="color:var(--text2);">—</span>'}</td>
+        <td style="font-size:11px;font-family:monospace;">${l.device_id ? esc(l.device_id.substring(0,16)) + '...' : '<span style="color:var(--text2);">â</span>'}</td>
         <td style="font-size:11px;font-family:monospace;">${l.pass_id ? esc(l.pass_id.substring(0,8)) + '...' : '-'}</td>
         <td style="font-size:12px;">${l.registered_at ? new Date(l.registered_at).toLocaleDateString('it-IT') : '-'}</td>
     </tr>`).join('');
@@ -2634,7 +2638,7 @@ function exportLeadsCSV() {
         l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
     ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
     const csv = [header, ...rows].join('\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['ï»¿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `leads_${new Date().toISOString().split('T')[0]}.csv`;
@@ -2826,7 +2830,7 @@ function wzGoStep(step) {
 }
 
 function wzUpdatePreview() {
-    // Light update for live typing feedback — full preview on step 3
+    // Light update for live typing feedback â full preview on step 3
 }
 
 function wzBuildPreview() {
@@ -2877,7 +2881,7 @@ function wzBuildPreview() {
     const hasCont = !!document.getElementById('wzContatti').value.trim();
     document.getElementById('wzSummary').innerHTML = `
         <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 12px;font-size:13px;">
-            <span style="font-weight:600;color:var(--text1);">Nome</span><span>${esc(document.getElementById('wzName').value || '—')}</span>
+            <span style="font-weight:600;color:var(--text1);">Nome</span><span>${esc(document.getElementById('wzName').value || 'â')}</span>
             <span style="font-weight:600;color:var(--text1);">Tipo</span><span>${type}</span>
             <span style="font-weight:600;color:var(--text1);">Campi fronte</span><span>${frontFields} configurati</span>
             <span style="font-weight:600;color:var(--text1);">Link retro</span><span>${backLinks} link</span>
@@ -2992,7 +2996,7 @@ async function wzAiGenerate() {
         if (!document.getElementById('wzHeaderLabel').value) document.getElementById('wzHeaderLabel').value = 'STATO';
         if (!document.getElementById('wzHeaderValue').value) document.getElementById('wzHeaderValue').value = 'Attivo';
         if (!document.getElementById('wzSecLabel').value) document.getElementById('wzSecLabel').value = 'OFFERTA';
-        if (!document.getElementById('wzSecValue').value) document.getElementById('wzSecValue').value = copy.claim ? copy.claim.substring(0, 30) : 'Scopri le novità';
+        if (!document.getElementById('wzSecValue').value) document.getElementById('wzSecValue').value = copy.claim ? copy.claim.substring(0, 30) : 'Scopri le novitÃ ';
         if (!document.getElementById('wzAuxLabel').value) document.getElementById('wzAuxLabel').value = 'INFO';
         if (!document.getElementById('wzAuxValue').value) document.getElementById('wzAuxValue').value = 'Aggiornamenti via Wallet';
         toast('Contenuti AI generati!');
@@ -3023,13 +3027,13 @@ async function wzAiCopy(section) {
             document.getElementById('wzHeaderLabel').value = 'STATO';
             document.getElementById('wzHeaderValue').value = 'Attivo';
             document.getElementById('wzSecLabel').value = 'OFFERTA';
-            document.getElementById('wzSecValue').value = copy.claim ? copy.claim.substring(0, 30) : 'Scopri le novità';
+            document.getElementById('wzSecValue').value = copy.claim ? copy.claim.substring(0, 30) : 'Scopri le novitÃ ';
             document.getElementById('wzAuxLabel').value = 'INFO';
             document.getElementById('wzAuxValue').value = copy.subheadline ? copy.subheadline.substring(0, 30) : 'Aggiornamenti via Wallet';
             toast('Campi fronte generati!');
         } else if (section === 'back') {
-            document.getElementById('wzRegolamento').value = `Questo pass è personale e non trasferibile. Il brand ${brand.name} si riserva di modificare le condizioni in qualsiasi momento. Per cancellare, rimuovi il pass dal Wallet.`;
-            document.getElementById('wzContatti').value = `${brand.name} — wallet@${brand.slug?.toLowerCase() || 'brand'}.it`;
+            document.getElementById('wzRegolamento').value = `Questo pass Ã¨ personale e non trasferibile. Il brand ${brand.name} si riserva di modificare le condizioni in qualsiasi momento. Per cancellare, rimuovi il pass dal Wallet.`;
+            document.getElementById('wzContatti').value = `${brand.name} â wallet@${brand.slug?.toLowerCase() || 'brand'}.it`;
             toast('Campi retro generati!');
         }
     } catch(e) { toast('Errore AI: ' + e.message); }
@@ -3144,7 +3148,7 @@ async function loadWzTemplates() {
                 <div style="flex:1;">
                     <div style="font-weight:600;font-size:14px;">${esc(t.name)}</div>
                     <div style="font-size:11px;color:var(--text2);margin-top:2px;">
-                        ${t.pass_type || 'storeCard'} · Creato ${new Date(t.created_at).toLocaleDateString('it-IT')}
+                        ${t.pass_type || 'storeCard'} Â· Creato ${new Date(t.created_at).toLocaleDateString('it-IT')}
                     </div>
                 </div>
                 <div style="display:flex;gap:6px;">
@@ -3177,7 +3181,7 @@ async function wzEditTemplate(id) {
             document.getElementById('wzAuxLabel').value = f.auxiliaryFields[0].label || '';
             document.getElementById('wzAuxValue').value = f.auxiliaryFields[0].value || '';
         }
-        // Load back fields — supports both formats (links array or backFields array)
+        // Load back fields â supports both formats (links array or backFields array)
         const links = f.links || [];
         if (links.length > 0) {
             if (links[0]) { document.getElementById('wzLink1Label').value = links[0].label || ''; document.getElementById('wzLink1Url').value = links[0].url || ''; }
@@ -3195,7 +3199,7 @@ async function wzEditTemplate(id) {
         // Store template ID for update instead of create
         window.wzEditingTemplateId = id;
         wzGoStep(1);
-        toast('Template caricato — modifica e pubblica');
+        toast('Template caricato â modifica e pubblica');
     } catch(e) { toast('Errore: ' + e.message); }
 }
 
@@ -3211,7 +3215,7 @@ async function wzDeleteTemplate(id) {
 // ==================== BRAND IDENTITY ====================
 async function loadBrandIdentity() {
     if (!brandId) {
-        // No brand yet — show empty form for creation
+        // No brand yet â show empty form for creation
         ['biName','biSlug','biSettore','biTono'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
         document.getElementById('biBg').value = '#0D0B1A'; document.getElementById('biBgPick').value = '#0D0B1A';
         document.getElementById('biFg').value = '#FFFFFF'; document.getElementById('biFgPick').value = '#FFFFFF';
@@ -3236,7 +3240,7 @@ async function loadBrandIdentity() {
     // Color preview
     document.getElementById('biCpBg').style.background = c.backgroundColor || '#0D0B1A';
     document.getElementById('biCpAcc').style.background = c.labelColor || '#00D4AA';
-    // Logo preview — load from server via fetch (needs auth headers)
+    // Logo preview â load from server via fetch (needs auth headers)
     const logoPreview = document.getElementById('biLogoPreview');
     const logoDeleteBtn = document.getElementById('biLogoDeleteBtn');
     const logoStatus = document.getElementById('biLogoStatus');
@@ -3340,7 +3344,7 @@ async function uploadBiLogo() {
             console.log('[Logo] Ricaricato da server OK');
         } else {
             status.style.color = 'var(--red)';
-            status.textContent = 'Upload OK ma logo non trovato sul server — riprova';
+            status.textContent = 'Upload OK ma logo non trovato sul server â riprova';
             console.error('[Logo] Upload claimed success but GET /logo failed');
         }
     } catch(err) {
@@ -3394,7 +3398,7 @@ async function saveBrandIdentity() {
         const existing = await fetch(`${API}/brands/${brandId}`).then(r => r.json());
         const mergedConfig = { ...(existing.config || {}), ...config };
         await fetch(`${API}/brands/${brandId}`, { method: 'PUT', headers: {'Content-Type':'application/json', ...getAuthHeaders()}, body: JSON.stringify({ name, slug, config: mergedConfig }) });
-        toast('Identità brand salvata!');
+        toast('IdentitÃ  brand salvata!');
     }
     applyBrandTheme(config);
     loadBrandIdentity();
