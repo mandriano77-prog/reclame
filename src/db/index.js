@@ -646,12 +646,17 @@ async function touchPass(id) {
 }
 
 async function listPasses(brandId, options = {}) {
+  // install_date: Google callback sets google_installed_at; Apple Wallet sets device_registrations on POST register.
+  // Dashboard column "Installato il" reads install_date (was undefined before — always showed "-").
   let query = `SELECT p.*,
     c.name as campaign_name,
-    dr.push_token
+    (SELECT dr.push_token FROM device_registrations dr WHERE dr.serial_number = p.serial_number ORDER BY dr.created_at DESC NULLS LAST LIMIT 1) AS push_token,
+    COALESCE(
+      p.google_installed_at,
+      (SELECT MIN(dr2.created_at) FROM device_registrations dr2 WHERE dr2.serial_number = p.serial_number)
+    ) AS install_date
     FROM pass_instances p
     LEFT JOIN campaigns c ON p.campaign_id = c.id
-    LEFT JOIN device_registrations dr ON dr.serial_number = p.serial_number
     WHERE p.brand_id = $1`;
   const params = [brandId];
   let idx = 2;
