@@ -426,6 +426,35 @@
                     <div class="form-row">
                         <div class="form-group"><label class="form-label">Nome brand</label><input type="text" id="biName"></div>
                         <div class="form-group"><label class="form-label">Slug (URL)</label><input type="text" id="biSlug"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Settore</label>
+                            <select id="biSettore">
+                                <option value="">— Seleziona —</option>
+                                <option value="ristorazione">Ristorazione</option>
+                                <option value="retail">Retail</option>
+                                <option value="beauty">Beauty / Wellness</option>
+                                <option value="sport">Sport / Fitness</option>
+                                <option value="eventi">Eventi</option>
+                                <option value="hospitality">Hospitality</option>
+                                <option value="automotive">Automotive</option>
+                                <option value="tech">Tech</option>
+                                <option value="altro">Altro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tono di voce</label>
+                            <select id="biTono">
+                                <option value="">— Seleziona —</option>
+                                <option value="professionale">Professionale</option>
+                                <option value="friendly">Friendly</option>
+                                <option value="bold">Bold / Urban</option>
+                                <option value="luxury">Luxury</option>
+                                <option value="altro">Altro</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card" style="margin-top:16px;">
@@ -2946,8 +2975,9 @@ async function wzAiGenerate() {
     try {
         const res = await fetch(`${API}/brands/${brandId}`);
         const brand = await res.json();
-        // AI copy generation
-        const description = `Brand: ${brand.name}. Genera copy accattivante per wallet pass.`;
+        const settore = brand.config?.settore || '';
+        const tono = brand.config?.tono || '';
+        const description = `Settore: ${settore || 'generico'}. Tono di voce: ${tono || 'friendly'}.`;
         // AI copy endpoint returns { options: [{ headline, subheadline, claim, button_label }] }
         const aiRes = await fetch(`${API}/brands/${brandId}/ai-copy`, {
             method: 'POST',
@@ -2958,7 +2988,7 @@ async function wzAiGenerate() {
         const data = await aiRes.json();
         const opts = data.options || data;
         const copy = Array.isArray(opts) ? opts[0] : opts;
-        // Fill pass fields with sensible defaults
+        // Fill pass fields with sensible defaults based on settore
         if (!document.getElementById('wzHeaderLabel').value) document.getElementById('wzHeaderLabel').value = 'STATO';
         if (!document.getElementById('wzHeaderValue').value) document.getElementById('wzHeaderValue').value = 'Attivo';
         if (!document.getElementById('wzSecLabel').value) document.getElementById('wzSecLabel').value = 'OFFERTA';
@@ -2977,8 +3007,9 @@ async function wzAiCopy(section) {
     try {
         const res = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
         const brand = await res.json();
-        // AI copy
-        const description = `Brand: ${brand.name}. Genera copy per landing page.`;
+        const settore = brand.config?.settore || '';
+        const tono = brand.config?.tono || '';
+        const description = `Brand: ${brand.name}. Settore: ${settore || 'generico'}. Tono: ${tono || 'friendly'}.`;
         const aiRes = await fetch(`${API}/brands/${brandId}/ai-copy`, {
             method: 'POST',
             headers: {'Content-Type':'application/json', ...getAuthHeaders()},
@@ -3181,7 +3212,7 @@ async function wzDeleteTemplate(id) {
 async function loadBrandIdentity() {
     if (!brandId) {
         // No brand yet — show empty form for creation
-        ['biName','biSlug',].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+        ['biName','biSlug','biSettore','biTono'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
         document.getElementById('biBg').value = '#0D0B1A'; document.getElementById('biBgPick').value = '#0D0B1A';
         document.getElementById('biFg').value = '#FFFFFF'; document.getElementById('biFgPick').value = '#FFFFFF';
         document.getElementById('biAcc').value = '#00D4AA'; document.getElementById('biAccPick').value = '#00D4AA';
@@ -3194,6 +3225,8 @@ async function loadBrandIdentity() {
     const c = brand.config || {};
     document.getElementById('biName').value = brand.name || '';
     document.getElementById('biSlug').value = brand.slug || '';
+    document.getElementById('biSettore').value = c.settore || '';
+    document.getElementById('biTono').value = c.tono || '';
     document.getElementById('biBg').value = c.backgroundColor || '#0D0B1A';
     document.getElementById('biBgPick').value = c.backgroundColor || '#0D0B1A';
     document.getElementById('biFg').value = c.foregroundColor || '#FFFFFF';
@@ -3341,7 +3374,9 @@ async function saveBrandIdentity() {
     const config = {
         backgroundColor: document.getElementById('biBg').value,
         foregroundColor: document.getElementById('biFg').value,
-        labelColor: document.getElementById('biAcc').value
+        labelColor: document.getElementById('biAcc').value,
+        settore: document.getElementById('biSettore').value,
+        tono: document.getElementById('biTono').value
     };
     const slug = document.getElementById('biSlug').value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     if (!brandId) {
