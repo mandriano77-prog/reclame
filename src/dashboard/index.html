@@ -220,16 +220,43 @@
 
             <!-- WELCOME -->
             <div id="welcome" class="section active">
-                <div class="sec-title">Benvenuto</div>
-                <p style="font-size:14px;color:var(--text2);max-width:560px;line-height:1.55;margin-bottom:16px;">
-                    Seleziona un brand dal menu in alto per gestire campagne, pass Apple Wallet e Google Wallet, push e analytics.
+                <div class="sec-title">Inizio</div>
+                <p style="font-size:14px;color:var(--text2);max-width:720px;line-height:1.55;margin-bottom:16px;">
+                    Home operativa essenziale: scegli un brand, apri un'azione rapida e usa Analytics per tutti i numeri.
                 </p>
-                <p style="font-size:13px;color:var(--text2);max-width:560px;line-height:1.5;">
-                    Oppure apri <strong>Identità</strong> per creare un nuovo brand prima di selezionarlo qui.
-                </p>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
-                    <button type="button" class="btn" onclick="nav('brand-identity')">Crea / modifica brand</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
                     <button type="button" class="btn sec" onclick="document.getElementById('brandSelector').focus()">Seleziona brand</button>
+                    <button type="button" class="btn sec" onclick="nav('brand-identity')">Crea / modifica brand</button>
+                </div>
+
+                <div class="card" style="margin-bottom:14px;">
+                    <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Azioni rapide</div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">
+                        <button type="button" class="btn sec" onclick="nav('templates')">Template Pass</button>
+                        <button type="button" class="btn sec" onclick="nav('passes')">Pass Emessi</button>
+                        <button type="button" class="btn sec" onclick="nav('push')">Push</button>
+                        <button type="button" class="btn sec" onclick="nav('analytics')">Analytics</button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:14px;">
+                    <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Stato integrazioni</div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+                        <div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+                            Apple Wallet: <strong style="color:var(--green);">OK</strong>
+                        </div>
+                        <div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+                            Google Wallet: <strong style="color:var(--green);">OK</strong>
+                        </div>
+                        <div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+                            Push/Email: <strong style="color:var(--green);">OK</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="border-color:rgba(255,107,107,.35);">
+                    <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Alert bloccanti</div>
+                    <div style="font-size:13px;color:var(--text2);">Nessun alert bloccante al momento.</div>
                 </div>
             </div>
 
@@ -487,7 +514,7 @@
             <!-- BRAND IDENTITY -->
             <div id="brand-identity" class="section">
                 <div class="sec-title">Identità Brand</div>
-                <p style="font-size:12px;color:var(--text2);margin-bottom:20px;">Profilo del brand: identità visiva e settore. Queste impostazioni vengono ereditate dal pass.</p>
+                <p style="font-size:12px;color:var(--text2);margin-bottom:20px;">Profilo del brand: identità visiva, settore e home page. Queste impostazioni vengono ereditate dal pass.</p>
 
                 <div class="card">
                     <div class="sec-title" style="font-size:16px;">Informazioni</div>
@@ -510,6 +537,10 @@
                                 <option value="tech">Tech</option>
                                 <option value="altro">Altro</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Home page</label>
+                            <input type="url" id="biHomepage" placeholder="es. https://www.brand.com">
                         </div>
                     </div>
                 </div>
@@ -3877,7 +3908,7 @@ async function wzDeleteTemplate(id) {
 async function loadBrandIdentity() {
     if (!brandId) {
         // No brand yet — show empty form for creation
-        ['biName','biSlug','biSettore'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+        ['biName','biSlug','biSettore','biHomepage'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
         document.getElementById('biBg').value = '#0D0B1A'; document.getElementById('biBgPick').value = '#0D0B1A';
         document.getElementById('biFg').value = '#FFFFFF'; document.getElementById('biFgPick').value = '#FFFFFF';
         document.getElementById('biAcc').value = '#00D4AA'; document.getElementById('biAccPick').value = '#00D4AA';
@@ -3891,6 +3922,7 @@ async function loadBrandIdentity() {
     document.getElementById('biName').value = brand.name || '';
     document.getElementById('biSlug').value = brand.slug || '';
     document.getElementById('biSettore').value = c.settore || '';
+    document.getElementById('biHomepage').value = c.homepage || '';
     document.getElementById('biBg').value = c.backgroundColor || '#0D0B1A';
     document.getElementById('biBgPick').value = c.backgroundColor || '#0D0B1A';
     document.getElementById('biFg').value = c.foregroundColor || '#FFFFFF';
@@ -4040,6 +4072,7 @@ async function saveBrandIdentity() {
         foregroundColor: document.getElementById('biFg').value,
         labelColor: document.getElementById('biAcc').value,
         settore: document.getElementById('biSettore').value,
+        homepage: document.getElementById('biHomepage').value.trim(),
     };
     const slug = document.getElementById('biSlug').value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     if (!brandId) {
