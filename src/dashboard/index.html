@@ -28,7 +28,8 @@
         .nav-label.disabled { opacity: 0.25; }
         .main { display: flex; flex-direction: column; overflow: hidden; }
         .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; }
-        .header-title { font-size: 24px; font-weight: 600; }
+        .header-title { font-size: 24px; font-weight: 600; display:flex; align-items:center; gap:10px; }
+        .header-brand-logo { width:32px; height:32px; border-radius:8px; object-fit:contain; border:1px solid var(--border); background:rgba(255,255,255,.04); display:none; }
         .brand-sel { padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 12px; max-width: 260px; }
         .content { flex: 1; overflow-y: auto; padding: 28px; }
         .section { display: none; }
@@ -208,7 +209,10 @@
 
     <div class="main">
         <div class="header">
-            <div class="header-title" id="headerBrandTitle">Ads2Wallet</div>
+            <div class="header-title" id="headerBrandTitle">
+                <img id="headerBrandLogo" class="header-brand-logo" alt="Logo brand">
+                <span id="headerBrandName">Ads2Wallet</span>
+            </div>
             <div style="display:flex;align-items:center;gap:12px;">
                 <select class="brand-sel" id="brandSelector" onchange="changeBrand()">
                     <option value="">Seleziona Brand</option>
@@ -222,21 +226,11 @@
             <div id="welcome" class="section active">
                 <div class="sec-title">Inizio</div>
                 <p style="font-size:14px;color:var(--text2);max-width:720px;line-height:1.55;margin-bottom:16px;">
-                    Home operativa essenziale: scegli un brand, apri un'azione rapida e usa Analytics per tutti i numeri.
+                    Home operativa essenziale: seleziona o crea un brand per iniziare.
                 </p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
                     <button type="button" class="btn sec" onclick="document.getElementById('brandSelector').focus()">Seleziona brand</button>
                     <button type="button" class="btn sec" onclick="nav('brand-identity')">Crea / modifica brand</button>
-                </div>
-
-                <div class="card" style="margin-bottom:14px;">
-                    <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Azioni rapide</div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">
-                        <button type="button" class="btn sec" onclick="nav('templates')">Template Pass</button>
-                        <button type="button" class="btn sec" onclick="nav('passes')">Pass Emessi</button>
-                        <button type="button" class="btn sec" onclick="nav('push')">Push</button>
-                        <button type="button" class="btn sec" onclick="nav('analytics')">Analytics</button>
-                    </div>
                 </div>
 
                 <div class="card" style="margin-bottom:14px;">
@@ -1506,6 +1500,8 @@ function syncBrandUrl() {
 
 // ==================== BRAND THEMING ====================
 function applyBrandTheme() {
+    const headerBrandName = document.getElementById('headerBrandName');
+    const headerBrandLogo = document.getElementById('headerBrandLogo');
     if (!brandId) {
         currentBrandSlug = '';
         // Reset to default NUDJ colors
@@ -1520,11 +1516,17 @@ function applyBrandTheme() {
         root.setProperty('--border', adjustAlpha('#FFFFFF', 0.12));
         const style = document.getElementById('brandThemeStyle');
         if (style) style.textContent = '';
-        document.getElementById('headerBrandTitle').textContent = 'Ads2Wallet';
+        if (headerBrandName) headerBrandName.textContent = 'Ads2Wallet';
+        if (headerBrandLogo) {
+            headerBrandLogo.style.display = 'none';
+            headerBrandLogo.removeAttribute('src');
+        }
         document.title = 'Ads2Wallet';
         return;
     }
+    const targetBrandId = brandId;
     fetch(`${API}/brands/${brandId}`).then(r => r.json()).then(brand => {
+        if (brandId !== targetBrandId) return;
         const c = brand.config || {};
         const bg = c.backgroundColor || '#0D0B1A';
         const fg = c.foregroundColor || '#FFFFFF';
@@ -1532,7 +1534,7 @@ function applyBrandTheme() {
         // Update brand name in header and page title
         const name = brand.name || 'Ads2Wallet';
         currentBrandSlug = brand.slug || '';
-        document.getElementById('headerBrandTitle').textContent = name;
+        if (headerBrandName) headerBrandName.textContent = name;
         document.title = name + ' — Ads2Wallet';
         // Derive palette from brand colors
         const root = document.documentElement.style;
@@ -1547,6 +1549,26 @@ function applyBrandTheme() {
         // Update focus ring + active nav item color
         const style = document.getElementById('brandThemeStyle');
         if (style) style.textContent = `input:focus,select:focus,textarea:focus{border-color:${lbl}!important;box-shadow:0 0 0 2px ${lbl}22!important;} .nav-item.active{background:${lbl}!important;color:${bg}!important;} .badge.active{background:${lbl}33!important;color:${lbl}!important;} .btn:not(.sec):not(.danger):not(.purple){background:${lbl};color:${bg};}`;
+
+        // Load brand logo for the header (fallback to text-only if missing).
+        if (headerBrandLogo) {
+            fetch(`${API}/brands/${targetBrandId}/logo?t=${Date.now()}`, { headers: getAuthHeaders() })
+                .then(res => {
+                    if (!res.ok || brandId !== targetBrandId) throw new Error('no-logo');
+                    return res.blob();
+                })
+                .then(blob => {
+                    if (brandId !== targetBrandId) return;
+                    const url = URL.createObjectURL(blob);
+                    headerBrandLogo.src = url;
+                    headerBrandLogo.style.display = 'block';
+                })
+                .catch(() => {
+                    if (brandId !== targetBrandId) return;
+                    headerBrandLogo.style.display = 'none';
+                    headerBrandLogo.removeAttribute('src');
+                });
+        }
     }).catch(()=>{});
 }
 
