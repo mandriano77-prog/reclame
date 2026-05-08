@@ -1865,7 +1865,7 @@ async function loadPasses(resetPage = false) {
         <div class="pass-table-wrap">
         <table class="table pass-table">
             <thead><tr>
-                <th>Scaricato</th>
+                <th title="Momento in cui il pass è stato generato sul server (non è l'aggiunta al Wallet)">Pass creato</th>
                 <th>Installato</th>
                 <th title="Apple: token push registrato. Google: salvato in Wallet (GW), link pronto ma non salvato (GW°), oppure assente">Apple push · Google</th>
                 <th title="Storico notifiche inviate via Apple Push (APNs)">Push (APNs)</th>
@@ -1974,7 +1974,7 @@ function downloadPassesTableCsv() {
     }
     const sep = ';';
     const headers = [
-        'Scaricato (creato)',
+        'Pass creato (generazione server)',
         'Installato',
         'Data installazione',
         'Push Apple (token registrato)',
@@ -2003,9 +2003,9 @@ function downloadPassesTableCsv() {
         if (p.google_wallet_saved) googleWalletCsv = 'Salvato';
         else if (p.google_wallet_object_id) googleWalletCsv = 'Link pronto (non salvato)';
         const src = p.device_source === 'apple' ? 'Apple' : p.device_source === 'google' ? 'Google' : '';
-        const scaricato = p.created_at ? new Date(p.created_at).toLocaleDateString('it-IT') : '';
+        const passCreato = p.created_at ? new Date(p.created_at).toLocaleDateString('it-IT') : '';
         return [
-            scaricato,
+            passCreato,
             isInstalled ? 'Sì' : 'No',
             installDateStr,
             applePushOn ? 'Sì' : 'No',
@@ -2089,7 +2089,7 @@ async function viewPassDetail(id) {
             <p><strong>Template</strong><br>${esc(p.template_id || '')}</p>
             <p><strong>Campagna</strong><br>${camp ? esc(camp.name) : '—'}</p>
             <p><strong>Stato</strong><br>${esc(p.status || '')}</p>
-            <p><strong>Scaricato (creato)</strong><br>${p.created_at ? esc(new Date(p.created_at).toLocaleString('it-IT')) : '—'}</p>
+            <p><strong>Pass creato</strong> <span style="font-size:11px;color:var(--text2);">(generazione sul server)</span><br>${p.created_at ? esc(new Date(p.created_at).toLocaleString('it-IT')) : '—'}</p>
             <p><strong>Installato nel wallet</strong><br>${esc(installLbl)}</p>
             <p><strong>Device / sorgente</strong><br>${esc(row?.device_id || p.device_id || '—')} ${(row?.device_source || p.device_source) ? '(' + esc(row.device_source || p.device_source) + ')' : ''}</p>
             <p><strong>Google Wallet — salvato</strong><br>${esc(gwSavedLbl)}</p>
