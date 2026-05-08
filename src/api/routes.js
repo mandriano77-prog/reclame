@@ -1182,9 +1182,14 @@ router.delete('/campaigns/:id', async (req, res) => {
 
 router.get('/passes', async (req, res) => {
   try {
-    const { brand_id, status, campaign_id, limit } = req.query;
+    const { brand_id, status, campaign_id, limit, offset } = req.query;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
-    const passes = await listPasses(brand_id, { status, campaign_id, limit: limit ? parseInt(limit) : undefined });
+    const passes = await listPasses(brand_id, {
+      status,
+      campaign_id,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined
+    });
     res.json(passes);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

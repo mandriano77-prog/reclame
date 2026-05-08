@@ -51,10 +51,14 @@
         .btn.danger { background: var(--red); }
         .btn.purple { background: var(--purple); }
         .btn.small { padding: 6px 12px; font-size: 12px; }
+        .btn:disabled, .btn[disabled] { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        .btn.sec:disabled, .btn.sec[disabled] { border-color: var(--border); color: var(--text2); }
         .table { width: 100%; border-collapse: collapse; background: var(--bg2); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
         .table thead th { background: var(--bg3); padding: 12px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--purple); font-weight: 600; }
         .table tbody td { padding: 12px 14px; border-top: 1px solid var(--border); font-size: 13px; }
         .table tbody tr:hover { background: var(--bg3); }
+        .pass-table-wrap { overflow-x: auto; max-height: 66vh; border-radius: 8px; }
+        .pass-table thead th { position: sticky; top: 0; z-index: 2; }
         .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
         .badge.active { background: rgba(0,212,170,0.2); color: var(--teal); }
         .badge.inactive { background: rgba(124,58,237,0.2); color: var(--purple); }
@@ -143,7 +147,20 @@
         .mp-filter { padding: 6px 12px; margin-right: 6px; margin-bottom: 6px; background: transparent; border: 1px solid var(--border); color: var(--text2); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; }
         .mp-filter:hover { border-color: var(--teal); color: var(--teal); }
         .mp-filter.active { background: var(--teal); color: var(--bg); border-color: var(--teal); }
-        @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } .form-row { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 980px) {
+            .table tbody td:nth-child(8),
+            .table tbody td:nth-child(9),
+            .table thead th:nth-child(8),
+            .table thead th:nth-child(9) { display: none; }
+        }
+        @media (max-width: 768px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .form-row { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .table tbody td:nth-child(6),
+            .table thead th:nth-child(6) { display: none; }
+        }
         @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
     </style>
     <style id="brandThemeStyle"></style>
@@ -161,6 +178,7 @@
         <div class="nav-label">Pass</div>
         <div class="nav-item" onclick="nav('pass-wizard')">Crea Pass</div>
         <div class="nav-item" onclick="nav('passes')">Pass Emessi</div>
+        <div class="nav-item" onclick="nav('templates')">Template Pass</div>
         <div class="nav-label">Comunicazione</div>
         <div class="nav-item" onclick="nav('campaigns')">Campagne</div>
         <div class="nav-item" onclick="nav('push')">Push Notification</div>
@@ -200,6 +218,10 @@
                 <p style="font-size:13px;color:var(--text2);max-width:560px;line-height:1.5;">
                     Oppure apri <strong>Identità</strong> per creare un nuovo brand prima di selezionarlo qui.
                 </p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+                    <button type="button" class="btn" onclick="nav('brand-identity')">Crea / modifica brand</button>
+                    <button type="button" class="btn sec" onclick="document.getElementById('brandSelector').focus()">Seleziona brand</button>
+                </div>
             </div>
 
             <!-- CAMPAIGNS -->
@@ -239,7 +261,7 @@
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <div class="sec-title" style="margin-bottom:0">Pass Emessi</div>
                     <div style="display:flex;gap:8px;">
-                        <select id="passFilterCampaign" onchange="loadPasses()" style="width:auto;min-width:160px;">
+                        <select id="passFilterCampaign" onchange="loadPasses(true)" style="width:auto;min-width:160px;">
                             <option value="">Tutte le campagne</option>
                         </select>
                     </div>
@@ -1176,9 +1198,13 @@ let currentBrandSlug = '';
 let campaignsCache = [];
 const LAST_BRAND_KEY = 'ads2wallet:lastBrandId';
 const BRAND_CACHE_TTL_MS = 45000;
+const PASSES_PAGE_SIZE = 50;
 /** Sections reachable without selecting a brand */
 const SECTIONS_NO_BRAND = new Set(['welcome', 'users', 'brand-identity']);
 const brandDataCache = new Map();
+let passPageIndex = 0;
+let passHasNextPage = false;
+let passSearchQuery = '';
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1349,11 +1375,15 @@ function changeBrand() {
     if (!brandId) {
         localStorage.removeItem(LAST_BRAND_KEY);
         syncBrandUrl();
+        passPageIndex = 0;
+        passHasNextPage = false;
         nav('welcome');
         return;
     }
     localStorage.setItem(LAST_BRAND_KEY, brandId);
     syncBrandUrl();
+    passPageIndex = 0;
+    passHasNextPage = false;
     refreshOverview().then(() => {
         let sid = getActiveSectionId();
         if (sid === 'welcome') sid = 'campaigns';
@@ -1651,14 +1681,28 @@ function downloadQR() {
 }
 
 // ==================== PASSES ====================
-async function loadPasses() {
+async function loadPasses(resetPage = false) {
     if (!brandId) return;
+    if (resetPage) passPageIndex = 0;
     const campaignFilter = document.getElementById('passFilterCampaign').value;
-    let url = `${API}/passes?brand_id=${brandId}&limit=100`;
+    const effectiveLimit = PASSES_PAGE_SIZE + 1;
+    const offset = passPageIndex * PASSES_PAGE_SIZE;
+    let url = `${API}/passes?brand_id=${brandId}&limit=${effectiveLimit}&offset=${offset}`;
     if (campaignFilter) url += `&campaign_id=${campaignFilter}`;
     const res = await fetch(url);
-    const passes = await res.json();
-    window._lastPassesForExport = passes;
+    const rawPasses = await res.json();
+    passHasNextPage = rawPasses.length > PASSES_PAGE_SIZE;
+    const passes = passHasNextPage ? rawPasses.slice(0, PASSES_PAGE_SIZE) : rawPasses;
+    const q = (passSearchQuery || '').trim().toLowerCase();
+    const filteredPasses = q ? passes.filter(p => {
+        const camp = campaignsCache.find(c => c.id === p.campaign_id);
+        const haystack = [
+            p.id, p.serial_number, p.device_id, p.status, p.device_source,
+            p.referrer_url, p.user_agent, camp?.name
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(q);
+    }) : passes;
+    window._lastPassesForExport = filteredPasses;
     const el = document.getElementById('passesContent');
 
     // Update campaign filter dropdown
@@ -1672,24 +1716,32 @@ async function loadPasses() {
     if (!passes.length) { el.innerHTML = '<p style="color:var(--text2)">Nessun pass emesso.</p>'; return; }
 
     // Stats bar
-    const installed = passes.filter(p => p.device_id).length;
-    const applePushReachable = passes.filter(p => p.push_token).length;
-    const googleWalletSaved = passes.filter(p => !!p.google_wallet_saved).length;
+    const installed = filteredPasses.filter(p => p.device_id).length;
+    const applePushReachable = filteredPasses.filter(p => p.push_token).length;
+    const googleWalletSaved = filteredPasses.filter(p => !!p.google_wallet_saved).length;
     const statsHtml = `<div class="stats-grid" style="margin-bottom:16px;">
-        <div class="stat-card"><div class="stat-label">Pass totali</div><div class="stat-value">${passes.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Pass visibili</div><div class="stat-value">${filteredPasses.length}</div></div>
         <div class="stat-card"><div class="stat-label">Installati (wallet)</div><div class="stat-value">${installed}</div></div>
         <div class="stat-card"><div class="stat-label">Push Apple (token)</div><div class="stat-value">${applePushReachable}</div></div>
         <div class="stat-card"><div class="stat-label">Google Wallet salvati</div><div class="stat-value">${googleWalletSaved}</div></div>
-        <div class="stat-card"><div class="stat-label">Conv. install</div><div class="stat-value">${passes.length > 0 ? ((installed/passes.length)*100).toFixed(0) : 0}%</div></div>
-        <div class="stat-card"><div class="stat-label">Push inviate (APNs)</div><div class="stat-value">${passes.filter(p => p.push_count > 0).length}</div></div>
+        <div class="stat-card"><div class="stat-label">Conv. install</div><div class="stat-value">${filteredPasses.length > 0 ? ((installed/filteredPasses.length)*100).toFixed(0) : 0}%</div></div>
+        <div class="stat-card"><div class="stat-label">Push inviate (APNs)</div><div class="stat-value">${filteredPasses.filter(p => p.push_count > 0).length}</div></div>
     </div>`;
 
     el.innerHTML = statsHtml + `
-        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <input
+                type="search"
+                id="passSearchInput"
+                placeholder="Cerca serial, device, campagna..."
+                value="${esc(passSearchQuery)}"
+                oninput="handlePassSearchInput(this.value)"
+                style="max-width:320px;"
+            >
             <button type="button" class="btn small sec" onclick="downloadPassesTableCsv()">Scarica tabella (CSV)</button>
         </div>
-        <div style="overflow-x:auto;">
-        <table class="table">
+        <div class="pass-table-wrap">
+        <table class="table pass-table">
             <thead><tr>
                 <th>Scaricato</th>
                 <th>Installato</th>
@@ -1703,7 +1755,7 @@ async function loadPasses() {
                 <th>Stato</th>
                 <th>Azioni</th>
             </tr></thead>
-            <tbody>${passes.map(p => {
+            <tbody>${filteredPasses.map(p => {
                 const camp = campaignsCache.find(c => c.id === p.campaign_id);
                 const utm = p.utm || {};
                 const isInstalled = !!p.device_id;
@@ -1759,7 +1811,33 @@ async function loadPasses() {
             }).join('')}</tbody>
         </table>
         </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;flex-wrap:wrap;">
+            <div style="font-size:12px;color:var(--text2);">
+                Pagina ${passPageIndex + 1} · ${filteredPasses.length} risultati (${passes.length} caricati)
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button type="button" class="btn small sec" onclick="goPrevPassesPage()" ${passPageIndex === 0 ? 'disabled' : ''}>Precedente</button>
+                <button type="button" class="btn small sec" onclick="goNextPassesPage()" ${!passHasNextPage ? 'disabled' : ''}>Successiva</button>
+            </div>
+        </div>
     `;
+}
+
+function handlePassSearchInput(value) {
+    passSearchQuery = value || '';
+    loadPasses(false);
+}
+
+function goPrevPassesPage() {
+    if (passPageIndex === 0) return;
+    passPageIndex -= 1;
+    loadPasses(false);
+}
+
+function goNextPassesPage() {
+    if (!passHasNextPage) return;
+    passPageIndex += 1;
+    loadPasses(false);
 }
 
 function csvEscapeCell(v) {

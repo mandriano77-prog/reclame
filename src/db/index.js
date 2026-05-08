@@ -666,6 +666,7 @@ async function listPasses(brandId, options = {}) {
   if (options.campaign_id) { query += ` AND p.campaign_id = $${idx++}`; params.push(options.campaign_id); }
   query += ' ORDER BY p.created_at DESC';
   if (options.limit) { query += ` LIMIT $${idx++}`; params.push(options.limit); }
+  if (options.offset) { query += ` OFFSET $${idx++}`; params.push(options.offset); }
   const result = await pool.query(query, params);
   return result.rows;
 }
