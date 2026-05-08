@@ -176,9 +176,8 @@
         <div class="nav-item" onclick="nav('brand-identity')">Identità</div>
         <div class="nav-item" onclick="nav('media-library')">Media Library</div>
         <div class="nav-label">Pass</div>
-        <div class="nav-item" onclick="nav('pass-wizard')">Crea Pass</div>
-        <div class="nav-item" onclick="nav('passes')">Pass Emessi</div>
         <div class="nav-item" onclick="nav('templates')">Template Pass</div>
+        <div class="nav-item" onclick="nav('passes')">Pass Emessi</div>
         <div class="nav-label">Comunicazione</div>
         <div class="nav-item" onclick="nav('campaigns')">Campagne</div>
         <div class="nav-item" onclick="nav('push')">Push Notification</div>
@@ -454,7 +453,7 @@
             <!-- BRAND IDENTITY -->
             <div id="brand-identity" class="section">
                 <div class="sec-title">Identità Brand</div>
-                <p style="font-size:12px;color:var(--text2);margin-bottom:20px;">Profilo del brand: identità visiva, settore e tono di voce. Queste impostazioni vengono ereditate dal pass.</p>
+                <p style="font-size:12px;color:var(--text2);margin-bottom:20px;">Profilo del brand: identità visiva e settore. Queste impostazioni vengono ereditate dal pass.</p>
 
                 <div class="card">
                     <div class="sec-title" style="font-size:16px;">Informazioni</div>
@@ -475,17 +474,6 @@
                                 <option value="hospitality">Hospitality</option>
                                 <option value="automotive">Automotive</option>
                                 <option value="tech">Tech</option>
-                                <option value="altro">Altro</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tono di voce</label>
-                            <select id="biTono">
-                                <option value="">— Seleziona —</option>
-                                <option value="professionale">Professionale</option>
-                                <option value="friendly">Friendly</option>
-                                <option value="bold">Bold / Urban</option>
-                                <option value="luxury">Luxury</option>
                                 <option value="altro">Altro</option>
                             </select>
                         </div>
@@ -3351,8 +3339,7 @@ async function wzAiGenerate() {
         const res = await fetch(`${API}/brands/${brandId}`);
         const brand = await res.json();
         const settore = brand.config?.settore || '';
-        const tono = brand.config?.tono || '';
-        const description = `Settore: ${settore || 'generico'}. Tono di voce: ${tono || 'friendly'}.`;
+        const description = `Settore: ${settore || 'generico'}.`;
         // AI copy endpoint returns { options: [{ headline, subheadline, claim, button_label }] }
         const aiRes = await fetch(`${API}/brands/${brandId}/ai-copy`, {
             method: 'POST',
@@ -3383,8 +3370,7 @@ async function wzAiCopy(section) {
         const res = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
         const brand = await res.json();
         const settore = brand.config?.settore || '';
-        const tono = brand.config?.tono || '';
-        const description = `Brand: ${brand.name}. Settore: ${settore || 'generico'}. Tono: ${tono || 'friendly'}.`;
+        const description = `Brand: ${brand.name}. Settore: ${settore || 'generico'}.`;
         const aiRes = await fetch(`${API}/brands/${brandId}/ai-copy`, {
             method: 'POST',
             headers: {'Content-Type':'application/json', ...getAuthHeaders()},
@@ -3587,7 +3573,7 @@ async function wzDeleteTemplate(id) {
 async function loadBrandIdentity() {
     if (!brandId) {
         // No brand yet — show empty form for creation
-        ['biName','biSlug','biSettore','biTono'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+        ['biName','biSlug','biSettore'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
         document.getElementById('biBg').value = '#0D0B1A'; document.getElementById('biBgPick').value = '#0D0B1A';
         document.getElementById('biFg').value = '#FFFFFF'; document.getElementById('biFgPick').value = '#FFFFFF';
         document.getElementById('biAcc').value = '#00D4AA'; document.getElementById('biAccPick').value = '#00D4AA';
@@ -3601,7 +3587,6 @@ async function loadBrandIdentity() {
     document.getElementById('biName').value = brand.name || '';
     document.getElementById('biSlug').value = brand.slug || '';
     document.getElementById('biSettore').value = c.settore || '';
-    document.getElementById('biTono').value = c.tono || '';
     document.getElementById('biBg').value = c.backgroundColor || '#0D0B1A';
     document.getElementById('biBgPick').value = c.backgroundColor || '#0D0B1A';
     document.getElementById('biFg').value = c.foregroundColor || '#FFFFFF';
@@ -3751,7 +3736,6 @@ async function saveBrandIdentity() {
         foregroundColor: document.getElementById('biFg').value,
         labelColor: document.getElementById('biAcc').value,
         settore: document.getElementById('biSettore').value,
-        tono: document.getElementById('biTono').value
     };
     const slug = document.getElementById('biSlug').value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     if (!brandId) {
