@@ -1073,6 +1073,7 @@
                                 <button type="button" class="btn small sec" onclick="exportAnalyticsChart('trend','svg')">SVG</button>
                             </div>
                         </div>
+                        <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.4;">Raggruppamento per <strong>giorno di calendario</strong> nel fuso del browser: download = pass creati quel giorno; install = primo salvataggio Apple/Google quel giorno.</p>
                         <div id="analyticsTrendChart"></div>
                     </div>
                     <div class="card" style="margin-bottom:0;">
@@ -3702,22 +3703,34 @@ function syncAnalyticsRangeControls() {
     toEl.value = analyticsDateTo;
 }
 
+/** Calendar day YYYY-MM-DD in the browser's local timezone (not UTC). */
+function formatLocalYMD(d) {
+    const x = d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(x.getTime())) return null;
+    const y = x.getFullYear();
+    const m = String(x.getMonth() + 1).padStart(2, '0');
+    const day = String(x.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 function getAnalyticsDateRange() {
-    const fmt = (d) => d.toISOString().slice(0, 10);
     if (analyticsDateFrom && analyticsDateTo) return { from: analyticsDateFrom, to: analyticsDateTo };
     const to = new Date();
     to.setHours(0, 0, 0, 0);
     const from = new Date(to);
     from.setDate(from.getDate() - Math.max(0, analyticsTrendDays - 1));
-    return { from: fmt(from), to: fmt(to) };
+    return { from: formatLocalYMD(from), to: formatLocalYMD(to) };
 }
 
 function listDaysBetween(from, to) {
     const out = [];
-    const cursor = new Date(`${from}T00:00:00`);
-    const end = new Date(`${to}T00:00:00`);
+    const pf = from.split('-').map((s) => parseInt(s, 10));
+    const pt = to.split('-').map((s) => parseInt(s, 10));
+    if (pf.length < 3 || pt.length < 3) return out;
+    const cursor = new Date(pf[0], pf[1] - 1, pf[2]);
+    const end = new Date(pt[0], pt[1] - 1, pt[2]);
     while (cursor <= end) {
-        out.push(cursor.toISOString().slice(0, 10));
+        out.push(formatLocalYMD(cursor));
         cursor.setDate(cursor.getDate() + 1);
     }
     return out;
@@ -3734,12 +3747,12 @@ function renderAnalyticsTrendChart(passes) {
     const byDay = new Map(dayKeys.map(k => [k, { dl: 0, in: 0 }]));
     for (const p of passes) {
         if (p.created_at) {
-            const k = String(p.created_at).slice(0, 10);
-            if (byDay.has(k)) byDay.get(k).dl += 1;
+            const k = formatLocalYMD(p.created_at);
+            if (k && byDay.has(k)) byDay.get(k).dl += 1;
         }
         if (p.install_date) {
-            const k = String(p.install_date).slice(0, 10);
-            if (byDay.has(k)) byDay.get(k).in += 1;
+            const k = formatLocalYMD(p.install_date);
+            if (k && byDay.has(k)) byDay.get(k).in += 1;
         }
     }
     for (const key of dayKeys) {
@@ -3799,8 +3812,8 @@ function renderAnalyticsTrendChart(passes) {
             ${xTicks}
         </svg>
         <div style="display:flex;gap:16px;font-size:12px;color:var(--text2);margin-top:6px;">
-            ${activeDownload ? `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:#22c55e;border-radius:50%;display:inline-block;"></span>Download (oggi: ${dlLast})</span>` : ''}
-            ${activeInstall ? `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:#3b82f6;border-radius:50%;display:inline-block;"></span>Install (oggi: ${inLast})</span>` : ''}
+            ${activeDownload ? `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:#22c55e;border-radius:50%;display:inline-block;"></span>Download (ultimo giorno: ${dlLast})</span>` : ''}
+            ${activeInstall ? `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:#3b82f6;border-radius:50%;display:inline-block;"></span>Install (ultimo giorno: ${inLast})</span>` : ''}
             <span style="margin-left:auto;color:var(--text2);">${from} → ${to} · max giorno ${maxVal}</span>
         </div>
     `;
