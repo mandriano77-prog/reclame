@@ -269,9 +269,10 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  // 2. LINKS — from brand config OR template fields (template takes priority if present)
-  const tplLinks = (!Array.isArray(tplFields) && tplFields.links) ? tplFields.links : null;
-  const links = tplLinks || brandConfig.links || [];
+  // 2. LINKS — source of truth is template fields.
+  // NOTE: legacy fallback to brandConfig.links caused stale "ghost" links
+  // to reappear on pass back fields even when not configured in template UI.
+  const links = (!Array.isArray(tplFields) && Array.isArray(tplFields.links)) ? tplFields.links : [];
   links.forEach((link, i) => {
     if (!link.label && !link.url) return;
     // attributedValue renders the clickable link in iOS.

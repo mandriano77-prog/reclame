@@ -1318,6 +1318,12 @@ router.post('/push/send', async (req, res) => {
       const config = brand.config || {};
       config.pushAnnouncement = { title, message, ts: Date.now() };
 
+      // Engagement links must be explicit per push action.
+      // If not selected in this request, clear old sticky values.
+      if (!instant_win_id) delete config.instantWinActive;
+      if (!gamification_id) delete config.gamificationActive;
+      if (!instant_win_id && !gamification_id) delete config.stripOverride;
+
       // Instant Win: inject play link into pass back field
       if (instant_win_id) {
         const iwCampaign = await getInstantWinCampaign(instant_win_id);
@@ -1339,7 +1345,6 @@ router.post('/push/send', async (req, res) => {
       if (gamification_id) {
         const gamCampaign = await getGamificationCampaign(gamification_id);
         if (gamCampaign && gamCampaign.status === 'active') {
-          const gameLabels = { quiz: 'Quiz', memory: 'Memory Match', puzzle: 'Puzzle' };
           config.gamificationActive = {
             campaign_id: gamCampaign.id,
             label: gamCampaign.push_message || gamCampaign.name || 'Gioca ora!',
