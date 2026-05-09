@@ -647,9 +647,10 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Campagna (opzionale, per strip)</label>
-                        <select id="mediaUploadCampaignId">
-                            <option value="">Nessuna campagna</option>
+                        <select id="mediaUploadCampaignId" title="Scegli tra le campagne create nella tab Campagne">
+                            <option value="">— Nessuna campagna —</option>
                         </select>
+                        <p style="font-size:11px;color:var(--text2);margin:6px 0 0;">L’elenco è quello della tab <strong>Campagne</strong> (nessun testo libero). Crea prima la campagna, poi assegnala qui.</p>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nome (opzionale)</label>
@@ -4580,7 +4581,7 @@ async function mpUpload() {
 function populateMediaUploadCampaignSelect(selectedId = '') {
     const sel = document.getElementById('mediaUploadCampaignId');
     if (!sel) return;
-    sel.innerHTML = '<option value="">Nessuna campagna</option>';
+    sel.innerHTML = '<option value="">— Nessuna campagna —</option>';
     (campaignsCache || []).forEach(c => {
         const o = document.createElement('option');
         o.value = c.id;
@@ -4597,8 +4598,11 @@ async function openMediaUpload(selectedCampaignId = '') {
         fileInput.value = '';
         fileInput.onchange = () => { mediaUploadEditedBase64 = null; };
     }
-    if (!campaignsCache || !campaignsCache.length) {
-        try { campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } }); } catch(_) {}
+    if (brandId) {
+        try {
+            brandDataCache.delete(cacheKey(`${API}/campaigns?brand_id=${brandId}`));
+            campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
+        } catch (_) {}
     }
     populateMediaUploadCampaignSelect(selectedCampaignId);
     onMediaUploadTypeChange();
