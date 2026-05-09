@@ -1508,6 +1508,12 @@ router.get('/geocode/search', async (req, res) => {
     if (q.length < 3) return res.json([]);
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=8&addressdetails=1`;
     const r = await fetch(url, { headers: { 'User-Agent': NOMINATIM_UA, 'Accept-Language': 'it,en' } });
+    if (r.status === 429) {
+      return res.status(429).json({
+        error: 'rate_limit',
+        message: 'Troppe richieste al servizio indirizzi. OpenStreetMap (Nominatim) chiede di non superare circa 1 richiesta/sec.'
+      });
+    }
     if (!r.ok) return res.status(502).json({ error: 'Servizio indirizzi non disponibile' });
     const rows = await r.json();
     const out = (Array.isArray(rows) ? rows : []).map((x) => ({
@@ -1532,6 +1538,12 @@ router.get('/geocode/reverse', async (req, res) => {
     }
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`;
     const r = await fetch(url, { headers: { 'User-Agent': NOMINATIM_UA, 'Accept-Language': 'it,en' } });
+    if (r.status === 429) {
+      return res.status(429).json({
+        error: 'rate_limit',
+        message: 'Troppe richieste al servizio indirizzi. Attendi qualche secondo (policy Nominatim).'
+      });
+    }
     if (!r.ok) return res.status(502).json({ error: 'Reverse geocoding non disponibile' });
     const data = await r.json();
     res.json({
@@ -2618,12 +2630,11 @@ router.get('/google-wallet/status', (req, res) => {
  * GET /api/v1/google-wallet/callback — solo spiegazione (il browser fa GET; Google usa POST)
  */
 router.get('/google-wallet/callback', (req, res) => {
-  res.type('html').send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Google Wallet callback</title></head><body style="font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;line-height:1.5;padding:16px;">
-<h1>Endpoint attivo</h1>
-<p>Questo indirizzo non va “aperto” nel browser per funzionare.</p>
-<p><strong>Google Wallet</strong> invia qui una richiesta <code>POST</code> quando un utente <strong>salva</strong> o <strong>rimuove</strong> il pass dall’app Google Wallet. Il server aggiorna il database (stato GW / GW°).</p>
-<p>Se apri questo link nel browser vedi questa pagina; se prima vedevi “Cannot GET”, era normale: mancava proprio questa risposta GET informativa.</p>
-<p style="color:#666;font-size:14px;">Metodo atteso dalle notifiche: <code>POST</code> · Payload: eventi firmati / JSON da Google.</p>
+  res.type('html').send(`<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Wallet · callback Google</title></head>
+<body style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:32px auto;padding:20px;line-height:1.45;color:#1a1a1a;">
+<h1 style="font-size:1.15rem;margin:0 0 .75rem;">Callback Google Wallet</h1>
+<p style="margin:0 0 .6rem;font-size:.95rem;">Questo URL riceve solo richieste <strong>POST</strong> da Google quando un utente salva o rimuove il pass. Aprendolo nel browser ottieni questa pagina informativa: è previsto così.</p>
+<p style="margin:0;font-size:.82rem;color:#555;">NON usare questa pagina come test funzionale: verifica configurazione issuer e firewall per le chiamate <code>POST</code>.</p>
 </body></html>`);
 });
 

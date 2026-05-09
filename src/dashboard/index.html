@@ -302,6 +302,7 @@
                         </select>
                     </div>
                 </div>
+                <p id="passFilterSessionHint" style="font-size:11px;color:var(--text2);margin:-8px 0 14px;">Campagna, ricerca e pagina sono ricordati per questo brand finché il tab del browser è aperto.</p>
                 <div id="passGoogleWalletDiag" style="margin-bottom:14px;"></div>
                 <div id="passesContent" style="color:var(--text2)">Caricamento...</div>
             </div>
@@ -460,6 +461,7 @@
                 <!-- TAB 3: Geofencing -->
                 <div id="pushPanel_geofencing" class="push-panel" style="display:none;">
                     <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Aggiungi punti di interesse (POI). Cerca l’<strong>indirizzo</strong> (via, piazza, città): usiamo i dati pubblici <strong>OpenStreetMap</strong> (Nominatim) per ricavare le coordinate. Quando l’utente si avvicina, iOS mostra il pass sulla lock screen con il messaggio che imposti. Nessun server nel rilevamento — è il telefono che misura la distanza.</p>
+                    <p style="font-size:11px;color:var(--orange);margin:-8px 0 16px;opacity:.95;">Policy Nominatim: non più di circa <strong>1 richiesta al secondo</strong> per progetto — la dashboard rallenta automaticamente le ricerche consecutive; digitando lentamente eviti blocchi temporanei (429).</p>
 
                     <div class="push-card">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -1373,6 +1375,65 @@ const brandDataCache = new Map();
 let passPageIndex = 0;
 let passHasNextPage = false;
 let passSearchQuery = '';
+/** sessionStorage filters per brand (campagna · ricerca · pagina) */
+const PASSES_FILTER_STORAGE_PREFIX = 'ads2wallet:passFilters:v1:';
+let passFiltersLastBrandHydrated = null;
+/** campagna salvata da sessione, da applicare al select quando le opzioni sono pronte */
+let pendingPassCampaignId = '';
+
+function ensurePassFiltersFromStorage() {
+    if (!brandId) return;
+    if (passFiltersLastBrandHydrated === brandId) return;
+    try {
+        const raw = sessionStorage.getItem(PASSES_FILTER_STORAGE_PREFIX + brandId);
+        if (raw) {
+            const o = JSON.parse(raw);
+            passSearchQuery = o.search != null ? String(o.search) : '';
+            passPageIndex = Number.isFinite(o.page) && o.page >= 0 ? o.page | 0 : 0;
+            pendingPassCampaignId = typeof o.campaign_id === 'string' ? o.campaign_id : '';
+        } else {
+            passSearchQuery = '';
+            passPageIndex = 0;
+            pendingPassCampaignId = '';
+        }
+    } catch (_) {
+        pendingPassCampaignId = '';
+    }
+    passFiltersLastBrandHydrated = brandId;
+}
+
+function persistPassFilters() {
+    if (!brandId) return;
+    try {
+        const sel = document.getElementById('passFilterCampaign');
+        sessionStorage.setItem(PASSES_FILTER_STORAGE_PREFIX + brandId, JSON.stringify({
+            campaign_id: sel ? sel.value : '',
+            search: passSearchQuery || '',
+            page: passPageIndex
+        }));
+    } catch (_) {}
+}
+
+function syncPassCampaignDropdownPreference() {
+    const sel = document.getElementById('passFilterCampaign');
+    if (!sel) return;
+    const remembered = pendingPassCampaignId;
+    const currentVal = sel.value || '';
+    if (sel.options.length <= 1 && campaignsCache.length) {
+        campaignsCache.forEach((c) => {
+            const o = document.createElement('option');
+            o.value = c.id;
+            o.textContent = c.name;
+            sel.appendChild(o);
+        });
+    }
+    pendingPassCampaignId = '';
+    if (remembered && [...sel.options].some((opt) => opt.value === remembered)) {
+        sel.value = remembered;
+    } else if (currentVal && [...sel.options].some((opt) => opt.value === currentVal)) {
+        sel.value = currentVal;
+    }
+}
 let analyticsTrendDays = 14;
 let analyticsTrendMetric = 'both';
 let analyticsDateFrom = '';
@@ -1546,6 +1607,7 @@ async function loadBrands() {
 }
 
 function changeBrand() {
+    passFiltersLastBrandHydrated = null;
     const sel = document.getElementById('brandSelector');
     brandId = sel.value || null;
     currentBrandName = brandId ? (sel.options[sel.selectedIndex]?.textContent || '') : '';
@@ -1908,6 +1970,17 @@ function passGooglePending(p) {
     return !passGoogleSaved(p);
 }
 
+function copyGwCallbackBtn(btn) {
+    const raw = btn.getAttribute('data-callback-url');
+    if (!raw) return toast('URL non disponibile');
+    try {
+        const text = decodeURIComponent(raw);
+        navigator.clipboard.writeText(text).then(() => toast('URL callback copiato')).catch(() => toast('Copia non riuscita (browser)'));
+    } catch (_) {
+        toast('Copia non riuscita');
+    }
+}
+
 async function loadPassGoogleWalletDiag() {
     const box = document.getElementById('passGoogleWalletDiag');
     if (!box) return;
@@ -1926,17 +1999,23 @@ async function loadPassGoogleWalletDiag() {
                 '</details>';
             return;
         }
-        const cb = s.callback_url || '(imposta CUSTOM_DOMAIN)';
+        const cb = s.callback_url || '';
+        const cbDisplay = cb || '(imposta CUSTOM_DOMAIN)';
+        const cbData = cb ? encodeURIComponent(cb) : '';
         const warn = s.warning ? `<p style="font-size:11px;color:var(--orange);margin:8px 0 0;">${esc(s.warning)}</p>` : '';
         const iss = s.issuer_id ? `<p style="font-size:11px;margin:0 0 8px;">Issuer ID: <code>${esc(s.issuer_id)}</code></p>` : '';
+        const copyBtn = cb
+            ? `<button type="button" class="btn small sec" style="margin:0 0 10px;" data-callback-url="${cbData}" onclick="copyGwCallbackBtn(this)">Copia URL</button>`
+            : '';
         box.innerHTML =
             '<details style="font-size:12px;margin-bottom:12px;border:1px solid var(--border);border-radius:10px;background:rgba(0,212,170,0.04);">' +
             '<summary style="cursor:pointer;padding:10px 12px;font-weight:600;color:var(--teal);list-style:revert;margin:0;">Google Wallet — URL callback e diagnosi (apri solo se ti serve)</summary>' +
             '<div style="padding:0 12px 12px;color:var(--text2);line-height:1.55;font-size:11px;">' +
-            '<p style="margin:0 0 8px;">L’URL sotto è quello che il backend mette nella <em>generic class</em> per gli eventi salvataggio/rimozione. In console Google / Pay deve combaciare ed essere raggiungibile in <code>POST</code> da internet. <strong>Aprire il link nel browser</strong> non è un test valido: Google chiama in <code>POST</code>; aprendo la pagina ora vedi solo una conferma che l’endpoint esiste.</p>' +
+            '<p style="margin:0 0 8px;">URL sulla <em>generic class</em> per gli eventi salvataggio/rimozione — deve coincidere con console Google/Pay ed essere raggiungibile da internet con <code>POST</code>. La richiesta nel browser usa <code>GET</code> ed è solo informativa.</p>' +
             iss +
+            copyBtn +
             '<code style="word-break:break-all;display:block;margin:0 0 10px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);color:var(--text);font-size:11px;">' +
-            esc(cb) +
+            esc(cbDisplay) +
             '</code>' +
             '<p style="margin:0;"><strong>—</strong> in colonna Google = nessun oggetto GW creato (flusso Android o pulsante da «Vedi pass»). <strong>GW°</strong> senza <strong>GW</strong> = spesso callback o firewall.</p>' +
             warn +
@@ -1951,8 +2030,11 @@ async function loadPassGoogleWalletDiag() {
 async function loadPasses(resetPage = false) {
     if (!brandId) return;
     loadPassGoogleWalletDiag();
+    ensurePassFiltersFromStorage();
     if (resetPage) passPageIndex = 0;
-    const campaignFilter = document.getElementById('passFilterCampaign').value;
+
+    syncPassCampaignDropdownPreference();
+    const campaignFilter = document.getElementById('passFilterCampaign')?.value || '';
     const effectiveLimit = PASSES_PAGE_SIZE + 1;
     const offset = passPageIndex * PASSES_PAGE_SIZE;
     let url = `${API}/passes?brand_id=${brandId}&limit=${effectiveLimit}&offset=${offset}`;
@@ -1973,15 +2055,11 @@ async function loadPasses(resetPage = false) {
     window._lastPassesForExport = filteredPasses;
     const el = document.getElementById('passesContent');
 
-    // Update campaign filter dropdown
-    const filterSel = document.getElementById('passFilterCampaign');
-    const currentVal = filterSel.value;
-    if (filterSel.options.length <= 1 && campaignsCache.length) {
-        campaignsCache.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; filterSel.appendChild(o); });
-        filterSel.value = currentVal;
+    if (!passes.length) {
+        el.innerHTML = '<p style="color:var(--text2)">Nessun pass emesso.</p>';
+        persistPassFilters();
+        return;
     }
-
-    if (!passes.length) { el.innerHTML = '<p style="color:var(--text2)">Nessun pass emesso.</p>'; return; }
 
     // Stats bar
     const installed = filteredPasses.filter(p => !!(p.device_id || passGoogleSaved(p))).length;
@@ -2085,6 +2163,7 @@ async function loadPasses(resetPage = false) {
             </div>
         </div>
     `;
+    persistPassFilters();
 }
 
 function handlePassSearchInput(value) {
@@ -2879,7 +2958,17 @@ async function deleteScheduled(id) {
     toast('Eliminata'); loadScheduledPush();
 }
 
-// --- TAB 3: Geofencing ---
+// --- TAB 3: Geofencing ---  (Nominatim: ~1 req/s per policy usage)
+const GEO_NOMIN_MIN_INTERVAL_MS = 1200;
+let geoNomGlobalLastFetch = 0;
+
+async function geoNomThrottle() {
+    const now = Date.now();
+    const wait = GEO_NOMIN_MIN_INTERVAL_MS - (now - geoNomGlobalLastFetch);
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    geoNomGlobalLastFetch = Date.now();
+}
+
 let geoLocations = [];
 let geoSearchTimers = {};
 let geoSearchResultsForIdx = {};
@@ -2922,10 +3011,30 @@ function onGeoSearchInput(i, value) {
         return;
     }
     geoSearchTimers[i] = setTimeout(async () => {
+        const elSuggest = document.getElementById('geoSuggest_' + i);
         try {
+            await geoNomThrottle();
             const res = await fetch(`${API}/geocode/search?q=` + encodeURIComponent(String(value).trim()));
-            const results = await res.json();
-            const arr = Array.isArray(results) ? results : [];
+            let data;
+            try {
+                data = await res.json();
+            } catch (_) {
+                data = null;
+            }
+            if (!res.ok) {
+                if (res.status === 429) {
+                    toast('Troppe richieste verso OpenStreetMap. Attendi 1–2 secondi e ridigitare.');
+                } else if (data && data.error === 'rate_limit') {
+                    toast(data.message || 'Limite ricerche raggiunto. Riprova tra poco.');
+                } else {
+                    const msg502 = typeof data?.error === 'string' ? data.error : '';
+                    toast(res.status === 502 ? (msg502 || 'Servizio indirizzi non disponibile.') : (msg502 || 'Ricerca indirizzo non riuscita.'));
+                }
+                if (elSuggest) elSuggest.innerHTML = '';
+                geoSearchResultsForIdx[i] = [];
+                return;
+            }
+            const arr = Array.isArray(data) ? data : [];
             geoSearchResultsForIdx[i] = arr;
             const el = document.getElementById('geoSuggest_' + i);
             if (!el) return;
@@ -2936,10 +3045,10 @@ function onGeoSearchInput(i, value) {
                 </button>
             `).join('');
         } catch (_) {
-            const el = document.getElementById('geoSuggest_' + i);
-            if (el) el.innerHTML = '<div style="padding:8px;font-size:11px;color:var(--red);">Ricerca non disponibile</div>';
+            toast('Errore di rete sulla ricerca indirizzi.');
+            if (elSuggest) elSuggest.innerHTML = '';
         }
-    }, 400);
+    }, 500);
 }
 
 function selectGeoPick(i, j) {
@@ -2961,9 +3070,13 @@ async function reverseFillGeoAddress(i) {
     const lo = parseFloat(loc.longitude);
     if (!Number.isFinite(la) || !Number.isFinite(lo)) return toast('Coordinate mancanti');
     try {
+        await geoNomThrottle();
         const res = await fetch(`${API}/geocode/reverse?lat=${la}&lon=${lo}`);
-        if (!res.ok) throw new Error('Servizio indirizzi non disponibile');
-        const d = await res.json();
+        const d = await res.json().catch(() => ({}));
+        if (res.status === 429 || d.error === 'rate_limit') {
+            return toast(d.message || 'Troppe richieste OpenStreetMap. Riprova tra 1–2 secondi.');
+        }
+        if (!res.ok) throw new Error(d.message || (typeof d.error === 'string' ? d.error : '') || 'Servizio indirizzi non disponibile');
         geoLocations[i].address = (d.address || d.display_name || '').slice(0, 500);
         renderGeoLocations();
         toast('Indirizzo recuperato');
@@ -2974,23 +3087,39 @@ async function reverseFillGeoAddress(i) {
 
 async function enrichGeoAddressesFromCoords() {
     let changed = false;
+    let rate429 = 0;
+    let failures = 0;
+    let tried = 0;
     for (let i = 0; i < geoLocations.length; i++) {
         const loc = geoLocations[i];
         if (loc.address && String(loc.address).trim()) continue;
         const la = parseFloat(loc.latitude);
         const lo = parseFloat(loc.longitude);
         if (!Number.isFinite(la) || !Number.isFinite(lo)) continue;
+        tried++;
         try {
+            await geoNomThrottle();
             const res = await fetch(`${API}/geocode/reverse?lat=${la}&lon=${lo}`);
-            if (!res.ok) continue;
-            const d = await res.json();
+            const d = await res.json().catch(() => ({}));
+            if (res.status === 429 || d.error === 'rate_limit') {
+                rate429++;
+                break;
+            }
+            if (!res.ok) {
+                failures++;
+                continue;
+            }
             if (d.address || d.display_name) {
                 geoLocations[i].address = (d.address || d.display_name).slice(0, 500);
                 changed = true;
             }
-        } catch (_) {}
+        } catch (_) {
+            failures++;
+        }
     }
     if (changed) renderGeoLocations();
+    if (!changed && tried > 0 && rate429) toast('Via POI non recuperata: troppe richieste a OpenStreetMap. Salva senza problema e riaprì Geofencing tra poco.');
+    else if (!changed && tried > 0 && failures && !rate429) toast('Alcuni indirizzi POI non sono stati recuperati.');
 }
 
 function renderGeoLocations() {
