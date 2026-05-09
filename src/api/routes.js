@@ -33,6 +33,7 @@ const { getFormats, getFormat, generateWithFal, composeCreative } = require('../
 const { generateBanner, BANNER_TEMPLATES, IAB_FORMATS } = require('../engine/banner-builder');
 const { generateVideo, cleanupVideo, VIDEO_FORMATS, VIDEO_TEMPLATES } = require('../engine/video-builder');
 const { sendPushUpdate } = require('../engine/apns');
+const { computeInitialScheduledRun } = require('../engine/scheduler');
 const { generateLandingCopy, generateCreativeCopy } = require('../engine/ai-copy');
 const sharp = require('sharp');
 const jwt = require('jsonwebtoken');
@@ -1467,7 +1468,17 @@ router.post('/push/scheduled', async (req, res) => {
     if (req.body.channel && !['apple', 'google', 'both'].includes(req.body.channel)) {
       return res.status(400).json({ error: 'channel non valido (apple|google|both)' });
     }
-    const item = await createScheduledPush(req.body);
+    const body = { ...req.body };
+    if (Array.isArray(body.days) && body.days.length && (!body.schedule_days || String(body.schedule_days).trim() === '')) {
+      body.schedule_days = body.days.map((x) => String(x)).join(',');
+    }
+    const nextRun = computeInitialScheduledRun(body);
+    if (!nextRun) return res.status(400).json({ error: 'Data/orario non validi per la pianificazione' });
+    if (body.schedule_type === 'once' && nextRun.getTime() <= Date.now()) {
+      return res.status(400).json({ error: 'Data e ora sono già passate (fuso del server)' });
+    }
+    body.next_run_at = nextRun;
+    const item = await createScheduledPush(body);
     res.json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

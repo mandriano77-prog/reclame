@@ -358,20 +358,7 @@
                                 <input type="checkbox" id="pushUpdatePass" checked style="width:auto;accent-color:var(--teal);">
                                 <span>Aggiorna contenuto pass (notifica visibile sul lock screen)</span>
                             </label>
-                        </div>
-                        <div class="form-group" style="margin-top:8px;">
-                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-                                <input type="checkbox" id="pushChangeStrip" onchange="togglePushStrip()" style="width:auto;accent-color:var(--teal);">
-                                <span>Aggiorna strip image del pass</span>
-                            </label>
-                        </div>
-                        <div id="pushStripSection" style="display:none;margin-top:8px;padding:12px;background:rgba(255,255,255,.05);border-radius:8px;">
-                            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                                <button class="btn small" type="button" onclick="pickStripForPush()">Scegli da Media Library</button>
-                                <span style="color:var(--text2);font-size:12px;">oppure</span>
-                                <input type="file" id="pushStripFile" accept="image/*,.pdf" onchange="previewPushStrip()" style="font-size:11px;flex:1;">
-                            </div>
-                            <img id="pushStripPreview" style="display:none;max-width:100%;height:60px;object-fit:cover;border-radius:6px;border:1px solid #333;">
+                            <p style="font-size:11px;color:var(--text2);margin:8px 0 0 24px;line-height:1.4;">Strip e asset grafici dal pass si gestiscono in <strong>Media Library</strong> / Design del pass — qui non sono necessari.</p>
                         </div>
                         <div class="form-group" style="margin-top:8px;">
                             <label class="form-label">Collega Instant Win (opzionale)</label>
@@ -429,6 +416,7 @@
                         <div class="form-group">
                             <label class="form-label">Orario</label>
                             <input type="time" id="schedTime" value="09:00">
+                            <p style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.45;">Fuso fisso dell’app: <strong>Europa/Roma</strong> (impostato all’avvio del backend). Digitare «09:00» significa le 9 di mattina ora italiana, non nell’ora del solo browser.</p>
                         </div>
                         <div id="schedDateGroup" class="form-group">
                             <label class="form-label">Data</label>
@@ -2788,40 +2776,6 @@ async function loadSchedCampaignSelect() {
     campaignsCache.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
 }
 
-// --- Strip nel Push (Tab Immediata) ---
-let pushStripBase64 = null;
-
-function togglePushStrip() {
-    document.getElementById('pushStripSection').style.display =
-        document.getElementById('pushChangeStrip').checked ? 'block' : 'none';
-    if (!document.getElementById('pushChangeStrip').checked) {
-        pushStripBase64 = null;
-        document.getElementById('pushStripPreview').style.display = 'none';
-    }
-}
-
-function pickStripForPush() {
-    openMediaPicker(async (mediaId, imageUrl) => {
-        document.getElementById('pushStripPreview').src = imageUrl;
-        document.getElementById('pushStripPreview').style.display = 'block';
-        const r = await fetch(`${API}/media/${mediaId}`);
-        if (r.ok) { /* ok */ }
-        pushStripBase64 = mediaId;
-    }, 'strip');
-}
-
-function previewPushStrip() {
-    const file = document.getElementById('pushStripFile').files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-        document.getElementById('pushStripPreview').src = reader.result;
-        document.getElementById('pushStripPreview').style.display = 'block';
-        pushStripBase64 = reader.result.split(',')[1];
-    };
-    reader.readAsDataURL(file);
-}
-
 // --- TAB 1: Push Immediata ---
 async function sendImmediatePush() {
     const title = document.getElementById('pushTitle').value;
@@ -2829,30 +2783,9 @@ async function sendImmediatePush() {
     const campaignId = document.getElementById('pushCampaignTarget').value || null;
     const channel = document.getElementById('pushChannel').value || 'apple';
     const updatePass = document.getElementById('pushUpdatePass').checked;
-    const changeStrip = document.getElementById('pushChangeStrip').checked;
 
     if (!title || !message) return alert('Compila titolo e messaggio');
     if (!brandId) return alert('Seleziona un brand');
-
-    if (changeStrip && pushStripBase64) {
-        let stripData = pushStripBase64;
-        if (stripData.length < 40) {
-            const mr = await fetch(`/api/v1/media/${stripData}/image`);
-            if (mr.ok) {
-                const blob = await mr.blob();
-                const arrBuf = await blob.arrayBuffer();
-                const bytes = new Uint8Array(arrBuf);
-                let binary = '';
-                bytes.forEach(b => binary += String.fromCharCode(b));
-                stripData = btoa(binary);
-            }
-        }
-        await fetch(`${API}/brands/${brandId}/strip`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ strip_base64: stripData })
-        });
-    }
 
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel };
     if (campaignId) body.campaign_id = campaignId;
@@ -2877,12 +2810,7 @@ async function sendImmediatePush() {
     alert(msg);
     document.getElementById('pushTitle').value = '';
     document.getElementById('pushMessage').value = '';
-    pushStripBase64 = null;
-    document.getElementById('pushChangeStrip').checked = false;
-    document.getElementById('pushStripSection').style.display = 'none';
-    document.getElementById('pushStripPreview').style.display = 'none';
     loadPushHistory();
-    if (changeStrip) loadStripPromos();
 }
 
 // --- TAB 2: Push Programmata ---
@@ -2914,7 +2842,9 @@ async function createScheduledPush() {
         body.days = [...document.querySelectorAll('.sched-day:checked')].map(cb => parseInt(cb.value));
         if (!body.days.length) return alert('Seleziona almeno un giorno');
     }
-    await fetch(`${API}/push/scheduled`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch(`${API}/push/scheduled`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(data.error || 'Errore pianificazione'); return; }
     toast('Notifica programmata!');
     document.getElementById('schedTitle').value = '';
     document.getElementById('schedMessage').value = '';
@@ -2936,7 +2866,7 @@ async function loadScheduledPush() {
                 <div class="card-info">
                     <div class="card-title">${esc(s.title)}</div>
                     <div class="card-desc">${esc(s.message)}</div>
-                    <div class="card-meta">${typeLabel} &middot; ${channelLabel} &middot; ${s.schedule_time || ''} ${s.active ? '' : '<span style="color:var(--orange);">(in pausa)</span>'}</div>
+                    <div class="card-meta">${typeLabel} &middot; ${channelLabel} &middot; ${s.schedule_time || ''}${s.next_run_at ? ` · pross.: ${esc(new Date(s.next_run_at).toLocaleString('it-IT'))}` : ''}${s.active ? '' : '<span style="color:var(--orange);"> (in pausa)</span>'}</div>
                 </div>
                 <div class="card-actions">
                     <button class="btn small ${s.active?'purple':'sec'}" onclick="toggleScheduled('${s.id}',${!s.active})">${s.active?'Pausa':'Attiva'}</button>

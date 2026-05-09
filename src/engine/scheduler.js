@@ -30,6 +30,62 @@ function ensureCacheDir() {
 }
 
 /**
+ * First `next_run_at` when saving a scheduled push from the dashboard.
+ * Uses Europe/Rome (TZ set at process start in server.js).
+ * PostgreSQL stores TIMESTAMPTZ as absolute instants; NOW() compares correctly.
+ */
+function computeInitialScheduledRun(input) {
+  const schedule_time = input.schedule_time || '09:00';
+  const [hours, minutesRaw] = String(schedule_time).split(':').map((x) => parseInt(String(x).trim(), 10));
+  const minutes = Number.isFinite(minutesRaw) ? minutesRaw : 0;
+  const h = Number.isFinite(hours) ? hours : 9;
+  const now = Date.now();
+
+  const schedule_type = input.schedule_type || 'once';
+
+  if (schedule_type === 'once') {
+    const dateStr = input.date;
+    if (!dateStr || String(dateStr).length < 8) return null;
+    const parts = String(dateStr).split('-').map((x) => parseInt(String(x).trim(), 10));
+    if (parts.length < 3 || parts.some((n) => !Number.isFinite(n))) return null;
+    const [y, m, d] = parts;
+    return new Date(y, m - 1, d, h, minutes, 0, 0);
+  }
+
+  if (schedule_type === 'daily') {
+    const cand = new Date();
+    cand.setHours(h, minutes, 0, 0);
+    if (cand.getTime() <= now) {
+      cand.setDate(cand.getDate() + 1);
+      cand.setHours(h, minutes, 0, 0);
+    }
+    return cand;
+  }
+
+  if (schedule_type === 'weekly') {
+    let daysStr = input.schedule_days;
+    if ((!daysStr || String(daysStr).trim() === '') && Array.isArray(input.days)) {
+      daysStr = input.days.map((x) => String(x)).filter(Boolean).join(',');
+    }
+    const dowList = String(daysStr || '1')
+      .split(',')
+      .map((x) => parseInt(String(x).trim(), 10))
+      .filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
+    if (!dowList.length) return null;
+
+    for (let add = 0; add <= 21; add++) {
+      const candidate = new Date();
+      candidate.setDate(candidate.getDate() + add);
+      candidate.setHours(h, minutes, 0, 0);
+      if (!dowList.includes(candidate.getDay())) continue;
+      if (candidate.getTime() > now) return candidate;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Calculate the next run time based on schedule type
  */
 function calculateNextRun(schedule) {
@@ -220,4 +276,4 @@ function stopScheduler() {
   }
 }
 
-module.exports = { startScheduler, stopScheduler, schedulerTick, calculateNextRun };
+module.exports = { startScheduler, stopScheduler, schedulerTick, calculateNextRun, computeInitialScheduledRun };

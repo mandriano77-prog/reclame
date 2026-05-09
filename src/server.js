@@ -1,4 +1,7 @@
 // Ads2Wallet MVP v1.0
+// Cron, push pianificate e `new Date(y,m,d,H,M)` nel processo Node — sempre ora italiana.
+process.env.TZ = 'Europe/Rome';
+
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -372,6 +375,7 @@ getDb().then(db => {
     console.log('\n🚀 Ads2Wallet server running on port ' + PORT);
     console.log('  Health: http://localhost:' + PORT + '/health');
     console.log('  API:    http://localhost:' + PORT + '/api/v1');
+    console.log('  TZ:     ' + process.env.TZ);
 
     // Start push notification scheduler (absolute URLs in scheduled jobs)
     const baseUrl =
