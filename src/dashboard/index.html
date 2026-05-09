@@ -132,6 +132,10 @@
         .toast { position: fixed; bottom: 24px; right: 24px; background: var(--teal); color: var(--bg); padding: 12px 22px; border-radius: 8px; font-weight: 600; font-size: 13px; z-index: 2000; opacity: 0; transform: translateY(20px); transition: all 0.3s; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .push-card { background: linear-gradient(135deg, var(--bg2), var(--bg3)); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .geo-suggest-box { margin-top: 6px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+        .geo-suggest-btn { display: flex; flex-direction: column; align-items: flex-start; width: 100%; text-align: left; padding: 8px 10px; border: none; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; font-size: 12px; font-family: inherit; line-height: 1.35; }
+        .geo-suggest-btn:last-child { border-bottom: none; }
+        .geo-suggest-btn:hover { background: rgba(0, 212, 170, 0.08); }
         .color-input-wrap { display: flex; gap: 8px; align-items: center; }
         .color-input-wrap input[type="color"] { width: 40px; height: 34px; border: none; border-radius: 6px; cursor: pointer; padding: 0; }
         .color-input-wrap input[type="text"] { flex: 1; }
@@ -298,6 +302,7 @@
                         </select>
                     </div>
                 </div>
+                <div id="passGoogleWalletDiag" style="margin-bottom:14px;"></div>
                 <div id="passesContent" style="color:var(--text2)">Caricamento...</div>
             </div>
 
@@ -454,7 +459,7 @@
 
                 <!-- TAB 3: Geofencing -->
                 <div id="pushPanel_geofencing" class="push-panel" style="display:none;">
-                    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Aggiungi punti di interesse (POI). Quando un utente con il pass si avvicina a queste coordinate, iOS mostra automaticamente il pass sulla lock screen con il messaggio che imposti. Nessun server coinvolto — è il device che rileva la prossimità.</p>
+                    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Aggiungi punti di interesse (POI). Cerca l’<strong>indirizzo</strong> (via, piazza, città): usiamo i dati pubblici <strong>OpenStreetMap</strong> (Nominatim) per ricavare le coordinate. Quando l’utente si avvicina, iOS mostra il pass sulla lock screen con il messaggio che imposti. Nessun server nel rilevamento — è il telefono che misura la distanza.</p>
 
                     <div class="push-card">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -488,7 +493,7 @@
                     <div class="push-card" style="margin-top:16px;padding:16px;background:rgba(0,200,150,.06);border:1px solid rgba(0,200,150,.2);">
                         <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--teal);">Come funziona il Geofencing Wallet</div>
                         <ul style="font-size:12px;color:var(--text2);margin:0;padding-left:16px;line-height:1.8;">
-                            <li>Le coordinate vengono incluse nel file <code>pass.json</code> del wallet pass</li>
+                            <li>Posizione e messaggio finiscono nel <code>pass.json</code> del wallet (lat/lon da indirizzo OpenStreetMap)</li>
                             <li>iOS controlla la prossimità in background — zero batteria, zero server</li>
                             <li>Quando l'utente è nel raggio, il pass appare sulla lock screen</li>
                             <li>Il <strong>relevantText</strong> è il messaggio che l'utente vede</li>
@@ -1887,9 +1892,67 @@ function downloadQR() {
     a.click();
 }
 
+// Google Wallet: "salvato" in UI se callback ha aggiornato il DB (o segnali equivalenti)
+function passGoogleSaved(p) {
+    if (!p) return false;
+    const g = p.google_wallet_saved;
+    if (g === true || g === 'true' || g === 't' || g === 1 || g === '1') return true;
+    if (g === false || g === 'false' || g === 'f' || g === 0 || g === '0') return false;
+    if (p.google_installed_at) return true;
+    if (p.device_source === 'google') return true;
+    return false;
+}
+/** Oggetto GW creato ma salvataggio non confermato (o callback Google non ancora arrivato). */
+function passGooglePending(p) {
+    if (!p || !p.google_wallet_object_id) return false;
+    return !passGoogleSaved(p);
+}
+
+async function loadPassGoogleWalletDiag() {
+    const box = document.getElementById('passGoogleWalletDiag');
+    if (!box) return;
+    if (!brandId) {
+        box.innerHTML = '';
+        return;
+    }
+    try {
+        const res = await fetch(`${API}/google-wallet/status`);
+        const s = await res.json();
+        if (!s.configured) {
+            box.innerHTML =
+                '<div style="font-size:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,180,0,0.07);color:var(--text2);line-height:1.5;">' +
+                '<strong style="color:var(--text);">Google Wallet</strong> non è configurato su questo server (mancano issuer / service account). ' +
+                'Nella colonna «Apple push · Google» vedrai solo Apple; <strong>GW</strong>/<strong>GW°</strong> non sono disponibili.' +
+                '</div>';
+            return;
+        }
+        const cb = s.callback_url || '(imposta CUSTOM_DOMAIN per mostrare l’URL completo)';
+        const warn = s.warning
+            ? `<div style="font-size:11px;color:var(--orange);margin-top:8px;">${esc(s.warning)}</div>`
+            : '';
+        const iss = s.issuer_id ? `<span style="font-size:11px;display:block;margin-top:4px;opacity:0.85;">Issuer ID: <code>${esc(s.issuer_id)}</code></span>` : '';
+        box.innerHTML =
+            '<div style="font-size:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,212,170,0.28);background:rgba(0,212,170,0.07);color:var(--text2);line-height:1.55;">' +
+            '<strong style="color:var(--teal);">Google Wallet — controllo callback</strong><br>' +
+            '<span style="font-size:11px;">Questo è l’URL che il server invia a Google nella <em>generic class</em> (eventi salvataggio/rimozione pass). ' +
+            'Deve essere raggiungibile in pubblico su HTTPS e coincidere con quanto accetti nel Google Pay / Wallet Issuer.</span>' +
+            iss +
+            '<code style="font-size:11px;word-break:break-all;display:block;margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);color:var(--text);">' +
+            esc(cb) +
+            '</code>' +
+            '<span style="font-size:11px;">Solo <strong>—</strong> in colonna Google? Nessun oggetto creato (nessun flusso Android / nessun «Google Wallet» da Vedi pass). Spesso <strong>GW°</strong> ma mai <strong>GW</strong>? ' +
+            'Verifica che l’endpoint notifiche in console Google sia esattamente questo URL e che non ci sia un firewall che blocca <code>POST</code> da Google.</span>' +
+            warn +
+            '</div>';
+    } catch (_) {
+        box.innerHTML = '';
+    }
+}
+
 // ==================== PASSES ====================
 async function loadPasses(resetPage = false) {
     if (!brandId) return;
+    loadPassGoogleWalletDiag();
     if (resetPage) passPageIndex = 0;
     const campaignFilter = document.getElementById('passFilterCampaign').value;
     const effectiveLimit = PASSES_PAGE_SIZE + 1;
@@ -1923,8 +1986,8 @@ async function loadPasses(resetPage = false) {
     if (!passes.length) { el.innerHTML = '<p style="color:var(--text2)">Nessun pass emesso.</p>'; return; }
 
     // Stats bar
-    const installed = filteredPasses.filter(p => p.device_id).length;
-    const reachableWallet = filteredPasses.filter(p => !!p.push_token || !!p.google_wallet_saved).length;
+    const installed = filteredPasses.filter(p => !!(p.device_id || passGoogleSaved(p))).length;
+    const reachableWallet = filteredPasses.filter(p => !!p.push_token || passGoogleSaved(p) || passGooglePending(p)).length;
     const pushSent = filteredPasses.filter(p => p.push_count > 0).length;
     const statsHtml = `<div class="stats-grid" style="margin-bottom:16px;">
         <div class="stat-card"><div class="stat-label">Pass visibili</div><div class="stat-value">${filteredPasses.length}</div></div>
@@ -1950,7 +2013,7 @@ async function loadPasses(resetPage = false) {
             <thead><tr>
                 <th title="Momento in cui il pass è stato generato sul server (non è l'aggiunta al Wallet)">Pass creato</th>
                 <th>Installato</th>
-                <th title="Apple: token push registrato. Google: salvato in Wallet (GW), link pronto ma non salvato (GW°), oppure assente">Apple push · Google</th>
+                <th title="Apple: campanella = token APNs registrato. Google: GW verde = pass salvato in Google Wallet (conferma server). GW° ambra = oggetto Google creato ma salvataggio non ricevuto (callback non configurato o utente non ha completato). Trattino = nessun flusso Google per questo pass (es. solo .pkpass Apple).">Apple push · Google</th>
                 <th title="Storico notifiche inviate via Apple Push (APNs)">Push (APNs)</th>
                 <th>Device ID</th>
                 <th>Campagna</th>
@@ -1963,10 +2026,10 @@ async function loadPasses(resetPage = false) {
             <tbody>${filteredPasses.map(p => {
                 const camp = campaignsCache.find(c => c.id === p.campaign_id);
                 const utm = p.utm || {};
-                const isInstalled = !!p.device_id;
+                const googleSaved = passGoogleSaved(p);
+                const googlePending = passGooglePending(p);
+                const isInstalled = !!(p.device_id || googleSaved);
                 const applePushOn = !!p.push_token;
-                const googleSaved = !!p.google_wallet_saved;
-                const googlePending = !!(p.google_wallet_object_id && !p.google_wallet_saved);
                 const osInfo = parseUserAgent(p.user_agent);
                 const utmParts = [utm.utm_source, utm.utm_medium, utm.utm_campaign, utm.utm_content].filter(Boolean);
                 const utmStr = utmParts.length ? utmParts.join(' / ') : '-';
@@ -1984,11 +2047,11 @@ async function loadPasses(resetPage = false) {
                     ? '<span title="Push Apple: token registrato (APNs)" style="color:var(--green);font-size:15px;">&#128276;</span>'
                     : '<span title="Push Apple: nessun token" style="opacity:0.28;font-size:15px;">&#128263;</span>';
                 if (googleSaved) {
-                    walletReachHtml += '<span title="Google Wallet: pass salvato dall\'utente" style="font-size:11px;font-weight:700;color:var(--green);padding:2px 6px;border-radius:4px;background:rgba(0,212,170,0.15);">GW</span>';
+                    walletReachHtml += '<span title="Google Wallet: salvataggio confermato (callback o stato in DB)" style="font-size:11px;font-weight:700;color:var(--green);padding:2px 6px;border-radius:4px;background:rgba(0,212,170,0.15);">GW</span>';
                 } else if (googlePending) {
-                    walletReachHtml += '<span title="Oggetto Google creato: link disponibile, utente non ha ancora salvato" style="font-size:11px;font-weight:700;color:var(--text2);padding:2px 6px;border-radius:4px;border:1px solid var(--border);">GW°</span>';
+                    walletReachHtml += '<span title="Flusso Google avviato: oggetto creato. GW° resta ambra finché Google non notifica il salvataggio (URL callback) o l\'utente non completa Aggiungi a Google Wallet" style="font-size:11px;font-weight:700;color:#fbbf24;padding:2px 6px;border-radius:4px;border:1px solid rgba(245,158,11,0.55);background:rgba(245,158,11,0.12);">GW°</span>';
                 } else {
-                    walletReachHtml += '<span title="Nessun oggetto Google Wallet per questo pass" style="opacity:0.25;font-size:11px;">—</span>';
+                    walletReachHtml += '<span title="Nessun oggetto Google Wallet: pass solo Apple / landing iOS, oppure GW non ancora generato da Vedi pass" style="opacity:0.3;font-size:11px;">—</span>';
                 }
                 walletReachHtml += '</span>';
                 return `<tr>
@@ -2075,7 +2138,8 @@ function downloadPassesTableCsv() {
         const camp = campaignsCache.find(c => c.id === p.campaign_id);
         const utm = p.utm || {};
         const utmParts = [utm.utm_source, utm.utm_medium, utm.utm_campaign, utm.utm_content].filter(Boolean);
-        const isInstalled = !!p.device_id;
+        const gSaved = passGoogleSaved(p);
+        const isInstalled = !!(p.device_id || gSaved);
         const applePushOn = !!p.push_token;
         const installDateStr = p.install_date ? new Date(p.install_date).toLocaleDateString('it-IT') : '';
         let pushStr = '-';
@@ -2083,8 +2147,8 @@ function downloadPassesTableCsv() {
             pushStr = [String(p.push_count) + 'x', p.last_push_status || '', p.last_push_at ? new Date(p.last_push_at).toLocaleDateString('it-IT') : ''].filter(Boolean).join(' ');
         }
         let googleWalletCsv = '';
-        if (p.google_wallet_saved) googleWalletCsv = 'Salvato';
-        else if (p.google_wallet_object_id) googleWalletCsv = 'Link pronto (non salvato)';
+        if (gSaved) googleWalletCsv = 'Salvato';
+        else if (p.google_wallet_object_id) googleWalletCsv = 'Oggetto + link (in attesa salvataggio)';
         const src = p.device_source === 'apple' ? 'Apple' : p.device_source === 'google' ? 'Google' : '';
         const passCreato = p.created_at ? new Date(p.created_at).toLocaleDateString('it-IT') : '';
         return [
@@ -2159,10 +2223,11 @@ async function viewPassDetail(id) {
         const camp = campaignsCache.find(c => c.id === p.campaign_id);
         const fv = p.field_values && typeof p.field_values === 'object' ? JSON.stringify(p.field_values, null, 2) : String(p.field_values || '—');
         const utm = p.utm && typeof p.utm === 'object' ? JSON.stringify(p.utm, null, 2) : String(p.utm || '—');
-        const gwSavedLbl = p.google_wallet_saved ? 'Sì — salvato in Google Wallet' : 'No';
+        const gwOk = passGoogleSaved(p);
+        const gwSavedLbl = gwOk ? 'Sì — salvato in Google Wallet' : 'No';
         const gwInstalledAtLbl = p.google_installed_at ? esc(new Date(p.google_installed_at).toLocaleString('it-IT')) : '—';
         let gwLinkStatus = '—';
-        if (p.google_wallet_saved) gwLinkStatus = 'Salvato';
+        if (gwOk) gwLinkStatus = 'Salvato';
         else if (p.google_wallet_object_id) gwLinkStatus = 'Oggetto creato — usa il pulsante per aprire “Aggiungi a Google Wallet”';
         else gwLinkStatus = 'Usa il pulsante Google Wallet per creare l\'oggetto e ottenere il link';
 
@@ -3378,11 +3443,18 @@ async function loadAnalytics() {
     const totalDL = campaigns.reduce((s,c) => s + (c.total_downloads||0), 0);
     const totalIN = campaigns.reduce((s,c) => s + (c.total_installs||0), 0);
 
+    const appleDv = analytics.appleDeviceCount ?? analytics.deviceCount ?? 0;
+    const gwSaved = analytics.googleWalletSavedCount ?? 0;
+    const gwObj = analytics.googleWalletObjectCount ?? 0;
+    const gwHint = gwObj > gwSaved
+        ? `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Oggetti con link: ${gwObj} · ancora da salvare in app: ${gwObj - gwSaved}</div>`
+        : `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Android: conta i pass con salvataggio confermato (non i device Apple)</div>`;
     document.getElementById('analyticsStats').innerHTML = `
         <div class="stat-card"><div class="stat-label">Pass Totali</div><div class="stat-value">${analytics.totalPasses||0}</div></div>
         <div class="stat-card"><div class="stat-label">Download Totali</div><div class="stat-value">${totalDL}</div></div>
         <div class="stat-card"><div class="stat-label">Install Totali</div><div class="stat-value">${totalIN}</div></div>
-        <div class="stat-card"><div class="stat-label">Device Registrati</div><div class="stat-value">${analytics.deviceCount||0}</div></div>
+        <div class="stat-card"><div class="stat-label">Apple · dispositivi PassKit</div><div class="stat-value">${appleDv}</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">iPhone/iPad distinti con pass in Wallet</div></div>
+        <div class="stat-card"><div class="stat-label">Google Wallet · pass salvati</div><div class="stat-value">${gwSaved}</div>${gwHint}</div>
         <div class="stat-card"><div class="stat-label">Campagne</div><div class="stat-value">${campaigns.length}</div></div>
     `;
     syncAnalyticsRangeControls();
@@ -3539,9 +3611,9 @@ function renderAnalyticsTrendChart(passes) {
 function renderAnalyticsWalletSplit(passes) {
     const el = document.getElementById('analyticsWalletSplit');
     if (!el) return;
-    const totalInstalled = passes.filter(p => !!p.device_id).length;
-    const apple = passes.filter(p => p.device_source === 'apple').length;
-    const google = passes.filter(p => p.device_source === 'google' || (!!p.google_wallet_saved && !p.device_source)).length;
+    const totalInstalled = passes.filter(p => !!p.device_id || passGoogleSaved(p)).length;
+    const google = passes.filter(p => passGoogleSaved(p) || p.device_source === 'google').length;
+    const apple = passes.filter(p => p.device_source === 'apple' && !passGoogleSaved(p)).length;
     const other = Math.max(0, totalInstalled - apple - google);
     const total = Math.max(1, apple + google + other);
     const seg = (v) => ((v / total) * 100).toFixed(1);

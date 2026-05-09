@@ -437,8 +437,26 @@ function isConfigured() {
   return !!(ISSUER_ID && SERVICE_ACCOUNT_JSON);
 }
 
+/** URL callback inviato a Google nelle generic class (`callbackOptions`); utile per diagnostica dashboard. */
+function getStatusInfo() {
+  const domain = process.env.CUSTOM_DOMAIN || '';
+  const base = domain ? `https://${domain}/api/v1` : '';
+  return {
+    configured: isConfigured(),
+    issuer_id: ISSUER_ID || null,
+    custom_domain: domain || null,
+    callback_url: base ? `${base}/google-wallet/callback` : null,
+    callback_path: '/api/v1/google-wallet/callback',
+    warning:
+      !domain
+        ? 'CUSTOM_DOMAIN non impostato: il callback nelle classi Google può puntare a un host errato.'
+        : null
+  };
+}
+
 module.exports = {
   isConfigured,
+  getStatusInfo,
   createOrUpdatePassClass,
   buildPassObject,
   generateSaveLink,

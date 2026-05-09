@@ -762,17 +762,37 @@ async function getSerialsForDevice(deviceLibraryId, passesUpdatedSince) {
 // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Analytics Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
 async function getAnalytics(brandId) {
-  const [passResult, statusResult, eventResult, deviceResult] = await Promise.all([
+  const [passResult, statusResult, eventResult, appleDevicesResult, googleSavedResult, googleObjectResult] = await Promise.all([
     pool.query('SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1', [brandId]),
     pool.query('SELECT status, COUNT(*) as count FROM pass_instances WHERE brand_id = $1 GROUP BY status', [brandId]),
     pool.query('SELECT event_type, COUNT(*) as count FROM events WHERE brand_id = $1 GROUP BY event_type', [brandId]),
-    pool.query('SELECT COUNT(DISTINCT dr.device_library_id) as count FROM device_registrations dr JOIN pass_instances p ON dr.serial_number = p.serial_number WHERE p.brand_id = $1', [brandId])
+    pool.query(
+      'SELECT COUNT(DISTINCT dr.device_library_id) as count FROM device_registrations dr JOIN pass_instances p ON dr.serial_number = p.serial_number WHERE p.brand_id = $1',
+      [brandId]
+    ),
+    pool.query('SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1 AND google_wallet_saved = TRUE', [brandId]),
+    pool.query(
+      'SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1 AND google_wallet_object_id IS NOT NULL AND google_wallet_object_id <> \'\'',
+      [brandId]
+    )
   ]);
   const byStatus = {};
   for (const row of statusResult.rows) byStatus[row.status] = parseInt(row.count);
   const events = {};
   for (const row of eventResult.rows) events[row.event_type] = parseInt(row.count);
-  return { totalPasses: parseInt(passResult.rows[0].count), byStatus, events, deviceCount: parseInt(deviceResult.rows[0].count) };
+  const appleDeviceCount = parseInt(appleDevicesResult.rows[0].count);
+  const googleWalletSavedCount = parseInt(googleSavedResult.rows[0].count);
+  const googleWalletObjectCount = parseInt(googleObjectResult.rows[0].count);
+  return {
+    totalPasses: parseInt(passResult.rows[0].count),
+    byStatus,
+    events,
+    // Legacy: era solo Apple PassKit — manteniamo il nome per compatibilità client
+    deviceCount: appleDeviceCount,
+    appleDeviceCount,
+    googleWalletSavedCount,
+    googleWalletObjectCount
+  };
 }
 
 async function getCampaignAnalytics(brandId) {

@@ -1489,6 +1489,62 @@ router.delete('/push/scheduled/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// OpenStreetMap Nominatim (pubblico) — proxy server-side: User-Agent obbligatorio, evita CORS dal browser
+const NOMINATIM_UA = `Ads2Wallet/1.0 (${process.env.CUSTOM_DOMAIN || 'localhost'})`;
+
+function nominatimFormatLine(feature) {
+  const a = feature.address || {};
+  const street = [a.road || a.pedestrian, a.house_number].filter(Boolean).join(' ').trim();
+  const locality = a.city || a.town || a.village || a.hamlet || a.municipality || a.city_district || a.suburb || a.neighbourhood;
+  const parts = [street || a.road, a.postcode, locality, a.state, a.country].filter(Boolean);
+  if (parts.length) return parts.join(', ');
+  return feature.display_name || '';
+}
+
+// GET /geocode/search?q=   → [{ lat, lon, display_name, address }]
+router.get('/geocode/search', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (q.length < 3) return res.json([]);
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=8&addressdetails=1`;
+    const r = await fetch(url, { headers: { 'User-Agent': NOMINATIM_UA, 'Accept-Language': 'it,en' } });
+    if (!r.ok) return res.status(502).json({ error: 'Servizio indirizzi non disponibile' });
+    const rows = await r.json();
+    const out = (Array.isArray(rows) ? rows : []).map((x) => ({
+      lat: parseFloat(x.lat),
+      lon: parseFloat(x.lon),
+      display_name: x.display_name,
+      address: nominatimFormatLine(x)
+    })).filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lon));
+    res.json(out);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /geocode/reverse?lat=&lon=
+router.get('/geocode/reverse', async (req, res) => {
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lon = parseFloat(req.query.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return res.status(400).json({ error: 'lat e lon sono richiesti' });
+    }
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`;
+    const r = await fetch(url, { headers: { 'User-Agent': NOMINATIM_UA, 'Accept-Language': 'it,en' } });
+    if (!r.ok) return res.status(502).json({ error: 'Reverse geocoding non disponibile' });
+    const data = await r.json();
+    res.json({
+      display_name: data.display_name || '',
+      address: nominatimFormatLine(data),
+      lat,
+      lon
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Geofencing Locations ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 
 router.get('/brands/:id/geofencing', async (req, res) => {
@@ -1516,7 +1572,8 @@ router.put('/brands/:id/geofencing', async (req, res) => {
       longitude: parseFloat(loc.longitude),
       relevantText: loc.relevantText || '',
       name: loc.name || '',
-      radius: parseInt(loc.radius) || 500
+      radius: parseInt(loc.radius) || 500,
+      address: typeof loc.address === 'string' ? loc.address.slice(0, 500) : ''
     }));
     if (maxDistance) config.maxDistance = parseInt(maxDistance);
     config.geofencing_channel = channel;
@@ -2551,10 +2608,10 @@ router.get('/google-wallet/pass/:id', async (req, res) => {
 });
 
 /**
- * GET /api/v1/google-wallet/status - Check if Google Wallet is configured
+ * GET /api/v1/google-wallet/status - Config + URL callback effettivo (come in createOrUpdatePassClass)
  */
 router.get('/google-wallet/status', (req, res) => {
-  res.json({ configured: googleWallet.isConfigured() });
+  res.json(googleWallet.getStatusInfo());
 });
 
 /**
