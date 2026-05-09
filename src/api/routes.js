@@ -2615,6 +2615,19 @@ router.get('/google-wallet/status', (req, res) => {
 });
 
 /**
+ * GET /api/v1/google-wallet/callback — solo spiegazione (il browser fa GET; Google usa POST)
+ */
+router.get('/google-wallet/callback', (req, res) => {
+  res.type('html').send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Google Wallet callback</title></head><body style="font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;line-height:1.5;padding:16px;">
+<h1>Endpoint attivo</h1>
+<p>Questo indirizzo non va “aperto” nel browser per funzionare.</p>
+<p><strong>Google Wallet</strong> invia qui una richiesta <code>POST</code> quando un utente <strong>salva</strong> o <strong>rimuove</strong> il pass dall’app Google Wallet. Il server aggiorna il database (stato GW / GW°).</p>
+<p>Se apri questo link nel browser vedi questa pagina; se prima vedevi “Cannot GET”, era normale: mancava proprio questa risposta GET informativa.</p>
+<p style="color:#666;font-size:14px;">Metodo atteso dalle notifiche: <code>POST</code> · Payload: eventi firmati / JSON da Google.</p>
+</body></html>`);
+});
+
+/**
  * POST /api/v1/google-wallet/callback - Google Wallet event callback
  *
  * Google sends a POST when a user saves or deletes a pass.
