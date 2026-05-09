@@ -148,12 +148,14 @@
         .analytics-toolbar { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
         .analytics-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
         .analytics-chip { padding:6px 10px; font-size:12px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; }
-        .analytics-chip.active { border-color: var(--teal); color: var(--teal); background: rgba(0,212,170,0.14); }
+        .analytics-chip.active { border-color: var(--teal); color: var(--teal); background: rgba(0,212,170,0.14); box-shadow: 0 0 0 1px rgba(0,212,170,0.22) inset; }
         .analytics-chip:hover { border-color: var(--teal); color: var(--teal); }
+        .analytics-date { padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg2); color:var(--text); font-size:12px; }
+        .analytics-date:disabled { opacity:0.45; }
         @media (max-width: 980px) {
             .analytics-toolbar { align-items:stretch; }
             .analytics-actions { width:100%; }
-            #analyticsTrendRange { flex:1; min-width:140px !important; }
+            #analyticsTrendRange, .analytics-date { flex:1; min-width:140px !important; }
         }
         .mp-filter { padding: 6px 12px; margin-right: 6px; margin-bottom: 6px; background: transparent; border: 1px solid var(--border); color: var(--text2); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; }
         .mp-filter:hover { border-color: var(--teal); color: var(--teal); }
@@ -997,7 +999,10 @@
                                     <option value="7">Ultimi 7 giorni</option>
                                     <option value="14" selected>Ultimi 14 giorni</option>
                                     <option value="30">Ultimi 30 giorni</option>
+                                    <option value="custom">Date precise</option>
                                 </select>
+                                <input type="date" id="analyticsDateFrom" class="analytics-date" onchange="onAnalyticsTrendChange()" disabled>
+                                <input type="date" id="analyticsDateTo" class="analytics-date" onchange="onAnalyticsTrendChange()" disabled>
                                 <button type="button" class="analytics-chip" id="analyticsMetricBothBtn" onclick="setAnalyticsTrendMetric('both')">Download+Install</button>
                                 <button type="button" class="analytics-chip" id="analyticsMetricDownloadBtn" onclick="setAnalyticsTrendMetric('download')">Download</button>
                                 <button type="button" class="analytics-chip" id="analyticsMetricInstallBtn" onclick="setAnalyticsTrendMetric('install')">Install</button>
@@ -1294,6 +1299,8 @@ let passHasNextPage = false;
 let passSearchQuery = '';
 let analyticsTrendDays = 14;
 let analyticsTrendMetric = 'both';
+let analyticsDateFrom = '';
+let analyticsDateTo = '';
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -3302,10 +3309,10 @@ async function loadAnalytics() {
         <div class="stat-card"><div class="stat-label">Device Registrati</div><div class="stat-value">${analytics.deviceCount||0}</div></div>
         <div class="stat-card"><div class="stat-label">Campagne</div><div class="stat-value">${campaigns.length}</div></div>
     `;
-    const rangeSel = document.getElementById('analyticsTrendRange');
-    if (rangeSel) rangeSel.value = String(analyticsTrendDays);
-    renderAnalyticsTrendChart(Array.isArray(passes) ? passes : []);
-    renderAnalyticsWalletSplit(Array.isArray(passes) ? passes : []);
+    syncAnalyticsRangeControls();
+    const allPasses = Array.isArray(passes) ? passes : [];
+    renderAnalyticsTrendChart(allPasses);
+    renderAnalyticsWalletSplit(allPasses);
     renderAnalyticsTopCampaigns(campaigns);
 
     const tbody = document.querySelector('#campaignAnalyticsTable tbody');
@@ -3323,25 +3330,61 @@ async function loadAnalytics() {
     }).join('');
 }
 
+function syncAnalyticsRangeControls() {
+    const rangeSel = document.getElementById('analyticsTrendRange');
+    const fromEl = document.getElementById('analyticsDateFrom');
+    const toEl = document.getElementById('analyticsDateTo');
+    if (!rangeSel || !fromEl || !toEl) return;
+    const isCustom = rangeSel.value === 'custom';
+    fromEl.disabled = !isCustom;
+    toEl.disabled = !isCustom;
+    if (!isCustom) {
+        const days = parseInt(rangeSel.value || '14', 10);
+        analyticsTrendDays = Number.isFinite(days) ? days : 14;
+        const { from, to } = getAnalyticsDateRange();
+        analyticsDateFrom = from;
+        analyticsDateTo = to;
+    } else {
+        if (!analyticsDateFrom || !analyticsDateTo) {
+            const { from, to } = getAnalyticsDateRange();
+            analyticsDateFrom = from;
+            analyticsDateTo = to;
+        }
+    }
+    fromEl.value = analyticsDateFrom;
+    toEl.value = analyticsDateTo;
+}
+
+function getAnalyticsDateRange() {
+    const fmt = (d) => d.toISOString().slice(0, 10);
+    if (analyticsDateFrom && analyticsDateTo) return { from: analyticsDateFrom, to: analyticsDateTo };
+    const to = new Date();
+    to.setHours(0, 0, 0, 0);
+    const from = new Date(to);
+    from.setDate(from.getDate() - Math.max(0, analyticsTrendDays - 1));
+    return { from: fmt(from), to: fmt(to) };
+}
+
+function listDaysBetween(from, to) {
+    const out = [];
+    const cursor = new Date(`${from}T00:00:00`);
+    const end = new Date(`${to}T00:00:00`);
+    while (cursor <= end) {
+        out.push(cursor.toISOString().slice(0, 10));
+        cursor.setDate(cursor.getDate() + 1);
+    }
+    return out;
+}
+
 function renderAnalyticsTrendChart(passes) {
     const el = document.getElementById('analyticsTrendChart');
     if (!el) return;
-    const days = analyticsTrendDays;
-    const dayKeys = [];
-    const labels = [];
+    const { from, to } = getAnalyticsDateRange();
+    const dayKeys = listDaysBetween(from, to);
+    const labels = dayKeys.map(k => new Date(`${k}T00:00:00`).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }));
     const downloads = [];
     const installs = [];
-    const byDay = new Map();
-    const fmtDay = d => d.toISOString().slice(0, 10);
-    for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setHours(0, 0, 0, 0);
-        d.setDate(d.getDate() - i);
-        const key = fmtDay(d);
-        dayKeys.push(key);
-        labels.push(d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }));
-        byDay.set(key, { dl: 0, in: 0 });
-    }
+    const byDay = new Map(dayKeys.map(k => [k, { dl: 0, in: 0 }]));
     for (const p of passes) {
         if (p.created_at) {
             const k = String(p.created_at).slice(0, 10);
@@ -3362,32 +3405,56 @@ function renderAnalyticsTrendChart(passes) {
     if (activeDownload) activeValues.push(...downloads);
     if (activeInstall) activeValues.push(...installs);
     const maxVal = Math.max(1, ...activeValues);
-    const width = 560;
-    const height = 180;
-    const left = 28;
-    const bottom = 22;
-    const plotW = width - left - 10;
-    const plotH = height - bottom - 10;
+    const width = 620;
+    const height = 220;
+    const left = 34;
+    const bottom = 30;
+    const top = 16;
+    const right = 12;
+    const plotW = width - left - right;
+    const plotH = height - bottom - top;
     const step = dayKeys.length > 1 ? plotW / (dayKeys.length - 1) : plotW;
-    const point = (idx, val) => `${(left + idx * step).toFixed(2)},${(10 + (plotH - (val / maxVal) * plotH)).toFixed(2)}`;
+    const point = (idx, val) => `${(left + idx * step).toFixed(2)},${(top + (plotH - (val / maxVal) * plotH)).toFixed(2)}`;
     const dlPath = downloads.map((v, i) => `${i === 0 ? 'M' : 'L'} ${point(i, v)}`).join(' ');
     const inPath = installs.map((v, i) => `${i === 0 ? 'M' : 'L'} ${point(i, v)}`).join(' ');
-    const xTicks = labels.filter((_, i) => i % 2 === 0).map((l, i) => {
-        const idx = i * 2;
+    const tickEvery = dayKeys.length > 14 ? 3 : 2;
+    const xTicks = labels.filter((_, i) => i % tickEvery === 0).map((l, i) => {
+        const idx = i * tickEvery;
         const x = left + idx * step;
         return `<text x="${x.toFixed(2)}" y="${height - 4}" font-size="10" fill="var(--text2)" text-anchor="middle">${l}</text>`;
     }).join('');
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map(fr => {
+        const y = top + plotH - (plotH * fr);
+        const value = Math.round(maxVal * fr);
+        return `
+            <line x1="${left}" y1="${y.toFixed(2)}" x2="${(left + plotW).toFixed(2)}" y2="${y.toFixed(2)}" stroke="rgba(255,255,255,.08)" stroke-dasharray="3 3"></line>
+            <text x="${(left - 6)}" y="${(y + 3).toFixed(2)}" font-size="10" fill="var(--text2)" text-anchor="end">${value}</text>
+        `;
+    }).join('');
+    const dlLast = downloads[downloads.length - 1] || 0;
+    const inLast = installs[installs.length - 1] || 0;
     el.innerHTML = `
-        <svg id="analyticsTrendSvg" viewBox="0 0 ${width} ${height}" width="100%" height="180" aria-label="Trend download/install">
-            <rect x="${left}" y="10" width="${plotW}" height="${plotH}" fill="rgba(255,255,255,0.02)" stroke="var(--border)"></rect>
-            ${activeDownload ? `<path d="${dlPath}" fill="none" stroke="var(--teal)" stroke-width="2.5"></path>` : ''}
-            ${activeInstall ? `<path d="${inPath}" fill="none" stroke="var(--purple)" stroke-width="2.5"></path>` : ''}
+        <svg id="analyticsTrendSvg" viewBox="0 0 ${width} ${height}" width="100%" height="220" aria-label="Trend download/install">
+            <defs>
+                <linearGradient id="trendDlGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#22c55e"></stop>
+                    <stop offset="100%" stop-color="#84cc16"></stop>
+                </linearGradient>
+                <linearGradient id="trendInGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#3b82f6"></stop>
+                    <stop offset="100%" stop-color="#8b5cf6"></stop>
+                </linearGradient>
+            </defs>
+            <rect x="${left}" y="${top}" rx="10" ry="10" width="${plotW}" height="${plotH}" fill="rgba(255,255,255,0.015)" stroke="var(--border)"></rect>
+            ${yTicks}
+            ${activeDownload ? `<path d="${dlPath}" fill="none" stroke="url(#trendDlGrad)" stroke-width="3" stroke-linecap="round"></path>` : ''}
+            ${activeInstall ? `<path d="${inPath}" fill="none" stroke="url(#trendInGrad)" stroke-width="3" stroke-linecap="round"></path>` : ''}
             ${xTicks}
         </svg>
         <div style="display:flex;gap:16px;font-size:12px;color:var(--text2);margin-top:6px;">
-            ${activeDownload ? '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:var(--teal);border-radius:50%;display:inline-block;"></span>Download</span>' : ''}
-            ${activeInstall ? '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:var(--purple);border-radius:50%;display:inline-block;"></span>Install</span>' : ''}
-            <span style="margin-left:auto;color:var(--text2);">Max giorno: ${maxVal}</span>
+            ${activeDownload ? `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:#22c55e;border-radius:50%;display:inline-block;"></span>Download (oggi: ${dlLast})</span>` : ''}
+            ${activeInstall ? `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:#3b82f6;border-radius:50%;display:inline-block;"></span>Install (oggi: ${inLast})</span>` : ''}
+            <span style="margin-left:auto;color:var(--text2);">${from} → ${to} · max giorno ${maxVal}</span>
         </div>
     `;
     updateAnalyticsMetricButtons();
@@ -3403,15 +3470,15 @@ function renderAnalyticsWalletSplit(passes) {
     const total = Math.max(1, apple + google + other);
     const seg = (v) => ((v / total) * 100).toFixed(1);
     el.innerHTML = `
-        <div style="display:flex;height:14px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--bg3);">
-            <div style="width:${seg(apple)}%;background:#22c55e;" title="Apple ${apple}"></div>
-            <div style="width:${seg(google)}%;background:#3b82f6;" title="Google ${google}"></div>
-            <div style="width:${seg(other)}%;background:#a78bfa;" title="Altro ${other}"></div>
+        <div style="display:flex;height:16px;border-radius:999px;overflow:hidden;border:1px solid var(--border);background:var(--bg3);box-shadow:inset 0 1px 2px rgba(0,0,0,.35);">
+            <div style="width:${seg(apple)}%;background:linear-gradient(90deg,#86efac,#22c55e);" title="Apple ${apple}"></div>
+            <div style="width:${seg(google)}%;background:linear-gradient(90deg,#60a5fa,#2563eb);" title="Google ${google}"></div>
+            <div style="width:${seg(other)}%;background:linear-gradient(90deg,#c4b5fd,#8b5cf6);" title="Altro ${other}"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr;gap:6px;margin-top:12px;font-size:12px;color:var(--text2);">
-            <div>Apple Wallet: <strong style="color:var(--text)">${apple}</strong> (${seg(apple)}%)</div>
-            <div>Google Wallet: <strong style="color:var(--text)">${google}</strong> (${seg(google)}%)</div>
-            <div>Altro: <strong style="color:var(--text)">${other}</strong> (${seg(other)}%)</div>
+            <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:6px;"></span>Apple Wallet: <strong style="color:var(--text)">${apple}</strong> (${seg(apple)}%)</div>
+            <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2563eb;margin-right:6px;"></span>Google Wallet: <strong style="color:var(--text)">${google}</strong> (${seg(google)}%)</div>
+            <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#8b5cf6;margin-right:6px;"></span>Altro: <strong style="color:var(--text)">${other}</strong> (${seg(other)}%)</div>
             <div style="margin-top:4px;">Installati totali: <strong style="color:var(--text)">${totalInstalled}</strong></div>
         </div>
     `;
@@ -3432,16 +3499,17 @@ function renderAnalyticsTopCampaigns(campaigns) {
         .sort((a, b) => (b.conv - a.conv) || ((b.total_installs || 0) - (a.total_installs || 0)))
         .slice(0, 5);
     const maxConv = Math.max(1, ...ranked.map(r => r.conv));
-    el.innerHTML = ranked.map(r => {
+    el.innerHTML = ranked.map((r, idx) => {
         const w = ((r.conv / maxConv) * 100).toFixed(1);
+        const rowColor = idx === 0 ? '#f59e0b' : idx === 1 ? '#3b82f6' : idx === 2 ? '#10b981' : '#a78bfa';
         return `
             <div style="margin-bottom:10px;">
                 <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:4px;">
                     <span style="color:var(--text);font-weight:600;">${esc(r.name)}</span>
                     <span style="color:var(--text2);">${r.conv.toFixed(1)}% · ${r.total_installs||0}/${r.total_downloads||0}</span>
                 </div>
-                <div style="height:10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);overflow:hidden;">
-                    <div style="height:100%;width:${w}%;background:linear-gradient(90deg,var(--teal),var(--purple));"></div>
+                <div style="height:11px;border-radius:999px;background:var(--bg3);border:1px solid var(--border);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.3);">
+                    <div style="height:100%;width:${w}%;background:linear-gradient(90deg,${rowColor},#f472b6);"></div>
                 </div>
             </div>
         `;
@@ -3450,7 +3518,21 @@ function renderAnalyticsTopCampaigns(campaigns) {
 
 function onAnalyticsTrendChange() {
     const sel = document.getElementById('analyticsTrendRange');
-    analyticsTrendDays = sel ? parseInt(sel.value || '14', 10) : 14;
+    const fromEl = document.getElementById('analyticsDateFrom');
+    const toEl = document.getElementById('analyticsDateTo');
+    if (sel && sel.value === 'custom') {
+        if (fromEl?.value) analyticsDateFrom = fromEl.value;
+        if (toEl?.value) analyticsDateTo = toEl.value;
+        if (analyticsDateFrom && analyticsDateTo && analyticsDateFrom > analyticsDateTo) {
+            toast('Intervallo date non valido');
+            return;
+        }
+    } else {
+        analyticsDateFrom = '';
+        analyticsDateTo = '';
+        analyticsTrendDays = sel ? parseInt(sel.value || '14', 10) : 14;
+    }
+    syncAnalyticsRangeControls();
     loadAnalytics();
 }
 
