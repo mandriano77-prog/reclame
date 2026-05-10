@@ -2893,6 +2893,54 @@ router.get('/google-wallet/status', (req, res) => {
   res.json(googleWallet.getStatusInfo());
 });
 
+/** Diagnostica Apple Wallet (PassKit web service + firma) — nessun segreto nei valori. */
+function getAppleWalletStatusInfo() {
+  const domain = process.env.CUSTOM_DOMAIN || '';
+  const base = domain ? `https://${domain}` : '';
+  const certDir = path.join(__dirname, '..', '..', 'certs');
+  const fileSigning =
+    fs.existsSync(path.join(certDir, 'signerCert.pem')) &&
+    fs.existsSync(path.join(certDir, 'signerKey.pem')) &&
+    fs.existsSync(path.join(certDir, 'wwdr.pem'));
+  const b64Signing = !!(
+    process.env.SIGNER_CERT_BASE64 &&
+    process.env.SIGNER_KEY_BASE64 &&
+    process.env.WWDR_CERT_BASE64
+  );
+  const ptid = process.env.PASS_TYPE_IDENTIFIER || '';
+  const team = process.env.TEAM_IDENTIFIER || '';
+  const apnsEnv = process.env.APNS_ENV || 'production';
+  const signingOk = fileSigning || b64Signing;
+  const idsOk = !!(ptid && team);
+  let warning = null;
+  if (!domain) {
+    warning = 'CUSTOM_DOMAIN non impostato: webServiceURL nel pass e URL pubblici possono essere errati.';
+  } else if (!signingOk) {
+    warning = 'Certificati firma pass assenti: usa certs/*.pem oppure SIGNER_*_BASE64 e WWDR_CERT_BASE64.';
+  } else if (!idsOk) {
+    warning = 'PASS_TYPE_IDENTIFIER o TEAM_IDENTIFIER mancanti.';
+  }
+  return {
+    configured: !!(idsOk && signingOk),
+    custom_domain: domain || null,
+    pass_type_identifier: ptid || null,
+    team_identifier: team || null,
+    apns_env: apnsEnv,
+    web_service_url: base ? `${base}/api` : null,
+    device_registrations_url_pattern: base
+      ? `${base}/api/v1/devices/{deviceLibraryId}/registrations/{passTypeIdentifier}/{serialNumber}`
+      : null,
+    pass_get_url_pattern: base ? `${base}/api/v1/passes/{passTypeIdentifier}/{serialNumber}` : null,
+    signing_source: fileSigning ? 'certs/*.pem' : b64Signing ? 'env BASE64 (SIGNER_* + WWDR)' : 'nessuna',
+    note: 'iOS registra il dispositivo e richiede gli aggiornamenti pass agli URL sopra; APNs usa push token da device_registrations.',
+    warning
+  };
+}
+
+router.get('/apple-wallet/status', (req, res) => {
+  res.json(getAppleWalletStatusInfo());
+});
+
 /**
  * GET /api/v1/google-wallet/callback — solo spiegazione (il browser fa GET; Google usa POST)
  */

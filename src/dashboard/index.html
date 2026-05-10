@@ -12,7 +12,7 @@
             --bg: #0D0B1A; --bg2: #1E1A36; --bg3: #2D2645;
             --teal: #00D4AA; --purple: #7C3AED; --yellow: #CCFF00;
             --text: #FFFFFF; --text2: #B0A8C1; --border: #3A3556;
-            --red: #FF6B6B; --green: #34D399;
+            --red: #FF6B6B; --green: #34D399; --orange: #f59e0b;
         }
         html, body { width: 100%; height: 100%; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
@@ -154,6 +154,129 @@
         .analytics-chip { padding:6px 10px; font-size:12px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; }
         .analytics-chip.active { border-color: var(--teal); color: var(--teal); background: rgba(0,212,170,0.14); box-shadow: 0 0 0 1px rgba(0,212,170,0.22) inset; }
         .analytics-chip:hover { border-color: var(--teal); color: var(--teal); }
+        .wallet-diag-shell {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: linear-gradient(160deg, rgba(30, 26, 54, 0.98), rgba(18, 16, 32, 0.99));
+            margin-bottom: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+            overflow: hidden;
+        }
+        .wallet-diag-head {
+            padding: 14px 18px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .wallet-diag-kicker {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--purple);
+            opacity: 0.85;
+            margin-bottom: 6px;
+        }
+        .wallet-diag-lead {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+        .wallet-diag-desc {
+            font-size: 12px;
+            color: var(--text2);
+            line-height: 1.45;
+            margin-top: 6px;
+            max-width: 52rem;
+        }
+        .wallet-diag-rows { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+        .wallet-diag-item {
+            border: 1px solid rgba(58, 53, 86, 0.85);
+            border-radius: 12px;
+            background: rgba(13, 11, 26, 0.45);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .wallet-diag-item:hover { border-color: rgba(0, 212, 170, 0.28); box-shadow: 0 0 0 1px rgba(0, 212, 170, 0.06); }
+        .wallet-diag-item summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            user-select: none;
+        }
+        .wallet-diag-item summary::-webkit-details-marker { display: none; }
+        .wallet-diag-chevron {
+            margin-left: auto;
+            width: 7px;
+            height: 7px;
+            border-right: 2px solid var(--text2);
+            border-bottom: 2px solid var(--text2);
+            transform: rotate(45deg);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+        .wallet-diag-item details[open] .wallet-diag-chevron { transform: rotate(-135deg); margin-top: 4px; }
+        .wallet-diag-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .wallet-diag-item--apple .wallet-diag-icon { background: linear-gradient(145deg, rgba(99, 102, 241, 0.35), rgba(99, 102, 241, 0.12)); }
+        .wallet-diag-item--google .wallet-diag-icon { background: linear-gradient(145deg, rgba(0, 212, 170, 0.35), rgba(0, 212, 170, 0.1)); }
+        .wallet-diag-item--samsung .wallet-diag-icon { background: linear-gradient(145deg, rgba(20, 40, 160, 0.45), rgba(20, 40, 160, 0.15)); }
+        .wallet-diag-initial { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.92); }
+        .wallet-diag-sum-main { flex: 1; min-width: 0; }
+        .wallet-diag-name { display: block; font-size: 14px; font-weight: 700; color: var(--text); }
+        .wallet-diag-tagline { display: block; font-size: 11px; color: var(--text2); margin-top: 3px; font-weight: 500; opacity: 0.92; }
+        .wallet-diag-badge {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 4px 9px;
+            border-radius: 999px;
+            letter-spacing: 0.06em;
+            flex-shrink: 0;
+        }
+        .wallet-diag-badge--ok { background: rgba(52, 211, 153, 0.16); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.28); }
+        .wallet-diag-badge--off { background: rgba(251, 191, 36, 0.1); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.22); }
+        .wallet-diag-body {
+            padding: 0 14px 14px 64px;
+            border-top: 1px solid rgba(58, 53, 86, 0.45);
+            font-size: 12px;
+            color: var(--text2);
+            line-height: 1.58;
+        }
+        .wallet-diag-body > p { margin: 0 0 10px; }
+        .wallet-diag-body > p:last-child { margin-bottom: 0; }
+        .wallet-diag-body .wallet-diag-meta { font-size: 11px; margin-bottom: 8px; }
+        .wallet-diag-body code.inline { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); }
+        .wallet-diag-code {
+            display: block;
+            word-break: break-word;
+            margin: 8px 0;
+            padding: 10px 12px;
+            background: var(--bg2);
+            border-radius: 9px;
+            border: 1px solid var(--border);
+            font-size: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            color: rgba(236, 234, 255, 0.95);
+            line-height: 1.45;
+        }
+        .wallet-diag-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--purple); opacity: 0.75; margin: 12px 0 6px; }
+        .wallet-diag-label:first-child { margin-top: 2px; }
+        .wallet-diag-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 4px; }
+        .wallet-diag-warn { font-size: 11px !important; color: var(--orange) !important; margin-top: 10px !important; line-height: 1.45 !important; }
+        @media (max-width: 640px) {
+            .wallet-diag-body { padding-left: 14px; }
+        }
         .analytics-date { padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg2); color:var(--text); font-size:12px; }
         .analytics-date:disabled { opacity:0.45; }
         @media (max-width: 980px) {
@@ -303,7 +426,7 @@
                     </div>
                 </div>
                 <p id="passFilterSessionHint" style="font-size:11px;color:var(--text2);margin:-8px 0 14px;">Campagna, ricerca e pagina sono ricordati per questo brand finché il tab del browser è aperto.</p>
-                <div id="passGoogleWalletDiag" style="margin-bottom:14px;"></div>
+                <div id="passWalletChannelsDiag" style="margin-bottom:14px;"></div>
                 <div id="passesContent" style="color:var(--text2)">Caricamento...</div>
             </div>
 
@@ -496,13 +619,6 @@
                     </div>
                 </div>
 
-                <!-- Strip Promo Gallery (sempre visibile sotto le tab) -->
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;">
-                    <div class="sec-title" style="margin-bottom:0">Strip Promo</div>
-                    <button class="btn small" onclick="openStripPromoModal()">+ Nuova Strip</button>
-                </div>
-                <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">Galleria strip: clicca "Applica" per cambiare l'immagine su tutti i pass attivi.</p>
-                <div id="stripPromosList" class="strip-gallery" style="color:var(--text2)">Caricamento...</div>
             </div>
 
             <!-- BRAND IDENTITY -->
@@ -1500,7 +1616,6 @@ function nav(id) {
                 loadPushIwSelect();
                 loadPushGamSelect();
                 loadGeofencing();
-                loadStripPromos();
             };
             if (typeof requestIdleCallback === 'function') requestIdleCallback(rest, { timeout: 1500 });
             else setTimeout(rest, 50);
@@ -1766,6 +1881,7 @@ async function loadCampaigns() {
                 </div>
                 <div class="card-actions">
                     <button class="btn small sec" onclick="showCampaignQR('${c.id}')">QR</button>
+                    <button class="btn small sec" onclick="openCampaignLandingTab('${c.id}')" title="Apri la landing pubblica (slug + campagna e parametri UTM)">Landing</button>
                     <button class="btn small purple" onclick="copyCampaignDirect('${c.id}')" title="Link diretto — salva pass senza landing">Link</button>
                     <button class="btn small" onclick="editCampaign('${c.id}')">Modifica</button>
                     <button class="btn small ${c.active ? 'purple' : 'sec'}" onclick="toggleCampaign('${c.id}', ${!c.active})">${c.active ? 'Pausa' : 'Attiva'}</button>
@@ -1909,6 +2025,17 @@ async function copyCampaignLink(id) {
     navigator.clipboard.writeText(url).then(() => toast('Link landing copiato!'));
 }
 
+async function openCampaignLandingTab(id) {
+    try {
+        const url = await getCampaignLandingUrl(id);
+        if (!url) { toast('Impossibile aprire la landing: URL non disponibile.'); return; }
+        window.open(url, '_blank', 'noopener,noreferrer');
+        toast('Landing aperta in una nuova scheda');
+    } catch (e) {
+        toast('Errore: ' + (e.message || String(e)));
+    }
+}
+
 async function copyCampaignDirect(id) {
     const url = await getCampaignDirectUrl(id);
     navigator.clipboard.writeText(url).then(() => toast('Link diretto copiato! Usa per social/digital ads'));
@@ -1984,57 +2111,176 @@ function pushChannelDisplayLabel(ch) {
     return 'Apple';
 }
 
-function copyGwCallbackBtn(btn) {
-    const raw = btn.getAttribute('data-callback-url');
+function copyEncodedDataBtn(btn, attrName) {
+    const raw = btn.getAttribute(attrName);
     if (!raw) return toast('URL non disponibile');
     try {
         const text = decodeURIComponent(raw);
-        navigator.clipboard.writeText(text).then(() => toast('URL callback copiato')).catch(() => toast('Copia non riuscita (browser)'));
+        navigator.clipboard.writeText(text).then(() => toast('Copiato')).catch(() => toast('Copia non riuscita (browser)'));
     } catch (_) {
         toast('Copia non riuscita');
     }
 }
 
-async function loadPassGoogleWalletDiag() {
-    const box = document.getElementById('passGoogleWalletDiag');
+function walletDiagRow(kind, initials, title, subtitle, badgeClass, badgeText, bodyInner) {
+    const ini = esc(initials || '');
+    return (
+        `<div class="wallet-diag-item wallet-diag-item--${esc(kind)}">` +
+        '<details>' +
+        '<summary>' +
+        `<span class="wallet-diag-icon"><span class="wallet-diag-initial">${ini}</span></span>` +
+        '<span class="wallet-diag-sum-main">' +
+        `<span class="wallet-diag-name">${esc(title)}</span>` +
+        `<span class="wallet-diag-tagline">${esc(subtitle)}</span>` +
+        '</span>' +
+        `<span class="wallet-diag-badge ${badgeClass}">${esc(badgeText)}</span>` +
+        '<span class="wallet-diag-chevron" aria-hidden="true"></span>' +
+        '</summary>' +
+        `<div class="wallet-diag-body">${bodyInner}</div>` +
+        '</details>' +
+        '</div>'
+    );
+}
+
+function walletDiagCode(t) {
+    return `<div class="wallet-diag-code">${esc(t)}</div>`;
+}
+
+async function loadPassWalletChannelsDiag() {
+    const box = document.getElementById('passWalletChannelsDiag');
     if (!box) return;
     if (!brandId) {
         box.innerHTML = '';
         return;
     }
     try {
-        const res = await fetch(`${API}/google-wallet/status`);
-        const s = await res.json();
-        if (!s.configured) {
-            box.innerHTML =
-                '<details style="font-size:12px;margin-bottom:12px;border:1px solid var(--border);border-radius:10px;background:rgba(255,180,0,0.05);">' +
-                '<summary style="cursor:pointer;padding:10px 12px;font-weight:600;color:var(--text);list-style:revert;margin:0;">Google Wallet non attivo sul server — info</summary>' +
-                '<div style="padding:0 12px 12px;color:var(--text2);line-height:1.5;font-size:11px;">Mancano variabili issuer/service account. In tabella comparirà solo lo stato Apple nella colonna combinata.</div>' +
-                '</details>';
-            return;
+        const [gr, sr, ar] = await Promise.all([
+            fetch(`${API}/google-wallet/status`),
+            fetch(`${API}/samsung-wallet/status`),
+            fetch(`${API}/apple-wallet/status`)
+        ]);
+        const [g, s, a] = await Promise.all([gr.json(), sr.json(), ar.json()]);
+
+        const appleConfigured = !!(a && a.configured);
+        const appleBadge = appleConfigured ? 'wallet-diag-badge--ok' : 'wallet-diag-badge--off';
+        const appleBadgeTxt = appleConfigured ? 'Attivo' : 'Da completare';
+        let appleBody =
+            (appleConfigured
+                ? ''
+                : '<p class="wallet-diag-meta">Completa dominio pubblico, certificati di firma e identificativi Pass Type / Team.</p>') +
+            '<p>Il <strong>webServiceURL</strong> nel pass deve essere la base <code class="inline">/api</code> sul dominio. iOS usa gli endpoint sotto per registrazione dispositivo e download pass.</p>' +
+            (a.pass_type_identifier
+                ? `<p class="wallet-diag-meta">Pass Type <code class="inline">${esc(a.pass_type_identifier)}</code> · Team <code class="inline">${esc(a.team_identifier || '—')}</code> · APNs <code class="inline">${esc(a.apns_env || 'production')}</code> · Firma: ${esc(a.signing_source || '—')}</p>`
+                : '') +
+            (a.device_registrations_url_pattern
+                ? `<div class="wallet-diag-label">Registrazioni dispositivo</div>${walletDiagCode(a.device_registrations_url_pattern)}`
+                : '') +
+            (a.pass_get_url_pattern
+                ? `<div class="wallet-diag-label">GET pass (Serial Numbers)</div>${walletDiagCode(a.pass_get_url_pattern)}`
+                : '') +
+            (a.web_service_url
+                ? `<div class="wallet-diag-actions"><button type="button" class="btn small sec" data-diag-copy="${encodeURIComponent(a.web_service_url)}" onclick="copyEncodedDataBtn(this,'data-diag-copy')">Copia webServiceURL</button></div>`
+                : '') +
+            (a.note ? `<p>${esc(a.note)}</p>` : '') +
+            (a.warning ? `<p class="wallet-diag-warn">${esc(a.warning)}</p>` : '');
+
+        const appleBlock = walletDiagRow(
+            'apple',
+            'AP',
+            'Apple Wallet',
+            'PassKit · web service e firma',
+            appleBadge,
+            appleBadgeTxt,
+            appleBody
+        );
+
+        let googleBlock = '';
+        if (!g.configured) {
+            googleBlock = walletDiagRow(
+                'google',
+                'GW',
+                'Google Wallet',
+                'Non configurato sul server',
+                'wallet-diag-badge--off',
+                'Off',
+                '<p>In tabella la colonna Google resta vuota finché non imposti issuer e service account. Il callback pubblico viene mostrato qui quando attivi GW.</p>'
+            );
+        } else {
+            const cb = g.callback_url || '';
+            const cbDisplay = cb || '(imposta CUSTOM_DOMAIN)';
+            const cbData = cb ? encodeURIComponent(cb) : '';
+            const gwBody =
+                '<p>Nella <em>generic class</em>, questo endpoint riceve gli eventi di salvataggio/rimozione con <strong>POST</strong> da Google. Aprirlo nel browser mostra solo una pagina informativa (<strong>GET</strong>).</p>' +
+                (g.issuer_id ? `<p class="wallet-diag-meta">Issuer ID <code class="inline">${esc(g.issuer_id)}</code></p>` : '') +
+                (cb
+                    ? `<div class="wallet-diag-actions"><button type="button" class="btn small sec" data-diag-copy="${cbData}" onclick="copyEncodedDataBtn(this,'data-diag-copy')">Copia URL callback</button></div>`
+                    : '') +
+                `<div class="wallet-diag-label">Callback pubblico</div>${walletDiagCode(cbDisplay)}` +
+                '<p><strong>—</strong> = nessun oggetto GW. <strong>GW°</strong> senza <strong>GW</strong>: spesso callback o firewall.</p>' +
+                (g.warning ? `<p class="wallet-diag-warn">${esc(g.warning)}</p>` : '');
+            googleBlock = walletDiagRow(
+                'google',
+                'GW',
+                'Google Wallet',
+                'Callback classe e verifica stato',
+                'wallet-diag-badge--ok',
+                'Attivo',
+                gwBody
+            );
         }
-        const cb = s.callback_url || '';
-        const cbDisplay = cb || '(imposta CUSTOM_DOMAIN)';
-        const cbData = cb ? encodeURIComponent(cb) : '';
-        const warn = s.warning ? `<p style="font-size:11px;color:var(--orange);margin:8px 0 0;">${esc(s.warning)}</p>` : '';
-        const iss = s.issuer_id ? `<p style="font-size:11px;margin:0 0 8px;">Issuer ID: <code>${esc(s.issuer_id)}</code></p>` : '';
-        const copyBtn = cb
-            ? `<button type="button" class="btn small sec" style="margin:0 0 10px;" data-callback-url="${cbData}" onclick="copyGwCallbackBtn(this)">Copia URL</button>`
-            : '';
+
+        let samsungBlock = '';
+        if (!s.configured) {
+            samsungBlock = walletDiagRow(
+                'samsung',
+                'SM',
+                'Samsung Wallet',
+                'Partner API non configurata',
+                'wallet-diag-badge--off',
+                'Off',
+                '<p>Imposta Partner ID, Certificate ID, Card ID e materiale JWT (chiave privata o token, cert/PEM per verifica inbound) dal portale Samsung Partner.</p>'
+            );
+        } else {
+            const baseUrl = s.partner_cards_base_url || '';
+            const baseEnc = baseUrl ? encodeURIComponent(baseUrl) : '';
+            const pathPat = s.partner_get_path || '/samsung-wallet/cards/{cardId}/{refId}';
+            const authOut = s.outbound_auth_ready ? 'sì' : 'no';
+            const authIn = s.inbound_jwt_verify_ready ? 'sì' : 'no';
+            const samBody =
+                '<p>Allinea il <strong>Data Fetch link</strong> nel portale alla base URL pubblicata qui.</p>' +
+                (s.card_id
+                    ? `<p class="wallet-diag-meta">Card ID <code class="inline">${esc(s.card_id)}</code> · Cert <code class="inline">${esc(s.certificate_id || '—')}</code></p>`
+                    : '') +
+                `<p class="wallet-diag-meta">JWT verifica inbound: ${authIn} · Outbound notify: ${authOut}</p>` +
+                (baseUrl
+                    ? `<div class="wallet-diag-actions"><button type="button" class="btn small sec" data-diag-copy="${baseEnc}" onclick="copyEncodedDataBtn(this,'data-diag-copy')">Copia base partner</button></div>`
+                    : '') +
+                (baseUrl ? `<div class="wallet-diag-label">Base pubblica API</div>${walletDiagCode(baseUrl)}` : '') +
+                `<div class="wallet-diag-label">Path (sotto la base)</div>${walletDiagCode(pathPat)}` +
+                (s.note ? `<p>${esc(s.note)}</p>` : '');
+            samsungBlock = walletDiagRow(
+                'samsung',
+                'SM',
+                'Samsung Wallet',
+                'Data fetch e notifiche',
+                'wallet-diag-badge--ok',
+                'Attivo',
+                samBody
+            );
+        }
+
         box.innerHTML =
-            '<details style="font-size:12px;margin-bottom:12px;border:1px solid var(--border);border-radius:10px;background:rgba(0,212,170,0.04);">' +
-            '<summary style="cursor:pointer;padding:10px 12px;font-weight:600;color:var(--teal);list-style:revert;margin:0;">Google Wallet — URL callback e diagnosi (apri solo se ti serve)</summary>' +
-            '<div style="padding:0 12px 12px;color:var(--text2);line-height:1.55;font-size:11px;">' +
-            '<p style="margin:0 0 8px;">URL sulla <em>generic class</em> per gli eventi salvataggio/rimozione — deve coincidere con console Google/Pay ed essere raggiungibile da internet con <code>POST</code>. La richiesta nel browser usa <code>GET</code> ed è solo informativa.</p>' +
-            iss +
-            copyBtn +
-            '<code style="word-break:break-all;display:block;margin:0 0 10px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);color:var(--text);font-size:11px;">' +
-            esc(cbDisplay) +
-            '</code>' +
-            '<p style="margin:0;"><strong>—</strong> in colonna Google = nessun oggetto GW creato (flusso Android o pulsante da «Vedi pass»). <strong>GW°</strong> senza <strong>GW</strong> = spesso callback o firewall.</p>' +
-            warn +
+            '<div class="wallet-diag-shell">' +
+            '<div class="wallet-diag-head">' +
+            '<div class="wallet-diag-kicker">Diagnostica</div>' +
+            '<div class="wallet-diag-lead">Collegamenti Wallet</div>' +
+            '<p class="wallet-diag-desc">URL e parametri tecnici per Apple, Google e Samsung. Apri le sezioni solo quando configuri gli integratori o fai troubleshooting.</p>' +
             '</div>' +
-            '</details>';
+            '<div class="wallet-diag-rows">' +
+            appleBlock +
+            googleBlock +
+            samsungBlock +
+            '</div></div>';
     } catch (_) {
         box.innerHTML = '';
     }
@@ -2043,7 +2289,7 @@ async function loadPassGoogleWalletDiag() {
 // ==================== PASSES ====================
 async function loadPasses(resetPage = false) {
     if (!brandId) return;
-    loadPassGoogleWalletDiag();
+    loadPassWalletChannelsDiag();
     ensurePassFiltersFromStorage();
     if (resetPage) passPageIndex = 0;
 
@@ -3285,10 +3531,10 @@ async function loadPushHistory() {
 
 // ==================== STRIP PROMOS ====================
 async function loadStripPromos() {
-    if (!brandId) return;
+    const el = document.getElementById('stripPromosList');
+    if (!brandId || !el) return;
     const res = await fetch(`${API}/brands/${brandId}/strip-promos`, { headers: getAuthHeaders() });
     const promos = await res.json();
-    const el = document.getElementById('stripPromosList');
     if (!promos.length) { el.innerHTML = '<p style="color:var(--text2)">Nessuna strip promo. Crea la prima per vedere la galleria.</p>'; return; }
     const now = new Date();
     el.innerHTML = promos.map(p => {
