@@ -154,48 +154,54 @@
         .analytics-chip { padding:6px 10px; font-size:12px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; }
         .analytics-chip.active { border-color: var(--teal); color: var(--teal); background: rgba(0,212,170,0.14); box-shadow: 0 0 0 1px rgba(0,212,170,0.22) inset; }
         .analytics-chip:hover { border-color: var(--teal); color: var(--teal); }
+        /* Pannello wallet: colori fissi (il tema brand può rendere --text scuro → illeggibile qui) */
         .wallet-diag-shell {
-            border: 1px solid var(--border);
+            border: 1px solid rgba(120, 110, 160, 0.35);
             border-radius: 14px;
-            background: linear-gradient(160deg, rgba(30, 26, 54, 0.98), rgba(18, 16, 32, 0.99));
+            background: linear-gradient(160deg, rgba(34, 30, 56, 1), rgba(22, 20, 40, 1));
             margin-bottom: 16px;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
             overflow: hidden;
+            --wd-strong: rgba(255, 255, 255, 0.98);
+            --wd-text: rgba(236, 233, 250, 0.95);
+            --wd-muted: rgba(205, 198, 228, 0.92);
+            --wd-faint: rgba(168, 160, 195, 0.88);
+            --wd-line: rgba(255, 255, 255, 0.1);
+            color: var(--wd-muted);
         }
         .wallet-diag-head {
             padding: 14px 18px 16px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--wd-line);
         }
         .wallet-diag-kicker {
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: var(--purple);
-            opacity: 0.85;
+            color: #c4b5fd;
             margin-bottom: 6px;
         }
         .wallet-diag-lead {
             font-size: 15px;
             font-weight: 700;
-            color: var(--text);
+            color: var(--wd-strong) !important;
             letter-spacing: -0.02em;
         }
         .wallet-diag-desc {
             font-size: 12px;
-            color: var(--text2);
+            color: var(--wd-muted) !important;
             line-height: 1.45;
             margin-top: 6px;
             max-width: 52rem;
         }
         .wallet-diag-rows { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 8px; }
         .wallet-diag-item {
-            border: 1px solid rgba(58, 53, 86, 0.85);
+            border: 1px solid rgba(100, 92, 140, 0.4);
             border-radius: 12px;
-            background: rgba(13, 11, 26, 0.45);
+            background: rgba(8, 7, 18, 0.55);
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .wallet-diag-item:hover { border-color: rgba(0, 212, 170, 0.28); box-shadow: 0 0 0 1px rgba(0, 212, 170, 0.06); }
+        .wallet-diag-item:hover { border-color: rgba(0, 212, 170, 0.35); box-shadow: 0 0 0 1px rgba(0, 212, 170, 0.08); }
         .wallet-diag-item summary {
             list-style: none;
             cursor: pointer;
@@ -210,12 +216,11 @@
             margin-left: auto;
             width: 7px;
             height: 7px;
-            border-right: 2px solid var(--text2);
-            border-bottom: 2px solid var(--text2);
+            border-right: 2px solid rgba(255, 255, 255, 0.45);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.45);
             transform: rotate(45deg);
             transition: transform 0.2s;
             flex-shrink: 0;
-            opacity: 0.85;
         }
         .wallet-diag-item details[open] .wallet-diag-chevron { transform: rotate(-135deg); margin-top: 4px; }
         .wallet-diag-icon {
@@ -232,10 +237,10 @@
         .wallet-diag-item--apple .wallet-diag-icon { background: linear-gradient(145deg, rgba(99, 102, 241, 0.35), rgba(99, 102, 241, 0.12)); }
         .wallet-diag-item--google .wallet-diag-icon { background: linear-gradient(145deg, rgba(0, 212, 170, 0.35), rgba(0, 212, 170, 0.1)); }
         .wallet-diag-item--samsung .wallet-diag-icon { background: linear-gradient(145deg, rgba(20, 40, 160, 0.45), rgba(20, 40, 160, 0.15)); }
-        .wallet-diag-initial { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.92); }
+        .wallet-diag-initial { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.96); }
         .wallet-diag-sum-main { flex: 1; min-width: 0; }
-        .wallet-diag-name { display: block; font-size: 14px; font-weight: 700; color: var(--text); }
-        .wallet-diag-tagline { display: block; font-size: 11px; color: var(--text2); margin-top: 3px; font-weight: 500; opacity: 0.92; }
+        .wallet-diag-name { display: block; font-size: 14px; font-weight: 700; color: var(--wd-strong) !important; }
+        .wallet-diag-tagline { display: block; font-size: 11px; color: var(--wd-faint) !important; margin-top: 3px; font-weight: 500; }
         .wallet-diag-badge {
             font-size: 9px;
             font-weight: 800;
@@ -248,29 +253,29 @@
         .wallet-diag-badge--off { background: rgba(251, 191, 36, 0.1); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.22); }
         .wallet-diag-body {
             padding: 0 14px 14px 64px;
-            border-top: 1px solid rgba(58, 53, 86, 0.45);
+            border-top: 1px solid var(--wd-line);
             font-size: 12px;
-            color: var(--text2);
+            color: var(--wd-muted) !important;
             line-height: 1.58;
         }
-        .wallet-diag-body > p { margin: 0 0 10px; }
+        .wallet-diag-body > p { margin: 0 0 10px; color: var(--wd-muted) !important; }
         .wallet-diag-body > p:last-child { margin-bottom: 0; }
-        .wallet-diag-body .wallet-diag-meta { font-size: 11px; margin-bottom: 8px; }
-        .wallet-diag-body code.inline { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); }
+        .wallet-diag-body .wallet-diag-meta { font-size: 11px; margin-bottom: 8px; color: var(--wd-muted) !important; }
+        .wallet-diag-body code.inline { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.12); color: var(--wd-text) !important; }
         .wallet-diag-code {
             display: block;
             word-break: break-word;
             margin: 8px 0;
             padding: 10px 12px;
-            background: var(--bg2);
+            background: rgba(0, 0, 0, 0.35);
             border-radius: 9px;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             font-size: 10px;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            color: rgba(236, 234, 255, 0.95);
+            color: rgba(244, 242, 255, 0.97) !important;
             line-height: 1.45;
         }
-        .wallet-diag-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--purple); opacity: 0.75; margin: 12px 0 6px; }
+        .wallet-diag-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: #c4b5fd !important; margin: 12px 0 6px; }
         .wallet-diag-label:first-child { margin-top: 2px; }
         .wallet-diag-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 4px; }
         .wallet-diag-warn { font-size: 11px !important; color: var(--orange) !important; margin-top: 10px !important; line-height: 1.45 !important; }
@@ -2238,7 +2243,8 @@ async function loadPassWalletChannelsDiag() {
                 'Partner API non configurata',
                 'wallet-diag-badge--off',
                 'Off',
-                '<p>Imposta Partner ID, Certificate ID, Card ID e materiale JWT (chiave privata o token, cert/PEM per verifica inbound) dal portale Samsung Partner.</p>'
+                '<p>Fino a quando resta <strong>Off</strong>, sulla <strong>landing</strong> pubblica non compare il pulsante «Samsung Wallet» (l’API risponde senza card attive).</p>' +
+                '<p>Imposta sul server le variabili <code class="inline">SAMSUNG_WALLET_PARTNER_ID</code>, <code class="inline">CERTIFICATE_ID</code>, <code class="inline">CARD_ID</code> e chiavi/cert JWT come da portale Samsung Partner, poi ridistribuisci.</p>'
             );
         } else {
             const baseUrl = s.partner_cards_base_url || '';
