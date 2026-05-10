@@ -140,6 +140,8 @@
         .color-input-wrap input[type="color"] { width: 40px; height: 34px; border: none; border-radius: 6px; cursor: pointer; padding: 0; }
         .color-input-wrap input[type="text"] { flex: 1; }
         .login-error { color: var(--red); font-size: 12px; margin-bottom: 12px; display: none; }
+        .login-gate { position: fixed; inset: 0; z-index: 5000; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 24px; }
+        .login-card { max-width: 400px; width: 100%; }
         /* Viewer role: hide all create/edit/delete buttons */
         body.role-viewer .btn:not(.sec):not([onclick*="nav("]):not([onclick*="wzGoStep"]):not([onclick*="wzCopy"]):not([onclick*="wzNewPass"]) { display: none !important; }
         body.role-viewer .btn.danger { display: none !important; }
@@ -312,7 +314,18 @@
 </head>
 <body>
 
-<div class="layout" id="mainLayout">
+<div id="loginGate" class="login-gate" role="dialog" aria-labelledby="loginTitle">
+    <div class="login-card card">
+        <div class="sec-title" id="loginTitle">Accedi</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.45;">Dashboard Ads2Wallet — utenti abilitati: accedi con email e password.</p>
+        <div id="loginError" class="login-error" role="alert"></div>
+        <div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" autocomplete="username" placeholder="nome@azienda.it"></div>
+        <div class="form-group"><label class="form-label">Password</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
+        <button type="button" class="btn" style="width:100%;margin-top:8px;" id="loginSubmitBtn" onclick="submitLogin()">Accedi</button>
+    </div>
+</div>
+
+<div class="layout" id="mainLayout" style="display:none;">
     <div class="sidebar">
         <div class="logo">Ads2Wallet<small>by Underdogs Group</small></div>
         <div class="nav-label" id="navLabelDashboard">Dashboard</div>
@@ -333,6 +346,7 @@
         <div class="nav-item" onclick="nav('leads')">Leads</div>
         <div class="nav-label">Insights</div>
         <div class="nav-item" onclick="nav('analytics')">Analytics</div>
+        <div class="nav-item" onclick="nav('activity-log')">Attività</div>
         <div class="nav-label">Setup</div>
         <div class="nav-item" onclick="nav('users')">Utenti</div>
 
@@ -347,7 +361,12 @@
                 <img id="headerBrandLogo" class="header-brand-logo" alt="Logo brand">
                 <span id="headerBrandName">Ads2Wallet</span>
             </div>
-            <div style="display:flex;align-items:center;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;">
+                <div id="dashboardUserSlot" style="display:none;align-items:center;gap:8px;font-size:12px;color:var(--text2);">
+                    <span id="dashboardUserEmail" title="Account"></span>
+                    <span id="dashboardUserRole" class="role-tag"></span>
+                    <button type="button" class="btn small sec" onclick="logout()">Esci</button>
+                </div>
                 <select class="brand-sel" id="brandSelector" onchange="changeBrand()">
                     <option value="">Seleziona Brand</option>
                 </select>
@@ -1227,6 +1246,30 @@
                 </table>
             </div>
 
+            <!-- ACTIVITY LOG (events table) -->
+            <div id="activity-log" class="section">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                    <div>
+                        <div class="sec-title">Log attività</div>
+                        <p style="font-size:12px;color:var(--text2);margin-top:8px;max-width:42rem;line-height:1.45;">
+                            Cronologia eventi del brand (pass creati, installazioni, wallet, landing, ecc.) registrati dal server.<br>Righe più recenti in alto · massimo 500 per richiesta.</p>
+                    </div>
+                    <button type="button" class="btn small sec" onclick="loadActivityLog()">Aggiorna</button>
+                </div>
+                <div class="pass-table-wrap">
+                    <table class="table" id="activityLogTable">
+                        <thead><tr>
+                            <th>Data / ora</th>
+                            <th>Evento</th>
+                            <th>Pass</th>
+                            <th>Device</th>
+                            <th>Dettagli</th>
+                        </tr></thead>
+                        <tbody id="activityLogBody"><tr><td colspan="5" style="color:var(--text2)">Caricamento…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- USERS -->
             <div class="section" id="users">
                 <div class="sec-title">Gestione Utenti</div>
@@ -1472,10 +1515,144 @@
 
 <script>
 const API = '/api/v1';
+const AUTH_TOKEN_KEY = 'ads2wallet:jwt';
 let brandId = null;
-function getAuthHeaders() { return {}; }
+function getAuthHeaders() {
+    const t = localStorage.getItem(AUTH_TOKEN_KEY);
+    const h = {};
+    if (t) h.Authorization = `Bearer ${t}`;
+    return h;
+}
 let authToken = null;
 let currentUser = null;
+
+(function installAuthFetchInterceptor() {
+    const _fetch = window.fetch.bind(window);
+    window.fetch = async function authFetchWrapper(input, init) {
+        const res = await _fetch(input, init);
+        let path = '';
+        try {
+            if (typeof input === 'string') path = input.split('?')[0];
+            else if (input instanceof Request) path = new URL(input.url, window.location.origin).pathname;
+        } catch (_) {}
+        const main = document.getElementById('mainLayout');
+        const authedUi = main && main.style.display !== 'none';
+        if (
+            authedUi &&
+            path.startsWith(API + '/') &&
+            !path.startsWith(API + '/auth/login') &&
+            res.status === 401
+        ) logout();
+        return res;
+    };
+})();
+
+function syncAuthUi() {
+    const slot = document.getElementById('dashboardUserSlot');
+    const emailEl = document.getElementById('dashboardUserEmail');
+    const roleEl = document.getElementById('dashboardUserRole');
+    if (!slot || !emailEl || !roleEl) return;
+    if (currentUser) {
+        slot.style.display = 'flex';
+        emailEl.textContent = currentUser.email || '';
+        roleEl.textContent = (currentUser.role || 'manager').toUpperCase();
+    } else {
+        slot.style.display = 'none';
+        emailEl.textContent = '';
+        roleEl.textContent = '';
+    }
+}
+
+function logout() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    authToken = null;
+    currentUser = null;
+    brandId = null;
+    try { localStorage.removeItem(LAST_BRAND_KEY); } catch (_) {}
+    const gate = document.getElementById('loginGate');
+    const main = document.getElementById('mainLayout');
+    const errEl = document.getElementById('loginError');
+    const pw = document.getElementById('loginPassword');
+    if (gate) gate.style.display = 'flex';
+    if (main) main.style.display = 'none';
+    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    if (pw) pw.value = '';
+    syncAuthUi();
+}
+
+async function bootstrapSession() {
+    const gate = document.getElementById('loginGate');
+    const main = document.getElementById('mainLayout');
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+        authToken = null;
+        currentUser = null;
+        if (gate) gate.style.display = 'flex';
+        if (main) main.style.display = 'none';
+        syncAuthUi();
+        return;
+    }
+    authToken = token;
+    try {
+        const res = await fetch(`${API}/auth/me`, { headers: getAuthHeaders() });
+        if (!res.ok) {
+            logout();
+            return;
+        }
+        const data = await res.json();
+        currentUser = data.user;
+        syncAuthUi();
+        if (gate) gate.style.display = 'none';
+        if (main) main.style.display = 'grid';
+        await loadBrands();
+    } catch (_) {
+        logout();
+    }
+}
+
+async function submitLogin() {
+    const emailEl = document.getElementById('loginEmail');
+    const pwEl = document.getElementById('loginPassword');
+    const errEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginSubmitBtn');
+    if (!emailEl || !pwEl) return;
+    const email = emailEl.value.trim().toLowerCase();
+    const password = pwEl.value;
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    if (!email || !password) {
+        if (errEl) { errEl.textContent = 'Inserisci email e password'; errEl.style.display = 'block'; }
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Accesso…'; }
+    try {
+        const res = await fetch(`${API}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        let data = {};
+        try { data = await res.json(); } catch (_) {}
+        if (!res.ok) {
+            if (errEl) {
+                errEl.textContent = data.error || 'Credenziali non valide';
+                errEl.style.display = 'block';
+            }
+            return;
+        }
+        localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+        authToken = data.token;
+        currentUser = data.user;
+        syncAuthUi();
+        const gate = document.getElementById('loginGate');
+        const main = document.getElementById('mainLayout');
+        if (gate) gate.style.display = 'none';
+        if (main) main.style.display = 'grid';
+        pwEl.value = '';
+        await loadBrands();
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Accedi'; }
+    }
+}
 let currentBrandName = '';
 let currentBrandSlug = '';
 let campaignsCache = [];
@@ -1554,7 +1731,19 @@ let analyticsDateTo = '';
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
-    loadBrands();
+    const pw = document.getElementById('loginPassword');
+    if (pw) {
+        pw.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitLogin();
+        });
+    }
+    const em = document.getElementById('loginEmail');
+    if (em) {
+        em.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitLogin();
+        });
+    }
+    bootstrapSession();
 });
 
 // ==================== NAV ====================
@@ -1626,6 +1815,7 @@ function nav(id) {
             else setTimeout(rest, 50);
         },
         analytics: loadAnalytics,
+        'activity-log': loadActivityLog,
         'pass-design': loadPassDesign,
         'brand-identity': loadBrandIdentity,
         'media-library': loadMediaLibrary,
@@ -1676,6 +1866,7 @@ function toast(msg) { const t = document.getElementById('toastEl'); t.textConten
 // ==================== BRANDS ====================
 async function loadBrands() {
     const res = await fetch(`${API}/brands`, { headers: { ...getAuthHeaders() } });
+    if (!res.ok) return;
     const brands = await res.json();
     const sel = document.getElementById('brandSelector');
     sel.innerHTML = '<option value="">Seleziona Brand</option>';
@@ -3959,6 +4150,43 @@ async function deleteGamCampaign(id) {
         loadGamification();
         toast('Campagna eliminata');
     } catch(e) { toast('Errore: ' + e.message); }
+}
+
+// ==================== ACTIVITY LOG ====================
+async function loadActivityLog() {
+    const body = document.getElementById('activityLogBody');
+    if (!brandId) return;
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="5" style="color:var(--text2)">Caricamento…</td></tr>';
+    try {
+        const res = await fetch(`${API}/events/${brandId}?limit=250`, { headers: { ...getAuthHeaders() } });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+        const events = await res.json();
+        if (!events.length) {
+            body.innerHTML = '<tr><td colspan="5" style="color:var(--text2)">Nessun evento ancora per questo brand.</td></tr>';
+            return;
+        }
+        body.innerHTML = events.map(ev => {
+            const when = ev.created_at ? new Date(ev.created_at).toLocaleString('it-IT') : '—';
+            const meta =
+                ev.metadata && typeof ev.metadata === 'object'
+                    ? JSON.stringify(ev.metadata)
+                    : (ev.metadata ? String(ev.metadata) : '—');
+            const metaShort =
+                meta.length > 180 ? esc(meta.slice(0, 177)) + '…' : esc(meta);
+            const passCell = ev.pass_id ? `<code style="font-size:11px">${esc(String(ev.pass_id).slice(0, 8))}…</code>` : '—';
+            const devCell = ev.device_id ? `<code style="font-size:10px">${esc(String(ev.device_id).slice(0, 24))}${String(ev.device_id).length > 24 ? '…' : ''}</code>` : '—';
+            return `<tr>
+                <td style="font-size:12px;white-space:nowrap;">${esc(when)}</td>
+                <td><span class="badge inactive" style="text-transform:none;font-size:11px;">${esc(ev.event_type || '—')}</span></td>
+                <td>${passCell}</td>
+                <td style="max-width:120px;">${devCell}</td>
+                <td style="font-size:11px;color:var(--text2);max-width:320px;word-break:break-word;" title="${esc(meta)}">${metaShort}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        body.innerHTML = `<tr><td colspan="5" style="color:var(--red)">Errore: ${esc(e.message)}</td></tr>`;
+    }
 }
 
 // ==================== ANALYTICS ====================
