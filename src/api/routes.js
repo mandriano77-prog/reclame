@@ -826,6 +826,44 @@ function authMiddleware(req, res, next) {
   }
 }
 
+/** Multi-tenant: admin vede tutti i brand; manager/viewer solo il proprio (`users.brand_id`). */
+function userMayAccessBrand(user, brandId) {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  const bid = brandId !== undefined && brandId !== null && String(brandId).length ? String(brandId) : '';
+  const assigned =
+    user.brand_id !== undefined && user.brand_id !== null && String(user.brand_id).length
+      ? String(user.brand_id)
+      : '';
+  if ((user.role === 'manager' || user.role === 'viewer') && assigned) return bid !== '' && bid === assigned;
+  return false;
+}
+
+function requireBrandId(req, res, brandId) {
+  if (brandId === undefined || brandId === null || String(brandId).trim() === '') {
+    res.status(400).json({ error: 'brand_id richiesto' });
+    return false;
+  }
+  if (!userMayAccessBrand(req.user, brandId)) {
+    res.status(403).json({ error: 'Accesso negato per questo brand' });
+    return false;
+  }
+  return true;
+}
+
+/** Brand PK (UUID nel path tipo `/brands/:id`). */
+function requireOwnedBrandPk(req, res, brandPk) {
+  return requireBrandId(req, res, brandPk);
+}
+
+function requireAdmin(req, res) {
+  if (req.user?.role !== 'admin') {
+    res.status(403).json({ error: 'Richiede privilegi amministratore' });
+    return false;
+  }
+  return true;
+}
+
 /**
  * Routes registered *after* this middleware still include partner/public flows
  * (Instant Win play, Gamification game, creatives serving, Wallet callbacks).
@@ -876,13 +914,30 @@ router.put('/auth/change-password', async (req, res) => {
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Users (admin only) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.get('/users', async (req, res) => {
   try {
-    const users = await listUsers(req.query.brand_id || null);
-    res.json(users);
+    const u = req.user;
+    const qBrand = req.query.brand_id || null;
+    if (u.role === 'admin') {
+      const users = await listUsers(qBrand || null);
+      res.json(users);
+    } else {
+      const bid = u.brand_id;
+      if (!bid) {
+        res.json([]);
+        return;
+      }
+      if (qBrand && String(qBrand) !== String(bid)) {
+        res.status(403).json({ error: 'Accesso negato per questo brand' });
+        return;
+      }
+      const users = await listUsers(bid);
+      res.json(users);
+    }
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.post('/users', async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
     const tempPassword = req.body.password || Math.random().toString(36).slice(-10);
     req.body.password = tempPassword;
     const user = await createUser(req.body);
@@ -905,6 +960,7 @@ router.post('/users', async (req, res) => {
 
 router.post('/users/:id/resend-invite', async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
     const user = await getUser(req.params.id);
     if (!user) return res.status(404).json({ error: 'Utente non trovato' });
 
@@ -929,6 +985,7 @@ router.post('/users/:id/resend-invite', async (req, res) => {
 
 router.put('/users/:id', async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
     const user = await updateUser(req.params.id, req.body);
     res.json(user);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -936,6 +993,7 @@ router.put('/users/:id', async (req, res) => {
 
 router.delete('/users/:id', async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
     await deleteUser(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -945,13 +1003,19 @@ router.delete('/users/:id', async (req, res) => {
 
 router.get('/brands', async (req, res) => {
   try {
-    const brands = await listBrands();
+    let brands = await listBrands();
+    const u = req.user;
+    if (u && (u.role === 'manager' || u.role === 'viewer')) {
+      if (u.brand_id) brands = brands.filter((b) => String(b.id) === String(u.brand_id));
+      else brands = [];
+    }
     res.json(brands);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.post('/brands', async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
     const brand = await createBrand(req.body);
     res.json(brand);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -959,6 +1023,7 @@ router.post('/brands', async (req, res) => {
 
 router.get('/brands/:id', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
     res.json(brand);
@@ -967,6 +1032,7 @@ router.get('/brands/:id', async (req, res) => {
 
 router.put('/brands/:id', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await updateBrand(req.params.id, req.body);
     res.json(brand);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -974,6 +1040,8 @@ router.put('/brands/:id', async (req, res) => {
 
 router.delete('/brands/:id', async (req, res) => {
   try {
+    if (!requireAdmin(req, res)) return;
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     await deleteBrand(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -982,6 +1050,7 @@ router.delete('/brands/:id', async (req, res) => {
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Brand logo upload ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.post('/brands/:id/logo', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
 
@@ -1017,6 +1086,7 @@ router.post('/brands/:id/logo', async (req, res) => {
 
 router.get('/brands/:id/logo', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand?.config?.logos?.logo) return res.status(404).json({ error: 'Nessun logo' });
     const buf = Buffer.from(brand.config.logos.logo, 'base64');
@@ -1028,6 +1098,7 @@ router.get('/brands/:id/logo', async (req, res) => {
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Brand landing background upload ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.post('/brands/:id/landing-bg', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
     let { image_base64 } = req.body;
@@ -1050,6 +1121,7 @@ router.post('/brands/:id/landing-bg', async (req, res) => {
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Brand strip upload ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.post('/brands/:id/strip', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
 
@@ -1070,6 +1142,7 @@ router.post('/brands/:id/strip', async (req, res) => {
 
 router.get('/brands/:id/strip', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     const stripBase64 = brand?.config?.logos?.strip || brand?.config?.strip_base64 || null;
     if (!stripBase64) return res.status(404).json({ error: 'Nessuna strip' });
@@ -1081,6 +1154,7 @@ router.get('/brands/:id/strip', async (req, res) => {
 
 router.delete('/brands/:id/strip', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
     const config = brand.config || {};
@@ -1093,6 +1167,7 @@ router.delete('/brands/:id/strip', async (req, res) => {
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ AI strip generation ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.post('/brands/:id/ai-strip', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
     const { prompt } = req.body;
@@ -1127,6 +1202,7 @@ router.post('/brands/:id/ai-strip', async (req, res) => {
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ AI landing page copy ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.post('/brands/:id/ai-copy', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
     const description = req.body.description || '';
@@ -1141,6 +1217,7 @@ router.post('/brands/:id/ai-copy', async (req, res) => {
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ AI Creative Generator (copy + image in one shot) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.post('/brands/:id/ai-creative', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
     const { prompt, type, generate_image } = req.body;
@@ -1192,6 +1269,7 @@ router.get('/templates', async (req, res) => {
   try {
     const { brand_id } = req.query;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const templates = await listTemplates(brand_id);
     res.json(templates);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1199,6 +1277,7 @@ router.get('/templates', async (req, res) => {
 
 router.post('/templates', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.body.brand_id)) return;
     const template = await createTemplate(req.body);
     res.json(template);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1208,12 +1287,16 @@ router.get('/templates/:id', async (req, res) => {
   try {
     const template = await getTemplate(req.params.id);
     if (!template) return res.status(404).json({ error: 'Template non trovato' });
+    if (!requireBrandId(req, res, template.brand_id)) return;
     res.json(template);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.put('/templates/:id', async (req, res) => {
   try {
+    const existing = await getTemplate(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Template non trovato' });
+    if (!requireBrandId(req, res, existing.brand_id)) return;
     const template = await updateTemplate(req.params.id, req.body);
     res.json(template);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1224,6 +1307,7 @@ router.post('/templates/:id/images', async (req, res) => {
   try {
     const template = await getTemplate(req.params.id);
     if (!template) return res.status(404).json({ error: 'Template non trovato' });
+    if (!requireBrandId(req, res, template.brand_id)) return;
     const { image_type, image_base64 } = req.body;
     // image_type: 'logo', 'strip', 'thumbnail', 'background'
     if (!['logo', 'strip', 'thumbnail', 'background'].includes(image_type)) {
@@ -1242,6 +1326,7 @@ router.delete('/templates/:id/images/:imageType', async (req, res) => {
   try {
     const template = await getTemplate(req.params.id);
     if (!template) return res.status(404).json({ error: 'Template non trovato' });
+    if (!requireBrandId(req, res, template.brand_id)) return;
     const style = template.style || {};
     if (style.images) {
       delete style.images[req.params.imageType];
@@ -1253,6 +1338,9 @@ router.delete('/templates/:id/images/:imageType', async (req, res) => {
 
 router.delete('/templates/:id', async (req, res) => {
   try {
+    const existing = await getTemplate(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Template non trovato' });
+    if (!requireBrandId(req, res, existing.brand_id)) return;
     await deleteTemplate(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1264,6 +1352,7 @@ router.get('/campaigns', async (req, res) => {
   try {
     const { brand_id } = req.query;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const campaigns = await listCampaigns(brand_id);
     res.json(campaigns);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1271,6 +1360,7 @@ router.get('/campaigns', async (req, res) => {
 
 router.post('/campaigns', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.body.brand_id)) return;
     const campaign = await createCampaign(req.body);
     res.json(campaign);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1280,12 +1370,16 @@ router.get('/campaigns/:id', async (req, res) => {
   try {
     const campaign = await getCampaign(req.params.id);
     if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, campaign.brand_id)) return;
     res.json(campaign);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.put('/campaigns/:id', async (req, res) => {
   try {
+    const existing = await getCampaign(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, existing.brand_id)) return;
     const campaign = await updateCampaign(req.params.id, req.body);
     res.json(campaign);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1293,6 +1387,9 @@ router.put('/campaigns/:id', async (req, res) => {
 
 router.delete('/campaigns/:id', async (req, res) => {
   try {
+    const existing = await getCampaign(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, existing.brand_id)) return;
     await deleteCampaign(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1304,6 +1401,7 @@ router.get('/passes', async (req, res) => {
   try {
     const { brand_id, status, campaign_id, limit, offset } = req.query;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const passes = await listPasses(brand_id, {
       status,
       campaign_id,
@@ -1318,6 +1416,7 @@ router.post('/passes', async (req, res) => {
   try {
     const { brand_id, template_id, campaign_id, field_values } = req.body;
     if (!brand_id || !template_id) return res.status(400).json({ error: 'brand_id e template_id richiesti' });
+    if (!requireBrandId(req, res, brand_id)) return;
 
     const passInstance = await createPassInstance({ template_id, brand_id, campaign_id, field_values });
     await logEvent({ pass_id: passInstance.id, brand_id, event_type: 'pass_created', metadata: { source: 'backoffice' } });
@@ -1331,12 +1430,16 @@ router.get('/passes/:id', async (req, res) => {
   try {
     const pass = await getPassInstance(req.params.id);
     if (!pass) return res.status(404).json({ error: 'Pass non trovato' });
+    if (!requireBrandId(req, res, pass.brand_id)) return;
     res.json(pass);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.put('/passes/:id', async (req, res) => {
   try {
+    const existing = await getPassInstance(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Pass non trovato' });
+    if (!requireBrandId(req, res, existing.brand_id)) return;
     const pass = await updatePassInstance(req.params.id, req.body);
     res.json(pass);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1344,6 +1447,9 @@ router.put('/passes/:id', async (req, res) => {
 
 router.delete('/passes/:id', async (req, res) => {
   try {
+    const existing = await getPassInstance(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Pass non trovato' });
+    if (!requireBrandId(req, res, existing.brand_id)) return;
     await deletePass(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1353,6 +1459,7 @@ router.post('/passes/:id/regenerate', async (req, res) => {
   try {
     const pass = await getPassInstance(req.params.id);
     if (!pass) return res.status(404).json({ error: 'Pass non trovato' });
+    if (!requireBrandId(req, res, pass.brand_id)) return;
     const brand = await getBrand(pass.brand_id);
     const template = await getTemplate(pass.template_id);
 
@@ -1381,6 +1488,7 @@ router.post('/push/send', async (req, res) => {
   try {
     const { brand_id, title, message, campaign_id, update_pass, field_values, instant_win_id, gamification_id, channel = 'apple' } = req.body;
     if (!brand_id || !title || !message) return res.status(400).json({ error: 'brand_id, title, message richiesti' });
+    if (!requireBrandId(req, res, brand_id)) return;
     if (!assertPushChannel(channel)) {
       return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
     }
@@ -1568,6 +1676,7 @@ router.get('/push/history', async (req, res) => {
   try {
     const { brand_id } = req.query;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const pushes = await listPushes(brand_id);
     res.json(pushes);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1575,6 +1684,9 @@ router.get('/push/history', async (req, res) => {
 
 router.delete('/push/:id', async (req, res) => {
   try {
+    const row = await pool.query('SELECT brand_id FROM push_log WHERE id = $1', [req.params.id]);
+    if (!row.rows[0]) return res.status(404).json({ error: 'Voce non trovata' });
+    if (!requireBrandId(req, res, row.rows[0].brand_id)) return;
     await deletePush(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1582,6 +1694,7 @@ router.delete('/push/:id', async (req, res) => {
 
 router.delete('/push/clear/:brand_id', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.params.brand_id)) return;
     const result = await clearPushHistory(req.params.brand_id);
     res.json(result);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1593,6 +1706,7 @@ router.get('/push/scheduled', async (req, res) => {
   try {
     const { brand_id } = req.query;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const items = await listScheduledPush(brand_id);
     res.json(items);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1600,6 +1714,7 @@ router.get('/push/scheduled', async (req, res) => {
 
 router.post('/push/scheduled', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.body.brand_id)) return;
     if (req.body.channel && !assertPushChannel(req.body.channel)) {
       return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
     }
@@ -1620,6 +1735,9 @@ router.post('/push/scheduled', async (req, res) => {
 
 router.put('/push/scheduled/:id', async (req, res) => {
   try {
+    const prev = await getScheduledPush(req.params.id);
+    if (!prev) return res.status(404).json({ error: 'Push pianificato non trovato' });
+    if (!requireBrandId(req, res, prev.brand_id)) return;
     if (req.body.channel && !assertPushChannel(req.body.channel)) {
       return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
     }
@@ -1630,6 +1748,9 @@ router.put('/push/scheduled/:id', async (req, res) => {
 
 router.delete('/push/scheduled/:id', async (req, res) => {
   try {
+    const prev = await getScheduledPush(req.params.id);
+    if (!prev) return res.status(404).json({ error: 'Push pianificato non trovato' });
+    if (!requireBrandId(req, res, prev.brand_id)) return;
     await deleteScheduledPush(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1707,6 +1828,7 @@ router.get('/geocode/reverse', async (req, res) => {
 
 router.get('/brands/:id/geofencing', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand not found' });
     const locations = brand.config?.locations || [];
@@ -1716,6 +1838,7 @@ router.get('/brands/:id/geofencing', async (req, res) => {
 
 router.put('/brands/:id/geofencing', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const { locations, maxDistance, channel = 'apple' } = req.body;
     if (!assertPushChannel(channel)) {
       return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
@@ -1778,6 +1901,7 @@ router.put('/brands/:id/geofencing', async (req, res) => {
 
 router.get('/analytics/:brand_id', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.params.brand_id)) return;
     const analytics = await getAnalytics(req.params.brand_id);
     res.json(analytics);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1785,6 +1909,7 @@ router.get('/analytics/:brand_id', async (req, res) => {
 
 router.get('/analytics/:brand_id/campaigns', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.params.brand_id)) return;
     const data = await getCampaignAnalytics(req.params.brand_id);
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1792,6 +1917,7 @@ router.get('/analytics/:brand_id/campaigns', async (req, res) => {
 
 router.get('/events/:brand_id', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.params.brand_id)) return;
     const limRaw = parseInt(req.query.limit, 10);
     const limit = Number.isFinite(limRaw) ? Math.min(Math.max(limRaw, 1), 500) : 150;
     const events = await listEvents(req.params.brand_id, limit);
@@ -1803,6 +1929,7 @@ router.get('/events/:brand_id', async (req, res) => {
 
 router.get('/brands/:id/strip-promos', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const promos = await listStripPromos(req.params.id);
     res.json(promos);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1810,6 +1937,7 @@ router.get('/brands/:id/strip-promos', async (req, res) => {
 
 router.post('/brands/:id/strip-promos', async (req, res) => {
   try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const promo = await createStripPromo({ brand_id: req.params.id, ...req.body });
     res.json(promo);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1817,6 +1945,9 @@ router.post('/brands/:id/strip-promos', async (req, res) => {
 
 router.put('/strip-promos/:id', async (req, res) => {
   try {
+    const existing = await getStripPromo(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Strip promo non trovata' });
+    if (!requireBrandId(req, res, existing.brand_id)) return;
     await updateStripPromo(req.params.id, req.body);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1824,6 +1955,9 @@ router.put('/strip-promos/:id', async (req, res) => {
 
 router.delete('/strip-promos/:id', async (req, res) => {
   try {
+    const existing = await getStripPromo(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Strip promo non trovata' });
+    if (!requireBrandId(req, res, existing.brand_id)) return;
     await deleteStripPromo(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1834,6 +1968,7 @@ router.get('/strip-promos/:id/image', async (req, res) => {
   try {
     const promo = await getStripPromo(req.params.id);
     if (!promo) return res.status(404).json({ error: 'Strip promo non trovata' });
+    if (!requireBrandId(req, res, promo.brand_id)) return;
     // If ?raw=1, serve as actual image for <img> tags
     if (req.query.raw === '1') {
       const buf = Buffer.from(promo.strip_base64, 'base64');
@@ -1857,6 +1992,7 @@ router.get('/creative-formats', (req, res) => {
 router.get('/creative-assets', async (req, res) => {
   const { brand_id, segment, campaign_id, limit } = req.query;
   if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+  if (!requireBrandId(req, res, brand_id)) return;
   const assets = await listCreativeAssets(brand_id, {
     segment, campaign_id, limit: limit ? parseInt(limit) : undefined
   });
@@ -1869,6 +2005,7 @@ router.get('/creative-assets', async (req, res) => {
 router.get('/creative-assets/:id', async (req, res) => {
   const asset = await getCreativeAsset(req.params.id);
   if (!asset) return res.status(404).json({ error: 'Asset non trovato' });
+  if (!requireBrandId(req, res, asset.brand_id)) return;
   res.json(asset);
 });
 
@@ -1879,6 +2016,7 @@ router.post('/creative-assets/upload', express.raw({ type: 'image/*', limit: '10
     if (!brand_id || !segment || !format_key) {
       return res.status(400).json({ error: 'brand_id, segment, format_key richiesti' });
     }
+    if (!requireBrandId(req, res, brand_id)) return;
     const fmt = getFormat(format_key);
     if (!fmt) return res.status(400).json({ error: 'Formato non valido: ' + format_key });
 
@@ -1902,6 +2040,7 @@ router.post('/creative-assets/upload-form', async (req, res) => {
     if (!brand_id || !segment || !format_key) {
       return res.status(400).json({ error: 'brand_id, segment, format_key richiesti' });
     }
+    if (!requireBrandId(req, res, brand_id)) return;
     const fmt = getFormat(format_key);
     if (!fmt) return res.status(400).json({ error: 'Formato non valido' });
 
@@ -1928,6 +2067,7 @@ router.post('/creative-assets/generate', async (req, res) => {
     if (!brand_id || !segment || !format_key || !prompt) {
       return res.status(400).json({ error: 'brand_id, segment, format_key, prompt richiesti' });
     }
+    if (!requireBrandId(req, res, brand_id)) return;
     const fmt = getFormat(format_key);
     if (!fmt) return res.status(400).json({ error: 'Formato non valido' });
 
@@ -1998,6 +2138,9 @@ router.post('/creative-assets/generate', async (req, res) => {
 // Delete asset
 router.delete('/creative-assets/:id', async (req, res) => {
   try {
+    const assetRow = await getCreativeAsset(req.params.id);
+    if (!assetRow) return res.status(404).json({ error: 'Asset non trovato' });
+    if (!requireBrandId(req, res, assetRow.brand_id)) return;
     await deleteCreativeAsset(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2008,6 +2151,7 @@ router.get('/media', async (req, res) => {
   try {
     const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const type = req.query.type || 'all';
     const campaign_id = req.query.campaign_id || null;
     const items = await listMedia(brand_id, type, campaign_id);
@@ -2019,6 +2163,7 @@ router.post('/media', async (req, res) => {
   try {
     let { brand_id, campaign_id, type, title, image_base64 } = req.body;
     if (!brand_id || !image_base64) return res.status(400).json({ error: 'brand_id e image_base64 richiesti' });
+    if (!requireBrandId(req, res, brand_id)) return;
     // Convert PDF to PNG if needed
     image_base64 = await pdfToPngIfNeeded(image_base64);
     const item = await createMedia({ brand_id, campaign_id: campaign_id || null, type, title, image_base64 });
@@ -2028,6 +2173,9 @@ router.post('/media', async (req, res) => {
 
 router.delete('/media/:id', async (req, res) => {
   try {
+    const m = await getMedia(req.params.id);
+    if (!m) return res.status(404).json({ error: 'Media non trovato' });
+    if (!requireBrandId(req, res, m.brand_id)) return;
     await deleteMedia(req.params.id);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2038,6 +2186,7 @@ router.delete('/media', async (req, res) => {
   try {
     const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const items = await listMedia(brand_id);
     for (const it of items) await deleteMedia(it.id);
     res.json({ ok: true, deleted: items.length });
@@ -2049,6 +2198,7 @@ router.get('/ad-stats', async (req, res) => {
   try {
     const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const campaign_id = req.query.campaign_id || null;
     const days = parseInt(req.query.days) || 30;
     const stats = await getAdStats(brand_id, campaign_id, days);
@@ -2060,6 +2210,7 @@ router.get('/ad-timeline', async (req, res) => {
   try {
     const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const campaign_id = req.query.campaign_id || null;
     const days = parseInt(req.query.days) || 30;
     const timeline = await getAdTimeline(brand_id, campaign_id, days);
@@ -2298,6 +2449,7 @@ router.get('/instant-win', async (req, res) => {
   try {
     const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const campaigns = await listInstantWinCampaigns(brand_id);
     res.json(campaigns);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2308,6 +2460,7 @@ router.get('/instant-win/stats', async (req, res) => {
   try {
     const brand_id = req.query.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
+    if (!requireBrandId(req, res, brand_id)) return;
     const stats = await getInstantWinStats(brand_id);
     res.json(stats);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2318,6 +2471,7 @@ router.get('/instant-win/:id', async (req, res) => {
   try {
     const campaign = await getInstantWinCampaign(req.params.id);
     if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, campaign.brand_id)) return;
     res.json(campaign);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -2325,6 +2479,7 @@ router.get('/instant-win/:id', async (req, res) => {
 // Create campaign
 router.post('/instant-win', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.body.brand_id)) return;
     const campaign = await createInstantWinCampaign(req.body);
     res.json(campaign);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2333,6 +2488,9 @@ router.post('/instant-win', async (req, res) => {
 // Update campaign
 router.put('/instant-win/:id', async (req, res) => {
   try {
+    const prevIw = await getInstantWinCampaign(req.params.id);
+    if (!prevIw) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, prevIw.brand_id)) return;
     const campaign = await updateInstantWinCampaign(req.params.id, req.body);
     if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
     res.json(campaign);
@@ -2342,6 +2500,9 @@ router.put('/instant-win/:id', async (req, res) => {
 // Delete campaign
 router.delete('/instant-win/:id', async (req, res) => {
   try {
+    const prevIw = await getInstantWinCampaign(req.params.id);
+    if (!prevIw) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, prevIw.brand_id)) return;
     await deleteInstantWinCampaign(req.params.id);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2350,6 +2511,9 @@ router.delete('/instant-win/:id', async (req, res) => {
 // List plays for a campaign
 router.get('/instant-win/:id/plays', async (req, res) => {
   try {
+    const prevIw = await getInstantWinCampaign(req.params.id);
+    if (!prevIw) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, prevIw.brand_id)) return;
     const plays = await listInstantWinPlays(req.params.id);
     res.json(plays);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2435,6 +2599,7 @@ router.post('/instant-win/:id/deactivate', async (req, res) => {
   try {
     const campaign = await getInstantWinCampaign(req.params.id);
     if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, campaign.brand_id)) return;
     // Remove instantWinActive from brand config
     const brand = await getBrand(campaign.brand_id);
     if (brand) {
@@ -2503,6 +2668,7 @@ router.get('/play/:serial_number/info', async (req, res) => {
 router.get('/brands/:brand_id/leads', async (req, res) => {
   try {
     const { brand_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
     const { pool } = require('../db');
 
     // Get unique leads by serial_number with their latest player data,
@@ -2553,6 +2719,7 @@ router.get('/brands/:brand_id/leads', async (req, res) => {
 
 router.get('/gamification/campaigns/:brand_id', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.params.brand_id)) return;
     const campaigns = await listGamificationCampaigns(req.params.brand_id);
     res.json(campaigns);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2562,12 +2729,14 @@ router.get('/gamification/campaign/:id', async (req, res) => {
   try {
     const campaign = await getGamificationCampaign(req.params.id);
     if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, campaign.brand_id)) return;
     res.json(campaign);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.post('/gamification/campaigns', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.body.brand_id)) return;
     const campaign = await createGamificationCampaign(req.body);
     res.status(201).json(campaign);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2575,6 +2744,9 @@ router.post('/gamification/campaigns', async (req, res) => {
 
 router.put('/gamification/campaign/:id', async (req, res) => {
   try {
+    const prevGm = await getGamificationCampaign(req.params.id);
+    if (!prevGm) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, prevGm.brand_id)) return;
     const campaign = await updateGamificationCampaign(req.params.id, req.body);
     if (!campaign) return res.status(404).json({ error: 'Campagna non trovata' });
     res.json(campaign);
@@ -2583,6 +2755,9 @@ router.put('/gamification/campaign/:id', async (req, res) => {
 
 router.delete('/gamification/campaign/:id', async (req, res) => {
   try {
+    const prevGm = await getGamificationCampaign(req.params.id);
+    if (!prevGm) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, prevGm.brand_id)) return;
     await deleteGamificationCampaign(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2590,6 +2765,7 @@ router.delete('/gamification/campaign/:id', async (req, res) => {
 
 router.get('/gamification/stats/:brand_id', async (req, res) => {
   try {
+    if (!requireBrandId(req, res, req.params.brand_id)) return;
     const stats = await getGamificationStats(req.params.brand_id);
     res.json(stats);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2597,6 +2773,9 @@ router.get('/gamification/stats/:brand_id', async (req, res) => {
 
 router.get('/gamification/plays/:campaign_id', async (req, res) => {
   try {
+    const gm = await getGamificationCampaign(req.params.campaign_id);
+    if (!gm) return res.status(404).json({ error: 'Campagna non trovata' });
+    if (!requireBrandId(req, res, gm.brand_id)) return;
     const plays = await listGamificationPlays(req.params.campaign_id, {
       limit: parseInt(req.query.limit) || 100
     });
