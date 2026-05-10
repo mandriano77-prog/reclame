@@ -826,8 +826,32 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Auth middleware disabled ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ open access
-// router.use(authMiddleware);
+/**
+ * Routes registered *after* this middleware still include partner/public flows
+ * (Instant Win play, Gamification game, creatives serving, Wallet callbacks).
+ */
+function isJwtBypassRoute(req) {
+  if (req.method === 'OPTIONS') return true;
+  const path = req.path || '';
+  const m = req.method;
+  if (m === 'GET' && /^\/play\/[^/]+\/info$/.test(path)) return true;
+  if (m === 'POST' && /^\/play\/[^/]+$/.test(path)) return true;
+  if (m === 'GET' && /^\/game\/[^/]+\/info$/.test(path)) return true;
+  if (m === 'POST' && /^\/game\/[^/]+$/.test(path)) return true;
+  if (m === 'GET' && /^\/banners\/[^/]+\/serve$/.test(path)) return true;
+  if (m === 'GET' && /^\/videos\/[^/]+\/serve$/.test(path)) return true;
+  if (m === 'GET' && path.startsWith('/ad-tag/')) return true;
+  if (m === 'GET' && path.startsWith('/google-wallet/pass/')) return true;
+  if (path === '/google-wallet/callback' && (m === 'GET' || m === 'POST')) return true;
+  if (m === 'GET' && path.startsWith('/samsung-wallet/pass/')) return true;
+  if ((m === 'GET' || m === 'POST') && /^\/samsung-wallet\/cards\//.test(path)) return true;
+  return false;
+}
+
+router.use((req, res, next) => {
+  if (isJwtBypassRoute(req)) return next();
+  return authMiddleware(req, res, next);
+});
 
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Auth (authenticated) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.get('/auth/me', (req, res) => {
@@ -1768,7 +1792,9 @@ router.get('/analytics/:brand_id/campaigns', async (req, res) => {
 
 router.get('/events/:brand_id', async (req, res) => {
   try {
-    const events = await listEvents(req.params.brand_id, parseInt(req.query.limit) || 50);
+    const limRaw = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(limRaw) ? Math.min(Math.max(limRaw, 1), 500) : 150;
+    const events = await listEvents(req.params.brand_id, limit);
     res.json(events);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

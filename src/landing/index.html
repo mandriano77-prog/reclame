@@ -71,7 +71,7 @@
     .logo-letter {
       display: none;
     }
-    .cta-section { width: 100%; max-width: 420px; }
+    .cta-section { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
     .text-section {
       margin-top: 12px;
     }
@@ -97,23 +97,49 @@
     }
     .cta {
       display: flex; align-items: center; justify-content: center;
-      gap: 10px;
+      gap: 12px;
       width: 100%;
-      padding: 18px 24px;
-      background: var(--cta-bg, #CCFF00);
-      color: #000;
+      padding: 16px 20px;
       border: none;
-      border-radius: 16px;
-      font-size: 17px;
-      font-weight: 700;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
       cursor: pointer;
-      transition: transform 0.1s ease;
+      transition: transform 0.12s ease, box-shadow 0.2s ease;
       font-family: inherit;
-      box-shadow: 0 8px 32px -4px rgba(204,255,0,0.25);
+      text-decoration: none;
+      box-sizing: border-box;
     }
-    .cta:active { transform: scale(0.98); }
+    .cta:active { transform: scale(0.988); }
     .cta[disabled] { opacity: 0.6; cursor: default; }
-    .cta svg { width: 22px; height: 22px; }
+    .cta-icon { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; }
+    .cta-icon svg { width: 26px; height: 26px; display: block; }
+    .cta-wallet--apple {
+      background: #000;
+      color: #fff;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+    }
+    .cta-wallet--apple .cta-icon svg { width: 22px; height: 22px; }
+    .cta-wallet--google {
+      background: #fff;
+      color: #1f1f1f;
+      border: 1px solid #dadce0;
+      box-shadow: 0 2px 14px rgba(60,64,67,0.12);
+    }
+    .cta-wallet--samsung {
+      background: #1428a0;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 8px 28px rgba(20,40,160,0.28);
+    }
+    .samsung-logotype {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      line-height: 1;
+      color: inherit;
+    }
     .footnote {
       text-align: center;
       font-size: 12px;
@@ -131,10 +157,11 @@
     .spinner {
       display: inline-block;
       width: 16px; height: 16px;
-      border: 2px solid rgba(0,0,0,0.2);
-      border-top-color: currentColor;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
+      vertical-align: middle;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
@@ -160,32 +187,33 @@
     <div class="text-section">
       <h1 id="headline">
         <span id="brandName">Aggiungi al Wallet</span>
-        <small id="subheadline">Sblocca offerte e novità sul tuo iPhone</small>
+        <small id="subheadline">Sblocca offerte e novità sul tuo smartphone</small>
       </h1>
       <p class="claim" id="claim"></p>
     </div>
 
-    <!-- 3. CTA button below text -->
+    <!-- 3. Wallet CTAs (Apple / Google / Samsung) -->
     <div class="cta-section">
-      <button class="cta" id="installBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="6" width="18" height="13" rx="2"/>
-          <path d="M3 10h18"/>
-        </svg>
-        <span id="btnLabel">Aggiungi al Wallet</span>
+      <button type="button" class="cta cta-wallet--apple" id="installBtn">
+        <span class="cta-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img"><path fill="currentColor" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        </span>
+        <span class="cta-label" id="btnLabel">Aggiungi ad Apple</span>
       </button>
-                    <a href="#" id="googleBtn" class="cta" style="display:none;background:#fff;color:#000;margin-top:10px;text-decoration:none;justify-content:center;align-items:center;gap:8px" onclick="addToGoogleWallet(event)">
-                        <svg style="width:22px;height:22px" viewBox="0 0 24 24" fill="none">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                        </svg>
-                        <span>Aggiungi a Google Wallet</span>
-                    </a>
-      <a href="#" id="samsungBtn" class="cta" style="display:none;background:#1428A0;color:#fff;margin-top:10px;text-decoration:none;justify-content:center;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.2)" onclick="addToSamsungWallet(event)">
-        <svg style="width:22px;height:22px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg>
-        <span>Aggiungi a Samsung Wallet</span>
+      <a href="#" id="googleBtn" class="cta cta-wallet--google" style="display:none;" onclick="addToGoogleWallet(event)">
+        <span class="cta-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+        </span>
+        <span class="cta-label">Aggiungi a Google</span>
+      </a>
+      <a href="#" id="samsungBtn" class="cta cta-wallet--samsung" style="display:none;" onclick="addToSamsungWallet(event)">
+        <span class="cta-icon" aria-hidden="true"><span class="samsung-logotype">SAMSUNG</span></span>
+        <span class="cta-label">Aggiungi a Samsung</span>
       </a>
       <div class="error" id="error"></div>
     </div>
@@ -374,7 +402,7 @@
           a.remove();
           setTimeout(() => URL.revokeObjectURL(url), 5000);
           el.btnLabel.textContent = 'Aperto in Wallet';
-          setTimeout(() => { el.btn.disabled = false; el.btnLabel.textContent = 'Aggiungi di nuovo'; }, 2000);
+          setTimeout(() => { el.btn.disabled = false; el.btnLabel.textContent = 'Aggiungi di nuovo (Apple)'; }, 2000);
         } catch (e) {
           el.error.textContent = e.message;
           el.btn.disabled = false;
@@ -389,9 +417,11 @@
     async function addToGoogleWallet(e) {
       e.preventDefault();
       var btn = document.getElementById('googleBtn');
+      var lbl = btn && btn.querySelector('.cta-label');
+      if (!lbl) return;
       var ctx = window.__landingSignupContext || {};
       var origHTML = btn.innerHTML;
-      btn.querySelector('span').textContent = 'Caricamento...';
+      lbl.textContent = 'Caricamento…';
       try {
         var res = await fetch('/api/v1/signup/google-wallet', {
           method: 'POST',
@@ -413,7 +443,7 @@
           throw new Error('Save link non disponibile');
         }
       } catch(err) {
-        btn.querySelector('span').textContent = 'Errore - riprova';
+        lbl.textContent = 'Errore — riprova';
         setTimeout(function(){ btn.innerHTML = origHTML; }, 2000);
       }
     }
@@ -421,8 +451,9 @@
     async function addToSamsungWallet(e) {
       e.preventDefault();
       var btn = document.getElementById('samsungBtn');
-      if (!btn || !btn.querySelector('span:last-child')) return;
-      var label = btn.querySelector('span:last-child');
+      if (!btn) return;
+      var label = btn.querySelector('.cta-label');
+      if (!label) return;
       var orig = label.textContent;
       label.textContent = 'Caricamento...';
       try {
