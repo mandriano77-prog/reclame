@@ -1835,14 +1835,22 @@ router.get('/brands/:id/geofencing', async (req, res) => {
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand not found' });
     const locations = brand.config?.locations || [];
-    res.json({ locations, maxDistance: brand.config?.maxDistance || 500, channel: brand.config?.geofencing_channel || 'apple' });
+    const hasStrip = !!(brand.config?.logos?.strip || brand.config?.strip_base64);
+    res.json({
+      locations,
+      maxDistance: brand.config?.maxDistance || 500,
+      channel: brand.config?.geofencing_channel || 'apple',
+      geofencingFaceLabel: brand.config?.geofencingFaceLabel || '',
+      geofencingFaceMessage: brand.config?.geofencingFaceMessage || '',
+      hasStrip
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.put('/brands/:id/geofencing', async (req, res) => {
   try {
     if (!requireOwnedBrandPk(req, res, req.params.id)) return;
-    const { locations, maxDistance, channel = 'apple' } = req.body;
+    const { locations, maxDistance, channel = 'apple', faceLabel, faceMessage, strip_base64 } = req.body;
     if (!assertPushChannel(channel)) {
       return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
     }
@@ -1860,6 +1868,25 @@ router.put('/brands/:id/geofencing', async (req, res) => {
     }));
     if (maxDistance) config.maxDistance = parseInt(maxDistance);
     config.geofencing_channel = channel;
+
+    const faceMsg = faceMessage != null ? String(faceMessage).trim() : String(config.geofencingFaceMessage || '').trim();
+    const faceLbl = faceLabel != null ? String(faceLabel).trim() : String(config.geofencingFaceLabel || '').trim();
+    if (faceMsg) {
+      config.geofencingFaceMessage = faceMsg.slice(0, 200);
+      config.geofencingFaceLabel = (faceLbl || 'PROSSIMITÀ').slice(0, 24);
+    } else {
+      delete config.geofencingFaceMessage;
+      delete config.geofencingFaceLabel;
+    }
+
+    if (strip_base64 != null && typeof strip_base64 === 'string' && strip_base64.length > 0) {
+      let b64 = strip_base64;
+      if (b64.includes(',')) b64 = b64.split(',')[1] || b64;
+      b64 = await pdfToPngIfNeeded(b64);
+      config.logos = config.logos || {};
+      config.logos.strip = b64;
+    }
+
     await updateBrand(req.params.id, { config });
 
     // Regenerate all active passes to include new locations

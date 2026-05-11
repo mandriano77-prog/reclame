@@ -258,6 +258,20 @@ function generatePassJson(template, instance, brand, options = {}) {
     }
   }
 
+  // Optional line on pass face (auxiliary) — set from dashboard Geofencing; same for all holders until cleared.
+  const GEO_AUX_KEY = 'geo_inzone_promo';
+  const geoFaceMsg = String(brandConfig.geofencingFaceMessage || '').trim();
+  if (geoFaceMsg) {
+    const label = String(brandConfig.geofencingFaceLabel || 'PROSSIMITÀ').trim().toUpperCase().slice(0, 16) || 'PROSSIMITÀ';
+    const field = { key: GEO_AUX_KEY, label, value: geoFaceMsg.slice(0, 120) };
+    const existingIdx = auxiliaryFields.findIndex((f) => f.key === GEO_AUX_KEY);
+    if (existingIdx >= 0) auxiliaryFields[existingIdx] = field;
+    else auxiliaryFields.push(field);
+  } else {
+    const stale = auxiliaryFields.findIndex((f) => f.key === GEO_AUX_KEY);
+    if (stale >= 0) auxiliaryFields.splice(stale, 1);
+  }
+
   // HEADER fallback: hint to tap ··· for more details (only if template has no custom header)
   if (!hasTemplateHeader) {
     headerFields.push({
