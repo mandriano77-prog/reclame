@@ -343,7 +343,7 @@
         <div class="nav-item" onclick="nav('instant-win')">Instant Win</div>
         <div class="nav-item" onclick="nav('gamification')">Gamification</div>
         <div class="nav-label">Database</div>
-        <div class="nav-item" onclick="nav('leads')">Leads</div>
+        <div class="nav-item" onclick="nav('leads')" data-menu-key="nav_leads" data-menu-default="Leads">Leads</div>
         <div class="nav-label">Insights</div>
         <div class="nav-item" onclick="nav('analytics')">Analytics</div>
         <div class="nav-item" onclick="nav('activity-log')">Attività</div>
@@ -1988,6 +1988,23 @@ const PRODUCT_THEMES = {
     live: { bg: '#1a0f12', accent: '#fb7185', purple: '#fda4af', text: '#fff1f2', onAccent: '#160a0d' },
 };
 
+const PRODUCT_MENU_COPY = {
+    ads: {},
+    live: {},
+    hr: { nav_leads: 'People' },
+    engage: { nav_leads: 'Customer' },
+};
+
+function applyProductMenuCopy(line) {
+    const copy = PRODUCT_MENU_COPY[line] || {};
+    document.querySelectorAll('[data-menu-key]').forEach((el) => {
+        const k = el.getAttribute('data-menu-key');
+        if (!k) return;
+        if (copy[k]) el.textContent = copy[k];
+        else if (el.dataset && el.dataset.menuDefault) el.textContent = el.dataset.menuDefault;
+    });
+}
+
 function getDashboardProductLine() {
     try {
         const stored = localStorage.getItem(PRODUCT_LINE_STORAGE_KEY);
@@ -2040,6 +2057,7 @@ function initDashboardProductTheme() {
     const line = getDashboardProductLine();
     applyProductShellTheme(line);
     syncChromeProductTitles(line);
+    applyProductMenuCopy(line);
     const plSel = document.getElementById('dashboardProductLine');
     if (plSel) plSel.value = line;
 }
@@ -2057,6 +2075,7 @@ function applyBrandTheme() {
     const line = getDashboardProductLine();
     applyProductShellTheme(line);
     syncChromeProductTitles(line);
+    applyProductMenuCopy(line);
     const plSel = document.getElementById('dashboardProductLine');
     if (plSel) plSel.value = line;
 
