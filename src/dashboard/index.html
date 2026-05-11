@@ -4255,10 +4255,13 @@ async function loadAnalytics() {
     const appleDv = analytics.appleDeviceCount ?? analytics.deviceCount ?? 0;
     const gwSaved = analytics.googleWalletSavedCount ?? 0;
     const gwObj = analytics.googleWalletObjectCount ?? 0;
+    const gwCb = analytics.googleCallbackCount ?? 0;
+    const gwCbProcessed = analytics.googleCallbackProcessedCount ?? 0;
     const swSaved = analytics.samsungWalletSavedCount ?? 0;
-    const gwHint = gwObj > gwSaved
+    const gwHint = (gwObj > gwSaved
         ? `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Oggetti con link: ${gwObj} · ancora da salvare in app: ${gwObj - gwSaved}</div>`
-        : `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Android: conta i pass con salvataggio confermato (non i device Apple)</div>`;
+        : `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Android: conta i pass con salvataggio confermato (non i device Apple)</div>`) +
+        `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Callback Google ricevuti: ${gwCb} · processati: ${gwCbProcessed}</div>`;
     const swHint = `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Confermati tramite Send Card State da Samsung Wallet</div>`;
     document.getElementById('analyticsStats').innerHTML = `
         <div class="stat-card"><div class="stat-label">Pass Totali</div><div class="stat-value">${analytics.totalPasses||0}</div></div>

@@ -2,6 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const { createHash } = require('crypto');
 const {
   createBrand, getBrand, getBrandBySlug, listBrands, updateBrand, deleteBrand,
   createTemplate, getTemplate, listTemplates, updateTemplate, deleteTemplate,
@@ -28,7 +29,9 @@ const {
   updatePassDeviceId,
   updateGoogleWalletStatus,
   updateSamsungWalletStatus,
-  getPassBySamsungRefId
+  getPassBySamsungRefId,
+  registerWalletCallbackEvent,
+  finalizeWalletCallbackEvent
 } = require('../db');
 const { createPkpass } = require('../engine/passkit');
 const googleWallet = require('../engine/google-wallet');
@@ -2916,6 +2919,37 @@ function samsungInboundHeadersOk(req, method) {
   return samsungWallet.verifyInboundAuth(req.get('authorization'), method, req.path);
 }
 
+const GOOGLE_WALLET_SYSTEM_X509_URL =
+  'https://www.googleapis.com/service_accounts/v1/metadata/x509/walletobjects@system.gserviceaccount.com';
+let googleWalletCertCache = { fetchedAt: 0, certs: {} };
+
+async function getGoogleWalletSystemCerts(force = false) {
+  const now = Date.now();
+  if (!force && now - googleWalletCertCache.fetchedAt < 15 * 60 * 1000 && googleWalletCertCache.certs) {
+    return googleWalletCertCache.certs;
+  }
+  const resp = await fetch(GOOGLE_WALLET_SYSTEM_X509_URL);
+  if (!resp.ok) throw new Error(`Google cert fetch failed: ${resp.status}`);
+  const certs = await resp.json();
+  googleWalletCertCache = { fetchedAt: now, certs: certs || {} };
+  return googleWalletCertCache.certs;
+}
+
+async function verifyGoogleSignedMessage(signedMessage) {
+  if (!signedMessage || typeof signedMessage !== 'string') return null;
+  const decoded = jwt.decode(signedMessage, { complete: true });
+  const kid = decoded && decoded.header ? decoded.header.kid : null;
+  if (!kid) throw new Error('Google signedMessage missing kid');
+  let certs = await getGoogleWalletSystemCerts(false);
+  let pem = certs[kid];
+  if (!pem) {
+    certs = await getGoogleWalletSystemCerts(true);
+    pem = certs[kid];
+  }
+  if (!pem) throw new Error(`Google cert not found for kid ${kid}`);
+  return jwt.verify(signedMessage, pem, { algorithms: ['RS256'] });
+}
+
 router.get('/samsung-wallet/status', (req, res) => {
   res.json(samsungWallet.getStatusInfo());
 });
@@ -3165,26 +3199,23 @@ router.get('/google-wallet/callback', (req, res) => {
  * We use this to update the pass installation status in our DB.
  */
 router.post('/google-wallet/callback', async (req, res) => {
+  let cbEvent = null;
   try {
     console.log('[GoogleWallet Callback] Received:', JSON.stringify(req.body).substring(0, 500));
 
     const { objectId, eventType, signedMessage } = req.body;
-
-    let eventData = req.body;
-    let signedPayload = null;
-    if (signedMessage) {
-      try {
-        const parts = signedMessage.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-          signedPayload = payload;
-          eventData = payload.payload && typeof payload.payload === 'object' ? payload.payload : payload;
-          console.log('[GoogleWallet Callback] Decoded JWT payload:', JSON.stringify(payload).substring(0, 500));
-        }
-      } catch (e) {
-        console.log('[GoogleWallet Callback] JWT decode note:', e.message);
-      }
+    if (!signedMessage) {
+      console.warn('[GoogleWallet Callback] Missing signedMessage');
+      return res.status(401).send('Unauthorized');
     }
+    const verifiedPayload = await verifyGoogleSignedMessage(signedMessage);
+    const eventData =
+      verifiedPayload && verifiedPayload.payload && typeof verifiedPayload.payload === 'object'
+        ? verifiedPayload.payload
+        : (verifiedPayload || req.body);
+    const signedPayload = verifiedPayload || null;
+
+    const eventHash = createHash('sha256').update(String(signedMessage)).digest('hex');
 
     const evtObjectId =
       eventData.objectId ||
@@ -3203,15 +3234,36 @@ router.post('/google-wallet/callback', async (req, res) => {
       eventType ||
       '';
     const evtType = String(evtTypeRaw).trim().toLowerCase();
+    cbEvent = await registerWalletCallbackEvent({
+      provider: 'google',
+      event_hash: eventHash,
+      object_id: evtObjectId || null,
+      event_type: evtType || null,
+      payload: req.body
+    });
+    if (!cbEvent.inserted) {
+      if (cbEvent.row && !cbEvent.row.processed) {
+        await finalizeWalletCallbackEvent(cbEvent.row.id, { processed: true, process_status: 'duplicate_ignored' });
+      }
+      console.log('[GoogleWallet Callback] Duplicate ignored hash:', eventHash.slice(0, 10));
+      return res.status(200).send('OK');
+    }
 
     if (!evtObjectId) {
       console.log('[GoogleWallet Callback] No objectId in payload, ignoring');
+      await finalizeWalletCallbackEvent(cbEvent.row.id, { processed: true, process_status: 'ignored_no_object' });
       return res.status(200).send('OK');
     }
 
     if (evtType.includes('save') || evtType.includes('add') || evtType.includes('insert')) {
       const pass = await updateGoogleWalletStatus(evtObjectId, true);
       if (pass) {
+        await finalizeWalletCallbackEvent(cbEvent.row.id, {
+          processed: true,
+          process_status: 'applied_save',
+          pass_id: pass.id,
+          brand_id: pass.brand_id
+        });
         await logEvent({
           pass_id: pass.id,
           brand_id: pass.brand_id,
@@ -3221,11 +3273,18 @@ router.post('/google-wallet/callback', async (req, res) => {
         await updatePassDeviceId(pass.serial_number, evtObjectId, 'google');
         console.log('[GoogleWallet Callback] Pass ' + pass.id + ' marked as installed (device_id set)');
       } else {
+        await finalizeWalletCallbackEvent(cbEvent.row.id, { processed: true, process_status: 'ignored_no_pass' });
         console.log('[GoogleWallet Callback] No pass found for objectId: ' + evtObjectId);
       }
     } else if (evtType.includes('del') || evtType.includes('remove')) {
       const pass = await updateGoogleWalletStatus(evtObjectId, false);
       if (pass) {
+        await finalizeWalletCallbackEvent(cbEvent.row.id, {
+          processed: true,
+          process_status: 'applied_delete',
+          pass_id: pass.id,
+          brand_id: pass.brand_id
+        });
         await logEvent({
           pass_id: pass.id,
           brand_id: pass.brand_id,
@@ -3233,14 +3292,26 @@ router.post('/google-wallet/callback', async (req, res) => {
           metadata: { object_id: evtObjectId }
         });
         console.log('[GoogleWallet Callback] Pass ' + pass.id + ' marked as removed');
+      } else {
+        await finalizeWalletCallbackEvent(cbEvent.row.id, { processed: true, process_status: 'ignored_no_pass' });
       }
     } else {
+      await finalizeWalletCallbackEvent(cbEvent.row.id, { processed: true, process_status: 'ignored_unknown_type' });
       console.log('[GoogleWallet Callback] Unknown event type:', evtTypeRaw, 'objectId:', evtObjectId);
     }
 
     res.status(200).send('OK');
   } catch (error) {
     console.error('[GoogleWallet Callback] Error:', error);
+    if (cbEvent && cbEvent.row && cbEvent.row.id) {
+      try {
+        await finalizeWalletCallbackEvent(cbEvent.row.id, {
+          processed: false,
+          process_status: 'error',
+          error_message: error.message
+        });
+      } catch (_) {}
+    }
     res.status(200).send('OK');
   }
 });

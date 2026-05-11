@@ -273,6 +273,22 @@ CREATE TABLE IF NOT EXISTS gamification_plays (
   privacy_accepted_at TIMESTAMPTZ,
   played_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS wallet_callback_events (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  event_hash TEXT NOT NULL UNIQUE,
+  object_id TEXT,
+  event_type TEXT,
+  pass_id TEXT,
+  brand_id TEXT,
+  payload JSONB DEFAULT '{}',
+  processed BOOLEAN DEFAULT FALSE,
+  process_status TEXT DEFAULT 'received',
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  processed_at TIMESTAMPTZ
+);
 `;
 
 // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Init Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
@@ -404,6 +420,36 @@ async function getDb() {
     // Unified device tracking
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS device_id TEXT`);
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS device_source TEXT`);
+
+    // Wallet callback telemetry + idempotency
+    await pool.query(`CREATE TABLE IF NOT EXISTS wallet_callback_events (
+      id TEXT PRIMARY KEY,
+      provider TEXT NOT NULL,
+      event_hash TEXT NOT NULL UNIQUE,
+      object_id TEXT,
+      event_type TEXT,
+      pass_id TEXT,
+      brand_id TEXT,
+      payload JSONB DEFAULT '{}',
+      processed BOOLEAN DEFAULT FALSE,
+      process_status TEXT DEFAULT 'received',
+      error_message TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      processed_at TIMESTAMPTZ
+    )`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS provider TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS event_hash TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS object_id TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS event_type TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS pass_id TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS brand_id TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS payload JSONB DEFAULT '{}'`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS processed BOOLEAN DEFAULT FALSE`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS process_status TEXT DEFAULT 'received'`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS error_message TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE wallet_callback_events ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ`).catch(()=>{});
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_wallet_callback_event_hash ON wallet_callback_events(event_hash)`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_wallet_callback_provider_created ON wallet_callback_events(provider, created_at DESC)`).catch(()=>{});
 
     // Gamification indexes
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_gam_campaigns_brand ON gamification_campaigns(brand_id)`).catch(()=>{});
@@ -782,7 +828,9 @@ async function getAnalytics(brandId) {
     appleDevicesResult,
     googleSavedResult,
     googleObjectResult,
-    samsungSavedResult
+    samsungSavedResult,
+    googleCallbackResult,
+    googleCallbackProcessedResult
   ] = await Promise.all([
     pool.query('SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1', [brandId]),
     pool.query('SELECT status, COUNT(*) as count FROM pass_instances WHERE brand_id = $1 GROUP BY status', [brandId]),
@@ -796,7 +844,9 @@ async function getAnalytics(brandId) {
       'SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1 AND google_wallet_object_id IS NOT NULL AND google_wallet_object_id <> \'\'',
       [brandId]
     ),
-    pool.query('SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1 AND samsung_wallet_saved = TRUE', [brandId])
+    pool.query('SELECT COUNT(*) as count FROM pass_instances WHERE brand_id = $1 AND samsung_wallet_saved = TRUE', [brandId]),
+    pool.query("SELECT COUNT(*) as count FROM wallet_callback_events WHERE provider = 'google' AND brand_id = $1", [brandId]),
+    pool.query("SELECT COUNT(*) as count FROM wallet_callback_events WHERE provider = 'google' AND brand_id = $1 AND processed = TRUE", [brandId])
   ]);
   const byStatus = {};
   for (const row of statusResult.rows) byStatus[row.status] = parseInt(row.count);
@@ -806,6 +856,8 @@ async function getAnalytics(brandId) {
   const googleWalletSavedCount = parseInt(googleSavedResult.rows[0].count);
   const googleWalletObjectCount = parseInt(googleObjectResult.rows[0].count);
   const samsungWalletSavedCount = parseInt(samsungSavedResult.rows[0].count);
+  const googleCallbackCount = parseInt(googleCallbackResult.rows[0].count);
+  const googleCallbackProcessedCount = parseInt(googleCallbackProcessedResult.rows[0].count);
   return {
     totalPasses: parseInt(passResult.rows[0].count),
     byStatus,
@@ -815,7 +867,9 @@ async function getAnalytics(brandId) {
     appleDeviceCount,
     googleWalletSavedCount,
     googleWalletObjectCount,
-    samsungWalletSavedCount
+    samsungWalletSavedCount,
+    googleCallbackCount,
+    googleCallbackProcessedCount
   };
 }
 
@@ -1494,6 +1548,36 @@ async function updateSamsungWalletStatus(refId, installed, cc2 = null) {
   }
 }
 
+async function registerWalletCallbackEvent({ provider, event_hash, object_id = null, event_type = null, payload = {} }) {
+  const id = uuidv4();
+  const insert = await pool.query(
+    `INSERT INTO wallet_callback_events (id, provider, event_hash, object_id, event_type, payload)
+     VALUES ($1,$2,$3,$4,$5,$6)
+     ON CONFLICT (event_hash) DO NOTHING
+     RETURNING *`,
+    [id, provider, event_hash, object_id, event_type, JSON.stringify(payload || {})]
+  );
+  if (insert.rows[0]) return { inserted: true, row: insert.rows[0] };
+  const existing = await pool.query('SELECT * FROM wallet_callback_events WHERE event_hash = $1', [event_hash]);
+  return { inserted: false, row: existing.rows[0] || null };
+}
+
+async function finalizeWalletCallbackEvent(id, data = {}) {
+  const fields = [];
+  const values = [];
+  let idx = 1;
+  for (const key of ['processed', 'process_status', 'error_message', 'pass_id', 'brand_id']) {
+    if (data[key] !== undefined) {
+      fields.push(`${key} = $${idx}`);
+      values.push(data[key]);
+      idx++;
+    }
+  }
+  fields.push(`processed_at = NOW()`);
+  values.push(id);
+  await pool.query(`UPDATE wallet_callback_events SET ${fields.join(', ')} WHERE id = $${idx}`, values);
+}
+
 module.exports = {
   getDb,
   saveDb,
@@ -1604,5 +1688,7 @@ module.exports = {
   updateGoogleWalletStatus,
   getPassBySamsungRefId,
   updateSamsungWalletStatus,
-  updatePassDeviceId
+  updatePassDeviceId,
+  registerWalletCallbackEvent,
+  finalizeWalletCallbackEvent
 };
