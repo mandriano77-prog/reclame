@@ -2559,11 +2559,17 @@ async function loadPasses(resetPage = false) {
 
     // Stats bar
     const installed = filteredPasses.filter(p => !!(p.device_id || passGoogleSaved(p) || passSamsungSaved(p))).length;
+    const desktopPasses = filteredPasses.filter((p) => {
+        const ua = String(p.user_agent || '').toLowerCase();
+        if (!ua) return false;
+        return !/(iphone|ipad|ipod|android)/i.test(ua);
+    }).length;
     const reachableWallet = filteredPasses.filter(p => !!p.push_token || passGoogleSaved(p) || passGooglePending(p) || passSamsungSaved(p) || passSamsungPending(p)).length;
     const pushSent = filteredPasses.filter(p => p.push_count > 0).length;
     const statsHtml = `<div class="stats-grid" style="margin-bottom:16px;">
         <div class="stat-card"><div class="stat-label">Pass visibili</div><div class="stat-value">${filteredPasses.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Installati (wallet)</div><div class="stat-value">${installed}</div></div>
+        <div class="stat-card"><div class="stat-label">Installazioni wallet confermate</div><div class="stat-value">${installed}</div></div>
+        <div class="stat-card"><div class="stat-label">Download da desktop (info)</div><div class="stat-value">${desktopPasses}</div></div>
         <div class="stat-card"><div class="stat-label">Raggiungibili (Apple / Google / Samsung)</div><div class="stat-value">${reachableWallet}</div></div>
         <div class="stat-card"><div class="stat-label">Push inviate (APNs)</div><div class="stat-value">${pushSent}</div></div>
     </div>`;
@@ -2590,7 +2596,7 @@ async function loadPasses(resetPage = false) {
                 <th>Device ID</th>
                 <th>Campagna</th>
                 <th>UTM</th>
-                <th>OS / Browser</th>
+                <th title="Campo informativo di debug, non usato per KPI installazioni wallet">OS / Browser (debug)</th>
                 <th>Referrer</th>
                 <th>Stato</th>
                 <th>Azioni</th>
@@ -4240,6 +4246,12 @@ async function loadAnalytics() {
     const totalDL = campaigns.reduce((s,c) => s + (c.total_downloads||0), 0);
     const totalIN = campaigns.reduce((s,c) => s + (c.total_installs||0), 0);
 
+    const allPasses = Array.isArray(passes) ? passes : [];
+    const desktopDownloads = allPasses.filter((p) => {
+        const ua = String(p.user_agent || '').toLowerCase();
+        if (!ua) return false;
+        return !/(iphone|ipad|ipod|android)/i.test(ua);
+    }).length;
     const appleDv = analytics.appleDeviceCount ?? analytics.deviceCount ?? 0;
     const gwSaved = analytics.googleWalletSavedCount ?? 0;
     const gwObj = analytics.googleWalletObjectCount ?? 0;
@@ -4252,13 +4264,13 @@ async function loadAnalytics() {
         <div class="stat-card"><div class="stat-label">Pass Totali</div><div class="stat-value">${analytics.totalPasses||0}</div></div>
         <div class="stat-card"><div class="stat-label">Download Totali</div><div class="stat-value">${totalDL}</div></div>
         <div class="stat-card"><div class="stat-label">Install Totali</div><div class="stat-value">${totalIN}</div></div>
+        <div class="stat-card"><div class="stat-label">Download da desktop (info)</div><div class="stat-value">${desktopDownloads}</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">Separati dai KPI wallet confermati</div></div>
         <div class="stat-card"><div class="stat-label">Apple · dispositivi PassKit</div><div class="stat-value">${appleDv}</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">iPhone/iPad distinti con pass in Wallet</div></div>
         <div class="stat-card"><div class="stat-label">Google Wallet · pass salvati</div><div class="stat-value">${gwSaved}</div>${gwHint}</div>
         <div class="stat-card"><div class="stat-label">Samsung Wallet · pass salvati</div><div class="stat-value">${swSaved}</div>${swHint}</div>
         <div class="stat-card"><div class="stat-label">Campagne</div><div class="stat-value">${campaigns.length}</div></div>
     `;
     syncAnalyticsRangeControls();
-    const allPasses = Array.isArray(passes) ? passes : [];
     renderAnalyticsTrendChart(allPasses);
     renderAnalyticsWalletSplit(allPasses);
     renderAnalyticsTopCampaigns(campaigns);

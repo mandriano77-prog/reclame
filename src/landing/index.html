@@ -147,6 +147,13 @@
       opacity: 0.9;
       margin-top: 16px;
     }
+    .device-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--fg-soft, rgba(255,255,255,0.7));
+      margin-top: 6px;
+      min-height: 18px;
+    }
     .error {
       color: #ff6b6b;
       font-size: 14px;
@@ -221,6 +228,7 @@
     <div class="footnote">
       Nessun dato richiesto · Nessun account · Cancellabile in qualsiasi momento
     </div>
+    <div class="device-note" id="deviceNote"></div>
   </div>
 
   <script>
@@ -249,6 +257,7 @@
         btn: document.getElementById('installBtn'),
         btnLabel: document.getElementById('btnLabel'),
         error: document.getElementById('error'),
+        deviceNote: document.getElementById('deviceNote'),
         bgImage: document.getElementById('bgImage'),
         bgOverlay: document.getElementById('bgOverlay')
       };
@@ -356,21 +365,24 @@
         if (googleBtn) googleBtn.style.display = 'none';
         if (samsungBtn) samsungBtn.style.display = 'none';
 
-        /* iOS: solo Apple Wallet (.pkpass). Android: Google ± Samsung se abilitati sul server. Altri: tutte le CTAs disponibili. */
+        /* Mobile-first policy: iOS/Android only in UI, desktop hidden to avoid confusion. */
         if (isIOS) {
           appleBtn.style.display = 'flex';
+          if (el.deviceNote) el.deviceNote.textContent = 'Consigliato: apri da iPhone per installazione diretta Apple Wallet.';
           return;
         }
-        appleBtn.style.display = 'flex';
         if (isAndroid) {
           appleBtn.style.display = 'none';
           if (w.google && googleBtn) googleBtn.style.display = 'flex';
           if (w.samsung && samsungBtn) samsungBtn.style.display = 'flex';
           if (!w.google && !w.samsung) appleBtn.style.display = 'none';
+          if (el.deviceNote) el.deviceNote.textContent = 'Consigliato: Android con Google/Samsung Wallet installato.';
           return;
         }
-        if (w.google && googleBtn) googleBtn.style.display = 'flex';
-        if (w.samsung && samsungBtn) samsungBtn.style.display = 'flex';
+        appleBtn.style.display = 'none';
+        if (el.deviceNote) {
+          el.deviceNote.textContent = 'Apri da smartphone (iPhone o Android): i desktop non sono conteggiati come installazioni wallet confermate.';
+        }
       }
 
       async function install() {

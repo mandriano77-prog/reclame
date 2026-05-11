@@ -3168,15 +3168,17 @@ router.post('/google-wallet/callback', async (req, res) => {
   try {
     console.log('[GoogleWallet Callback] Received:', JSON.stringify(req.body).substring(0, 500));
 
-    const { classId, objectId, eventType, signedMessage } = req.body;
+    const { objectId, eventType, signedMessage } = req.body;
 
     let eventData = req.body;
+    let signedPayload = null;
     if (signedMessage) {
       try {
         const parts = signedMessage.split('.');
         if (parts.length === 3) {
           const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-          eventData = payload;
+          signedPayload = payload;
+          eventData = payload.payload && typeof payload.payload === 'object' ? payload.payload : payload;
           console.log('[GoogleWallet Callback] Decoded JWT payload:', JSON.stringify(payload).substring(0, 500));
         }
       } catch (e) {
@@ -3184,15 +3186,30 @@ router.post('/google-wallet/callback', async (req, res) => {
       }
     }
 
-    const evtObjectId = eventData.objectId || objectId;
-    const evtType = eventData.eventType || eventType;
+    const evtObjectId =
+      eventData.objectId ||
+      eventData.resourceId ||
+      (eventData.object && eventData.object.id) ||
+      (eventData.payload && eventData.payload.objectId) ||
+      (signedPayload && signedPayload.objectId) ||
+      objectId;
+
+    const evtTypeRaw =
+      eventData.eventType ||
+      eventData.event ||
+      eventData.type ||
+      (eventData.payload && eventData.payload.eventType) ||
+      (signedPayload && signedPayload.eventType) ||
+      eventType ||
+      '';
+    const evtType = String(evtTypeRaw).trim().toLowerCase();
 
     if (!evtObjectId) {
       console.log('[GoogleWallet Callback] No objectId in payload, ignoring');
       return res.status(200).send('OK');
     }
 
-    if (evtType === 'save' || evtType === 'SAVE') {
+    if (evtType.includes('save') || evtType.includes('add') || evtType.includes('insert')) {
       const pass = await updateGoogleWalletStatus(evtObjectId, true);
       if (pass) {
         await logEvent({
@@ -3206,7 +3223,7 @@ router.post('/google-wallet/callback', async (req, res) => {
       } else {
         console.log('[GoogleWallet Callback] No pass found for objectId: ' + evtObjectId);
       }
-    } else if (evtType === 'del' || evtType === 'DEL' || evtType === 'delete' || evtType === 'DELETE') {
+    } else if (evtType.includes('del') || evtType.includes('remove')) {
       const pass = await updateGoogleWalletStatus(evtObjectId, false);
       if (pass) {
         await logEvent({
@@ -3218,7 +3235,7 @@ router.post('/google-wallet/callback', async (req, res) => {
         console.log('[GoogleWallet Callback] Pass ' + pass.id + ' marked as removed');
       }
     } else {
-      console.log('[GoogleWallet Callback] Unknown event type: ' + evtType);
+      console.log('[GoogleWallet Callback] Unknown event type:', evtTypeRaw, 'objectId:', evtObjectId);
     }
 
     res.status(200).send('OK');

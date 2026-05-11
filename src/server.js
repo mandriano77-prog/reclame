@@ -300,11 +300,21 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
         <span class="check">&#10003;</span>
       </div>
       <h1>Pass scaricato!</h1>
-      <p class="subtitle">Apri il file e tocca <strong>Aggiungi</strong> per salvarlo nel tuo Apple Wallet. Da quel momento riceverai offerte e novit&agrave; direttamente sullo schermo.</p>
+      <p id="successSubtitle" class="subtitle">Apri il file e tocca <strong>Aggiungi</strong> per salvarlo nel tuo Apple Wallet. Da quel momento riceverai offerte e novit&agrave; direttamente sullo schermo.</p>
       <a href="${passDownloadUrl}" class="cta-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Scarica di nuovo
       </a>
+    </div>
+
+    <!-- Unsupported client state -->
+    <div id="stateUnsupported" class="hidden">
+      <div class="icon-circle" style="border-color: #ffb020;">
+        <span style="font-size:28px; color:#ffb020;">&#9888;</span>
+      </div>
+      <h1>Apri da smartphone</h1>
+      <p class="subtitle">Per evitare confusione, il flusso ufficiale supportato è mobile-first: apri questo link su <strong>iPhone</strong> e tocca <strong>Aggiungi</strong> in Wallet.</p>
+      <a href="${passDownloadUrl}" class="cta-btn">Scarica file .pkpass</a>
     </div>
 
     <!-- Error state -->
@@ -332,22 +342,26 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
     };
     logoImg.src = '${logoUrl}';
 
-    // Auto-trigger pass download via hidden iframe (iOS opens native "Add to Wallet" sheet)
-    // Then show success after a realistic delay
+    // Mobile-first policy: auto-download only on iPhone/iPad.
     (function() {
+      const ua = navigator.userAgent || '';
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+      if (!isIOS) {
+        document.getElementById('stateLoading').classList.add('hidden');
+        document.getElementById('stateUnsupported').classList.remove('hidden');
+        return;
+      }
+
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
       iframe.src = '${passDownloadUrl}';
       document.body.appendChild(iframe);
 
-      // Show success after pass has had time to generate + present the Wallet dialog
       setTimeout(() => {
         document.getElementById('stateLoading').classList.add('hidden');
         document.getElementById('stateSuccess').classList.remove('hidden');
       }, 3500);
-
-      // Fallback: if page is still visible after 10s, something may have gone wrong
-      // but keep success state (user may have added pass and come back)
     })();
   </script>
 </body>

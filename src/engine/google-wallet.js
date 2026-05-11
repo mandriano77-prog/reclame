@@ -42,7 +42,15 @@ const SERVICE_ACCOUNT_JSON = loadServiceAccount();
 
 const WALLET_API_BASE = 'https://walletobjects.googleapis.com/walletobjects/v1';
 const SAVE_LINK_BASE = 'https://pay.google.com/gp/v/save';
-const API_BASE = `https://${process.env.CUSTOM_DOMAIN || 'www.nudj.studio'}/api/v1`;
+function resolveApiBase() {
+  const host =
+    (process.env.CUSTOM_DOMAIN && process.env.CUSTOM_DOMAIN.trim()) ||
+    (process.env.RAILWAY_PUBLIC_DOMAIN && process.env.RAILWAY_PUBLIC_DOMAIN.trim()) ||
+    (process.env.APP_PUBLIC_DOMAIN && process.env.APP_PUBLIC_DOMAIN.trim()) ||
+    '';
+  return host ? `https://${host}/api/v1` : '';
+}
+const API_BASE = resolveApiBase();
 
 // ── JWT helpers ───────────────────────────────────────────────────────
 
@@ -155,9 +163,11 @@ async function createOrUpdatePassClass(brand, template) {
     textModulesData: [],
     linksModuleData: { uris: [] },
     // Callback for save/delete events — Google POSTs here when user adds/removes pass
-    callbackOptions: {
-      url: `${API_BASE}/google-wallet/callback`
-    }
+    callbackOptions: API_BASE
+      ? {
+          url: `${API_BASE}/google-wallet/callback`
+        }
+      : undefined
   };
 
   // Brand logo
@@ -439,7 +449,11 @@ function isConfigured() {
 
 /** URL callback inviato a Google nelle generic class (`callbackOptions`); utile per diagnostica dashboard. */
 function getStatusInfo() {
-  const domain = process.env.CUSTOM_DOMAIN || '';
+  const domain =
+    (process.env.CUSTOM_DOMAIN && process.env.CUSTOM_DOMAIN.trim()) ||
+    (process.env.RAILWAY_PUBLIC_DOMAIN && process.env.RAILWAY_PUBLIC_DOMAIN.trim()) ||
+    (process.env.APP_PUBLIC_DOMAIN && process.env.APP_PUBLIC_DOMAIN.trim()) ||
+    '';
   const base = domain ? `https://${domain}/api/v1` : '';
   return {
     configured: isConfigured(),
@@ -449,7 +463,7 @@ function getStatusInfo() {
     callback_path: '/api/v1/google-wallet/callback',
     warning:
       !domain
-        ? 'CUSTOM_DOMAIN non impostato: il callback nelle classi Google può puntare a un host errato.'
+        ? 'Nessun dominio pubblico configurato (CUSTOM_DOMAIN/RAILWAY_PUBLIC_DOMAIN/APP_PUBLIC_DOMAIN): callback Google non impostabile in modo affidabile.'
         : null
   };
 }
