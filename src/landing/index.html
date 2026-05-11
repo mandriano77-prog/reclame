@@ -365,7 +365,7 @@
         if (googleBtn) googleBtn.style.display = 'none';
         if (samsungBtn) samsungBtn.style.display = 'none';
 
-        /* Mobile-first policy: iOS/Android only in UI, desktop hidden to avoid confusion. */
+        /* Mobile-first policy: mobile first, but keep desktop CTAs visible to avoid "empty page". */
         if (isIOS) {
           appleBtn.style.display = 'flex';
           if (el.deviceNote) el.deviceNote.textContent = 'Consigliato: apri da iPhone per installazione diretta Apple Wallet.';
@@ -379,9 +379,12 @@
           if (el.deviceNote) el.deviceNote.textContent = 'Consigliato: Android con Google/Samsung Wallet installato.';
           return;
         }
-        appleBtn.style.display = 'none';
+        appleBtn.style.display = 'flex';
+        el.btnLabel.textContent = 'Apri pass Apple (.pkpass)';
+        if (w.google && googleBtn) googleBtn.style.display = 'flex';
+        if (w.samsung && samsungBtn) samsungBtn.style.display = 'flex';
         if (el.deviceNote) {
-          el.deviceNote.textContent = 'Apri da smartphone (iPhone o Android): i desktop non sono conteggiati come installazioni wallet confermate.';
+          el.deviceNote.textContent = 'Desktop supportato per avvio flusso, ma i KPI principali contano solo installazioni wallet confermate da mobile/callback.';
         }
       }
 
