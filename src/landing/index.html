@@ -133,6 +133,16 @@
       border: 1px solid rgba(255,255,255,0.18);
       box-shadow: 0 8px 28px rgba(20,40,160,0.28);
     }
+    .cta-wallet--samsung .cta-icon {
+      width: auto;
+      min-width: 90px;
+      justify-content: flex-start;
+    }
+    .cta-wallet--samsung .cta-label {
+      flex: 1;
+      text-align: center;
+      transform: translateX(-8px);
+    }
     .samsung-logotype {
       font-size: 13px;
       font-weight: 800;
@@ -380,7 +390,7 @@
           return;
         }
         appleBtn.style.display = 'flex';
-        el.btnLabel.textContent = 'Apri pass Apple (.pkpass)';
+        el.btnLabel.textContent = 'Aggiungi ad Apple';
         if (w.google && googleBtn) googleBtn.style.display = 'flex';
         if (w.samsung && samsungBtn) samsungBtn.style.display = 'flex';
         if (el.deviceNote) {
@@ -416,8 +426,8 @@
           a.click();
           a.remove();
           setTimeout(() => URL.revokeObjectURL(url), 5000);
-          el.btnLabel.textContent = 'Aperto in Wallet';
-          setTimeout(() => { el.btn.disabled = false; el.btnLabel.textContent = 'Aggiungi di nuovo (Apple)'; }, 2000);
+          el.btnLabel.textContent = 'Aggiunto — apri Wallet per confermare';
+          setTimeout(() => { el.btn.disabled = false; el.btnLabel.textContent = 'Aggiungi di nuovo ad Apple'; }, 2000);
         } catch (e) {
           el.error.textContent = e.message;
           el.btn.disabled = false;
