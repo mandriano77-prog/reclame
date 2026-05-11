@@ -597,34 +597,10 @@
 
                 <!-- TAB 3: Geofencing -->
                 <div id="pushPanel_geofencing" class="push-panel" style="display:none;">
-                    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Per ogni <strong>POI</strong> Apple permette solo il messaggio lock screen (<code>relevantText</code>). Per <strong>testo e strip sulla tessera</strong> usa il blocco <strong>Facciata pass</strong> subito sotto (stesso tab), poi <strong>Salva e Aggiorna Pass</strong> in fondo — oppure <strong>Design pass</strong> / Identità brand. Cerca l’indirizzo su <strong>OpenStreetMap</strong> (Nominatim); nessun server nel rilevamento prossimità.</p>
+                    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Per ogni <strong>POI</strong> il testo è il messaggio Apple sulla <strong>lock screen</strong> (<code>relevantText</code>). Lo <strong>stesso testo del primo POI</strong> che ha un messaggio viene anche messo <strong>sul pass</strong> (campo ausiliario in basso) quando salvi — così la tessera si aggiorna senza una seconda schermata. Strip e layout: <strong>Design pass</strong>. Indirizzi da <strong>OpenStreetMap</strong> (Nominatim).</p>
                     <p style="font-size:11px;color:var(--orange);margin:-8px 0 16px;opacity:.95;">Policy Nominatim: non più di circa <strong>1 richiesta al secondo</strong> per progetto — la dashboard rallenta automaticamente le ricerche consecutive; digitando lentamente eviti blocchi temporanei (429).</p>
 
-                    <div class="push-card" style="border:2px solid rgba(255,107,107,.45);box-shadow:0 0 0 1px rgba(255,107,107,.12);">
-                        <div style="font-weight:800;font-size:15px;color:var(--text1);margin-bottom:6px;">Facciata pass — aggiorna la tessera qui</div>
-                        <p style="font-size:12px;color:var(--text2);margin:0 0 12px;line-height:1.5;">Compila e poi premi <strong>Salva e Aggiorna Pass</strong> (in basso). Stesso contenuto per <strong>tutti</strong> i possessori (non per singolo POI — limite Apple).</p>
-                        <div class="form-row" style="gap:12px;flex-wrap:wrap;">
-                            <div class="form-group" style="flex:1;min-width:140px;">
-                                <label class="form-label">Etichetta campo (max 16)</label>
-                                <input type="text" id="geoFaceLabel" maxlength="16" placeholder="es. PROMO" style="max-width:220px;">
-                            </div>
-                        </div>
-                        <div class="form-group" style="margin-bottom:12px;">
-                            <label class="form-label">Testo sulla tessera (campo ausiliario)</label>
-                            <textarea id="geoFaceMessage" rows="2" maxlength="120" placeholder="es. Oggi doppi punti in negozio" style="width:100%;max-width:520px;resize:vertical;"></textarea>
-                        </div>
-                        <div class="form-group" style="margin-bottom:10px;">
-                            <label class="form-label">Immagine strip (opzionale)</label>
-                            <input type="file" id="geoStripFile" accept="image/*,.pdf" style="font-size:12px;" onchange="onGeoStripFile(this)">
-                            <p style="font-size:11px;color:var(--text2);margin:6px 0 0;">PNG/JPG o PDF. Se non scegli un file, la strip resta quella già impostata in Design pass.</p>
-                        </div>
-                        <div id="geoStripPreviewWrap" style="display:none;margin-bottom:8px;">
-                            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Anteprima strip attuale / nuova</div>
-                            <img id="geoStripPreview" alt="" style="max-height:72px;border-radius:8px;border:1px solid var(--border);object-fit:cover;">
-                        </div>
-                    </div>
-
-                    <div class="push-card" style="margin-top:16px;">
+                    <div class="push-card" style="margin-top:0;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                             <span style="font-weight:700;font-size:14px;color:var(--text1);">Punti di interesse</span>
                             <button class="btn small" onclick="addGeoLocation()">+ Aggiungi POI</button>
@@ -660,8 +636,9 @@
                             <li>Posizione e messaggio finiscono nel <code>pass.json</code> del wallet (lat/lon da indirizzo OpenStreetMap)</li>
                             <li>iOS controlla la prossimità in background — zero batteria, zero server</li>
                             <li>Quando l'utente è nel raggio, il pass appare sulla lock screen</li>
-                            <li>Il <strong>relevantText</strong> è l’unico testo extra per POI che Apple espone: <strong>solo lock screen</strong>, non cambia strip né campi sulla facciata del pass</li>
-                            <li>Per immagine o testo sulla tessera: blocco <strong>Facciata pass</strong> in cima a questa scheda (o <strong>Design pass</strong>); dopo «Salva e aggiorna pass» il <code>.pkpass</code> si aggiorna — su iPhone apri il pass e <strong>tira giù</strong> per scaricare la nuova versione</li>
+                            <li>Il messaggio POI è <strong>relevantText</strong> Apple (lock screen). Il server <strong>duplica</strong> il testo del <strong>primo POI</strong> con messaggio anche in <strong>campo ausiliario</strong> sul pass (stesso valore per tutti i possessori)</li>
+                            <li>Dopo «Salva e aggiorna pass»: su iPhone apri il pass in Wallet e <strong>tira giù</strong> per scaricare il <code>.pkpass</code> aggiornato</li>
+                            <li>Strip / immagini: <strong>Design pass</strong></li>
                             <li>Massimo <strong>10 locations</strong> per pass (limite Apple)</li>
                             <li>Dopo il salvataggio, tutti i pass attivi vengono aggiornati via push</li>
                         </ul>
@@ -3491,41 +3468,6 @@ async function geoNomThrottle() {
 }
 
 let geoLocations = [];
-/** @type {string|null} */
-let geoStripPendingBase64 = null;
-let geoStripPreviewObjectUrl = null;
-
-function revokeGeoStripObjectUrl() {
-    if (geoStripPreviewObjectUrl) {
-        try { URL.revokeObjectURL(geoStripPreviewObjectUrl); } catch (_) {}
-        geoStripPreviewObjectUrl = null;
-    }
-}
-
-function onGeoStripFile(input) {
-    geoStripPendingBase64 = null;
-    const wrap = document.getElementById('geoStripPreviewWrap');
-    const img = document.getElementById('geoStripPreview');
-    if (!input || !input.files || !input.files[0]) {
-        if (wrap) wrap.style.display = 'none';
-        return;
-    }
-    const f = input.files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-        const dataUrl = /** @type {string} */ (reader.result);
-        geoStripPendingBase64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-        revokeGeoStripObjectUrl();
-        geoStripPreviewObjectUrl = URL.createObjectURL(f);
-        if (img) {
-            img.src = geoStripPreviewObjectUrl;
-            img.style.display = 'block';
-        }
-        if (wrap) wrap.style.display = 'block';
-    };
-    reader.onerror = () => toast('Lettura file strip non riuscita');
-    reader.readAsDataURL(f);
-}
 let geoSearchTimers = {};
 let geoSearchResultsForIdx = {};
 
@@ -3751,7 +3693,7 @@ function renderGeoLocations() {
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Messaggio lock screen (solo Apple Wallet, vicino al POI)</label>
                 <input type="text" value="${esc(loc.relevantText)}" onchange="updateGeoField(${i},'relevantText',this.value)" placeholder="es. Sei vicino! Scopri la promo" aria-describedby="geoRelevantHint_${i}">
-                <p id="geoRelevantHint_${i}" style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Solo lock screen Apple (<code>relevantText</code>). Per testo/strip sulla tessera: sezione <strong>Facciata pass</strong> in cima a questa scheda + <strong>Salva e Aggiorna Pass</strong> in basso.</p>
+                <p id="geoRelevantHint_${i}" style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Lock screen Apple. Il <strong>primo POI</strong> con messaggio viene anche copiato in <strong>basso sul pass</strong> (ausiliario) dopo <strong>Salva e Aggiorna Pass</strong> + pull-to-refresh su iPhone.</p>
             </div>
         </div>
         `;
@@ -3769,33 +3711,6 @@ async function loadGeofencing() {
         }));
         document.getElementById('geoMaxDistance').value = data.maxDistance || 500;
         document.getElementById('geoChannel').value = data.channel || 'apple';
-        const fl = document.getElementById('geoFaceLabel');
-        const fm = document.getElementById('geoFaceMessage');
-        const sf = document.getElementById('geoStripFile');
-        if (fl) fl.value = data.geofencingFaceLabel || '';
-        if (fm) fm.value = data.geofencingFaceMessage || '';
-        if (sf) sf.value = '';
-        geoStripPendingBase64 = null;
-        revokeGeoStripObjectUrl();
-        const wrap = document.getElementById('geoStripPreviewWrap');
-        const img = document.getElementById('geoStripPreview');
-        if (data.hasStrip) {
-            try {
-                const sr = await fetch(`${API}/brands/${brandId}/strip`);
-                if (sr.ok) {
-                    const blob = await sr.blob();
-                    revokeGeoStripObjectUrl();
-                    geoStripPreviewObjectUrl = URL.createObjectURL(blob);
-                    if (img) {
-                        img.src = geoStripPreviewObjectUrl;
-                        img.style.display = 'block';
-                    }
-                    if (wrap) wrap.style.display = 'block';
-                } else if (wrap) wrap.style.display = 'none';
-            } catch (_) {
-                if (wrap) wrap.style.display = 'none';
-            }
-        } else if (wrap) wrap.style.display = 'none';
         renderGeoLocations();
         enrichGeoAddressesFromCoords();
     } catch (e) { console.error('Load geofencing error:', e); }
@@ -3815,22 +3730,16 @@ async function saveGeofencing() {
     }
     const maxDistance = parseInt(document.getElementById('geoMaxDistance').value) || 500;
     const channel = document.getElementById('geoChannel').value || 'apple';
-    const faceLabelEl = document.getElementById('geoFaceLabel');
-    const faceMessageEl = document.getElementById('geoFaceMessage');
-    const faceLabel = faceLabelEl ? faceLabelEl.value.trim() : '';
-    const faceMessage = faceMessageEl ? faceMessageEl.value.trim() : '';
     const statusEl = document.getElementById('geoSaveStatus');
     const btn = document.getElementById('geoSaveBtn');
     btn.disabled = true;
     statusEl.textContent = 'Salvataggio e aggiornamento pass in corso...';
     statusEl.style.color = 'var(--teal)';
     try {
-        const payload = { locations: geoLocations, maxDistance, channel, faceLabel, faceMessage };
-        if (geoStripPendingBase64) payload.strip_base64 = geoStripPendingBase64;
         const res = await fetch(`${API}/brands/${brandId}/geofencing`, {
             method: 'PUT',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ locations: geoLocations, maxDistance, channel })
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
@@ -3839,9 +3748,6 @@ async function saveGeofencing() {
         statusEl.textContent = `Salvato! ${geoLocations.length} POI configurati. Apple: ${data.pushes_sent || 0} push · Google: ${gwUpdated} sync · Samsung notify: ${swN}`;
         statusEl.style.color = 'var(--green)';
         toast('Geofencing salvato! Su iPhone: apri il pass in Wallet e tira giù per aggiornare.');
-        geoStripPendingBase64 = null;
-        const sf2 = document.getElementById('geoStripFile');
-        if (sf2) sf2.value = '';
         await loadGeofencing();
     } catch (e) {
         statusEl.textContent = 'Errore: ' + e.message;
