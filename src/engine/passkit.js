@@ -168,6 +168,33 @@ function parseColor(color) {
 }
 
 /**
+ * Apple: max 10 locations per pass; invalid coordinates must not appear in pass.json.
+ * @param {Record<string, unknown>} brandConfig
+ * @returns {{ latitude: number, longitude: number, relevantText?: string, altitude?: number }[]}
+ */
+function normalizePassLocations(brandConfig) {
+  const raw = brandConfig.locations;
+  if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
+  const out = [];
+  for (const loc of raw) {
+    if (out.length >= 10) break;
+    const latitude = parseFloat(/** @type {{ latitude?: unknown }} */ (loc).latitude);
+    const longitude = parseFloat(/** @type {{ longitude?: unknown }} */ (loc).longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) continue;
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) continue;
+    const entry = { latitude, longitude };
+    const rt = loc.relevantText;
+    if (rt != null && String(rt).trim()) entry.relevantText = String(rt).trim().slice(0, 200);
+    if (loc.altitude != null && loc.altitude !== '') {
+      const alt = parseFloat(loc.altitude);
+      if (Number.isFinite(alt)) entry.altitude = alt;
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+/**
  * Generate the pass.json content for Apple Wallet
  */
 function generatePassJson(template, instance, brand, options = {}) {
@@ -384,17 +411,11 @@ function generatePassJson(template, instance, brand, options = {}) {
     }
   };
 
-  // Geofencing locations — triggers lock screen notification when nearby
-  if (brandConfig.locations && Array.isArray(brandConfig.locations) && brandConfig.locations.length > 0) {
-    passJson.locations = brandConfig.locations.map(loc => {
-      const entry = {
-        latitude: parseFloat(loc.latitude),
-        longitude: parseFloat(loc.longitude)
-      };
-      if (loc.relevantText) entry.relevantText = loc.relevantText;
-      if (loc.altitude) entry.altitude = parseFloat(loc.altitude);
-      return entry;
-    });
+  // Geofencing — iOS shows the pass on lock screen when inside maxDistance (m) of any location.
+  // Sticky / repeated appearance while stationary is normal iOS behavior inside the zone, not APNs.
+  const normalizedLocs = normalizePassLocations(brandConfig);
+  if (normalizedLocs.length > 0) {
+    passJson.locations = normalizedLocs;
   }
 
   // Relevant date — triggers lock screen notification at this time
@@ -402,14 +423,20 @@ function generatePassJson(template, instance, brand, options = {}) {
     passJson.relevantDate = brandConfig.relevantDate;
   }
 
-  // Max distance for geofencing — use largest radius from locations, or 500m default
+  // maxDistance (m): explicit brand maxDistance, else largest POI radius, else 500. Clamp to sane range.
   let maxRadius = 500;
   if (brandConfig.locations && Array.isArray(brandConfig.locations)) {
-    brandConfig.locations.forEach(loc => {
-      if (loc.radius && parseInt(loc.radius) > maxRadius) maxRadius = parseInt(loc.radius);
+    brandConfig.locations.forEach((loc) => {
+      const r = parseInt(String(loc.radius), 10);
+      if (Number.isFinite(r) && r > maxRadius) maxRadius = r;
     });
   }
-  passJson.maxDistance = parseInt(brandConfig.maxDistance) || maxRadius;
+  let maxDistanceM = parseInt(String(brandConfig.maxDistance), 10);
+  if (!Number.isFinite(maxDistanceM) || maxDistanceM < 1) maxDistanceM = maxRadius;
+  maxDistanceM = Math.min(Math.max(maxDistanceM, 1), 100000);
+  if (normalizedLocs.length > 0) {
+    passJson.maxDistance = maxDistanceM;
+  }
 
   return passJson;
 }

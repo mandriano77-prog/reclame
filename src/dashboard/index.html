@@ -597,7 +597,7 @@
 
                 <!-- TAB 3: Geofencing -->
                 <div id="pushPanel_geofencing" class="push-panel" style="display:none;">
-                    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Aggiungi punti di interesse (POI). Cerca l’<strong>indirizzo</strong> (via, piazza, città): usiamo i dati pubblici <strong>OpenStreetMap</strong> (Nominatim) per ricavare le coordinate. Quando l’utente si avvicina, iOS mostra il pass sulla lock screen con il messaggio che imposti. Nessun server nel rilevamento — è il telefono che misura la distanza.</p>
+                    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Aggiungi punti di interesse (POI). Cerca l’<strong>indirizzo</strong> (via, piazza, città): usiamo i dati pubblici <strong>OpenStreetMap</strong> (Nominatim) per ricavare le coordinate. Quando l’utente si avvicina, iOS mostra il pass sulla lock screen con il messaggio che imposti. <strong>Qui non ci sono altri campi</strong> perché Apple nel pass accetta solo testo di prossimità per POI (<code>relevantText</code>): <strong>strip, logo e testi sulla tessera</strong> si configurano in <strong>Design pass</strong> e <strong>Identità brand</strong> — valgono per tutto il pass, non diversi per ogni POI. Nessun server nel rilevamento: è il telefono che misura la distanza.</p>
                     <p style="font-size:11px;color:var(--orange);margin:-8px 0 16px;opacity:.95;">Policy Nominatim: non più di circa <strong>1 richiesta al secondo</strong> per progetto — la dashboard rallenta automaticamente le ricerche consecutive; digitando lentamente eviti blocchi temporanei (429).</p>
 
                     <div class="push-card">
@@ -636,7 +636,8 @@
                             <li>Posizione e messaggio finiscono nel <code>pass.json</code> del wallet (lat/lon da indirizzo OpenStreetMap)</li>
                             <li>iOS controlla la prossimità in background — zero batteria, zero server</li>
                             <li>Quando l'utente è nel raggio, il pass appare sulla lock screen</li>
-                            <li>Il <strong>relevantText</strong> è il messaggio che l'utente vede</li>
+                            <li>Il <strong>relevantText</strong> è l’unico testo extra per POI che Apple espone: <strong>solo lock screen</strong>, non cambia strip né campi sulla facciata del pass</li>
+                            <li>Per immagine o testi sulla tessera: <strong>Design pass</strong> / campi membro; dopo “Salva e aggiorna pass” il <code>.pkpass</code> include anche quelli</li>
                             <li>Massimo <strong>10 locations</strong> per pass (limite Apple)</li>
                             <li>Dopo il salvataggio, tutti i pass attivi vengono aggiornati via push</li>
                         </ul>
@@ -3689,8 +3690,9 @@ function renderGeoLocations() {
             ${addrBlock}
             ${coordsDetails}
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Messaggio lock screen</label>
-                <input type="text" value="${esc(loc.relevantText)}" onchange="updateGeoField(${i},'relevantText',this.value)" placeholder="es. Sei vicino! Scopri la promo">
+                <label class="form-label">Messaggio lock screen (solo Apple Wallet, vicino al POI)</label>
+                <input type="text" value="${esc(loc.relevantText)}" onchange="updateGeoField(${i},'relevantText',this.value)" placeholder="es. Sei vicino! Scopri la promo" aria-describedby="geoRelevantHint_${i}">
+                <p id="geoRelevantHint_${i}" style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Non aggiorna strip o campi sul pass: è il campo <code>relevantText</code> di Apple. Ripeti il messaggio nei campi del pass in <strong>Design pass</strong> se vuoi la stessa copy sulla tessera.</p>
             </div>
         </div>
         `;
