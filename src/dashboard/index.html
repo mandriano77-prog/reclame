@@ -186,6 +186,28 @@
             z-index: 10049;
             font-family: inherit;
             overflow: hidden;
+            flex-direction: column;
+        }
+        .wai-panel-header {
+            flex-shrink: 0;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .wai-panel-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px 20px;
+        }
+        #waiPreview {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
         .user-badge { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); cursor: pointer; }
         .user-badge:hover { color: var(--teal); }
@@ -1546,15 +1568,15 @@
 <button type="button" id="waiBtn" class="wai-fab" onclick="toggleWaiOverlay()" aria-label="Apri assistente W.AI" title="Assistente W.AI">W.AI</button>
 
 <div id="waiOverlay" class="wai-panel" aria-label="Pannello W.AI">
-  <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between;">
+  <div class="wai-panel-header">
     <span style="font-size:15px; font-weight:700; color:#00D4AA;">W.AI</span>
     <span style="font-size:11px; color:#666;">Claude Opus 4.6</span>
   </div>
-  <div style="padding:16px 20px;">
+  <div class="wai-panel-body">
     <textarea id="waiPrompt" rows="3" placeholder="Scrivi cosa vuoi fare..." style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#f4ede2; padding:12px; font-size:13px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
     <button type="button" id="waiSendBtn" onclick="askWai()" style="width:100%; margin-top:8px; padding:10px; background:#00D4AA; color:#0a0a0a; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;">Chiedi a W.AI</button>
+    <div id="waiPreview" style="display:none;"></div>
   </div>
-  <div id="waiPreview" style="display:none; padding:0 20px 16px;"></div>
 </div>
 
 <script>
@@ -5867,7 +5889,7 @@ function toggleWaiOverlay(forceOpen) {
     const shouldOpen = typeof forceOpen === 'boolean'
         ? forceOpen
         : (el.style.display === 'none' || !el.style.display);
-    el.style.display = shouldOpen ? 'block' : 'none';
+    el.style.display = shouldOpen ? 'flex' : 'none';
     if (!shouldOpen) {
         const preview = document.getElementById('waiPreview');
         if (preview) preview.style.display = 'none';
@@ -5919,7 +5941,7 @@ function renderWaiPreview(data) {
     if (isQuery) {
         box.innerHTML = `
             <div style="font-size:12px;font-weight:700;color:#f4ede2;margin-bottom:6px;">Risposta</div>
-            <p style="font-size:13px;color:#ccc;line-height:1.6;">${esc(data.answer || data.preview?.summary || '')}</p>
+            <p style="font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${esc(data.answer || data.preview?.summary || '')}</p>
             ${warnHtml}`;
     } else {
         const details = data.preview?.details || {};
