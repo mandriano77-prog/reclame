@@ -8,8 +8,7 @@ const {
 } = require('../db');
 const { extractJSON } = require('./ai-copy');
 const { getAnthropicApiKey } = require('./env-ai');
-
-const WAI_MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-6';
+const { pickWaiModel, formatModelLabel } = require('./ai-models');
 
 const EXECUTABLE_INTENTS = new Set([
   'push.schedule',
@@ -126,7 +125,7 @@ function buildUserMessage(prompt, context) {
   return `Stato attuale del brand:\n${JSON.stringify(context, null, 2)}\n\nRichiesta del manager:\n${prompt}`;
 }
 
-async function callWai(systemPrompt, userMessage) {
+async function callWai(systemPrompt, userMessage, model) {
   const apiKey = getAnthropicApiKey();
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY non disponibile nel processo Node. Impostala nelle variabili del servizio (Railway) e ridistribuisci.');
@@ -140,7 +139,7 @@ async function callWai(systemPrompt, userMessage) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: WAI_MODEL,
+      model,
       max_tokens: 1024,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }]
@@ -322,9 +321,17 @@ async function askWai({ brandId, prompt }) {
   if (!trimmed) throw new Error('prompt richiesto');
 
   const context = await buildWaiContext(brandId);
-  const text = await callWai(SYSTEM_PROMPT, buildUserMessage(trimmed, context));
+  const modelChoice = pickWaiModel(trimmed);
+  const text = await callWai(SYSTEM_PROMPT, buildUserMessage(trimmed, context), modelChoice.model);
   const parsed = extractJSON(text);
-  return validateWaiResponse(parsed, brandId);
+  const proposal = validateWaiResponse(parsed, brandId);
+  return {
+    ...proposal,
+    model: modelChoice.model,
+    model_label: formatModelLabel(modelChoice.model),
+    model_tier: modelChoice.tier,
+    model_routing: modelChoice.routing
+  };
 }
 
 module.exports = {

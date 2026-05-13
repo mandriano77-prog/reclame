@@ -1570,7 +1570,7 @@
 <div id="waiOverlay" class="wai-panel" aria-label="Pannello W.AI">
   <div class="wai-panel-header">
     <span style="font-size:15px; font-weight:700; color:#00D4AA;">W.AI</span>
-    <span style="font-size:11px; color:#666;">Claude Opus 4.6</span>
+    <span id="waiModelLabel" style="font-size:11px; color:#666;">Routing Claude</span>
   </div>
   <div class="wai-panel-body">
     <textarea id="waiPrompt" rows="3" placeholder="Scrivi cosa vuoi fare..." style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#f4ede2; padding:12px; font-size:13px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
@@ -5920,6 +5920,10 @@ async function askWai() {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) return alert(data.error || 'Errore W.AI');
         waiDraft = data;
+        if (data.model_label) {
+            const label = document.getElementById('waiModelLabel');
+            if (label) label.textContent = data.model_label;
+        }
         renderWaiPreview(data);
     } finally {
         if (btn) {
