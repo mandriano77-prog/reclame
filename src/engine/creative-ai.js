@@ -2,8 +2,7 @@
 // Uses Flux for photorealistic backgrounds, Ideogram for text-heavy creatives
 
 const sharp = require('sharp');
-
-const FAL_API_KEY = process.env.FAL_API_KEY;
+const { getFalApiKey } = require('./env-ai');
 const FAL_BASE = 'https://fal.run';
 
 // ─── Format Catalog ──────────────────────────────────────────────
@@ -48,7 +47,8 @@ function buildPrompt(userPrompt, stylePrompt) {
 
 // ─── fal.ai API call ──────────────────────────────────────────────
 async function generateWithFal(prompt, width, height, model = 'fal-ai/flux/dev', referenceImageUrl = null, stylePrompt = null) {
-  if (!FAL_API_KEY) throw new Error('FAL_API_KEY non configurata — aggiungi FAL_API_KEY alle variabili d’ambiente (es. dashboard DigitalOcean / .env)');
+  const falApiKey = getFalApiKey();
+  if (!falApiKey) throw new Error('FAL_API_KEY non configurata — aggiungi FAL_API_KEY alle variabili d’ambiente (es. dashboard DigitalOcean / .env)');
 
   const url = `${FAL_BASE}/${model}`;
   console.log(`[fal.ai] POST ${url} — size ${width}x${height}${referenceImageUrl ? ' (with reference image)' : ''}`);
@@ -74,7 +74,7 @@ async function generateWithFal(prompt, width, height, model = 'fal-ai/flux/dev',
   const submitRes = await fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Key ${FAL_API_KEY}`,
+      'Authorization': `Key ${falApiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(requestBody)
@@ -121,7 +121,7 @@ async function generateWithFal(prompt, width, height, model = 'fal-ai/flux/dev',
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 2000));
     const statusRes = await fetch(statusUrl, {
-      headers: { 'Authorization': `Key ${FAL_API_KEY}` }
+      headers: { 'Authorization': `Key ${falApiKey}` }
     });
     const statusRaw = await statusRes.text();
     let statusData;
@@ -129,7 +129,7 @@ async function generateWithFal(prompt, width, height, model = 'fal-ai/flux/dev',
 
     if (statusData.status === 'COMPLETED') {
       const resultRes = await fetch(resultUrl, {
-        headers: { 'Authorization': `Key ${FAL_API_KEY}` }
+        headers: { 'Authorization': `Key ${falApiKey}` }
       });
       const resultRaw = await resultRes.text();
       let resultData;

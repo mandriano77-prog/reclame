@@ -16,7 +16,7 @@ const apiRoutes = require('./api/routes');
 const debugSignRoutes = require('./api/debug-sign');
 const { startScheduler } = require('./engine/scheduler');
 const { runStripPromoCheck } = require('./engine/strip-promo');
-const { isAnthropicConfigured } = require('./engine/env-ai');
+const { isAnthropicConfigured, isFalConfigured } = require('./engine/env-ai');
 
 // Load certificates: prefer FILE-BASED certs (from repo), fallback to env vars
 function loadCerts() {
@@ -130,7 +130,10 @@ app.get('/health', async (req, res) => {
     product: 'ads2wallet',
     version: BUILD_VERSION,
     timestamp: new Date().toISOString(),
-    ai: { anthropic_configured: isAnthropicConfigured() }
+    ai: {
+      anthropic_configured: isAnthropicConfigured(),
+      fal_configured: isFalConfigured()
+    }
   };
   if (req.query.wallet) {
     try {
@@ -406,6 +409,7 @@ getDb().then(db => {
     console.log('  API:    http://localhost:' + PORT + '/api/v1');
     console.log('  TZ:     ' + process.env.TZ);
     console.log('  AI:     Anthropic ' + (isAnthropicConfigured() ? 'configurata' : 'NON configurata nel processo Node'));
+    console.log('  AI:     fal.ai ' + (isFalConfigured() ? 'configurata' : 'NON configurata nel processo Node'));
 
     // Start push notification scheduler (absolute URLs in scheduled jobs)
     const baseUrl =
