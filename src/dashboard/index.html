@@ -147,6 +147,7 @@
         body.role-viewer .btn.danger { display: none !important; }
         body.role-viewer input:not([readonly]):not([type="search"]), body.role-viewer select:not(#brandSelector):not(#dashboardProductLine), body.role-viewer textarea { pointer-events: none; opacity: 0.6; }
         body.role-viewer .viewer-badge { display: inline-block; background: var(--purple); color: #fff; padding: 3px 10px; border-radius: 10px; font-size: 10px; text-transform: uppercase; font-weight: 600; margin-left: 8px; }
+        body.role-viewer #waiBtn, body.role-viewer #waiOverlay { display: none !important; }
         .user-badge { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); cursor: pointer; }
         .user-badge:hover { color: var(--teal); }
         .user-badge .role-tag { background: var(--purple); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 10px; text-transform: uppercase; font-weight: 600; }
@@ -5935,6 +5936,121 @@ async function deleteUser(id) {
     loadUsers();
 }
 
+// ==================== W.AI ====================
+let waiDraft = null;
+
+function toggleWaiOverlay() {
+    const el = document.getElementById('waiOverlay');
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function askWai() {
+    if (!brandId) return alert('Seleziona un brand');
+    if (currentUser?.role === 'viewer') return alert('Permessi insufficienti (solo lettura)');
+    const prompt = document.getElementById('waiPrompt')?.value?.trim() || '';
+    if (!prompt) return;
+
+    const btn = document.getElementById('waiSendBtn');
+    const prevLabel = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'W.AI sta pensando...';
+    }
+    const preview = document.getElementById('waiPreview');
+    if (preview) preview.style.display = 'none';
+
+    try {
+        const res = await fetch(`${API}/wai/ask`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, brand_id: brandId })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return alert(data.error || 'Errore W.AI');
+        waiDraft = data;
+        renderWaiPreview(data);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = prevLabel || 'Chiedi a W.AI';
+        }
+    }
+}
+
+function renderWaiPreview(data) {
+    const box = document.getElementById('waiPreview');
+    if (!box || !data) return;
+    const isQuery = data.type === 'query' || data.type === 'system';
+    const warnings = data.preview?.warnings || [];
+    const warnHtml = warnings.length
+        ? `<div style="margin-top:8px;font-size:11px;color:#f5a623;line-height:1.45;">${warnings.map((w) => esc(w)).join('<br>')}</div>`
+        : '';
+
+    if (isQuery) {
+        box.innerHTML = `
+            <div style="font-size:12px;font-weight:700;color:#f4ede2;margin-bottom:6px;">Risposta</div>
+            <p style="font-size:13px;color:#ccc;line-height:1.6;">${esc(data.answer || data.preview?.summary || '')}</p>
+            ${warnHtml}`;
+    } else {
+        const details = data.preview?.details || {};
+        const detailsHtml = Object.entries(details).map(([k, v]) =>
+            `<div style="font-size:12px;color:#999;"><strong style="color:#ccc;">${esc(k)}:</strong> ${esc(String(v))}</div>`
+        ).join('');
+
+        box.innerHTML = `
+            <div style="font-size:12px;font-weight:700;color:#f4ede2;margin-bottom:6px;">Anteprima</div>
+            <p style="font-size:13px;color:#00D4AA;margin-bottom:8px;">${esc(data.preview?.summary || '')}</p>
+            <div style="margin-bottom:8px;">${detailsHtml}</div>
+            ${warnHtml}
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button onclick="confirmWai()" style="flex:1;padding:8px;background:#00D4AA;color:#0a0a0a;
+                    border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">Conferma</button>
+                <button onclick="dismissWai()" style="flex:1;padding:8px;background:rgba(255,255,255,0.06);
+                    color:#999;border:1px solid rgba(255,255,255,0.08);border-radius:6px;font-size:12px;
+                    cursor:pointer;">Annulla</button>
+            </div>`;
+    }
+    box.style.display = 'block';
+}
+
+async function confirmWai() {
+    if (!waiDraft?.payload || !Object.keys(waiDraft.payload).length) return alert('Nessuna azione da confermare');
+    const res = await fetch(`${API}/wai/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: waiDraft.intent, payload: waiDraft.payload, prompt: document.getElementById('waiPrompt')?.value || '' })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return alert(data.error || 'Errore esecuzione');
+    toast(data.message || 'Azione completata');
+    dismissWai();
+    refreshDashboardSection(waiDraft.intent);
+}
+
+function dismissWai() {
+    waiDraft = null;
+    const preview = document.getElementById('waiPreview');
+    const prompt = document.getElementById('waiPrompt');
+    if (preview) {
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+    }
+    if (prompt) prompt.value = '';
+}
+
+function refreshDashboardSection(intent) {
+    const prefix = String(intent || '').split('.')[0];
+    const refreshMap = {
+        push: () => { loadPushHistory(); loadScheduledPush(); },
+        reward: () => { if (typeof loadRewards === 'function') loadRewards(); },
+        member: () => { if (typeof loadMembers === 'function') loadMembers(); },
+        campaign: () => { loadCampaigns(); },
+        strip: () => { loadStripPromos(); }
+    };
+    (refreshMap[prefix] || (() => {}))();
+}
+
 // ==================== UTILS ====================
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
@@ -5948,5 +6064,45 @@ function fileToBase64(file) {
 }
 
 </script>
+
+<button id="waiBtn" onclick="toggleWaiOverlay()"
+  style="position:fixed; bottom:24px; right:24px; width:52px; height:52px;
+  border-radius:50%; background:#00D4AA; color:#0a0a0a; border:none;
+  font-size:16px; font-weight:800; cursor:pointer; z-index:9999;
+  box-shadow:0 4px 20px rgba(0,212,170,0.3); font-family:inherit;">
+  W.AI
+</button>
+
+<div id="waiOverlay" style="display:none; position:fixed; bottom:88px;
+  right:24px; width:min(400px, calc(100vw - 32px)); max-height:80vh; background:#111;
+  border:1px solid rgba(0,212,170,0.2); border-radius:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5); z-index:9998;
+  font-family:inherit; overflow:hidden;">
+
+  <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06);
+    display:flex; align-items:center; justify-content:space-between;">
+    <span style="font-size:15px; font-weight:700; color:#00D4AA;">W.AI</span>
+    <span style="font-size:11px; color:#666;">Claude Opus 4.6</span>
+  </div>
+
+  <div style="padding:16px 20px;">
+    <textarea id="waiPrompt" rows="3"
+      placeholder="Scrivi cosa vuoi fare..."
+      style="width:100%; background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08); border-radius:10px;
+      color:#f4ede2; padding:12px; font-size:13px; resize:vertical;
+      font-family:inherit; box-sizing:border-box;"></textarea>
+    <button id="waiSendBtn" onclick="askWai()"
+      style="width:100%; margin-top:8px; padding:10px;
+      background:#00D4AA; color:#0a0a0a; border:none;
+      border-radius:8px; font-weight:700; font-size:13px;
+      cursor:pointer; font-family:inherit;">
+      Chiedi a W.AI
+    </button>
+  </div>
+
+  <div id="waiPreview" style="display:none; padding:0 20px 16px;"></div>
+</div>
+
 </body>
 </html>
