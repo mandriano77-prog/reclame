@@ -254,10 +254,23 @@ router.get('/brands/by-slug/:slug', async (req, res) => {
 router.get('/brands/by-slug/:slug/logo', async (req, res) => {
   try {
     const brand = await getBrandBySlug(req.params.slug);
-    if (!brand?.config?.logos?.['logo@2x']) return res.status(404).json({ error: 'Nessun logo' });
-    const buf = Buffer.from(brand.config.logos['logo@2x'], 'base64');
+    const logoB64 = brand?.config?.logos?.['logo@2x'] || brand?.config?.logos?.logo;
+    if (!logoB64) return res.status(404).json({ error: 'Nessun logo' });
+    const buf = Buffer.from(logoB64, 'base64');
     res.set('Content-Type', 'image/png');
-    res.set('Cache-Control', 'no-cache, must-revalidate');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(buf);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/brands/by-slug/:slug/strip', async (req, res) => {
+  try {
+    const brand = await getBrandBySlug(req.params.slug);
+    const stripBase64 = brand?.config?.logos?.strip || brand?.config?.strip_base64 || null;
+    if (!stripBase64) return res.status(404).json({ error: 'Nessuna strip' });
+    const buf = Buffer.from(stripBase64, 'base64');
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600');
     res.send(buf);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

@@ -52,6 +52,11 @@ function resolveApiBase() {
 }
 const API_BASE = resolveApiBase();
 
+function walletPublicBrandAssetUri(brand, asset) {
+  if (!API_BASE || !brand?.slug) return null;
+  return `${API_BASE}/brands/by-slug/${encodeURIComponent(brand.slug)}/${asset}`;
+}
+
 // ── JWT helpers ───────────────────────────────────────────────────────
 
 /**
@@ -172,18 +177,24 @@ async function createOrUpdatePassClass(brand, template) {
 
   // Brand logo
   if (brand.config?.logo_base64 || brand.config?.logos?.logo) {
-    classObj.logo = {
-      sourceUri: { uri: `${API_BASE}/brands/${brand.id}/logo` },
-      contentDescription: { defaultValue: { language: 'it', value: brand.name } }
-    };
+    const logoUri = walletPublicBrandAssetUri(brand, 'logo');
+    if (logoUri) {
+      classObj.logo = {
+        sourceUri: { uri: logoUri },
+        contentDescription: { defaultValue: { language: 'it', value: brand.name } }
+      };
+    }
   }
 
   // Hero image (strip equivalent)
   if (brand.config?.strip_base64 || brand.config?.logos?.strip || template.style?.stripImage) {
-    classObj.heroImage = {
-      sourceUri: { uri: `${API_BASE}/brands/${brand.id}/strip` },
-      contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
-    };
+    const stripUri = walletPublicBrandAssetUri(brand, 'strip');
+    if (stripUri) {
+      classObj.heroImage = {
+        sourceUri: { uri: stripUri },
+        contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
+      };
+    }
   }
 
   // Colors from template
@@ -277,18 +288,24 @@ function buildPassObject(brand, template, instance, member) {
 
   // Hero image
   if (brand.config?.strip_base64 || brand.config?.logos?.strip || template.style?.stripImage) {
-    obj.heroImage = {
-      sourceUri: { uri: `${API_BASE}/brands/${brand.id}/strip` },
-      contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
-    };
+    const stripUri = walletPublicBrandAssetUri(brand, 'strip');
+    if (stripUri) {
+      obj.heroImage = {
+        sourceUri: { uri: stripUri },
+        contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
+      };
+    }
   }
 
   // Logo
   if (brand.config?.logo_base64 || brand.config?.logos?.logo) {
-    obj.logo = {
-      sourceUri: { uri: `${API_BASE}/brands/${brand.id}/logo` },
-      contentDescription: { defaultValue: { language: 'it', value: brand.name } }
-    };
+    const logoUri = walletPublicBrandAssetUri(brand, 'logo');
+    if (logoUri) {
+      obj.logo = {
+        sourceUri: { uri: logoUri },
+        contentDescription: { defaultValue: { language: 'it', value: brand.name } }
+      };
+    }
   }
 
   return obj;
