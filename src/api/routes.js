@@ -13,7 +13,7 @@ const {
   registerDevice, getDevicesForPass, getDevicesForBrand, unregisterDevice, getSerialsForDevice,
   getAnalytics, getCampaignAnalytics,
   logPush, listPushes, deletePush, clearPushHistory,
-  createScheduledPush, listScheduledPush, getScheduledPush, updateScheduledPush, deleteScheduledPush,
+  createScheduledPush, listScheduledPush, getScheduledPush, updateScheduledPush, deleteScheduledPush, logPushAssistantInteraction,
   createStripPromo, listStripPromos, getStripPromo, updateStripPromo, deleteStripPromo,
   createUser, getUserByEmail, getUser, listUsers, updateUser, deleteUser, verifyPassword,
   createMedia, listMedia, getMedia, deleteMedia,
@@ -42,6 +42,7 @@ const { generateVideo, cleanupVideo, VIDEO_FORMATS, VIDEO_TEMPLATES } = require(
 const { sendPushUpdate } = require('../engine/apns');
 const { computeInitialScheduledRun } = require('../engine/scheduler');
 const { generateLandingCopy, generateCreativeCopy } = require('../engine/ai-copy');
+const { planScheduledPush } = require('../engine/push-assistant');
 const sharp = require('sharp');
 const jwt = require('jsonwebtoken');
 const { execFile } = require('child_process');
@@ -867,6 +868,18 @@ function requireBrandId(req, res, brandId) {
   return true;
 }
 
+function requireWriteAccess(req, res) {
+  if (!req.user) {
+    res.status(401).json({ error: 'Non autenticato' });
+    return false;
+  }
+  if (req.user.role === 'viewer') {
+    res.status(403).json({ error: 'Permessi insufficienti (solo lettura)' });
+    return false;
+  }
+  return true;
+}
+
 /** Brand PK (UUID nel path tipo `/brands/:id`). */
 function requireOwnedBrandPk(req, res, brandPk) {
   return requireBrandId(req, res, brandPk);
@@ -1226,6 +1239,60 @@ router.post('/brands/:id/ai-copy', async (req, res) => {
     res.json({ options });
   } catch (err) {
     console.error('AI copy error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/brands/:id/push-assistant/plan', async (req, res) => {
+  try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
+    if (!requireWriteAccess(req, res)) return;
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    const prompt = String(req.body.prompt || '').trim();
+    if (!prompt) return res.status(400).json({ error: 'prompt richiesto' });
+
+    const [scheduled, history] = await Promise.all([
+      listScheduledPush(brand.id),
+      listPushes(brand.id)
+    ]);
+    const plan = await planScheduledPush({ brand, prompt, scheduled, history });
+    await logPushAssistantInteraction({
+      brand_id: brand.id,
+      user_id: req.user?.id || req.user?.sub || null,
+      prompt,
+      proposal: plan.proposal,
+      action: 'planned'
+    });
+    res.json(plan);
+  } catch (err) {
+    console.error('Push assistant plan error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/brands/:id/push-assistant/feedback', async (req, res) => {
+  try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
+    if (!requireWriteAccess(req, res)) return;
+    const action = String(req.body.action || '').trim();
+    if (!['confirmed', 'dismissed'].includes(action)) {
+      return res.status(400).json({ error: 'action non valida' });
+    }
+    const prompt = String(req.body.prompt || '').trim();
+    if (!prompt) return res.status(400).json({ error: 'prompt richiesto' });
+
+    await logPushAssistantInteraction({
+      brand_id: req.params.id,
+      user_id: req.user?.id || req.user?.sub || null,
+      prompt,
+      proposal: req.body.proposal || null,
+      final_payload: req.body.final_payload || null,
+      action
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Push assistant feedback error:', err);
     res.status(500).json({ error: err.message });
   }
 });

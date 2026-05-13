@@ -536,6 +536,16 @@
 
                 <!-- TAB 2: Push Programmata -->
                 <div id="pushPanel_scheduled" class="push-panel" style="display:none;">
+                    <div class="push-card" style="margin-bottom:16px;border:1px solid var(--border);background:linear-gradient(180deg, rgba(0,0,0,0.02), transparent);">
+                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Assistente push</div>
+                        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5;">Descrivi in italiano cosa vuoi programmare. L’assistente prepara una bozza da confermare prima del salvataggio.</p>
+                        <div class="form-group">
+                            <label class="form-label">Richiesta</label>
+                            <textarea id="pushAssistantPrompt" rows="3" placeholder="es. Ogni lunedì alle 9 manda una push per augurare buon inizio settimana" style="resize:vertical;"></textarea>
+                        </div>
+                        <button class="btn" id="pushAssistantPlanBtn" style="width:100%;font-weight:700;margin-top:4px;" onclick="planPushAssistant()">Analizza richiesta</button>
+                        <div id="pushAssistantPreview" style="display:none;margin-top:16px;padding:14px;border:1px dashed var(--border);border-radius:10px;background:var(--surface);"></div>
+                    </div>
                     <div class="push-card">
                         <div class="form-group">
                             <label class="form-label">Campagna target</label>
@@ -3476,6 +3486,142 @@ async function sendImmediatePush() {
 }
 
 // --- TAB 2: Push Programmata ---
+let pushAssistantDraft = null;
+
+function clearPushAssistantPreview() {
+    pushAssistantDraft = null;
+    const box = document.getElementById('pushAssistantPreview');
+    if (box) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+    }
+}
+
+function renderPushAssistantPreview(plan) {
+    const box = document.getElementById('pushAssistantPreview');
+    if (!box || !plan) return;
+    const preview = plan.preview || {};
+    const warnings = Array.isArray(preview.warnings) ? preview.warnings : [];
+    const warningHtml = warnings.length
+        ? `<div style="margin-top:10px;font-size:12px;color:var(--orange);line-height:1.45;">${warnings.map((w) => esc(w)).join('<br>')}</div>`
+        : '';
+    box.innerHTML = `
+        <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px;">Anteprima proposta</div>
+        <p style="font-size:13px;color:var(--text1);line-height:1.5;margin-bottom:10px;">${esc(preview.summary || preview.schedule_label || 'Piano push programmata')}</p>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;">
+            <div><strong>Titolo:</strong> ${esc(preview.title || '')}</div>
+            <div><strong>Messaggio:</strong> ${esc(preview.message || '')}</div>
+            <div><strong>Canale:</strong> ${esc(pushChannelDisplayLabel(preview.channel || 'apple'))}</div>
+            <div><strong>Aggiorna pass:</strong> ${preview.update_pass ? 'Sì' : 'No'}</div>
+            ${preview.next_run_label ? `<div><strong>Prossimo invio:</strong> ${esc(preview.next_run_label)}</div>` : ''}
+        </div>
+        ${warningHtml}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+            <button class="btn small" onclick="confirmPushAssistant()">Conferma e programma</button>
+            <button class="btn small sec" onclick="applyPushAssistantToForm()">Modifica nel form</button>
+            <button class="btn small sec" onclick="dismissPushAssistant()">Annulla</button>
+        </div>`;
+    box.style.display = 'block';
+}
+
+async function sendPushAssistantFeedback(action, extra = {}) {
+    if (!brandId || !pushAssistantDraft) return;
+    await fetch(`${API}/brands/${brandId}/push-assistant/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action,
+            prompt: pushAssistantDraft.prompt,
+            proposal: pushAssistantDraft.proposal,
+            ...extra
+        })
+    }).catch(() => {});
+}
+
+async function planPushAssistant() {
+    if (!brandId) return alert('Seleziona un brand');
+    if (currentUser?.role === 'viewer') return alert('Permessi insufficienti (solo lettura)');
+    const promptEl = document.getElementById('pushAssistantPrompt');
+    const prompt = promptEl?.value?.trim() || '';
+    if (!prompt) return alert('Descrivi la push che vuoi programmare');
+
+    const btn = document.getElementById('pushAssistantPlanBtn');
+    const prevLabel = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Analisi in corso...';
+    }
+    clearPushAssistantPreview();
+
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/push-assistant/plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || 'Errore analisi richiesta');
+            return;
+        }
+        pushAssistantDraft = data;
+        renderPushAssistantPreview(data);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = prevLabel || 'Analizza richiesta';
+        }
+    }
+}
+
+async function confirmPushAssistant() {
+    if (!pushAssistantDraft?.payload) return alert('Nessuna proposta da confermare');
+    if (!brandId) return alert('Seleziona un brand');
+    const body = { ...pushAssistantDraft.payload, brand_id: brandId };
+    const res = await fetch(`${API}/push/scheduled`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        alert(data.error || 'Errore pianificazione');
+        return;
+    }
+    await sendPushAssistantFeedback('confirmed', { final_payload: body });
+    toast('Notifica programmata dall’assistente');
+    if (document.getElementById('pushAssistantPrompt')) document.getElementById('pushAssistantPrompt').value = '';
+    clearPushAssistantPreview();
+    loadScheduledPush();
+}
+
+function applyPushAssistantToForm() {
+    if (!pushAssistantDraft?.payload) return;
+    const payload = pushAssistantDraft.payload;
+    document.getElementById('schedTitle').value = payload.title || '';
+    document.getElementById('schedMessage').value = payload.message || '';
+    document.getElementById('schedType').value = payload.schedule_type || 'weekly';
+    document.getElementById('schedTime').value = payload.schedule_time || '09:00';
+    document.getElementById('schedChannel').value = payload.channel || 'apple';
+    document.getElementById('schedUpdatePass').checked = payload.update_pass !== false;
+    toggleSchedOptions();
+    if (payload.schedule_type === 'once' && payload.date) {
+        document.getElementById('schedDate').value = payload.date;
+    }
+    if (payload.schedule_type === 'weekly' && Array.isArray(payload.days)) {
+        document.querySelectorAll('.sched-day').forEach((cb) => {
+            cb.checked = payload.days.includes(parseInt(cb.value, 10));
+        });
+    }
+    toast('Bozza copiata nel form manuale');
+}
+
+async function dismissPushAssistant() {
+    if (pushAssistantDraft) await sendPushAssistantFeedback('dismissed');
+    if (document.getElementById('pushAssistantPrompt')) document.getElementById('pushAssistantPrompt').value = '';
+    clearPushAssistantPreview();
+}
+
 function toggleSchedOptions() {
     const type = document.getElementById('schedType').value;
     document.getElementById('schedDateGroup').style.display = type === 'once' ? 'block' : 'none';

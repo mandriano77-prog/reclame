@@ -343,6 +343,17 @@ async function getDb() {
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true`).catch(()=>{});
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS update_pass BOOLEAN DEFAULT true`).catch(()=>{});
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS channel TEXT DEFAULT 'apple'`).catch(()=>{});
+    await pool.query(`CREATE TABLE IF NOT EXISTS push_assistant_log (
+      id TEXT PRIMARY KEY,
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      user_id TEXT,
+      prompt TEXT NOT NULL,
+      proposal JSONB,
+      final_payload JSONB,
+      action TEXT NOT NULL DEFAULT 'planned',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_push_assistant_log_brand ON push_assistant_log(brand_id, created_at DESC)`).catch(()=>{});
     await pool.query(`ALTER TABLE media ADD COLUMN IF NOT EXISTS campaign_id TEXT REFERENCES campaigns(id) ON DELETE SET NULL`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_media_campaign ON media(campaign_id)`).catch(()=>{});
 
@@ -957,6 +968,24 @@ async function getDueScheduledPush() {
     `SELECT * FROM scheduled_push WHERE active = true AND next_run_at <= NOW()`
   );
   return result.rows;
+}
+
+async function logPushAssistantInteraction({ brand_id, user_id = null, prompt, proposal = null, final_payload = null, action = 'planned' }) {
+  const id = uuidv4();
+  await pool.query(
+    `INSERT INTO push_assistant_log (id, brand_id, user_id, prompt, proposal, final_payload, action)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [
+      id,
+      brand_id,
+      user_id,
+      prompt,
+      proposal ? JSON.stringify(proposal) : null,
+      final_payload ? JSON.stringify(final_payload) : null,
+      action
+    ]
+  );
+  return { id };
 }
 
 // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Strip Promos Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
@@ -1634,6 +1663,7 @@ module.exports = {
   updateScheduledPush,
   deleteScheduledPush,
   getDueScheduledPush,
+  logPushAssistantInteraction,
   // Strip Promos
   createStripPromo,
   listStripPromos,
