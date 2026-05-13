@@ -1583,7 +1583,7 @@
       </div>
       <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
         <button type="button" onclick="waiSaveStrip()" style="flex:1; min-width:120px; padding:10px; background:#00D4AA; color:#0a0a0a; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; font-family:inherit;">
-          Salva e applica
+          Salva in libreria
         </button>
         <button type="button" onclick="waiRegenerateStrip()" style="flex:1; min-width:120px; padding:10px; background:rgba(255,255,255,0.06); color:#ccc; border:1px solid rgba(255,255,255,0.08); border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit;">
           Rigenera
@@ -6088,7 +6088,6 @@ async function waiSaveStrip() {
         waiCancelStrip();
         dismissWai();
         refreshDashboardSection('strip.generate');
-        if (typeof loadBrandIdentity === 'function') loadBrandIdentity();
     } catch (err) {
         alert(err.message || 'Errore nel salvataggio');
     }

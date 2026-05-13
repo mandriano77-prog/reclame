@@ -3645,11 +3645,6 @@ router.post('/wai/strip-save', async (req, res) => {
       height: 432
     });
 
-    const config = brand.config || {};
-    config.logos = config.logos || {};
-    config.logos.strip = normalizedBase64;
-    await updateBrand(brand_id, { config });
-
     await logWaiInteraction({
       brand_id,
       user_id: req.user?.id || null,
@@ -3662,7 +3657,7 @@ router.post('/wai/strip-save', async (req, res) => {
     res.json({
       success: true,
       media_id: mediaItem.id,
-      message: `Strip "${mediaName}" salvata nella Media Library e applicata al pass.`
+      message: `Strip "${mediaName}" salvata nella Media Library.`
     });
   } catch (err) {
     console.error('W.AI strip save error:', err);
