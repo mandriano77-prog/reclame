@@ -379,7 +379,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   if (regolamento) {
     orderedBackFields.push({
       key: 'regolamento',
-      label: 'REGOLAMENTO',
+      label: '',
       value: regolamento
     });
   }
@@ -390,7 +390,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   if (contatti) {
     orderedBackFields.push({
       key: 'contatti',
-      label: 'CONTATTI',
+      label: '',
       value: contatti
     });
   }

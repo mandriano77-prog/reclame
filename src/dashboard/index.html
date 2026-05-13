@@ -3209,9 +3209,9 @@ function updatePassPreview() {
         }
     }
     const reg = document.getElementById('tplRegolamento').value.trim();
-    if (reg) backHtml += `<div class="pp-back-field"><div class="pp-back-field-label">REGOLAMENTO</div><div class="pp-back-field-value">${esc(reg).substring(0,120)}${reg.length>120?'...':''}</div></div>`;
+    if (reg) backHtml += `<div class="pp-back-field"><div class="pp-back-field-value">${esc(reg).substring(0,120)}${reg.length>120?'...':''}</div></div>`;
     const cont = document.getElementById('tplContatti').value.trim();
-    if (cont) backHtml += `<div class="pp-back-field"><div class="pp-back-field-label">CONTATTI</div><div class="pp-back-field-value">${esc(cont)}</div></div>`;
+    if (cont) backHtml += `<div class="pp-back-field"><div class="pp-back-field-value">${esc(cont)}</div></div>`;
 
     const backEl = document.getElementById('ppBackContent');
     backEl.innerHTML = backHtml || '<div class="pp-back-empty">Aggiungi link, regolamento o contatti</div>';
@@ -4764,9 +4764,9 @@ function wzBuildPreview() {
         if (l||u) backHtml += `<div class="pp-back-row"><span class="pp-back-label">${esc(l)}</span><span class="pp-back-value">${esc(u)}</span></div>`;
     }
     const reg = document.getElementById('wzRegolamento').value;
-    if (reg) backHtml += `<div class="pp-back-row"><span class="pp-back-label">REGOLAMENTO</span><span class="pp-back-value">${esc(reg.substring(0,80))}...</span></div>`;
+    if (reg) backHtml += `<div class="pp-back-row"><span class="pp-back-value">${esc(reg.substring(0,80))}...</span></div>`;
     const cont = document.getElementById('wzContatti').value;
-    if (cont) backHtml += `<div class="pp-back-row"><span class="pp-back-label">CONTATTI</span><span class="pp-back-value">${esc(cont)}</span></div>`;
+    if (cont) backHtml += `<div class="pp-back-row"><span class="pp-back-value">${esc(cont)}</span></div>`;
     document.getElementById('wzPpBackContent').innerHTML = backHtml || '<div class="pp-back-empty">Nessun contenuto retro</div>';
 
     // Summary
