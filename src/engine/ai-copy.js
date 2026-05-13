@@ -1,9 +1,18 @@
-// AI Copywriter — generates copy using Google Gemini (primary) or Anthropic Claude (fallback)
+// AI Copywriter — Anthropic Claude (preferred when configured) or Google Gemini
 // Produces catchy, conversion-focused text for Ads2Wallet
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+
+function preferredAiProvider() {
+  const explicit = String(process.env.AI_PROVIDER || '').trim().toLowerCase();
+  if (explicit === 'anthropic' || explicit === 'gemini') return explicit;
+  if (ANTHROPIC_API_KEY) return 'anthropic';
+  if (GEMINI_API_KEY) return 'gemini';
+  return null;
+}
 
 // ─── Gemini REST helper ────────────────────────────────────────────
 async function callGemini(systemPrompt, userPrompt) {
@@ -56,7 +65,7 @@ async function callAnthropic(systemPrompt, userPrompt, maxTokens) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: ANTHROPIC_MODEL,
       max_tokens: maxTokens || 1024,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
@@ -73,25 +82,31 @@ async function callAnthropic(systemPrompt, userPrompt, maxTokens) {
   return data.content[0].text;
 }
 
-// ─── Unified AI call: Gemini first, Anthropic fallback ─────────────
+// ─── Unified AI call: Anthropic when configured, otherwise Gemini ─────────────
 async function callAI(systemPrompt, userPrompt, maxTokens) {
-  // Try Gemini first
-  if (GEMINI_API_KEY) {
+  const provider = preferredAiProvider();
+  const providers = provider === 'gemini' ? ['gemini', 'anthropic'] : ['anthropic', 'gemini'];
+  const errors = [];
+
+  for (const name of providers) {
+    if (name === 'anthropic' && !ANTHROPIC_API_KEY) continue;
+    if (name === 'gemini' && !GEMINI_API_KEY) continue;
     try {
+      if (name === 'anthropic') {
+        console.log(`[ai-copy] Using Anthropic Claude (${ANTHROPIC_MODEL})`);
+        return await callAnthropic(systemPrompt, userPrompt, maxTokens);
+      }
       console.log(`[ai-copy] Using Gemini (${GEMINI_MODEL})`);
       return await callGemini(systemPrompt, userPrompt);
     } catch (err) {
-      console.warn('[ai-copy] Gemini failed, trying Anthropic fallback:', err.message);
+      console.warn(`[ai-copy] ${name} failed:`, err.message);
+      errors.push(`${name}: ${err.message}`);
     }
   }
 
-  // Fallback to Anthropic
-  if (ANTHROPIC_API_KEY) {
-    console.log('[ai-copy] Using Anthropic Claude (fallback)');
-    return await callAnthropic(systemPrompt, userPrompt, maxTokens);
-  }
-
-  throw new Error('Nessuna AI API configurata. Imposta GEMINI_API_KEY o ANTHROPIC_API_KEY.');
+  throw new Error(errors.length
+    ? `Nessun provider AI disponibile (${errors.join('; ')})`
+    : 'Nessuna AI API configurata. Imposta ANTHROPIC_API_KEY o GEMINI_API_KEY.');
 }
 
 // ─── Extract JSON from AI response ─────────────────────────────────
@@ -203,4 +218,4 @@ Genera il concept creativo completo.`;
   return extractJSON(text);
 }
 
-module.exports = { generateLandingCopy, generateCreativeCopy };
+module.exports = { generateLandingCopy, generateCreativeCopy, callAI, extractJSON };
