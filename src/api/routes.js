@@ -75,7 +75,7 @@ async function pdfToPngIfNeeded(base64Data) {
   // Check PDF magic bytes: %PDF
   if (buf.length < 4 || buf.toString('ascii', 0, 4) !== '%PDF') return base64Data;
   const tmpDir = os.tmpdir();
-  const tmpId = `pdf-conv-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  const tmpId = `pdf-conv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const pdfPath = path.join(tmpDir, `${tmpId}.pdf`);
   const outPrefix = path.join(tmpDir, tmpId);
   fs.writeFileSync(pdfPath, buf);
@@ -88,12 +88,12 @@ async function pdfToPngIfNeeded(base64Data) {
     const pngPath = `${outPrefix}.png`;
     const pngBuf = fs.readFileSync(pngPath);
     // Cleanup
-    try { fs.unlinkSync(pdfPath); } catch(e) {}
-    try { fs.unlinkSync(pngPath); } catch(e) {}
+    try { fs.unlinkSync(pdfPath); } catch (e) { }
+    try { fs.unlinkSync(pngPath); } catch (e) { }
     return pngBuf.toString('base64');
   } catch (err) {
     console.error('PDFÃÂÃÂ¢ÃÂÃÂÃÂÃÂPNG conversion error:', err.message);
-    try { fs.unlinkSync(pdfPath); } catch(e) {}
+    try { fs.unlinkSync(pdfPath); } catch (e) { }
     throw new Error('Impossibile convertire il PDF in immagine. Verifica che il file sia un PDF valido.');
   }
 }
@@ -203,15 +203,15 @@ router.get('/debug/push-diagnostics', async (req, res) => {
         orphan_device_registrations: orphanDevices.rows.length
       },
       devices: devices.rows.map(d => ({
-        device: d.device_library_id?.substring(0,16) + '...',
-        token: d.push_token?.substring(0,16) + '...',
+        device: d.device_library_id?.substring(0, 16) + '...',
+        token: d.push_token?.substring(0, 16) + '...',
         serial: d.serial_number,
         created: d.created_at
       })),
       passes: passes.rows.map(p => ({
-        id: p.id?.substring(0,12) + '...',
+        id: p.id?.substring(0, 12) + '...',
         serial: p.serial_number,
-        brand: p.brand_id?.substring(0,12) + '...',
+        brand: p.brand_id?.substring(0, 12) + '...',
         auth_token_length: p.auth_token?.length,
         created: p.created_at
       })),
@@ -406,7 +406,7 @@ router.post('/signup/google-wallet', async (req, res) => {
       google_wallet_saved: false,
       google_installed_at: null
     });
-    const saveLink = googleWallet.generateSaveLink(passObject);
+    const saveLink = googleWallet.generateSaveLink(brand, template, passObject);
 
     await logEvent({ brand_id: brand.id, pass_id: passInstance.id, event_type: 'google_wallet_link_generated', metadata: {} });
 
@@ -537,7 +537,7 @@ router.post('/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber',
   try {
     const { deviceLibraryId, serialNumber } = req.params;
     const pushToken = req.body.pushToken;
-    console.log(`[Apple Wallet] REGISTER device=${deviceLibraryId.substring(0,8)}... serial=${serialNumber.substring(0,8)}... pushToken=${pushToken ? pushToken.substring(0,8)+'...' : 'MISSING'}`);
+    console.log(`[Apple Wallet] REGISTER device=${deviceLibraryId.substring(0, 8)}... serial=${serialNumber.substring(0, 8)}... pushToken=${pushToken ? pushToken.substring(0, 8) + '...' : 'MISSING'}`);
     if (!pushToken) return res.status(400).send();
 
     await registerDevice({ device_library_id: deviceLibraryId, push_token: pushToken, serial_number: serialNumber });
@@ -983,7 +983,7 @@ router.post('/users', async (req, res) => {
         brandName: 'Ads2Wallet',
         dashboardUrl: `https://${domain}/dashboard`
       });
-    } catch(emailErr) { console.error('Invite email failed:', emailErr.message); }
+    } catch (emailErr) { console.error('Invite email failed:', emailErr.message); }
     res.json(user);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1715,8 +1715,8 @@ router.post('/push/send', async (req, res) => {
       for (const device of devices) {
         try {
           const result = await sendPushUpdate(device.push_token);
-          console.log(`[PUSH] token=${device.push_token.substring(0,12)}... result=${JSON.stringify(result)}`);
-          pushResults.push({ token: device.push_token.substring(0,12) + '...', serial: device.serial_number, ...result });
+          console.log(`[PUSH] token=${device.push_token.substring(0, 12)}... result=${JSON.stringify(result)}`);
+          pushResults.push({ token: device.push_token.substring(0, 12) + '...', serial: device.serial_number, ...result });
           if (result.success) sentAppleCount++;
 
           // Update per-pass push status
@@ -1729,7 +1729,7 @@ router.post('/push/send', async (req, res) => {
           }
         } catch (pushErr) {
           console.error('Push error for token:', device.push_token, pushErr.message);
-          pushResults.push({ token: device.push_token.substring(0,12) + '...', success: false, reason: pushErr.message });
+          pushResults.push({ token: device.push_token.substring(0, 12) + '...', success: false, reason: pushErr.message });
           if (device.serial_number) {
             await pool.query(
               `UPDATE pass_instances SET last_push_at = NOW(), last_push_status = $1, push_count = COALESCE(push_count, 0) + 1 WHERE serial_number = $2`,
@@ -2171,7 +2171,7 @@ router.post('/creative-assets/generate', async (req, res) => {
     if (reference_image) {
       aiModel = 'fal-ai/flux/dev/image-to-image';
       refImageUrl = `data:image/png;base64,${reference_image}`;
-      console.log(`[Creative AI] Using image-to-image with reference (${Math.round(reference_image.length/1024)}KB)`);
+      console.log(`[Creative AI] Using image-to-image with reference (${Math.round(reference_image.length / 1024)}KB)`);
     }
 
     // Step 1: Generate background with AI (using brand style prompt if configured)
@@ -2925,7 +2925,7 @@ router.post('/game/:serial_number', async (req, res) => {
   try {
     const { serial_number } = req.params;
     const { campaign_id, completion_time_secs, score,
-            player_email, player_phone, player_first_name, player_last_name, privacy_accepted } = req.body;
+      player_email, player_phone, player_first_name, player_last_name, privacy_accepted } = req.body;
 
     const pass = await getPassBySerial(serial_number);
     if (!pass) return res.status(404).json({ error: 'Pass non trovato' });
@@ -3398,7 +3398,7 @@ router.post('/google-wallet/callback', async (req, res) => {
           process_status: 'error',
           error_message: error.message
         });
-      } catch (_) {}
+      } catch (_) { }
     }
     res.status(200).send('OK');
   }
