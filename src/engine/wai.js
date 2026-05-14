@@ -91,13 +91,15 @@ gamification, reward, strip promo. Il back office è su studio.ads2wallet.com.
 - title: max 60 char, incisivo, adatto a lock screen
 - message: max 180 char, completa il titolo, crea valore
 - channel: "apple" | "google" | "samsung" | "all" (default: apple)
+- Se il manager chiede anche una nuova immagine strip del pass, aggiungi strip_prompt_en (inglese Flux) nel payload e mantieni update_pass true.
 - Se il manager non specifica l'orario, scegli in base al settore:
   Food: 11:30 o 18:00 | Retail: 10:00 o 17:00 | Generico: 10:00
 
 ### push.send
 - Come push.schedule ma senza scheduling. Esecuzione immediata.
 - title + message obbligatori. Se non specificati, genera e metti warning.
-- Non genera immagini: per una strip visiva usa strip.generate.
+- Se il manager chiede anche una nuova immagine strip del pass, NON usare strip.generate: resta su push.send o push.schedule e aggiungi strip_prompt_en (inglese Flux) nel payload.
+- update_pass deve restare true quando c'è una nuova strip, salvo diversa indicazione.
 
 ### reward.create
 - name: nome del reward (es. "Caffè gratis")
@@ -118,8 +120,8 @@ gamification, reward, strip promo. Il back office è su studio.ads2wallet.com.
 - win_probability: 0.0-1.0 (default 0.1 se non specificato)
 
 ### strip.generate — Generazione immagine strip con AI
-Quando il manager chiede di creare, generare o cambiare l'immagine strip del pass, usa l'intent strip.generate con type "create".
-Non usare push.schedule o push.send per richieste di immagini.
+Quando il manager chiede SOLO di creare, generare o salvare l'immagine strip del pass senza inviare o programmare una push, usa l'intent strip.generate con type "create".
+Se chiede anche push/notifica, usa push.send o push.schedule con strip_prompt_en.
 Traduci la descrizione italiana in prompt_en in inglese per Flux 1.1 Pro.
 Regole prompt_en: scena fotografica panoramica, includi "wide panoramic composition, no text, no watermarks, no logos, no UI elements", includi "photorealistic commercial photography" o "editorial photography", 30-60 parole, non inventare prodotti non menzionati.
 Stili: commercial_photo (default), lifestyle, food, minimal, seasonal, abstract.
@@ -278,6 +280,101 @@ function normalizePayload(intent, payload, brandId) {
   return next;
 }
 
+function wantsPushAndStrip(prompt) {
+  const text = String(prompt || '').trim();
+  if (!text) return false;
+  const wantsPush = /\b(push|notifica|notifiche|avviso|avvisa|invia|manda|programma|schedula|pianifica)\b/i.test(text);
+  const wantsStrip = /\b(immagine|strip|banner|hero|visual|grafica|foto|pass)\b/i.test(text);
+  return wantsPush && wantsStrip;
+}
+
+function coerceWaiProposal(prompt, raw) {
+  if (!raw || typeof raw !== 'object' || !wantsPushAndStrip(prompt)) return raw;
+
+  const preview = raw.preview && typeof raw.preview === 'object' ? raw.preview : {};
+  const details = preview.details && typeof preview.details === 'object' ? preview.details : {};
+  const payload = raw.payload && typeof raw.payload === 'object' ? { ...raw.payload } : {};
+  const promptEn = sanitizeStripPrompt(
+    payload.strip_prompt_en
+    || payload.prompt_en
+    || details.strip_prompt_en
+    || details.prompt_en
+    || ''
+  );
+  if (!promptEn) return raw;
+
+  const intent = String(raw.intent || '');
+  if (intent === 'strip.generate' || intent === 'push.send' || intent === 'push.schedule') {
+    if (intent !== 'strip.generate' && payload.strip_prompt_en) return raw;
+  } else {
+    return raw;
+  }
+
+  const text = String(prompt || '');
+  const wantsSchedule = /\b(programma|schedula|pianifica|ogni|settiman|luned|marted|mercoled|gioved|venerd|sabato|domenica|tantum)\b/i.test(text);
+  const wantsImmediate = /\b(subito|ora|immediat|adesso)\b/i.test(text);
+  const nextIntent = intent === 'push.schedule' || intent === 'push.send'
+    ? intent
+    : ((wantsSchedule && !wantsImmediate) ? 'push.schedule' : 'push.send');
+
+  const title = String(payload.title || details.title || 'Novità dal pass').trim().slice(0, 60);
+  const message = String(
+    payload.message
+    || details.message
+    || details.message_it
+    || preview.summary
+    || 'Scopri la novità nel tuo pass.'
+  ).trim().slice(0, 180);
+  const warnings = normalizeWarnings(preview.warnings);
+  if (intent === 'strip.generate') {
+    warnings.push('Proposta convertita in push con nuova strip AI.');
+  }
+
+  const nextPayload = {
+    ...payload,
+    title,
+    message,
+    channel: ['apple', 'google', 'samsung', 'all'].includes(payload.channel) ? payload.channel : 'all',
+    update_pass: payload.update_pass !== false,
+    strip_prompt_en: promptEn
+  };
+
+  if (nextIntent === 'push.schedule') {
+    nextPayload.schedule_type = ['once', 'daily', 'weekly'].includes(payload.schedule_type)
+      ? payload.schedule_type
+      : (wantsSchedule ? 'weekly' : 'once');
+    nextPayload.schedule_time = String(payload.schedule_time || details.schedule_time || '10:00').trim();
+    if (nextPayload.schedule_type === 'weekly') {
+      const days = Array.isArray(payload.days) ? payload.days : [];
+      nextPayload.days = days.length ? days : [1];
+    }
+    if (nextPayload.schedule_type === 'once' && !payload.date && !details.date) {
+      const fallback = new Date();
+      fallback.setDate(fallback.getDate() + 1);
+      nextPayload.date = fallback.toISOString().slice(0, 10);
+      warnings.push('Data push una tantum non specificata: proposta per domani.');
+    }
+  }
+
+  return {
+    ...raw,
+    intent: nextIntent,
+    type: 'create',
+    payload: nextPayload,
+    preview: {
+      ...preview,
+      summary: preview.summary || `Push con nuova strip: ${title}`,
+      details: {
+        ...details,
+        title,
+        message,
+        strip_prompt_en: promptEn
+      },
+      warnings
+    }
+  };
+}
+
 function validateWaiResponse(raw, brandId) {
   if (!raw || typeof raw !== 'object') {
     throw new Error('Risposta W.AI non valida');
@@ -326,6 +423,16 @@ function validateWaiResponse(raw, brandId) {
     }
     payload.channel = ['apple', 'google', 'samsung', 'all'].includes(payload.channel) ? payload.channel : 'apple';
     payload.update_pass = payload.update_pass !== false;
+    const stripPrompt = sanitizeStripPrompt(
+      payload.strip_prompt_en || preview.details?.strip_prompt_en || ''
+    );
+    if (stripPrompt) {
+      payload.strip_prompt_en = stripPrompt;
+      preview.details = { ...preview.details, strip_prompt_en: stripPrompt };
+      payload.update_pass = true;
+    } else {
+      delete payload.strip_prompt_en;
+    }
   }
 
   if (intent === 'push.schedule') {
@@ -396,7 +503,7 @@ async function askWai({ brandId, prompt, followup = '', previousProposal = null 
     buildUserMessage(trimmed, context, refinement),
     modelChoice.model
   );
-  const parsed = extractJSON(text);
+  const parsed = coerceWaiProposal(routingPrompt, extractJSON(text));
   const proposal = validateWaiResponse(parsed, brandId);
   return {
     ...proposal,
@@ -414,5 +521,6 @@ module.exports = {
   buildUserMessage,
   callWai,
   askWai,
+  coerceWaiProposal,
   validateWaiResponse
 };

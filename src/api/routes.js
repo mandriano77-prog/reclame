@@ -3436,6 +3436,51 @@ function enforceWaiStripGenerateRateLimit(brandId) {
   waiStripGenerateBuckets.set(brandId, recent);
 }
 
+const WAI_STRIP_GENERATE_MODEL = 'fal-ai/flux-pro/v1.1';
+const WAI_STRIP_GENERATE_WIDTH = 1125;
+const WAI_STRIP_GENERATE_HEIGHT = 432;
+
+async function generateWaiStripBase64({ brand_id, prompt_en }) {
+  const brand = await getBrand(brand_id);
+  if (!brand) throw new Error('Brand non trovato');
+  const stylePrompt = brand.config?.aiStylePrompt || null;
+  const imageUrl = await generateWithFal(
+    `${prompt_en}, promotional banner, wide aspect ratio`,
+    WAI_STRIP_GENERATE_WIDTH,
+    WAI_STRIP_GENERATE_HEIGHT,
+    WAI_STRIP_GENERATE_MODEL,
+    null,
+    stylePrompt
+  );
+  const imgResponse = await fetch(imageUrl);
+  if (!imgResponse.ok) throw new Error('Download immagine generata fallito');
+  const arrayBuf = await imgResponse.arrayBuffer();
+  return Buffer.from(arrayBuf).toString('base64');
+}
+
+async function applyGeneratedStripToBrand(brand_id, stripBase64) {
+  const brand = await getBrand(brand_id);
+  if (!brand) throw new Error('Brand non trovato');
+  const config = { ...(brand.config || {}) };
+  const logos = { ...(config.logos || {}) };
+  if (!logos.strip_default && logos.strip) logos.strip_default = logos.strip;
+  logos.strip = stripBase64;
+  config.logos = logos;
+  delete config.stripOverride;
+  await updateBrand(brand_id, { config });
+}
+
+async function maybeGenerateAndApplyWaiStrip(payload) {
+  const stripPrompt = String(payload?.strip_prompt_en || '').trim();
+  if (!stripPrompt) return null;
+  const stripBase64 = await generateWaiStripBase64({
+    brand_id: payload.brand_id,
+    prompt_en: stripPrompt
+  });
+  await applyGeneratedStripToBrand(payload.brand_id, stripBase64);
+  return stripBase64;
+}
+
 async function performImmediatePushForWai(payload) {
   const { brand_id, title, message, campaign_id = null, update_pass = true, channel = 'apple' } = payload;
   if (!assertPushChannel(channel)) throw new Error('channel non valido');
@@ -3458,6 +3503,10 @@ async function performImmediatePushForWai(payload) {
     } else {
       devices = await getDevicesForBrand(brand_id);
     }
+  }
+
+  if (payload.strip_prompt_en) {
+    await maybeGenerateAndApplyWaiStrip(payload);
   }
 
   if (update_pass !== false) {
@@ -3497,6 +3546,10 @@ async function performImmediatePushForWai(payload) {
 const WAI_EXECUTORS = {
   'push.schedule': async (payload) => {
     const body = { ...payload };
+    if (body.strip_prompt_en) {
+      await maybeGenerateAndApplyWaiStrip(body);
+      delete body.strip_prompt_en;
+    }
     if (Array.isArray(body.days) && body.days.length && (!body.schedule_days || String(body.schedule_days).trim() === '')) {
       body.schedule_days = body.days.map((x) => String(x)).join(',');
     }
@@ -3522,25 +3575,10 @@ const WAI_EXECUTORS = {
     return { message: `Strip promo '${payload.title}' creata`, data: item };
   },
   'strip.generate': async (payload) => {
-    const brand = await getBrand(payload.brand_id);
-    if (!brand) throw new Error('Brand non trovato');
-    const stylePrompt = brand.config?.aiStylePrompt || null;
-    const imageUrl = await generateWithFal(
-      `${payload.prompt_en}, promotional banner, wide aspect ratio`,
-      payload.width,
-      payload.height,
-      payload.model,
-      null,
-      stylePrompt
-    );
-    const imgResponse = await fetch(imageUrl);
-    if (!imgResponse.ok) throw new Error('Download immagine generata fallito');
-    const arrayBuf = await imgResponse.arrayBuffer();
-    const base64 = Buffer.from(arrayBuf).toString('base64');
+    const stripBase64 = await generateWaiStripBase64(payload);
     return {
       message: 'Immagine strip generata',
-      image_base64: base64,
-      image_url: imageUrl,
+      image_base64: stripBase64,
       prompt_used: payload.prompt_en,
       dimensions: `${payload.width}x${payload.height}`,
       needs_name: true
@@ -3590,6 +3628,9 @@ router.post('/wai/execute', async (req, res) => {
       return res.status(400).json({ error: `Intent '${intent}' non eseguibile` });
     }
     if (intent === 'strip.generate') enforceWaiStripGenerateRateLimit(payload.brand_id);
+    if ((intent === 'push.send' || intent === 'push.schedule') && payload.strip_prompt_en) {
+      enforceWaiStripGenerateRateLimit(payload.brand_id);
+    }
 
     const normalized = validateWaiResponse({ intent, type: 'create', payload, preview: { summary: '', details: {}, warnings: [] } }, payload.brand_id);
     const executor = WAI_EXECUTORS[intent];
