@@ -1576,7 +1576,7 @@
     <button type="button" id="waiSendBtn" onclick="askWai()" style="width:100%; margin-top:8px; padding:10px; background:#00D4AA; color:#0a0a0a; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;">Chiedi a W.AI</button>
     <div id="waiPreview" style="display:none;"></div>
     <div id="waiRefineGroup" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
-      <label for="waiRefinePrompt" style="display:block; font-size:11px; color:#999; margin-bottom:6px;">Integra o correggi la proposta</label>
+      <label id="waiRefineLabel" for="waiRefinePrompt" style="display:block; font-size:11px; color:#999; margin-bottom:6px;">Integra o correggi la proposta</label>
       <textarea id="waiRefinePrompt" rows="2" placeholder="es. imposta un cap massimo di 100 vincite" style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#f4ede2; padding:10px 12px; font-size:13px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
       <button type="button" id="waiRefineBtn" onclick="refineWai()" style="width:100%; margin-top:8px; padding:10px; background:rgba(255,255,255,0.06); color:#f4ede2; border:1px solid rgba(255,255,255,0.08); border-radius:8px; font-weight:600; font-size:12px; cursor:pointer; font-family:inherit;">Aggiorna proposta</button>
     </div>
@@ -5905,6 +5905,7 @@ async function deleteUser(id) {
 // ==================== W.AI ====================
 let waiDraft = null;
 let waiOriginalPrompt = '';
+let waiIntegrationTrace = '';
 let waiCurrentStripBase64 = null;
 let waiCurrentStripPayload = null;
 
@@ -5921,8 +5922,11 @@ function waiBuildPreviousProposal() {
 
 function waiGetPromptTrace() {
     const base = waiOriginalPrompt || document.getElementById('waiPrompt')?.value?.trim() || '';
-    const followup = document.getElementById('waiRefinePrompt')?.value?.trim() || '';
-    return followup ? `${base}\n\nIntegrazione:\n${followup}` : base;
+    const pending = document.getElementById('waiRefinePrompt')?.value?.trim() || '';
+    const parts = [base];
+    if (waiIntegrationTrace) parts.push(`Integrazione:\n${waiIntegrationTrace}`);
+    if (pending) parts.push(`Integrazione:\n${pending}`);
+    return parts.filter(Boolean).join('\n\n');
 }
 
 function waiHideRefinementUi() {
@@ -5932,13 +5936,37 @@ function waiHideRefinementUi() {
     if (refine) refine.value = '';
 }
 
+function waiSyncRefinementUi() {
+    const label = document.getElementById('waiRefineLabel');
+    const refine = document.getElementById('waiRefinePrompt');
+    const btn = document.getElementById('waiRefineBtn');
+    const isStrip = waiDraft?.intent === 'strip.generate' || !!waiCurrentStripBase64;
+    if (label) {
+        label.textContent = isStrip
+            ? 'Integra o correggi la scena da generare'
+            : 'Integra o correggi la proposta';
+    }
+    if (refine) {
+        refine.placeholder = isStrip
+            ? 'es. più luce dorata, meno elementi in primo piano'
+            : 'es. imposta un cap massimo di 100 vincite';
+    }
+    if (btn) {
+        btn.textContent = isStrip && waiCurrentStripBase64
+            ? 'Rigenera immagine'
+            : (isStrip ? 'Aggiorna prompt immagine' : 'Aggiorna proposta');
+    }
+}
+
 function waiShowRefinementUi() {
     const group = document.getElementById('waiRefineGroup');
     if (group) group.style.display = 'block';
+    waiSyncRefinementUi();
 }
 
 function waiResetRefinementState() {
     waiOriginalPrompt = '';
+    waiIntegrationTrace = '';
     waiHideRefinementUi();
 }
 
@@ -5974,16 +6002,19 @@ function waiShouldAutoGenerateStrip(data) {
         && !!(data?.payload?.prompt_en || data?.preview?.details?.prompt_en);
 }
 
-async function applyWaiAskResponse(data, { clearRefineField = false } = {}) {
+function waiBuildStripPayload(data) {
+    return {
+        ...(data?.payload || {}),
+        brand_id: data?.payload?.brand_id || brandId,
+        prompt_en: data?.payload?.prompt_en || data?.preview?.details?.prompt_en || ''
+    };
+}
+
+async function applyWaiAskResponse(data, { clearRefineField = false, regenerateStrip = false } = {}) {
     waiDraft = data;
-    if (waiShouldAutoGenerateStrip(data)) {
+    if (regenerateStrip && waiShouldAutoGenerateStrip(data)) {
         waiHideRefinementUi();
-        const payload = {
-            ...(data.payload || {}),
-            brand_id: data.payload?.brand_id || brandId,
-            prompt_en: data.payload?.prompt_en || data.preview?.details?.prompt_en || ''
-        };
-        await waiHandleStripGenerate(payload);
+        await waiHandleStripGenerate(waiBuildStripPayload(data));
         return;
     }
     renderWaiPreview(data);
@@ -6010,6 +6041,7 @@ async function askWai() {
     if (preview) preview.style.display = 'none';
     waiResetStripPreview();
     waiHideRefinementUi();
+    waiIntegrationTrace = '';
 
     try {
         const res = await fetch(`${API}/wai/ask`, {
@@ -6037,6 +6069,7 @@ async function refineWai() {
     if (!waiDraft) return alert('Nessuna proposta da aggiornare');
     const originalPrompt = waiOriginalPrompt || document.getElementById('waiPrompt')?.value?.trim() || '';
     if (!originalPrompt) return alert('Prompt originale mancante');
+    const wasStrip = waiDraft?.intent === 'strip.generate' || !!waiCurrentStripBase64;
 
     const btn = document.getElementById('waiRefineBtn');
     const prevLabel = btn ? btn.textContent : '';
@@ -6058,11 +6091,15 @@ async function refineWai() {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) return alert(data.error || 'Errore W.AI');
-        await applyWaiAskResponse(data, { clearRefineField: true });
+        waiIntegrationTrace = waiIntegrationTrace
+            ? `${waiIntegrationTrace}\n${followup}`
+            : followup;
+        const regenerateStrip = data.intent === 'strip.generate' && wasStrip;
+        await applyWaiAskResponse(data, { clearRefineField: true, regenerateStrip });
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.textContent = prevLabel || 'Aggiorna proposta';
+            waiSyncRefinementUi();
         }
     }
 }
@@ -6120,7 +6157,7 @@ function renderWaiPreview(data) {
 async function confirmWai() {
     if (!waiDraft?.payload || !Object.keys(waiDraft.payload).length) return alert('Nessuna azione da confermare');
     if (waiDraft.intent === 'strip.generate') {
-        await waiHandleStripGenerate(waiDraft.payload);
+        await waiHandleStripGenerate(waiBuildStripPayload(waiDraft));
         return;
     }
     const res = await fetch(`${API}/wai/execute`, {
@@ -6179,6 +6216,7 @@ async function waiHandleStripGenerate(payload) {
             stripPreview.style.display = 'block';
             stripPreview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+        waiShowRefinementUi();
     } catch (err) {
         if (preview) {
             preview.style.display = 'block';

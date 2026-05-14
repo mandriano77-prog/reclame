@@ -145,6 +145,7 @@ function buildUserMessage(prompt, context, refinement = null) {
     message += `\n\nProposta precedente non ancora confermata:\n${JSON.stringify(refinement.previousProposal || {}, null, 2)}`;
     message += `\n\nIntegrazione o correzione richiesta dal manager:\n${refinement.followup}`;
     message += '\n\nAggiorna la proposta completa in JSON. Mantieni intent e payload coerenti con la richiesta originale salvo diversa indicazione. Se il manager integra un warning, applica la modifica nel payload.';
+    message += '\n\nSe l\'intent è strip.generate, riscrivi prompt_en in inglese integrando la modifica visiva richiesta e mantieni le regole Flux.';
   }
   return message;
 }
