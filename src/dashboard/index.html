@@ -5959,7 +5959,12 @@ async function askWai() {
         if (!res.ok) return alert(data.error || 'Errore W.AI');
         waiDraft = data;
         if (waiShouldAutoGenerateStrip(data)) {
-            await waiHandleStripGenerate(data.payload);
+            const payload = {
+                ...(data.payload || {}),
+                brand_id: data.payload?.brand_id || brandId,
+                prompt_en: data.payload?.prompt_en || data.preview?.details?.prompt_en || ''
+            };
+            await waiHandleStripGenerate(payload);
             return;
         }
         renderWaiPreview(data);
