@@ -3552,15 +3552,23 @@ const WAI_EXECUTORS = {
 router.post('/wai/ask', async (req, res) => {
   try {
     if (!requireWriteAccess(req, res)) return;
-    const { prompt, brand_id } = req.body;
+    const { prompt, brand_id, followup, previous_proposal } = req.body;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
     if (!requireBrandId(req, res, brand_id)) return;
     enforceWaiRateLimit(brand_id);
-    const proposal = await askWai({ brandId: brand_id, prompt });
+    const proposal = await askWai({
+      brandId: brand_id,
+      prompt,
+      followup,
+      previousProposal: previous_proposal
+    });
+    const loggedPrompt = String(followup || '').trim()
+      ? `${String(prompt || '').trim()}\n\nIntegrazione:\n${String(followup || '').trim()}`
+      : String(prompt || '').trim();
     await logWaiInteraction({
       brand_id,
       user_id: req.user?.id || null,
-      prompt: String(prompt || '').trim(),
+      prompt: loggedPrompt,
       intent: proposal.intent,
       proposal,
       action: 'planned'

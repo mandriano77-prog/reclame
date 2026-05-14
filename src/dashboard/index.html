@@ -1575,6 +1575,11 @@
     <textarea id="waiPrompt" rows="3" placeholder="Scrivi cosa vuoi fare..." style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#f4ede2; padding:12px; font-size:13px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
     <button type="button" id="waiSendBtn" onclick="askWai()" style="width:100%; margin-top:8px; padding:10px; background:#00D4AA; color:#0a0a0a; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;">Chiedi a W.AI</button>
     <div id="waiPreview" style="display:none;"></div>
+    <div id="waiRefineGroup" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+      <label for="waiRefinePrompt" style="display:block; font-size:11px; color:#999; margin-bottom:6px;">Integra o correggi la proposta</label>
+      <textarea id="waiRefinePrompt" rows="2" placeholder="es. imposta un cap massimo di 100 vincite" style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#f4ede2; padding:10px 12px; font-size:13px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
+      <button type="button" id="waiRefineBtn" onclick="refineWai()" style="width:100%; margin-top:8px; padding:10px; background:rgba(255,255,255,0.06); color:#f4ede2; border:1px solid rgba(255,255,255,0.08); border-radius:8px; font-weight:600; font-size:12px; cursor:pointer; font-family:inherit;">Aggiorna proposta</button>
+    </div>
     <div id="wai-strip-preview" style="display:none; margin-top:12px;">
       <img id="wai-strip-img" alt="Anteprima strip generata" style="width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.08);" />
       <div style="margin-top:12px;">
@@ -5899,8 +5904,43 @@ async function deleteUser(id) {
 
 // ==================== W.AI ====================
 let waiDraft = null;
+let waiOriginalPrompt = '';
 let waiCurrentStripBase64 = null;
 let waiCurrentStripPayload = null;
+
+function waiBuildPreviousProposal() {
+    if (!waiDraft) return null;
+    return {
+        intent: waiDraft.intent,
+        type: waiDraft.type,
+        preview: waiDraft.preview,
+        payload: waiDraft.payload,
+        answer: waiDraft.answer || ''
+    };
+}
+
+function waiGetPromptTrace() {
+    const base = waiOriginalPrompt || document.getElementById('waiPrompt')?.value?.trim() || '';
+    const followup = document.getElementById('waiRefinePrompt')?.value?.trim() || '';
+    return followup ? `${base}\n\nIntegrazione:\n${followup}` : base;
+}
+
+function waiHideRefinementUi() {
+    const group = document.getElementById('waiRefineGroup');
+    const refine = document.getElementById('waiRefinePrompt');
+    if (group) group.style.display = 'none';
+    if (refine) refine.value = '';
+}
+
+function waiShowRefinementUi() {
+    const group = document.getElementById('waiRefineGroup');
+    if (group) group.style.display = 'block';
+}
+
+function waiResetRefinementState() {
+    waiOriginalPrompt = '';
+    waiHideRefinementUi();
+}
 
 function waiResetStripPreview() {
     const stripPreview = document.getElementById('wai-strip-preview');
@@ -5924,6 +5964,7 @@ function toggleWaiOverlay(forceOpen) {
         const preview = document.getElementById('waiPreview');
         if (preview) preview.style.display = 'none';
         waiResetStripPreview();
+        waiResetRefinementState();
     }
 }
 
@@ -5931,6 +5972,26 @@ function waiShouldAutoGenerateStrip(data) {
     return data?.intent === 'strip.generate'
         && data?.type === 'create'
         && !!(data?.payload?.prompt_en || data?.preview?.details?.prompt_en);
+}
+
+async function applyWaiAskResponse(data, { clearRefineField = false } = {}) {
+    waiDraft = data;
+    if (waiShouldAutoGenerateStrip(data)) {
+        waiHideRefinementUi();
+        const payload = {
+            ...(data.payload || {}),
+            brand_id: data.payload?.brand_id || brandId,
+            prompt_en: data.payload?.prompt_en || data.preview?.details?.prompt_en || ''
+        };
+        await waiHandleStripGenerate(payload);
+        return;
+    }
+    renderWaiPreview(data);
+    waiShowRefinementUi();
+    if (clearRefineField) {
+        const refine = document.getElementById('waiRefinePrompt');
+        if (refine) refine.value = '';
+    }
 }
 
 async function askWai() {
@@ -5948,6 +6009,7 @@ async function askWai() {
     const preview = document.getElementById('waiPreview');
     if (preview) preview.style.display = 'none';
     waiResetStripPreview();
+    waiHideRefinementUi();
 
     try {
         const res = await fetch(`${API}/wai/ask`, {
@@ -5957,21 +6019,50 @@ async function askWai() {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) return alert(data.error || 'Errore W.AI');
-        waiDraft = data;
-        if (waiShouldAutoGenerateStrip(data)) {
-            const payload = {
-                ...(data.payload || {}),
-                brand_id: data.payload?.brand_id || brandId,
-                prompt_en: data.payload?.prompt_en || data.preview?.details?.prompt_en || ''
-            };
-            await waiHandleStripGenerate(payload);
-            return;
-        }
-        renderWaiPreview(data);
+        waiOriginalPrompt = prompt;
+        await applyWaiAskResponse(data);
     } finally {
         if (btn) {
             btn.disabled = false;
             btn.textContent = prevLabel || 'Chiedi a W.AI';
+        }
+    }
+}
+
+async function refineWai() {
+    if (!brandId) return alert('Seleziona un brand');
+    if (currentUser?.role === 'viewer') return alert('Permessi insufficienti (solo lettura)');
+    const followup = document.getElementById('waiRefinePrompt')?.value?.trim() || '';
+    if (!followup) return alert('Scrivi cosa vuoi modificare o integrare');
+    if (!waiDraft) return alert('Nessuna proposta da aggiornare');
+    const originalPrompt = waiOriginalPrompt || document.getElementById('waiPrompt')?.value?.trim() || '';
+    if (!originalPrompt) return alert('Prompt originale mancante');
+
+    const btn = document.getElementById('waiRefineBtn');
+    const prevLabel = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'W.AI sta aggiornando...';
+    }
+
+    try {
+        const res = await fetch(`${API}/wai/ask`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                brand_id: brandId,
+                prompt: originalPrompt,
+                followup,
+                previous_proposal: waiBuildPreviousProposal()
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return alert(data.error || 'Errore W.AI');
+        await applyWaiAskResponse(data, { clearRefineField: true });
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = prevLabel || 'Aggiorna proposta';
         }
     }
 }
@@ -6035,7 +6126,7 @@ async function confirmWai() {
     const res = await fetch(`${API}/wai/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ intent: waiDraft.intent, payload: waiDraft.payload, prompt: document.getElementById('waiPrompt')?.value || '' })
+        body: JSON.stringify({ intent: waiDraft.intent, payload: waiDraft.payload, prompt: waiGetPromptTrace() })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return alert(data.error || 'Errore esecuzione');
@@ -6052,6 +6143,7 @@ async function waiHandleStripGenerate(payload) {
     const sendBtn = document.getElementById('waiSendBtn');
     const sendPrevLabel = sendBtn ? sendBtn.textContent : '';
     if (stripPreview) stripPreview.style.display = 'none';
+    waiHideRefinementUi();
     if (preview) {
         preview.style.display = 'block';
         preview.innerHTML = '<div style="font-size:13px;color:#ccc;line-height:1.6;">Generazione immagine in corso... (10-20 secondi)</div>';
@@ -6068,7 +6160,7 @@ async function waiHandleStripGenerate(payload) {
             body: JSON.stringify({
                 intent: 'strip.generate',
                 payload,
-                prompt: document.getElementById('waiPrompt')?.value || ''
+                prompt: waiGetPromptTrace()
             })
         });
         const data = await res.json().catch(() => ({}));
@@ -6146,6 +6238,7 @@ function dismissWai() {
     }
     if (prompt) prompt.value = '';
     waiResetStripPreview();
+    waiResetRefinementState();
 }
 
 function refreshDashboardSection(intent) {

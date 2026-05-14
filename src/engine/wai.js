@@ -139,8 +139,14 @@ In preview.details includi description_it, prompt_en, style, dimensions "1125x43
 5. COERENZA: mantieni il tono delle push recenti del brand
 6. NO SPAM: mai tutto maiuscolo, mai clickbait vuoto`;
 
-function buildUserMessage(prompt, context) {
-  return `Stato attuale del brand:\n${JSON.stringify(context, null, 2)}\n\nRichiesta del manager:\n${prompt}`;
+function buildUserMessage(prompt, context, refinement = null) {
+  let message = `Stato attuale del brand:\n${JSON.stringify(context, null, 2)}\n\nRichiesta del manager:\n${prompt}`;
+  if (refinement?.followup) {
+    message += `\n\nProposta precedente non ancora confermata:\n${JSON.stringify(refinement.previousProposal || {}, null, 2)}`;
+    message += `\n\nIntegrazione o correzione richiesta dal manager:\n${refinement.followup}`;
+    message += '\n\nAggiorna la proposta completa in JSON. Mantieni intent e payload coerenti con la richiesta originale salvo diversa indicazione. Se il manager integra un warning, applica la modifica nel payload.';
+  }
+  return message;
 }
 
 async function callWai(systemPrompt, userMessage, model) {
@@ -372,13 +378,23 @@ function validateWaiResponse(raw, brandId) {
   return { intent, type: 'create', preview, payload, answer: '' };
 }
 
-async function askWai({ brandId, prompt }) {
+async function askWai({ brandId, prompt, followup = '', previousProposal = null }) {
   const trimmed = String(prompt || '').trim();
+  const followupText = String(followup || '').trim();
   if (!trimmed) throw new Error('prompt richiesto');
+  if (followupText && !previousProposal) throw new Error('previous_proposal richiesto per la raffinazione');
 
   const context = await buildWaiContext(brandId);
-  const modelChoice = pickWaiModel(trimmed);
-  const text = await callWai(SYSTEM_PROMPT, buildUserMessage(trimmed, context), modelChoice.model);
+  const routingPrompt = followupText ? `${trimmed}\n\nIntegrazione richiesta:\n${followupText}` : trimmed;
+  const modelChoice = pickWaiModel(routingPrompt);
+  const refinement = followupText
+    ? { followup: followupText, previousProposal }
+    : null;
+  const text = await callWai(
+    SYSTEM_PROMPT,
+    buildUserMessage(trimmed, context, refinement),
+    modelChoice.model
+  );
   const parsed = extractJSON(text);
   const proposal = validateWaiResponse(parsed, brandId);
   return {
