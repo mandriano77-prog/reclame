@@ -398,15 +398,14 @@ router.post('/signup/google-wallet', async (req, res) => {
     if (campaign_id) await incrementCampaignDownloads(campaign_id);
 
     // Create Google Wallet pass class + object and generate save link
-    await googleWallet.createOrUpdatePassClass(brand, template);
     const passObject = googleWallet.buildPassObject(brand, template, passInstance, passInstance.customer_data || {});
-    await googleWallet.createPassObjectOnServer(passObject);
+    const saveLink = googleWallet.generateSaveLink(brand, template, passObject);
+
     await updatePassInstance(passInstance.id, {
       google_wallet_object_id: passObject.id,
       google_wallet_saved: false,
       google_installed_at: null
     });
-    const saveLink = googleWallet.generateSaveLink(brand, template, passObject);
 
     await logEvent({ brand_id: brand.id, pass_id: passInstance.id, event_type: 'google_wallet_link_generated', metadata: {} });
 
