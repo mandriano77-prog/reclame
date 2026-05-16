@@ -1605,6 +1605,7 @@
       <textarea id="waiRefinePrompt" rows="2" placeholder="es. imposta un cap massimo di 100 vincite" style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#f4ede2; padding:10px 12px; font-size:13px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
       <button type="button" id="waiRefineBtn" onclick="refineWai()" style="width:100%; margin-top:8px; padding:10px; background:rgba(255,255,255,0.06); color:#f4ede2; border:1px solid rgba(255,255,255,0.08); border-radius:8px; font-weight:600; font-size:12px; cursor:pointer; font-family:inherit;">Aggiorna proposta</button>
     </div>
+    <div id="waiPushStripStatus" style="display:none; font-size:12px; color:#999; margin-top:8px; line-height:1.45;"></div>
     <div id="wai-strip-preview" style="display:none; margin-top:12px;">
       <img id="wai-strip-img" alt="Anteprima strip generata" style="width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.08);" />
       <div style="margin-top:12px;">
@@ -6181,8 +6182,18 @@ function waiBuildStripPayload(data) {
     return {
         ...(data?.payload || {}),
         brand_id: data?.payload?.brand_id || brandId,
-        prompt_en: data?.payload?.prompt_en || data?.preview?.details?.prompt_en || ''
+        prompt_en: data?.payload?.prompt_en
+            || data?.payload?.strip_prompt_en
+            || data?.preview?.details?.prompt_en
+            || data?.preview?.details?.strip_prompt_en
+            || ''
     };
+}
+
+function waiDraftHasPushWithStrip(data) {
+    const intent = String(data?.intent || '');
+    if (intent !== 'push.send' && intent !== 'push.schedule') return false;
+    return !!(data?.payload?.strip_prompt_en || data?.preview?.details?.strip_prompt_en);
 }
 
 async function applyWaiAskResponse(data, { clearRefineField = false, regenerateStrip = false } = {}) {
@@ -6198,6 +6209,15 @@ async function applyWaiAskResponse(data, { clearRefineField = false, regenerateS
         const refine = document.getElementById('waiRefinePrompt');
         if (refine) refine.value = '';
     }
+    if (waiDraftHasPushWithStrip(data)) {
+        await waiPreGenerateStripForPush(data);
+    }
+}
+
+async function waiPreGenerateStripForPush(data) {
+    const promptEn = data?.payload?.strip_prompt_en || data?.preview?.details?.strip_prompt_en;
+    if (!promptEn) return;
+    await waiHandleStripGenerate(waiBuildStripPayload(data), { mode: 'push-combo' });
 }
 
 async function askWai() {
@@ -6244,7 +6264,7 @@ async function refineWai() {
     if (!waiDraft) return alert('Nessuna proposta da aggiornare');
     const originalPrompt = waiOriginalPrompt || document.getElementById('waiPrompt')?.value?.trim() || '';
     if (!originalPrompt) return alert('Prompt originale mancante');
-    const wasStrip = waiDraft?.intent === 'strip.generate' || !!waiCurrentStripBase64;
+        const wasStrip = waiDraft?.intent === 'strip.generate' || !!waiCurrentStripBase64 || waiDraftHasPushWithStrip(waiDraft);
 
     const btn = document.getElementById('waiRefineBtn');
     const prevLabel = btn ? btn.textContent : '';
@@ -6269,7 +6289,9 @@ async function refineWai() {
         waiIntegrationTrace = waiIntegrationTrace
             ? `${waiIntegrationTrace}\n${followup}`
             : followup;
-        const regenerateStrip = data.intent === 'strip.generate' && wasStrip;
+        const regenerateStrip = wasStrip && (
+            data.intent === 'strip.generate' || waiDraftHasPushWithStrip(data)
+        );
         await applyWaiAskResponse(data, { clearRefineField: true, regenerateStrip });
     } finally {
         if (btn) {
@@ -6347,19 +6369,52 @@ async function confirmWai() {
         await waiHandleStripGenerate(waiBuildStripPayload(waiDraft));
         return;
     }
-    const res = await fetch(`${API}/wai/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ intent: waiDraft.intent, payload: waiDraft.payload, prompt: waiGetPromptTrace() })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(data.error || 'Errore esecuzione');
-    toast(data.message || 'Azione completata');
-    dismissWai();
-    refreshDashboardSection(waiDraft.intent);
+    const payload = { ...waiDraft.payload, brand_id: waiDraft.payload.brand_id || brandId };
+    const comboPushStrip = waiDraftHasPushWithStrip(waiDraft);
+    if (comboPushStrip) {
+        if (!waiCurrentStripBase64 && payload.strip_prompt_en) {
+            await waiPreGenerateStripForPush(waiDraft);
+        }
+        if (!waiCurrentStripBase64) {
+            return alert('Generazione strip non riuscita. Verifica FAL_API_KEY o riprova.');
+        }
+        payload.strip_base64 = waiCurrentStripBase64;
+        delete payload.strip_prompt_en;
+    }
+    const preview = document.getElementById('waiPreview');
+    const prevHtml = preview ? preview.innerHTML : '';
+    if (comboPushStrip && preview) {
+        preview.style.display = 'block';
+        preview.innerHTML = '<div style="font-size:13px;color:#ccc;line-height:1.6;">Generazione strip e invio push in corso... (10-30 secondi)</div>';
+    }
+    try {
+        const res = await fetch(`${API}/wai/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ intent: waiDraft.intent, payload, prompt: waiGetPromptTrace() })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (preview && prevHtml) {
+                preview.innerHTML = prevHtml;
+                preview.style.display = 'block';
+            }
+            return alert(data.error || 'Errore esecuzione');
+        }
+        toast(data.message || 'Azione completata');
+        dismissWai();
+        refreshDashboardSection(waiDraft.intent);
+    } catch (err) {
+        if (preview && prevHtml) {
+            preview.innerHTML = prevHtml;
+            preview.style.display = 'block';
+        }
+        alert(err.message || 'Errore esecuzione');
+    }
 }
 
-async function waiHandleStripGenerate(payload) {
+async function waiHandleStripGenerate(payload, { mode = 'library' } = {}) {
+    const pushCombo = mode === 'push-combo';
     const preview = document.getElementById('waiPreview');
     const stripPreview = document.getElementById('wai-strip-preview');
     const img = document.getElementById('wai-strip-img');
@@ -6367,10 +6422,15 @@ async function waiHandleStripGenerate(payload) {
     const sendBtn = document.getElementById('waiSendBtn');
     const sendPrevLabel = sendBtn ? sendBtn.textContent : '';
     if (stripPreview) stripPreview.style.display = 'none';
-    waiHideRefinementUi();
-    if (preview) {
+    if (!pushCombo) waiHideRefinementUi();
+    if (preview && !pushCombo) {
         preview.style.display = 'block';
         preview.innerHTML = '<div style="font-size:13px;color:#ccc;line-height:1.6;">Generazione immagine in corso... (10-20 secondi)</div>';
+    }
+    const statusElStart = document.getElementById('waiPushStripStatus');
+    if (statusElStart && pushCombo) {
+        statusElStart.style.display = 'block';
+        statusElStart.textContent = 'Generazione anteprima strip... (10-20 secondi)';
     }
     if (sendBtn) {
         sendBtn.disabled = true;
@@ -6395,13 +6455,21 @@ async function waiHandleStripGenerate(payload) {
         waiCurrentStripPayload = payload;
         if (img) img.src = `data:image/png;base64,${data.image_base64}`;
         if (nameInput) nameInput.value = '';
-        if (preview) {
+        if (pushCombo) {
+            if (waiDraft) renderWaiPreview(waiDraft);
+        } else if (preview) {
             preview.style.display = 'none';
             preview.innerHTML = '';
         }
         if (stripPreview) {
             stripPreview.style.display = 'block';
+            const saveRow = stripPreview.querySelector('[data-wai-strip-save-row]');
+            if (saveRow) saveRow.style.display = pushCombo ? 'none' : 'flex';
             stripPreview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        const statusEl = document.getElementById('waiPushStripStatus');
+        if (statusEl && pushCombo) {
+            statusEl.textContent = 'Strip pronta. Conferma per applicarla al pass e inviare la push.';
         }
         waiShowRefinementUi();
     } catch (err) {
