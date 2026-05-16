@@ -283,9 +283,25 @@ function normalizePayload(intent, payload, brandId) {
 function wantsPushAndStrip(prompt) {
   const text = String(prompt || '').trim();
   if (!text) return false;
-  const wantsPush = /\b(push|notifica|notifiche|avviso|avvisa|invia|manda|programma|schedula|pianifica)\b/i.test(text);
-  const wantsStrip = /\b(immagine|strip|banner|hero|visual|grafica|foto|pass)\b/i.test(text);
+  const wantsPush = /\b(push|notifica|notifiche|avviso|avvisa|invia|manda|programma|schedula|pianifica|lock\s*screen)\b/i.test(text);
+  const wantsStrip = /\b(immagine|strip|banner|hero|visual|grafica|foto|facciata)\b/i.test(text)
+    || /\bgenera(?:\s+\w+){0,4}\s+strip\b/i.test(text)
+    || /\bstrip\s+(?:con|per|del|della)\b/i.test(text)
+    || /\b(aggiorna|nuova|cambia).{0,30}\bstrip\b/i.test(text);
   return wantsPush && wantsStrip;
+}
+
+function inferStripPromptFromUserText(prompt) {
+  const text = String(prompt || '').trim();
+  if (!text) return '';
+  let visual = text
+    .replace(/\b(push|notifica|notifiche|avviso|avvisa|invia|manda|programma|schedula|pianifica|subito|ora|adesso|lock\s*screen|titolo|messaggio)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (visual.length < 12) visual = text;
+  return sanitizeStripPrompt(
+    `${visual}, wide panoramic composition, no text, no watermarks, no logos, no UI elements, photorealistic commercial photography`
+  );
 }
 
 function coerceWaiProposal(prompt, raw) {
@@ -294,19 +310,32 @@ function coerceWaiProposal(prompt, raw) {
   const preview = raw.preview && typeof raw.preview === 'object' ? raw.preview : {};
   const details = preview.details && typeof preview.details === 'object' ? preview.details : {};
   const payload = raw.payload && typeof raw.payload === 'object' ? { ...raw.payload } : {};
-  const promptEn = sanitizeStripPrompt(
-    payload.strip_prompt_en
-    || payload.prompt_en
-    || details.strip_prompt_en
-    || details.prompt_en
-    || ''
-  );
+  let promptEn = '';
+  try {
+    promptEn = sanitizeStripPrompt(
+      payload.strip_prompt_en
+      || payload.prompt_en
+      || details.strip_prompt_en
+      || details.prompt_en
+      || ''
+    );
+  } catch (_) {
+    promptEn = '';
+  }
+  if (!promptEn) {
+    try {
+      promptEn = inferStripPromptFromUserText(prompt);
+    } catch (_) {
+      promptEn = '';
+    }
+  }
   if (!promptEn) return raw;
 
   const intent = String(raw.intent || '');
-  if (intent === 'strip.generate' || intent === 'push.send' || intent === 'push.schedule') {
-    if (intent !== 'strip.generate' && payload.strip_prompt_en) return raw;
-  } else {
+  if (!['strip.generate', 'push.send', 'push.schedule', 'unknown', 'help'].includes(intent)) {
+    return raw;
+  }
+  if ((intent === 'push.send' || intent === 'push.schedule') && payload.strip_prompt_en) {
     return raw;
   }
 

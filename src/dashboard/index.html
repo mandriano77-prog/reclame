@@ -1605,13 +1605,15 @@
       <textarea id="waiRefinePrompt" rows="2" placeholder="es. imposta un cap massimo di 100 vincite" style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#f4ede2; padding:10px 12px; font-size:13px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
       <button type="button" id="waiRefineBtn" onclick="refineWai()" style="width:100%; margin-top:8px; padding:10px; background:rgba(255,255,255,0.06); color:#f4ede2; border:1px solid rgba(255,255,255,0.08); border-radius:8px; font-weight:600; font-size:12px; cursor:pointer; font-family:inherit;">Aggiorna proposta</button>
     </div>
+    <div id="waiPushStripStatus" style="display:none; font-size:12px; color:#999; margin-top:8px; line-height:1.45;"></div>
+    <div id="waiComboStepLabel" style="display:none; font-size:12px; font-weight:700; color:#f4ede2; margin-top:12px;"></div>
     <div id="wai-strip-preview" style="display:none; margin-top:12px;">
       <img id="wai-strip-img" alt="Anteprima strip generata" style="width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.08);" />
       <div style="margin-top:12px;">
         <input id="wai-strip-name" type="text" placeholder="Nome per questa strip (es. Promo Estate 2026)"
           style="width:100%; padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:#f4ede2; border-radius:8px; font-size:13px; box-sizing:border-box; font-family:inherit;" />
       </div>
-      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+      <div data-wai-strip-save-row style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
         <button type="button" onclick="waiSaveStrip()" style="flex:1; min-width:120px; padding:10px; background:#00D4AA; color:#0a0a0a; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; font-family:inherit;">
           Salva in libreria
         </button>
@@ -6079,19 +6081,22 @@ async function deleteUser(id) {
 
 // ==================== W.AI ====================
 let waiDraft = null;
+let waiPushComboDraft = null;
+let waiComboStripSaved = false;
 let waiOriginalPrompt = '';
 let waiIntegrationTrace = '';
 let waiCurrentStripBase64 = null;
 let waiCurrentStripPayload = null;
 
 function waiBuildPreviousProposal() {
-    if (!waiDraft) return null;
+    const src = waiDraft || waiPushComboDraft;
+    if (!src) return null;
     return {
-        intent: waiDraft.intent,
-        type: waiDraft.type,
-        preview: waiDraft.preview,
-        payload: waiDraft.payload,
-        answer: waiDraft.answer || ''
+        intent: src.intent,
+        type: src.type,
+        preview: src.preview,
+        payload: src.payload,
+        answer: src.answer || ''
     };
 }
 
@@ -6115,7 +6120,7 @@ function waiSyncRefinementUi() {
     const label = document.getElementById('waiRefineLabel');
     const refine = document.getElementById('waiRefinePrompt');
     const btn = document.getElementById('waiRefineBtn');
-    const isStrip = waiDraft?.intent === 'strip.generate' || !!waiCurrentStripBase64;
+    const isStrip = waiIsComboStripStep() || waiDraft?.intent === 'strip.generate' || (!!waiCurrentStripBase64 && !waiIsComboPushStep());
     if (label) {
         label.textContent = isStrip
             ? 'Integra o correggi la scena da generare'
@@ -6142,6 +6147,7 @@ function waiShowRefinementUi() {
 function waiResetRefinementState() {
     waiOriginalPrompt = '';
     waiIntegrationTrace = '';
+    waiResetComboPushFlow();
     waiHideRefinementUi();
 }
 
@@ -6181,17 +6187,92 @@ function waiBuildStripPayload(data) {
     return {
         ...(data?.payload || {}),
         brand_id: data?.payload?.brand_id || brandId,
-        prompt_en: data?.payload?.prompt_en || data?.preview?.details?.prompt_en || ''
+        prompt_en: data?.payload?.prompt_en
+            || data?.payload?.strip_prompt_en
+            || data?.preview?.details?.prompt_en
+            || data?.preview?.details?.strip_prompt_en
+            || ''
     };
 }
 
+function waiDraftHasPushWithStrip(data) {
+    const intent = String(data?.intent || '');
+    if (intent !== 'push.send' && intent !== 'push.schedule') return false;
+    return !!(data?.payload?.strip_prompt_en || data?.preview?.details?.strip_prompt_en);
+}
+
+function waiIsComboStripStep() {
+    return !!waiPushComboDraft && !waiComboStripSaved;
+}
+
+function waiIsComboPushStep() {
+    return !!waiPushComboDraft && waiComboStripSaved;
+}
+
+function waiResetComboPushFlow() {
+    waiPushComboDraft = null;
+    waiComboStripSaved = false;
+    const stepLabel = document.getElementById('waiComboStepLabel');
+    const status = document.getElementById('waiPushStripStatus');
+    if (stepLabel) { stepLabel.style.display = 'none'; stepLabel.textContent = ''; }
+    if (status) { status.style.display = 'none'; status.textContent = ''; }
+}
+
+function waiSetComboStepLabel(text) {
+    const stepLabel = document.getElementById('waiComboStepLabel');
+    if (stepLabel) {
+        stepLabel.textContent = text;
+        stepLabel.style.display = text ? 'block' : 'none';
+    }
+}
+
+async function waiStartComboPushStripFlow(data) {
+    waiPushComboDraft = data;
+    waiComboStripSaved = false;
+    waiDraft = null;
+    const preview = document.getElementById('waiPreview');
+    if (preview) {
+        preview.style.display = 'block';
+        preview.innerHTML = '<div style="font-size:13px;color:#ccc;line-height:1.6;">Step 1 di 2 — generazione strip...</div>';
+    }
+    waiSetComboStepLabel('Step 1 di 2 — Strip');
+    waiHideRefinementUi();
+    await waiHandleStripGenerate(waiBuildStripPayload(data), { mode: 'push-combo' });
+}
+
+function waiComboContinueToPush() {
+    if (!waiPushComboDraft) return;
+    if (!waiCurrentStripBase64) return alert('Genera prima la strip');
+    if (!waiComboStripSaved) return alert('Salva la strip in libreria prima di continuare');
+    waiDraft = waiPushComboDraft;
+    waiSetComboStepLabel('Step 2 di 2 — Push');
+    const status = document.getElementById('waiPushStripStatus');
+    if (status) {
+        status.style.display = 'block';
+        status.textContent = 'Strip salvata in libreria. Controlla titolo e messaggio, poi conferma l\'invio.';
+    }
+    const stripPreview = document.getElementById('wai-strip-preview');
+    if (stripPreview) stripPreview.style.display = 'none';
+    renderWaiPreview(waiDraft);
+    waiShowRefinementUi();
+}
+
 async function applyWaiAskResponse(data, { clearRefineField = false, regenerateStrip = false } = {}) {
-    waiDraft = data;
-    if (regenerateStrip && waiShouldAutoGenerateStrip(data)) {
+    if (regenerateStrip && waiShouldAutoGenerateStrip(data) && data.intent === 'strip.generate') {
+        waiDraft = data;
         waiHideRefinementUi();
         await waiHandleStripGenerate(waiBuildStripPayload(data));
         return;
     }
+    if (waiDraftHasPushWithStrip(data) && !waiIsComboPushStep()) {
+        if (clearRefineField) {
+            const refine = document.getElementById('waiRefinePrompt');
+            if (refine) refine.value = '';
+        }
+        await waiStartComboPushStripFlow(data);
+        return;
+    }
+    waiDraft = data;
     renderWaiPreview(data);
     waiShowRefinementUi();
     if (clearRefineField) {
@@ -6214,6 +6295,7 @@ async function askWai() {
     }
     const preview = document.getElementById('waiPreview');
     if (preview) preview.style.display = 'none';
+    waiResetComboPushFlow();
     waiResetStripPreview();
     waiHideRefinementUi();
     waiIntegrationTrace = '';
@@ -6241,10 +6323,11 @@ async function refineWai() {
     if (currentUser?.role === 'viewer') return alert('Permessi insufficienti (solo lettura)');
     const followup = document.getElementById('waiRefinePrompt')?.value?.trim() || '';
     if (!followup) return alert('Scrivi cosa vuoi modificare o integrare');
-    if (!waiDraft) return alert('Nessuna proposta da aggiornare');
+    if (!waiDraft && !waiPushComboDraft) return alert('Nessuna proposta da aggiornare');
     const originalPrompt = waiOriginalPrompt || document.getElementById('waiPrompt')?.value?.trim() || '';
     if (!originalPrompt) return alert('Prompt originale mancante');
-    const wasStrip = waiDraft?.intent === 'strip.generate' || !!waiCurrentStripBase64;
+        const proposal = waiDraft || waiPushComboDraft;
+        const wasStrip = proposal?.intent === 'strip.generate' || !!waiCurrentStripBase64 || waiDraftHasPushWithStrip(proposal);
 
     const btn = document.getElementById('waiRefineBtn');
     const prevLabel = btn ? btn.textContent : '';
@@ -6269,7 +6352,16 @@ async function refineWai() {
         waiIntegrationTrace = waiIntegrationTrace
             ? `${waiIntegrationTrace}\n${followup}`
             : followup;
-        const regenerateStrip = data.intent === 'strip.generate' && wasStrip;
+        if (waiPushComboDraft && !waiComboStripSaved && waiDraftHasPushWithStrip(data)) {
+            waiPushComboDraft = data;
+            waiComboStripSaved = false;
+            const followupStrip = data.payload?.strip_prompt_en || data.preview?.details?.strip_prompt_en;
+            if (followupStrip) {
+                await waiHandleStripGenerate(waiBuildStripPayload(data), { mode: 'push-combo' });
+            }
+            return;
+        }
+        const regenerateStrip = wasStrip && data.intent === 'strip.generate';
         await applyWaiAskResponse(data, { clearRefineField: true, regenerateStrip });
     } finally {
         if (btn) {
@@ -6299,7 +6391,8 @@ function renderWaiPreview(data) {
         const isPushIntent = String(data.intent || '').startsWith('push.');
         const promptEn = details.prompt_en || data.payload?.prompt_en || '';
         const stripPromptEn = details.strip_prompt_en || data.payload?.strip_prompt_en || '';
-        const hasStripOnPush = isPushIntent && !!stripPromptEn;
+        const hasStripOnPush = isPushIntent && !!stripPromptEn && !waiIsComboStripStep();
+        const comboPushReady = waiIsComboPushStep();
         const detailsHtml = Object.entries(details)
             .filter(([k]) => !(isStripGenerate && k === 'prompt_en') && !(hasStripOnPush && k === 'strip_prompt_en'))
             .map(([k, v]) =>
@@ -6313,14 +6406,18 @@ function renderWaiPreview(data) {
             : '';
         const confirmLabel = isStripGenerate
             ? 'Genera immagine'
-            : (hasStripOnPush
-                ? (data.intent === 'push.schedule' ? 'Genera strip e programma' : 'Genera strip e invia')
-                : 'Conferma');
-        const pushHint = isPushIntent && !hasStripOnPush
+            : (comboPushReady
+                ? (data.intent === 'push.schedule' ? 'Programma push' : 'Invia push')
+                : (hasStripOnPush
+                    ? 'Avvia flusso strip + push'
+                    : 'Conferma'));
+        const pushHint = isPushIntent && !hasStripOnPush && !comboPushReady
             ? '<div style="margin-top:8px;font-size:11px;color:#999;line-height:1.45;">Le push sono solo testo. Per una strip AI descrivi la scena da generare (es. «genera strip estiva con cocktail»).</div>'
-            : (hasStripOnPush
-                ? `<div style="margin-top:8px;font-size:11px;color:#999;line-height:1.45;">Alla conferma W.AI genera la strip del pass e poi ${data.intent === 'push.schedule' ? 'programma' : 'invia'} la push.</div>`
-                : '');
+            : (comboPushReady
+                ? '<div style="margin-top:8px;font-size:11px;color:#999;line-height:1.45;">La strip è già in libreria e verrà applicata al pass all\'invio.</div>'
+                : (hasStripOnPush
+                    ? '<div style="margin-top:8px;font-size:11px;color:#999;line-height:1.45;">Prima anteprima strip e salvataggio in libreria, poi testo push e invio.</div>'
+                    : ''));
 
         box.innerHTML = `
             <div style="font-size:12px;font-weight:700;color:#f4ede2;margin-bottom:6px;">Anteprima</div>
@@ -6347,19 +6444,59 @@ async function confirmWai() {
         await waiHandleStripGenerate(waiBuildStripPayload(waiDraft));
         return;
     }
-    const res = await fetch(`${API}/wai/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ intent: waiDraft.intent, payload: waiDraft.payload, prompt: waiGetPromptTrace() })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(data.error || 'Errore esecuzione');
-    toast(data.message || 'Azione completata');
-    dismissWai();
-    refreshDashboardSection(waiDraft.intent);
+    if (waiDraftHasPushWithStrip(waiDraft) && !waiIsComboPushStep() && !waiIsComboStripStep()) {
+        await waiStartComboPushStripFlow(waiDraft);
+        return;
+    }
+    const payload = { ...waiDraft.payload, brand_id: waiDraft.payload.brand_id || brandId };
+    if (waiIsComboStripStep()) {
+        return alert('Salva la strip in libreria prima di inviare la push');
+    }
+    const comboPushStrip = waiIsComboPushStep() || (waiDraftHasPushWithStrip(waiDraft) && waiCurrentStripBase64);
+    if (comboPushStrip) {
+        if (!waiComboStripSaved && waiPushComboDraft) {
+            return alert('Salva la strip in libreria prima di inviare la push');
+        }
+        if (!waiCurrentStripBase64) {
+            return alert('Strip mancante. Ripeti il flusso da capo.');
+        }
+        payload.strip_base64 = waiCurrentStripBase64;
+        delete payload.strip_prompt_en;
+    }
+    const preview = document.getElementById('waiPreview');
+    const prevHtml = preview ? preview.innerHTML : '';
+    if (comboPushStrip && preview) {
+        preview.style.display = 'block';
+        preview.innerHTML = '<div style="font-size:13px;color:#ccc;line-height:1.6;">Invio push e aggiornamento pass in corso...</div>';
+    }
+    try {
+        const res = await fetch(`${API}/wai/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ intent: waiDraft.intent, payload, prompt: waiGetPromptTrace() })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (preview && prevHtml) {
+                preview.innerHTML = prevHtml;
+                preview.style.display = 'block';
+            }
+            return alert(data.error || 'Errore esecuzione');
+        }
+        toast(data.message || 'Azione completata');
+        dismissWai();
+        refreshDashboardSection(waiDraft.intent);
+    } catch (err) {
+        if (preview && prevHtml) {
+            preview.innerHTML = prevHtml;
+            preview.style.display = 'block';
+        }
+        alert(err.message || 'Errore esecuzione');
+    }
 }
 
-async function waiHandleStripGenerate(payload) {
+async function waiHandleStripGenerate(payload, { mode = 'library' } = {}) {
+    const pushCombo = mode === 'push-combo';
     const preview = document.getElementById('waiPreview');
     const stripPreview = document.getElementById('wai-strip-preview');
     const img = document.getElementById('wai-strip-img');
@@ -6367,10 +6504,15 @@ async function waiHandleStripGenerate(payload) {
     const sendBtn = document.getElementById('waiSendBtn');
     const sendPrevLabel = sendBtn ? sendBtn.textContent : '';
     if (stripPreview) stripPreview.style.display = 'none';
-    waiHideRefinementUi();
-    if (preview) {
+    if (!pushCombo) waiHideRefinementUi();
+    if (preview && !pushCombo) {
         preview.style.display = 'block';
         preview.innerHTML = '<div style="font-size:13px;color:#ccc;line-height:1.6;">Generazione immagine in corso... (10-20 secondi)</div>';
+    }
+    const statusElStart = document.getElementById('waiPushStripStatus');
+    if (statusElStart && pushCombo) {
+        statusElStart.style.display = 'block';
+        statusElStart.textContent = 'Generazione anteprima strip... (10-20 secondi)';
     }
     if (sendBtn) {
         sendBtn.disabled = true;
@@ -6395,15 +6537,27 @@ async function waiHandleStripGenerate(payload) {
         waiCurrentStripPayload = payload;
         if (img) img.src = `data:image/png;base64,${data.image_base64}`;
         if (nameInput) nameInput.value = '';
-        if (preview) {
+        if (pushCombo) {
+            if (preview) {
+                preview.style.display = 'none';
+                preview.innerHTML = '';
+            }
+        } else if (preview) {
             preview.style.display = 'none';
             preview.innerHTML = '';
         }
         if (stripPreview) {
             stripPreview.style.display = 'block';
+            const saveRow = stripPreview.querySelector('[data-wai-strip-save-row]');
+            if (saveRow) saveRow.style.display = 'flex';
             stripPreview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-        waiShowRefinementUi();
+        const statusEl = document.getElementById('waiPushStripStatus');
+        if (statusEl && pushCombo) {
+            statusEl.style.display = 'block';
+            statusEl.textContent = 'Inserisci un nome e salva in libreria: poi passerai al testo della push.';
+        }
+        if (pushCombo) waiShowRefinementUi();
     } catch (err) {
         if (preview) {
             preview.style.display = 'block';
@@ -6436,6 +6590,12 @@ async function waiSaveStrip() {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || 'Salvataggio fallito');
         toast(data.message || `Strip "${name}" salvata`);
+        if (waiPushComboDraft) {
+            waiComboStripSaved = true;
+            waiComboContinueToPush();
+            refreshDashboardSection('strip.generate');
+            return;
+        }
         waiCancelStrip();
         dismissWai();
         refreshDashboardSection('strip.generate');
@@ -6445,16 +6605,24 @@ async function waiSaveStrip() {
 }
 
 async function waiRegenerateStrip() {
-    if (!waiCurrentStripPayload) return;
-    await waiHandleStripGenerate(waiCurrentStripPayload);
+    const payload = waiCurrentStripPayload || (waiPushComboDraft ? waiBuildStripPayload(waiPushComboDraft) : null);
+    if (!payload) return;
+    const mode = waiPushComboDraft && !waiComboStripSaved ? 'push-combo' : 'library';
+    await waiHandleStripGenerate(payload, { mode });
 }
 
 function waiCancelStrip() {
+    if (waiPushComboDraft) {
+        waiResetComboPushFlow();
+        const preview = document.getElementById('waiPreview');
+        if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    }
     waiResetStripPreview();
 }
 
 function dismissWai() {
     waiDraft = null;
+    waiResetComboPushFlow();
     const preview = document.getElementById('waiPreview');
     const prompt = document.getElementById('waiPrompt');
     if (preview) {

@@ -3584,7 +3584,9 @@ async function performImmediatePushForWai(payload) {
     }
   }
 
-  if (payload.strip_prompt_en) {
+  if (payload.strip_base64) {
+    await applyGeneratedStripToBrand(payload.brand_id, payload.strip_base64);
+  } else if (payload.strip_prompt_en) {
     await maybeGenerateAndApplyWaiStrip(payload);
   }
 
@@ -3625,7 +3627,10 @@ async function performImmediatePushForWai(payload) {
 const WAI_EXECUTORS = {
   'push.schedule': async (payload) => {
     const body = { ...payload };
-    if (body.strip_prompt_en) {
+    if (body.strip_base64) {
+      await applyGeneratedStripToBrand(body.brand_id, body.strip_base64);
+      delete body.strip_base64;
+    } else if (body.strip_prompt_en) {
       await maybeGenerateAndApplyWaiStrip(body);
       delete body.strip_prompt_en;
     }
@@ -3636,11 +3641,15 @@ const WAI_EXECUTORS = {
     if (!nextRun) throw new Error('Data/orario non validi per la pianificazione');
     body.next_run_at = nextRun;
     const item = await createScheduledPush(body);
-    return { message: `Push programmata: ${payload.title}`, data: item };
+    const hadStrip = !!(payload.strip_base64 || payload.strip_prompt_en);
+    const stripNote = hadStrip ? ' Strip del pass già aggiornata.' : '';
+    return { message: `Push programmata: ${payload.title}.${stripNote}`, data: item, strip_updated: hadStrip };
   },
   'push.send': async (payload) => {
+    const hadStrip = !!(payload.strip_base64 || payload.strip_prompt_en);
     const data = await performImmediatePushForWai(payload);
-    return { message: `Push inviata: ${payload.title}`, data };
+    const stripNote = hadStrip ? ' Strip del pass aggiornata.' : '';
+    return { message: `Push inviata: ${payload.title}.${stripNote}`, data, strip_updated: hadStrip };
   },
   'campaign.create': async (payload) => {
     const item = await createInstantWinCampaign(payload);
