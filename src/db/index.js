@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const { v4: uuidv4 } = require('uuid');
+const { randomBytes, createHash } = require('crypto');
 
 function dbUrlNeedsFlexibleSsl(url) {
   if (!url) return false;
@@ -366,6 +367,16 @@ async function getDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_wai_log_brand ON wai_log(brand_id, created_at DESC)`).catch(()=>{});
+    await pool.query(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_password_reset_token_hash ON password_reset_tokens(token_hash)`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id, created_at DESC)`).catch(()=>{});
     await pool.query(`ALTER TABLE media ADD COLUMN IF NOT EXISTS campaign_id TEXT REFERENCES campaigns(id) ON DELETE SET NULL`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_media_campaign ON media(campaign_id)`).catch(()=>{});
 
@@ -1148,6 +1159,46 @@ async function verifyPassword(plaintext, hash) {
   return bcrypt.compare(plaintext, hash);
 }
 
+function hashPasswordResetToken(token) {
+  return createHash('sha256').update(String(token)).digest('hex');
+}
+
+async function createPasswordResetToken(userId) {
+  await pool.query(
+    `UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL`,
+    [userId]
+  );
+  const token = randomBytes(32).toString('hex');
+  const tokenHash = hashPasswordResetToken(token);
+  const id = uuidv4();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  await pool.query(
+    `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)`,
+    [id, userId, tokenHash, expiresAt]
+  );
+  return token;
+}
+
+async function getPasswordResetUserByToken(token) {
+  const tokenHash = hashPasswordResetToken(token);
+  const res = await pool.query(
+    `SELECT t.id AS reset_id, t.user_id, u.email, u.name
+     FROM password_reset_tokens t
+     JOIN users u ON u.id = t.user_id
+     WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > NOW() AND u.active = true`,
+    [tokenHash]
+  );
+  return res.rows[0] || null;
+}
+
+async function markPasswordResetTokenUsed(token) {
+  const tokenHash = hashPasswordResetToken(token);
+  await pool.query(
+    `UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = $1 AND used_at IS NULL`,
+    [tokenHash]
+  );
+}
+
 async function seedAdminUser() {
   try {
     const existing = await pool.query(`SELECT id FROM users WHERE role = 'admin' LIMIT 1`);
@@ -1721,6 +1772,9 @@ module.exports = {
   updateUser,
   deleteUser,
   verifyPassword,
+  createPasswordResetToken,
+  getPasswordResetUserByToken,
+  markPasswordResetTokenUsed,
   seedAdminUser,
   // Media Hub
   createMedia,

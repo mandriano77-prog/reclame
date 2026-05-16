@@ -400,4 +400,79 @@ async function sendScratchEmail({ to, name, brandName, brandColor, scratchUrl, c
   }
 }
 
-module.exports = { sendWelcomeEmail, sendUserInviteEmail, sendRecapEmail, sendScratchEmail };
+/**
+ * Password reset link for dashboard users
+ */
+async function sendPasswordResetEmail({ to, name, resetUrl }) {
+  const resend = getResend();
+  if (!resend) {
+    console.log('⚠️ RESEND_API_KEY not set — skipping password reset email to', to);
+    return { skipped: true, reason: 'RESEND_API_KEY not set' };
+  }
+
+  const firstName = String(name || 'utente').split(/\s+/)[0];
+  const fromEmail = getFromEmail();
+  const fromName = getFromName();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; background:#111; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width:500px; margin:0 auto; padding:32px 20px;">
+
+    <div style="text-align:center; padding:40px 24px; background:#1E1A36; border-radius:16px 16px 0 0;">
+      <h1 style="color:#E8192C; font-size:24px; margin:0 0 8px; font-weight:700;">Ads2Wallet</h1>
+      <p style="color:#B0A8C1; font-size:14px; margin:0;">Recupero password</p>
+    </div>
+
+    <div style="background:#1a1a1a; padding:32px 24px; border-radius:0 0 16px 16px;">
+      <p style="color:#e0e0e0; font-size:16px; line-height:1.6; margin:0 0 20px;">
+        Ciao <strong style="color:#fff;">${firstName}</strong>,
+      </p>
+      <p style="color:#bbb; font-size:14px; line-height:1.6; margin:0 0 24px;">
+        Hai richiesto di reimpostare la password della dashboard. Il link è valido per <strong style="color:#fff;">1 ora</strong>.
+      </p>
+      <div style="text-align:center; margin:0 0 24px;">
+        <a href="${resetUrl}" style="display:inline-block; background:#00D4AA; color:#000; font-weight:700; font-size:15px; padding:14px 32px; border-radius:10px; text-decoration:none;">
+          Reimposta password
+        </a>
+      </div>
+      <p style="color:#888; font-size:12px; line-height:1.6; margin:0 0 16px; word-break:break-all;">
+        Se il pulsante non funziona, copia questo link nel browser:<br>
+        <a href="${resetUrl}" style="color:#00D4AA;">${resetUrl}</a>
+      </p>
+      <p style="color:#666; font-size:12px; text-align:center; margin:0;">
+        Se non hai richiesto il recupero, ignora questa email.
+      </p>
+    </div>
+
+    <div style="text-align:center; padding:24px 0 0;">
+      <p style="color:#444; font-size:11px; margin:0;">Powered by Precise Consulting</p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+  const result = await resend.emails.send({
+    from: `${fromName} <${fromEmail}>`,
+    to: [to],
+    subject: 'Reimposta la password Ads2Wallet',
+    html
+  });
+
+  console.log('✓ Password reset email sent to', to);
+  return result;
+}
+
+module.exports = {
+  sendWelcomeEmail,
+  sendUserInviteEmail,
+  sendRecapEmail,
+  sendScratchEmail,
+  sendPasswordResetEmail
+};

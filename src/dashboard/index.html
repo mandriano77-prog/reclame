@@ -377,13 +377,38 @@
 <body>
 
 <div id="loginGate" class="login-gate" role="dialog" aria-labelledby="loginTitle">
-    <div class="login-card card">
+    <div class="login-card card" id="loginPanel">
         <div class="sec-title" id="loginTitle">Accedi</div>
         <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.45;">Dashboard Ads2Wallet — utenti abilitati: accedi con email e password.</p>
         <div id="loginError" class="login-error" role="alert"></div>
         <div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" autocomplete="username" placeholder="nome@azienda.it"></div>
         <div class="form-group"><label class="form-label">Password</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
         <button type="button" class="btn" style="width:100%;margin-top:8px;" id="loginSubmitBtn" onclick="submitLogin()">Accedi</button>
+        <p style="margin-top:14px;text-align:center;font-size:12px;">
+            <button type="button" style="background:none;border:none;color:var(--teal);cursor:pointer;font-size:12px;padding:0;" onclick="showForgotPasswordPanel()">Password dimenticata?</button>
+        </p>
+    </div>
+    <div class="login-card card" id="forgotPasswordPanel" style="display:none;">
+        <div class="sec-title">Recupera password</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.45;">Inserisci l'email del tuo account. Ti invieremo un link valido per 1 ora.</p>
+        <div id="forgotPasswordError" class="login-error" role="alert"></div>
+        <div id="forgotPasswordSuccess" style="display:none;font-size:12px;color:var(--teal);margin-bottom:12px;line-height:1.45;"></div>
+        <div class="form-group"><label class="form-label">Email</label><input type="email" id="forgotPasswordEmail" autocomplete="username" placeholder="nome@azienda.it"></div>
+        <button type="button" class="btn" style="width:100%;margin-top:8px;" id="forgotPasswordBtn" onclick="submitForgotPassword()">Invia link</button>
+        <p style="margin-top:14px;text-align:center;font-size:12px;">
+            <button type="button" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:0;" onclick="showLoginPanel()">Torna al login</button>
+        </p>
+    </div>
+    <div class="login-card card" id="resetPasswordPanel" style="display:none;">
+        <div class="sec-title">Nuova password</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.45;">Scegli una nuova password per il tuo account.</p>
+        <div id="resetPasswordError" class="login-error" role="alert"></div>
+        <div class="form-group"><label class="form-label">Nuova password</label><input type="password" id="resetPasswordNew" autocomplete="new-password" placeholder="Minimo 6 caratteri"></div>
+        <div class="form-group"><label class="form-label">Conferma password</label><input type="password" id="resetPasswordConfirm" autocomplete="new-password"></div>
+        <button type="button" class="btn" style="width:100%;margin-top:8px;" id="resetPasswordBtn" onclick="submitResetPassword()">Salva password</button>
+        <p style="margin-top:14px;text-align:center;font-size:12px;">
+            <button type="button" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:0;" onclick="showLoginPanel()">Torna al login</button>
+        </p>
     </div>
 </div>
 
@@ -1613,6 +1638,13 @@ function getAuthHeaders() {
 }
 let authToken = null;
 let currentUser = null;
+let passwordResetToken = null;
+
+function isPublicAuthApiPath(pathname) {
+    return pathname.startsWith('/api/v1/auth/login')
+        || pathname.startsWith('/api/v1/auth/forgot-password')
+        || pathname.startsWith('/api/v1/auth/reset-password');
+}
 
 (function installAuthFetchInterceptor() {
     const _fetch = window.fetch.bind(window);
@@ -1621,7 +1653,7 @@ let currentUser = null;
         try {
             if (typeof input === 'string') {
                 const pathname = new URL(input, window.location.origin).pathname;
-                if (pathname.startsWith('/api/v1/') && !pathname.startsWith('/api/v1/auth/login')) {
+                if (pathname.startsWith('/api/v1/') && !isPublicAuthApiPath(pathname)) {
                     const ah = getAuthHeaders();
                     if (ah.Authorization) {
                         const headers = new Headers(effInit.headers || {});
@@ -1634,7 +1666,7 @@ let currentUser = null;
                 if (
                     u.origin === window.location.origin &&
                     u.pathname.startsWith('/api/v1/') &&
-                    !u.pathname.startsWith('/api/v1/auth/login')
+                    !isPublicAuthApiPath(u.pathname)
                 ) {
                     const ah = getAuthHeaders();
                     if (ah.Authorization && !input.headers.has('Authorization')) {
@@ -1657,7 +1689,7 @@ let currentUser = null;
         if (
             authedUi &&
             path.startsWith('/api/v1/') &&
-            !path.startsWith('/api/v1/auth/login') &&
+            !isPublicAuthApiPath(path) &&
             res.status === 401
         ) logout();
         return res;
@@ -1708,18 +1740,164 @@ function logout() {
     if (main) main.style.display = 'none';
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
     if (pw) pw.value = '';
+    showLoginPanel();
     syncAuthUi();
 }
 
-async function bootstrapSession() {
+function showLoginPanel() {
+    const login = document.getElementById('loginPanel');
+    const forgot = document.getElementById('forgotPasswordPanel');
+    const reset = document.getElementById('resetPasswordPanel');
+    if (login) login.style.display = 'block';
+    if (forgot) forgot.style.display = 'none';
+    if (reset) reset.style.display = 'none';
+}
+
+function showForgotPasswordPanel() {
+    const login = document.getElementById('loginPanel');
+    const forgot = document.getElementById('forgotPasswordPanel');
+    const reset = document.getElementById('resetPasswordPanel');
+    const err = document.getElementById('forgotPasswordError');
+    const ok = document.getElementById('forgotPasswordSuccess');
+    if (login) login.style.display = 'none';
+    if (forgot) forgot.style.display = 'block';
+    if (reset) reset.style.display = 'none';
+    if (err) { err.textContent = ''; err.style.display = 'none'; }
+    if (ok) { ok.textContent = ''; ok.style.display = 'none'; }
+    const email = document.getElementById('loginEmail')?.value?.trim();
+    const forgotEmail = document.getElementById('forgotPasswordEmail');
+    if (forgotEmail && email) forgotEmail.value = email;
+}
+
+function showResetPasswordPanel(token) {
+    passwordResetToken = token || passwordResetToken;
+    const login = document.getElementById('loginPanel');
+    const forgot = document.getElementById('forgotPasswordPanel');
+    const reset = document.getElementById('resetPasswordPanel');
+    const err = document.getElementById('resetPasswordError');
+    if (login) login.style.display = 'none';
+    if (forgot) forgot.style.display = 'none';
+    if (reset) reset.style.display = 'block';
+    if (err) { err.textContent = ''; err.style.display = 'none'; }
+}
+
+function initPasswordRecoveryFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('reset');
+    if (!token) return;
+    passwordResetToken = token;
     const gate = document.getElementById('loginGate');
     const main = document.getElementById('mainLayout');
+    if (gate) gate.style.display = 'flex';
+    if (main) main.style.display = 'none';
+    showResetPasswordPanel(token);
+    params.delete('reset');
+    const next = params.toString();
+    const clean = `${window.location.pathname}${next ? `?${next}` : ''}`;
+    window.history.replaceState({}, '', clean);
+}
+
+async function submitForgotPassword() {
+    const emailEl = document.getElementById('forgotPasswordEmail');
+    const errEl = document.getElementById('forgotPasswordError');
+    const okEl = document.getElementById('forgotPasswordSuccess');
+    const btn = document.getElementById('forgotPasswordBtn');
+    const email = emailEl?.value?.trim().toLowerCase() || '';
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    if (okEl) { okEl.style.display = 'none'; okEl.textContent = ''; }
+    if (!email) {
+        if (errEl) { errEl.textContent = 'Inserisci la tua email'; errEl.style.display = 'block'; }
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Invio…'; }
+    try {
+        const res = await fetch(`${API}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (errEl) {
+                errEl.textContent = data.error || 'Richiesta non riuscita';
+                errEl.style.display = 'block';
+            }
+            return;
+        }
+        if (okEl) {
+            okEl.textContent = data.message || 'Se l\'email è registrata, riceverai le istruzioni.';
+            okEl.style.display = 'block';
+        }
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Invia link'; }
+    }
+}
+
+async function submitResetPassword() {
+    const pwEl = document.getElementById('resetPasswordNew');
+    const confirmEl = document.getElementById('resetPasswordConfirm');
+    const errEl = document.getElementById('resetPasswordError');
+    const btn = document.getElementById('resetPasswordBtn');
+    const newPassword = pwEl?.value || '';
+    const confirmPassword = confirmEl?.value || '';
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    if (!passwordResetToken) {
+        if (errEl) { errEl.textContent = 'Link non valido. Richiedi un nuovo recupero password.'; errEl.style.display = 'block'; }
+        return;
+    }
+    if (newPassword.length < 6) {
+        if (errEl) { errEl.textContent = 'Password minimo 6 caratteri'; errEl.style.display = 'block'; }
+        return;
+    }
+    if (newPassword !== confirmPassword) {
+        if (errEl) { errEl.textContent = 'Le password non coincidono'; errEl.style.display = 'block'; }
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio…'; }
+    try {
+        const res = await fetch(`${API}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: passwordResetToken, new_password: newPassword })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (errEl) {
+                errEl.textContent = data.error || 'Reimpostazione non riuscita';
+                errEl.style.display = 'block';
+            }
+            return;
+        }
+        passwordResetToken = null;
+        if (pwEl) pwEl.value = '';
+        if (confirmEl) confirmEl.value = '';
+        showLoginPanel();
+        const loginErr = document.getElementById('loginError');
+        if (loginErr) {
+            loginErr.textContent = data.message || 'Password aggiornata. Puoi accedere.';
+            loginErr.style.display = 'block';
+            loginErr.style.color = 'var(--teal)';
+        }
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Salva password'; }
+    }
+}
+
+async function bootstrapSession() {
+    initPasswordRecoveryFromUrl();
+    const gate = document.getElementById('loginGate');
+    const main = document.getElementById('mainLayout');
+    if (passwordResetToken) {
+        syncAuthUi();
+        return;
+    }
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) {
         authToken = null;
         currentUser = null;
         if (gate) gate.style.display = 'flex';
         if (main) main.style.display = 'none';
+        showLoginPanel();
         syncAuthUi();
         return;
     }
@@ -1863,18 +2041,15 @@ let analyticsDateTo = '';
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
     initDashboardProductTheme();
-    const pw = document.getElementById('loginPassword');
-    if (pw) {
-        pw.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') submitLogin();
-        });
-    }
-    const em = document.getElementById('loginEmail');
-    if (em) {
-        em.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') submitLogin();
-        });
-    }
+    const bindEnter = (id, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('keydown', (e) => { if (e.key === 'Enter') fn(); });
+    };
+    bindEnter('loginPassword', submitLogin);
+    bindEnter('loginEmail', submitLogin);
+    bindEnter('forgotPasswordEmail', submitForgotPassword);
+    bindEnter('resetPasswordNew', submitResetPassword);
+    bindEnter('resetPasswordConfirm', submitResetPassword);
     bootstrapSession();
 });
 
