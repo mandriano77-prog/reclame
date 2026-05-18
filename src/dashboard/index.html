@@ -1,19 +1,4 @@
-                                <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Link 1: lascia vuoto (push / Instant Win / Gamification). Poi regolamento, link 2 e 3, contatti.</p>
-                                <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Link 1: lascia vuoto (push / Instant Win / Gamification). Poi regolamento, link 2 e 3, contatti.</p>
-                                <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 1 — Testo (opz.)</label><input type="text" id="wzLink1Label" placeholder="Lascia vuoto se dinamico"></div>
-                                    <div class="form-group"><label class="form-label">Link 1 — URL (opz.)</label><input type="text" id="wzLink1Url" placeholder="https://..."></div>
-                                </div>
-                                <div class="form-group"><label class="form-label">Regolamento</label><textarea id="wzRegolamento" rows="2" placeholder="Condizioni di utilizzo..."></textarea></div>
-                                <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 2 — Testo</label><input type="text" id="wzLink2Label"></div>
-                                    <div class="form-group"><label class="form-label">Link 2 — URL</label><input type="text" id="wzLink2Url"></div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 3 — Testo</label><input type="text" id="wzLink3Label"></div>
-                                    <div class="form-group"><label class="form-label">Link 3 — URL</label><input type="text" id="wzLink3Url"></div>
-                                </div>
-                                <div class="form-group"><label class="form-label">Contatti</label><textarea id="wzContatti" rows="2" placeholder="Email, telefono..."></textarea></div><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -47,8 +32,9 @@
         .header-brand-logo { width:32px; height:32px; border-radius:8px; object-fit:contain; border:1px solid var(--border); background:rgba(255,255,255,.04); display:none; }
         .brand-sel { padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 12px; max-width: 260px; }
         .content { flex: 1; overflow-y: auto; padding: 28px; }
-        .section { display: none; }
-        .section.active { display: block; }
+        .section { display: none !important; }
+        .section.active { display: block !important; }
+        body.modal-open .content { overflow: hidden; }
         .sec-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
         .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
@@ -984,20 +970,21 @@
                                 <div style="margin-bottom:12px;">
                                     <div class="sec-title" style="font-size:16px;margin-bottom:0;">Retro Pass</div>
                                 </div>
+                                <p class="form-hint" style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Ordine sul pass: Link 1 (vuoto = push / Instant Win / Gamification) → regolamento → link 2 e 3 → contatti.</p>
                                 <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 1 — Testo</label><input type="text" id="wzLink1Label" placeholder="es. Sito Web"></div>
-                                    <div class="form-group"><label class="form-label">Link 1 — URL</label><input type="text" id="wzLink1Url" placeholder="https://..."></div>
+                                    <div class="form-group"><label class="form-label">Link 1 — Testo (opz.)</label><input type="text" id="wzLink1Label" placeholder="es. Scopri l'offerta" oninput="wzUpdatePreview()"></div>
+                                    <div class="form-group"><label class="form-label">Link 1 — URL (opz.)</label><input type="text" id="wzLink1Url" placeholder="https://..." oninput="wzUpdatePreview()"></div>
+                                </div>
+                                <div class="form-group"><label class="form-label">Regolamento</label><textarea id="wzRegolamento" rows="2" placeholder="Condizioni di utilizzo..." oninput="wzUpdatePreview()"></textarea></div>
+                                <div class="form-row">
+                                    <div class="form-group"><label class="form-label">Link 2 — Testo</label><input type="text" id="wzLink2Label" oninput="wzUpdatePreview()"></div>
+                                    <div class="form-group"><label class="form-label">Link 2 — URL</label><input type="text" id="wzLink2Url" oninput="wzUpdatePreview()"></div>
                                 </div>
                                 <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 2 — Testo</label><input type="text" id="wzLink2Label"></div>
-                                    <div class="form-group"><label class="form-label">Link 2 — URL</label><input type="text" id="wzLink2Url"></div>
+                                    <div class="form-group"><label class="form-label">Link 3 — Testo</label><input type="text" id="wzLink3Label" oninput="wzUpdatePreview()"></div>
+                                    <div class="form-group"><label class="form-label">Link 3 — URL</label><input type="text" id="wzLink3Url" oninput="wzUpdatePreview()"></div>
                                 </div>
-                                <div class="form-row">
-                                    <div class="form-group"><label class="form-label">Link 3 — Testo</label><input type="text" id="wzLink3Label"></div>
-                                    <div class="form-group"><label class="form-label">Link 3 — URL</label><input type="text" id="wzLink3Url"></div>
-                                </div>
-                                <div class="form-group"><label class="form-label">Regolamento</label><textarea id="wzRegolamento" rows="2" placeholder="Condizioni di utilizzo..."></textarea></div>
-                                <div class="form-group"><label class="form-label">Contatti</label><textarea id="wzContatti" rows="2" placeholder="Email, telefono..."></textarea></div>
+                                <div class="form-group"><label class="form-label">Contatti</label><textarea id="wzContatti" rows="2" placeholder="Email, telefono..." oninput="wzUpdatePreview()"></textarea></div>
                             </div>
                         </div>
                     </div>
@@ -2084,8 +2071,15 @@ function nav(id) {
         toast('Seleziona un brand dall\'elenco in alto');
         return;
     }
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id)?.classList.add('active');
+    document.querySelectorAll('.section').forEach(s => {
+        s.classList.remove('active');
+        s.setAttribute('hidden', '');
+    });
+    const sectionEl = document.getElementById(id);
+    if (sectionEl) {
+        sectionEl.classList.add('active');
+        sectionEl.removeAttribute('hidden');
+    }
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const navItem = Array.from(document.querySelectorAll('.nav-item'))
         .find(n => (n.getAttribute('onclick') || '').includes(`'${id}'`));
@@ -2154,7 +2148,11 @@ function invalidateBrandCache() {
     }
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+    if (!document.querySelector('.modal.active')) document.body.classList.remove('modal-open');
+}
 function toast(msg) { const t = document.getElementById('toastEl'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 
 // ==================== BRANDS ====================
@@ -3383,6 +3381,7 @@ async function loadTemplates() {
 }
 
 function openTemplateModal() {
+    nav('templates');
     document.getElementById('templateEditId').value = '';
     document.getElementById('templateModalTitle').textContent = 'Nuovo Template';
     ['tplName','tplDescription','tplHeaderLabel','tplHeaderValue','tplSecLabel','tplSecValue','tplAuxLabel','tplAuxValue','tplLink1Label','tplLink1Url','tplLink2Label','tplLink2Url','tplLink3Label','tplLink3Url','tplRegolamento','tplContatti'].forEach(id => document.getElementById(id).value = '');
@@ -3391,11 +3390,13 @@ function openTemplateModal() {
     tplImageCache = {};
     document.getElementById('tplType').value = 'storeCard';
     document.getElementById('templateModal').classList.add('active');
+    document.body.classList.add('modal-open');
     populateStripPromoSelect();
     onPassTypeChange();
 }
 
 async function editTemplate(id) {
+    nav('templates');
     const res = await fetch(`${API}/templates/${id}`);
     const t = await res.json();
     document.getElementById('templateEditId').value = t.id;
@@ -3438,6 +3439,7 @@ async function editTemplate(id) {
         }
     });
     document.getElementById('templateModal').classList.add('active');
+    document.body.classList.add('modal-open');
     populateStripPromoSelect();
     onPassTypeChange();
 }
@@ -5171,6 +5173,7 @@ function wzCopyLanding() {
 }
 
 function wzNewPass() {
+    nav('pass-wizard');
     document.getElementById('wzPublishResult').style.display = 'none';
     document.getElementById('wzPublishBtn').style.display = '';
     loadPassWizard();
@@ -5413,6 +5416,7 @@ async function loadWzTemplates() {
 }
 
 async function wzEditTemplate(id) {
+    nav('pass-wizard');
     try {
         const res = await fetch(`${API}/templates/${id}`, { headers: getAuthHeaders() });
         if (!res.ok) return toast('Errore caricamento template');
