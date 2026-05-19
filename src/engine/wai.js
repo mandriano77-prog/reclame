@@ -7,6 +7,7 @@ const {
   listStripPromos,
   listMedia
 } = require('../db');
+const { parseSinceDaysFromPrompt, todayInTimezone, TZ } = require('./audience-prompt');
 const { extractJSON } = require('./ai-copy');
 const { getAnthropicApiKey } = require('./env-ai');
 const { pickWaiModel, formatModelLabel } = require('./ai-models');
@@ -161,15 +162,17 @@ In preview.details includi description_it, prompt_en, style, dimensions "1125x43
       "did_action": "opened|link_click|installed|instant_win_played|gamification_played|...|null",
       "never_did_action": "link_click|...|null",
       "target_key": "link_0|link_1|link_2|null",
-      "since_days": 30,
+      "since_days": <numero giorni richiesto dall'utente, es. 7 se dice "7gg" o "ultimi 7 giorni">,
       "min_count": 1
     }
   }
+- OBBLIGATORIO: since_days deve essere uguale al periodo nella richiesta (7 → 7, 14 → 14). Mai usare 30 se l'utente chiede 7. Usa server_date nel contesto come "oggi".
+- audience_behavior_30d nel contesto è solo panoramica: NON usarlo come finestra della query né citarlo nel conteggio.
 - Usa solo event_action presenti in allowed_event_actions del contesto.
 - Per "ha cliccato link 1 / link out / retro" → did_action: "link_click", target_key: "link_0".
 - Per "ha aperto il pass" → did_action: "opened".
 - Per "mai cliccato" / "non ha mai cliccato" / "senza click" → never_did_action: "link_click" (opzionale target_key per un link specifico). Non usare did_action insieme a never_did_action.
-- Per "aperto ma mai cliccato" → behavior: { did_action: "opened", never_did_action: "link_click", since_days: 30 } — il motore applica entrambi i filtri.
+- Per "aperto ma mai cliccato" → behavior: { did_action: "opened", never_did_action: "link_click", since_days: <giorni dalla richiesta> } — il motore applica entrambi i filtri.
 - answer: spiega il segmento in italiano (max 2 frasi). NON dire che il conteggio arriverà dopo: il server esegue la query e mette il numero in preview.details.member_count.
 - type: "query" (non "create"). payload DEVE contenere query_spec completo.
 
@@ -304,7 +307,11 @@ async function buildWaiContext(brandId) {
       end_date: s.end_date
     })),
     allowed_event_actions: [...ALLOWED_EVENT_ACTIONS],
-    audience_behavior_30d: behavior30d
+    server_date: todayInTimezone(TZ),
+    server_timezone: TZ,
+    audience_behavior_30d: behavior30d,
+    audience_behavior_30d_note:
+      'Solo statistiche di panoramica (30 giorni). Per audience.query usa behavior.since_days dalla richiesta utente; il conteggio esatto è calcolato dal server su holder_events.'
   };
 }
 
@@ -384,8 +391,7 @@ function coerceAudiencePlatformQuery(prompt, raw) {
 
   if (intent === 'audience.insights' || intent === 'analytics.query') {
     const text = String(prompt || '').toLowerCase();
-    const daysMatch = text.match(/(\d+)\s*(?:gg|giorni|day)/);
-    const since_days = daysMatch ? Math.min(parseInt(daysMatch[1], 10), 365) : 30;
+    const since_days = parseSinceDaysFromPrompt(prompt) || 30;
     let did_action = null;
     if (/\b(notific|push|avvis)\w*/.test(text) || /\bapert\w*/.test(text)) did_action = 'opened';
     if (/\bclic\w*/.test(text) || /\blink\b/.test(text)) did_action = 'link_click';
