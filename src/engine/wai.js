@@ -168,6 +168,8 @@ In preview.details includi description_it, prompt_en, style, dimensions "1125x43
 - Usa solo event_action presenti in allowed_event_actions del contesto.
 - Per "ha cliccato link 1 / link out / retro" → did_action: "link_click", target_key: "link_0".
 - Per "ha aperto il pass" → did_action: "opened".
+- Per "mai cliccato" / "non ha mai cliccato" / "senza click" → never_did_action: "link_click" (opzionale target_key per un link specifico). Non usare did_action insieme a never_did_action.
+- Per "aperto ma mai cliccato" → behavior: { did_action: "opened", never_did_action: "link_click", since_days: 30 } — il motore applica entrambi i filtri.
 - answer: spiega il segmento e indica che il conteggio è in preview.details.member_count (stima se non hai eseguito query).
 
 ### audience.create

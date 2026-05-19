@@ -50,7 +50,7 @@ const {
   ALLOWED_EVENT_ACTIONS
 } = require('../engine/audiences');
 const { executeAudienceQuery, mergeSpecToAudienceRules } = require('../engine/audience-query');
-const { getHolderBehaviorInsights, listRecentHolderEvents } = require('../engine/holder-events');
+const { getHolderBehaviorInsights, listRecentHolderEvents, exportHolderEvents } = require('../engine/holder-events');
 const { createPkpass } = require('../engine/passkit');
 const googleWallet = require('../engine/google-wallet');
 const samsungWallet = require('../engine/samsung-wallet');
@@ -2147,6 +2147,35 @@ router.get('/brands/:brand_id/holder-events', async (req, res) => {
       action: req.query.action || null
     });
     res.json(events);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/brands/:brand_id/holder-events/export', async (req, res) => {
+  try {
+    const brand_id = req.params.brand_id;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const days = parseInt(req.query.days, 10) || 30;
+    const rows = await exportHolderEvents(brand_id, {
+      days,
+      limit: req.query.limit,
+      action: req.query.action || null
+    });
+    const header = 'id,serial_number,event_category,event_action,target_key,target_label,target_url,pass_id,device_id,created_at';
+    const lines = rows.map((r) => [
+      r.id,
+      r.serial_number || '',
+      r.event_category || '',
+      r.event_action || '',
+      r.target_key || '',
+      (r.target_label || '').replace(/"/g, '""'),
+      (r.target_url || '').replace(/"/g, '""'),
+      r.pass_id || '',
+      r.device_id || '',
+      r.created_at ? new Date(r.created_at).toISOString() : ''
+    ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="holder_events_${brand_id}_${days}d.csv"`);
+    res.send('\uFEFF' + [header, ...lines].join('\n'));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

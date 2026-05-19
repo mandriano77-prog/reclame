@@ -177,14 +177,93 @@ async function getHolderBehaviorInsights(brandId, days = 30) {
     )
   ]);
 
+  const linkFunnels = await getLinkFunnels(brandId, days);
+
   return {
     period_days: parseInt(days, 10) || 30,
     total_events: totals.rows[0].total,
     unique_holders_active: uniqueActors.rows[0].actors,
     by_action: byAction.rows,
     top_link_clicks: topLinks.rows,
-    funnel: funnel.rows[0]
+    funnel: funnel.rows[0],
+    link_funnels: linkFunnels
   };
+}
+
+async function getLinkFunnels(brandId, days = 30) {
+  const sinceDays = Math.min(Math.max(parseInt(days, 10) || 30, 1), 365);
+  const [passTotal, installed, opened, linkRows] = await Promise.all([
+    pool.query('SELECT COUNT(*)::int AS total FROM pass_instances WHERE brand_id = $1', [brandId]),
+    pool.query(
+      `SELECT COUNT(DISTINCT serial_number)::int AS count FROM holder_events
+       WHERE brand_id = $1 AND event_action = 'installed'
+         AND serial_number IS NOT NULL
+         AND created_at >= NOW() - INTERVAL '${sinceDays} days'`,
+      [brandId]
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT serial_number)::int AS count FROM holder_events
+       WHERE brand_id = $1 AND event_action = 'opened'
+         AND serial_number IS NOT NULL
+         AND created_at >= NOW() - INTERVAL '${sinceDays} days'`,
+      [brandId]
+    ),
+    pool.query(
+      `SELECT target_key,
+        MAX(target_label) AS target_label,
+        COUNT(*)::int AS click_events,
+        COUNT(DISTINCT serial_number)::int AS unique_clickers
+       FROM holder_events
+       WHERE brand_id = $1 AND event_action = 'link_click'
+         AND target_key IS NOT NULL AND target_key <> ''
+         AND created_at >= NOW() - INTERVAL '${sinceDays} days'
+       GROUP BY target_key
+       ORDER BY click_events DESC`,
+      [brandId]
+    )
+  ]);
+
+  const holders = passTotal.rows[0].total;
+  const installedN = installed.rows[0].count;
+  const openedN = opened.rows[0].count;
+
+  return linkRows.rows.map((row) => {
+    const clickers = row.unique_clickers;
+    return {
+      target_key: row.target_key,
+      target_label: row.target_label,
+      pass_holders: holders,
+      installed: installedN,
+      opened: openedN,
+      click_events: row.click_events,
+      unique_clickers: clickers,
+      ctr_from_opened_pct: openedN > 0 ? Math.round((clickers / openedN) * 1000) / 10 : 0,
+      ctr_from_holders_pct: holders > 0 ? Math.round((clickers / holders) * 1000) / 10 : 0
+    };
+  });
+}
+
+async function exportHolderEvents(brandId, { days = 30, limit = 10000, action = null } = {}) {
+  const sinceDays = Math.min(Math.max(parseInt(days, 10) || 30, 1), 365);
+  const lim = Math.min(Math.max(parseInt(limit, 10) || 10000, 1), 50000);
+  const params = [brandId];
+  let actionSql = '';
+  if (action) {
+    params.push(action);
+    actionSql = ` AND h.event_action = $${params.length}`;
+  }
+  params.push(lim);
+  const result = await pool.query(
+    `SELECT h.id, h.brand_id, h.pass_id, h.serial_number, h.event_category, h.event_action,
+      h.target_type, h.target_key, h.target_label, h.target_url, h.device_id, h.created_at
+     FROM holder_events h
+     WHERE h.brand_id = $1
+       AND h.created_at >= NOW() - INTERVAL '${sinceDays} days'${actionSql}
+     ORDER BY h.created_at DESC
+     LIMIT $${params.length}`,
+    params
+  );
+  return result.rows;
 }
 
 async function listRecentHolderEvents(brandId, { limit = 50, action = null } = {}) {
@@ -213,6 +292,8 @@ module.exports = {
   mirrorLegacyEvent,
   backfillHolderEventsForBrand,
   getHolderBehaviorInsights,
+  getLinkFunnels,
+  exportHolderEvents,
   listRecentHolderEvents,
   mapLegacyEventType,
   LEGACY_EVENT_MAP

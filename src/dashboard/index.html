@@ -1271,9 +1271,21 @@
                 </div>
 
                 <div id="audPanel_behavior" class="aud-panel" style="display:none;">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
+                        <select id="audBehaviorDays" onchange="loadAudienceBehavior()" style="width:auto;padding:6px 10px;">
+                            <option value="7">7 giorni</option>
+                            <option value="30" selected>30 giorni</option>
+                            <option value="90">90 giorni</option>
+                        </select>
+                        <button class="btn sec" onclick="exportHolderEventsCsv()">⬇ Export eventi CSV</button>
+                    </div>
                     <div class="stats-grid" id="audienceBehaviorStats"></div>
                     <div class="card" style="margin-bottom:16px;">
-                        <div class="sec-title" style="font-size:15px;">Link più cliccati (retro pass)</div>
+                        <div class="sec-title" style="font-size:15px;">Funnel per link (retro pass)</div>
+                        <div id="audienceLinkFunnels" style="font-size:13px;color:var(--text2);">—</div>
+                    </div>
+                    <div class="card" style="margin-bottom:16px;">
+                        <div class="sec-title" style="font-size:15px;">Link più cliccati</div>
                         <div id="audienceTopLinks" style="font-size:13px;color:var(--text2);">—</div>
                     </div>
                     <div class="card">
@@ -1334,6 +1346,14 @@
                     </div>
                     <div class="sec-title" style="font-size:14px;margin:12px 0 6px;">Comportamento</div>
                     <div class="form-row">
+                        <div class="form-group" style="flex:1;"><label class="form-label">Tipo filtro</label>
+                            <select id="audBehaviorMode" onchange="onAudBehaviorModeChange()">
+                                <option value="">— Nessun filtro —</option>
+                                <option value="did">Ha fatto</option>
+                                <option value="never">Non ha mai fatto</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction">
                         <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction"><option value="">—</option><option value="opened">Aperto pass</option><option value="link_click">Click link retro</option><option value="installed">Installato</option><option value="instant_win_played">Instant Win</option><option value="gamification_played">Gamification</option></select></div>
                         <div class="form-group" style="flex:1;"><label class="form-label">Target key</label><input type="text" id="audBehaviorTargetKey" placeholder="link_0"></div>
                     </div>
@@ -4621,27 +4641,65 @@ function switchAudienceTab(tab) {
 
 let lastWaiAudienceProposal = null;
 
+
+function onAudBehaviorModeChange() {
+    const mode = document.getElementById('audBehaviorMode')?.value;
+    const minEl = document.getElementById('audBehaviorMinCount');
+    const minWrap = minEl?.closest('.form-group');
+    if (minWrap) minWrap.style.display = mode === 'did' ? '' : 'none';
+}
+
+async function exportHolderEventsCsv() {
+    if (!brandId) return;
+    const days = document.getElementById('audBehaviorDays')?.value || 30;
+    const res = await fetch(`${API}/brands/${brandId}/holder-events/export?days=${days}`, { headers: getAuthHeaders() });
+    if (!res.ok) { toast('Export non riuscito'); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `holder_events_${days}d.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV eventi esportato');
+}
+
 async function loadAudienceBehavior() {
     if (!brandId) return;
     try {
-        const res = await fetch(`${API}/brands/${brandId}/audiences/insights?days=30`, { headers: getAuthHeaders() });
+        const days = document.getElementById('audBehaviorDays')?.value || 30;
+        const res = await fetch(`${API}/brands/${brandId}/audiences/insights?days=${days}`, { headers: getAuthHeaders() });
         const data = res.ok ? await res.json() : {};
         const b = data.behavior || {};
         const f = b.funnel || {};
         document.getElementById('audienceBehaviorStats').innerHTML = `
-            <div class="stat-card"><div class="stat-num">${b.total_events ?? 0}</div><div class="stat-label">Eventi (30 gg)</div></div>
-            <div class="stat-card"><div class="stat-num">${b.unique_holders_active ?? 0}</div><div class="stat-label">Possessori attivi</div></div>
+            <div class="stat-num">${b.total_events ?? 0}</div><div class="stat-label">Eventi (${days} gg)</div>
+            <div class="stat-card"><div class="stat-num">${b.unique_holders_active ?? 0}<div class="stat-label">Possessori attivi</div></div>
             <div class="stat-card"><div class="stat-num">${f.opened ?? 0}</div><div class="stat-label">Aperture pass</div></div>
             <div class="stat-card"><div class="stat-num">${f.link_clicks ?? 0}</div><div class="stat-label">Click link retro</div></div>
-            <div class="stat-card"><div class="stat-num">${f.unique_clickers ?? 0}</div><div class="stat-label">Utenti unici click</div></div>
-        `.replace(/<div/g, '<div').replace(/<\/motion>/g, '</div>');
+            <div class="stat-card"><div class="stat-num">${f.unique_clickers ?? 0}</div>Utenti unici click
+        `.replace(/<\/?motion[^>]*>/g, '');
+
+        const funnels = b.link_funnels || [];
+        document.getElementById('audienceLinkFunnels').innerHTML = funnels.length ? funnels.map(f => `
+            <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+                <strong>${esc(f.target_label || f.target_key)}</strong> <span style="color:var(--text2);font-size:11px;">(${esc(f.target_key)})</span>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px;font-size:12px;text-align:center;">
+                    <div>${f.pass_holders}</div><div style="color:var(--text2);">Pass</div></div>
+                    <div><div style="font-weight:700;">${f.installed}</div><div style="color:var(--text2);">Install.</div></div>
+                    <div><div style="font-weight:700;">${f.opened}</div><div style="color:var(--text2);">Aperti</div></div>
+                    <div><div style="font-weight:700;">${f.unique_clickers}</div><div style="color:var(--text2);">Click unici</div></div>
+                    <div><div style="font-weight:700;">${f.ctr_from_opened_pct}%</div><div style="color:var(--text2);">CTR/Aperti</div></div>
+                </div>
+            </div>
+        `).join('') : '<span>Nessun click per link nel periodo. Rigenera i pass per attivare il tracking.</span>';
 
         const links = b.top_link_clicks || [];
         document.getElementById('audienceTopLinks').innerHTML = links.length ? links.map(l =>
             `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
                 <span>${esc(l.target_label || l.target_key || 'Link')} <span style="color:var(--text2);font-size:11px;">${esc((l.target_url || '').slice(0,40))}</span></span>
                 <strong>${l.clicks}</strong>
-            </div>`
+            `
         ).join('') : '<span>Nessun click registrato ancora. I nuovi pass tracciano i link del retro.</span>';
 
         const evRes = await fetch(`${API}/brands/${brandId}/holder-events?limit=40`, { headers: getAuthHeaders() });
@@ -4742,13 +4800,18 @@ function collectAudienceRulesFromForm() {
     if (!rules.campaign_id) delete rules.campaign_id;
     if (rules.created_after) rules.created_after = new Date(rules.created_after + 'T00:00:00').toISOString();
     if (rules.created_before) rules.created_before = new Date(rules.created_before + 'T23:59:59').toISOString();
-    const didAction = document.getElementById('audBehaviorAction')?.value;
-    if (didAction) {
+    const mode = document.getElementById('audBehaviorMode')?.value;
+    const action = document.getElementById('audBehaviorAction')?.value;
+    if (mode && action) {
         rules.behavior = {
-            did_action: didAction,
-            since_days: parseInt(document.getElementById('audBehaviorSinceDays')?.value, 10) || 30,
-            min_count: parseInt(document.getElementById('audBehaviorMinCount')?.value, 10) || 1
+            since_days: parseInt(document.getElementById('audBehaviorSinceDays')?.value, 10) || 30
         };
+        if (mode === 'did') {
+            rules.behavior.did_action = action;
+            rules.behavior.min_count = parseInt(document.getElementById('audBehaviorMinCount')?.value, 10) || 1;
+        } else if (mode === 'never') {
+            rules.behavior.never_did_action = action;
+        }
         const tk = (document.getElementById('audBehaviorTargetKey')?.value || '').trim();
         if (tk) rules.behavior.target_key = tk;
     }
@@ -4776,13 +4839,17 @@ function fillAudienceForm(rules = {}) {
         set('audCreatedBefore', d.toISOString().slice(0, 10));
     } else set('audCreatedBefore', '');
     if (rules.behavior) {
-        set('audBehaviorAction', rules.behavior.did_action || '');
+        const mode = rules.behavior.never_did_action ? 'never' : (rules.behavior.did_action ? 'did' : '');
+        set('audBehaviorMode', mode);
+        set('audBehaviorAction', rules.behavior.did_action || rules.behavior.never_did_action || '');
         set('audBehaviorTargetKey', rules.behavior.target_key || '');
         set('audBehaviorSinceDays', rules.behavior.since_days || 30);
         set('audBehaviorMinCount', rules.behavior.min_count || 1);
+        onAudBehaviorModeChange();
     } else {
-        set('audBehaviorAction', ''); set('audBehaviorTargetKey', '');
+        set('audBehaviorMode', ''); set('audBehaviorAction', ''); set('audBehaviorTargetKey', '');
         set('audBehaviorSinceDays', 30); set('audBehaviorMinCount', 1);
+        onAudBehaviorModeChange();
     }
 }
 
