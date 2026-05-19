@@ -4742,7 +4742,7 @@ async function runAudienceWaiQuery() {
             </div>
             ${warnings ? `<ul style="margin:8px 0;padding-left:18px;color:var(--text2);">${warnings}</ul>` : ''}
             <pre style="font-size:11px;overflow:auto;max-height:160px;background:var(--bg2);padding:8px;border-radius:6px;">${esc(JSON.stringify(data.payload?.query_spec || data.payload, null, 2))}</pre>
-        `.replace(/<div/g, '<div').replace(/<\/motion>/g, '</div>');
+        `;
         if (data.payload?.query_spec && (data.intent === 'audience.query' || data.intent === 'audience.create')) {
             document.getElementById('audWaiSaveBtn').disabled = false;
         }
@@ -4951,7 +4951,7 @@ async function previewAudienceRules() {
 async function saveAudience() {
     if (!brandId) return;
     const name = (document.getElementById('audName').value || '').trim();
-    if (!name) return toast('Inserisci un nome per l'audience');
+    if (!name) return toast("Inserisci un nome per l'audience");
     const rules = collectAudienceRulesFromForm();
     const body = { name, description: (document.getElementById('audDescription').value || '').trim(), rules };
     const url = editingAudienceId ? `${API}/audiences/${editingAudienceId}` : `${API}/brands/${brandId}/audiences`;
