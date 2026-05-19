@@ -7,6 +7,7 @@ const {
   listStripPromos,
   listMedia
 } = require('../db');
+const { parseSinceDaysFromPrompt, todayInTimezone, TZ } = require('./audience-prompt');
 const { extractJSON } = require('./ai-copy');
 const { getAnthropicApiKey } = require('./env-ai');
 const { pickWaiModel, formatModelLabel } = require('./ai-models');
@@ -161,16 +162,19 @@ In preview.details includi description_it, prompt_en, style, dimensions "1125x43
       "did_action": "opened|link_click|installed|instant_win_played|gamification_played|...|null",
       "never_did_action": "link_click|...|null",
       "target_key": "link_0|link_1|link_2|null",
-      "since_days": 30,
+      "since_days": <numero giorni richiesto dall'utente, es. 7 se dice "7gg" o "ultimi 7 giorni">,
       "min_count": 1
     }
   }
+- OBBLIGATORIO: since_days deve essere uguale al periodo nella richiesta (7 → 7, 14 → 14). Mai usare 30 se l'utente chiede 7. Usa server_date nel contesto come "oggi".
+- audience_behavior_30d nel contesto è solo panoramica: NON usarlo come finestra della query né citarlo nel conteggio.
 - Usa solo event_action presenti in allowed_event_actions del contesto.
 - Per "ha cliccato link 1 / link out / retro" → did_action: "link_click", target_key: "link_0".
 - Per "ha aperto il pass" → did_action: "opened".
 - Per "mai cliccato" / "non ha mai cliccato" / "senza click" → never_did_action: "link_click" (opzionale target_key per un link specifico). Non usare did_action insieme a never_did_action.
-- Per "aperto ma mai cliccato" → behavior: { did_action: "opened", never_did_action: "link_click", since_days: 30 } — il motore applica entrambi i filtri.
-- answer: spiega il segmento e indica che il conteggio è in preview.details.member_count (stima se non hai eseguito query).
+- Per "aperto ma mai cliccato" → behavior: { did_action: "opened", never_did_action: "link_click", since_days: <giorni dalla richiesta> } — il motore applica entrambi i filtri.
+- answer: spiega il segmento in italiano (max 2 frasi). NON dire che il conteggio arriverà dopo: il server esegue la query e mette il numero in preview.details.member_count.
+- type: "query" (non "create"). payload DEVE contenere query_spec completo.
 
 ### audience.create
 - type: "create"
@@ -303,7 +307,11 @@ async function buildWaiContext(brandId) {
       end_date: s.end_date
     })),
     allowed_event_actions: [...ALLOWED_EVENT_ACTIONS],
-    audience_behavior_30d: behavior30d
+    server_date: todayInTimezone(TZ),
+    server_timezone: TZ,
+    audience_behavior_30d: behavior30d,
+    audience_behavior_30d_note:
+      'Solo statistiche di panoramica (30 giorni). Per audience.query usa behavior.since_days dalla richiesta utente; il conteggio esatto è calcolato dal server su holder_events.'
   };
 }
 
@@ -351,6 +359,70 @@ function inferStripPromptFromUserText(prompt) {
   return sanitizeStripPrompt(
     `${visual}, wide panoramic composition, no text, no watermarks, no logos, no UI elements, photorealistic commercial photography`
   );
+}
+
+function extractQuerySpec(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const payload = raw.payload && typeof raw.payload === 'object' ? raw.payload : {};
+  const details = raw.preview?.details && typeof raw.preview.details === 'object' ? raw.preview.details : {};
+  const qs = payload.query_spec || details.query_spec || payload;
+  if (qs?.rules || qs?.behavior || qs?.behavioral) return qs;
+  if (payload.rules || payload.behavior) {
+    return { description: payload.description || details.description, rules: payload.rules, behavior: payload.behavior };
+  }
+  return null;
+}
+
+function coerceAudiencePlatformQuery(prompt, raw) {
+  if (!raw || typeof raw !== 'object') return raw;
+  if (!/\[Audience platform\]/i.test(String(prompt || ''))) return raw;
+
+  const query_spec = extractQuerySpec(raw);
+  const intent = String(raw.intent || '').trim();
+
+  if (query_spec) {
+    return {
+      ...raw,
+      intent: 'audience.query',
+      type: 'query',
+      payload: { query_spec }
+    };
+  }
+
+  if (intent === 'audience.insights' || intent === 'analytics.query') {
+    const text = String(prompt || '').toLowerCase();
+    const since_days = parseSinceDaysFromPrompt(prompt) || 30;
+    let did_action = null;
+    if (/\b(notific|push|avvis)\w*/.test(text) || /\bapert\w*/.test(text)) did_action = 'opened';
+    if (/\bclic\w*/.test(text) || /\blink\b/.test(text)) did_action = 'link_click';
+    if (did_action) {
+      const behavior = { did_action, since_days, min_count: 1 };
+      const linkMatch = text.match(/link\s*([123])/);
+      if (did_action === 'link_click' && linkMatch) {
+        behavior.target_key = `link_${parseInt(linkMatch[1], 10) - 1}`;
+      }
+      return {
+        ...raw,
+        intent: 'audience.query',
+        type: 'query',
+        payload: {
+          query_spec: {
+            description: `Segmento da richiesta audience platform (${since_days} giorni)`,
+            rules: {},
+            behavior
+          }
+        },
+        preview: {
+          ...(raw.preview || {}),
+          warnings: [
+            ...(Array.isArray(raw.preview?.warnings) ? raw.preview.warnings : []),
+            'Query spec generata automaticamente dal testo — verifica i filtri prima di salvare.'
+          ]
+        }
+      };
+    }
+  }
+  return raw;
 }
 
 function coerceWaiProposal(prompt, raw) {
@@ -482,6 +554,20 @@ function validateWaiResponse(raw, brandId) {
     };
   }
 
+  if (intent === 'audience.query') {
+    const query_spec = extractQuerySpec({ ...raw, payload: raw.payload || payload, preview });
+    if (!query_spec) {
+      preview.warnings.push('Query audience incompleta: specifica filtri (es. aperti pass, click link) e riprova.');
+    }
+    return {
+      intent,
+      type: 'query',
+      preview,
+      payload: query_spec ? { query_spec } : {},
+      answer: answer || preview.summary
+    };
+  }
+
   if (type === 'query' || type === 'system') {
     if (!answer && intent === 'help') {
       preview.summary = 'Posso programmare push, inviarle subito, creare campagne instant win, strip promo e generare immagini strip con AI, e rispondere su pass e analytics.';
@@ -595,7 +681,7 @@ async function askWai({ brandId, prompt, followup = '', previousProposal = null 
     buildUserMessage(trimmed, context, refinement),
     modelChoice.model
   );
-  const parsed = coerceWaiProposal(routingPrompt, extractJSON(text));
+  const parsed = coerceWaiProposal(routingPrompt, coerceAudiencePlatformQuery(routingPrompt, extractJSON(text)));
   const proposal = validateWaiResponse(parsed, brandId);
   return {
     ...proposal,

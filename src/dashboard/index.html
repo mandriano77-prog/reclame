@@ -1252,12 +1252,12 @@
             <!-- AUDIENCES -->
                         <div id="audiences" class="section">
                 <div class="sec-title">Audience Platform</div>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:16px;">Segmentazione possessori pass, statistiche di apertura e click sul retro, audience salvate e query in linguaggio naturale con W.AI.</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">Segmentazione possessori pass, statistiche di apertura e click sul retro, audience salvate. Per segmenti in linguaggio naturale usa <strong>W.AI</strong> (pulsante in basso a destra).</p>
+                <button type="button" class="btn sec" style="margin-bottom:16px;" onclick="openWaiForAudience()">Apri W.AI · segmenta audience</button>
 
                 <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
                     <button type="button" class="aud-subtab active" id="audTab_overview" onclick="switchAudienceTab('overview')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid var(--teal);margin-bottom:-2px;color:var(--teal);font-weight:700;font-size:13px;cursor:pointer;">Panoramica</button>
                     <button type="button" class="aud-subtab" id="audTab_behavior" onclick="switchAudienceTab('behavior')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2);font-size:13px;cursor:pointer;">Comportamento</button>
-                    <button type="button" class="aud-subtab" id="audTab_wai" onclick="switchAudienceTab('wai')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2);font-size:13px;cursor:pointer;">Query W.AI</button>
                     <button type="button" class="aud-subtab" id="audTab_saved" onclick="switchAudienceTab('saved')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2);font-size:13px;cursor:pointer;">Audience salvate</button>
                 </div>
 
@@ -1294,17 +1294,6 @@
                     </div>
                 </div>
 
-                <div id="audPanel_wai" class="aud-panel" style="display:none;">
-                    <div class="card">
-                        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Descrivi il segmento in italiano. Esempi: «chi ha cliccato il link 1 negli ultimi 30 giorni», «possessori con Apple push che hanno giocato instant win», «aperto il pass ma mai cliccato link».</p>
-                        <textarea id="audWaiPrompt" rows="3" placeholder="Descrivi l'audience che vuoi trovare..." style="width:100%;resize:vertical;margin-bottom:8px;"></textarea>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn" onclick="runAudienceWaiQuery()">Analizza con W.AI</button>
-                            <button class="btn sec" onclick="saveWaiAudienceFromQuery()" id="audWaiSaveBtn" disabled>Salva come audience</button>
-                        </div>
-                        <div id="audWaiResult" style="margin-top:16px;font-size:13px;color:var(--text2);"></div>
-                    </div>
-                </div>
 
                 <div id="audPanel_saved" class="aud-panel" style="display:none;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -1698,6 +1687,7 @@
   </div>
   <div class="wai-panel-body">
     <textarea id="waiPrompt" rows="3" placeholder="Scrivi cosa vuoi fare..." style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#f4ede2; padding:12px; font-size:13px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
+    <p id="waiAudienceHint" style="display:none;margin:8px 0 0;font-size:11px;color:#999;line-height:1.45;">Modalità audience: segmenti possessori, aperture pass, click link, instant win. Puoi salvare il segmento come audience.</p>
     <button type="button" id="waiSendBtn" onclick="askWai()" style="width:100%; margin-top:8px; padding:10px; background:#00D4AA; color:#0a0a0a; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;">Chiedi a W.AI</button>
     <div id="waiPreview" style="display:none;"></div>
     <div id="waiRefineGroup" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
@@ -4624,7 +4614,7 @@ async function deleteIwCampaign(id) {
 // ==================== AUDIENCES ====================
 
 function switchAudienceTab(tab) {
-    ['overview', 'behavior', 'wai', 'saved'].forEach(t => {
+    ['overview', 'behavior', 'saved'].forEach(t => {
         const panel = document.getElementById('audPanel_' + t);
         if (panel) panel.style.display = t === tab ? 'block' : 'none';
         const btn = document.getElementById('audTab_' + t);
@@ -4639,8 +4629,46 @@ function switchAudienceTab(tab) {
     if (tab === 'saved' && !audiencesCache.length) loadAudiences();
 }
 
-let lastWaiAudienceProposal = null;
+let waiAudienceMode = false;
 
+function waiIsAudienceSectionActive() {
+    const sec = document.getElementById('audiences');
+    return !!(sec && sec.classList.contains('active'));
+}
+
+function waiShouldUseAudienceMode(prompt) {
+    if (waiAudienceMode || waiIsAudienceSectionActive()) return true;
+    return /\b(audience|segmento|segmenta|possessor|apert[oie]|notific|cliccat|link\s*[123]|instant\s*win|mai\s+cliccat)\b/i.test(String(prompt || ''));
+}
+
+function waiWrapAudiencePrompt(prompt) {
+    const p = String(prompt || '').trim();
+    if (!p || /^\[Audience platform\]/i.test(p)) return p;
+    return waiShouldUseAudienceMode(p) ? `[Audience platform] ${p}` : p;
+}
+
+function openWaiForAudience(prefill) {
+    if (!brandId) return toast('Seleziona un brand');
+    if (currentUser?.role === 'viewer') return toast('Permessi insufficienti (solo lettura)');
+    waiAudienceMode = true;
+    toggleWaiOverlay(true);
+    const ta = document.getElementById('waiPrompt');
+    if (ta) {
+        ta.placeholder = 'Es: chi ha aperto il pass negli ultimi 7 giorni, chi ha cliccato link 1…';
+        if (prefill) ta.value = prefill;
+        ta.focus();
+    }
+    const hint = document.getElementById('waiAudienceHint');
+    if (hint) hint.style.display = 'block';
+}
+
+function waiResetAudienceMode() {
+    waiAudienceMode = false;
+    const ta = document.getElementById('waiPrompt');
+    if (ta) ta.placeholder = 'Scrivi cosa vuoi fare...';
+    const hint = document.getElementById('waiAudienceHint');
+    if (hint) hint.style.display = 'none';
+}
 
 function onAudBehaviorModeChange() {
     const mode = document.getElementById('audBehaviorMode')?.value;
@@ -4716,63 +4744,30 @@ async function loadAudienceBehavior() {
     }
 }
 
-async function runAudienceWaiQuery() {
-    if (!brandId) return;
-    const prompt = (document.getElementById('audWaiPrompt')?.value || '').trim();
-    if (!prompt) return toast('Scrivi una domanda per W.AI');
-    const el = document.getElementById('audWaiResult');
-    el.innerHTML = '<span>Analisi in corso...</span>';
-    document.getElementById('audWaiSaveBtn').disabled = true;
-    lastWaiAudienceProposal = null;
-    try {
-        const res = await fetch(`${API}/wai/ask`, {
-            method: 'POST',
-            headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ brand_id: brandId, prompt: `[Audience platform] ${prompt}` })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Errore W.AI');
-        lastWaiAudienceProposal = data;
-        const count = data.preview?.details?.member_count;
-        const warnings = (data.preview?.warnings || []).map(w => `<li>${esc(w)}</li>`).join('');
-        el.innerHTML = `
-            <div style="background:var(--bg2);padding:12px;border-radius:8px;margin-bottom:8px;">
-                <strong>${esc(data.preview?.summary || data.answer || 'Risultato')}</strong>
-                ${count !== undefined ? `<div style="margin-top:8px;font-size:22px;font-weight:700;color:var(--teal);">${count} possessori</div>` : ''}
-            </div>
-            ${warnings ? `<ul style="margin:8px 0;padding-left:18px;color:var(--text2);">${warnings}</ul>` : ''}
-            <pre style="font-size:11px;overflow:auto;max-height:160px;background:var(--bg2);padding:8px;border-radius:6px;">${esc(JSON.stringify(data.payload?.query_spec || data.payload, null, 2))}</pre>
-        `;
-        if (data.payload?.query_spec && (data.intent === 'audience.query' || data.intent === 'audience.create')) {
-            document.getElementById('audWaiSaveBtn').disabled = false;
-        }
-    } catch (e) {
-        el.innerHTML = `<span style="color:#e55;">${esc(e.message)}</span>`;
-    }
-}
-
-async function saveWaiAudienceFromQuery() {
-    if (!lastWaiAudienceProposal?.payload?.query_spec) return toast('Esegui prima una query W.AI');
-    const name = prompt('Nome per questa audience:', lastWaiAudienceProposal.preview?.summary?.slice(0, 60) || 'Audience W.AI');
+async function waiSaveAudience() {
+    const qs = waiDraft?.payload?.query_spec || waiDraft?.preview?.details?.query_spec;
+    if (!qs) return toast('Esegui prima una query audience con W.AI');
+    const name = prompt('Nome per questa audience:', (waiDraft?.preview?.summary || 'Audience W.AI').slice(0, 60));
     if (!name) return;
+    const sourcePrompt = document.getElementById('waiPrompt')?.value?.trim() || '';
     const res = await fetch(`${API}/brands/${brandId}/audiences`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
             name,
-            description: lastWaiAudienceProposal.preview?.summary || '',
-            query_spec: lastWaiAudienceProposal.payload.query_spec,
-            source_prompt: document.getElementById('audWaiPrompt')?.value || ''
+            description: waiDraft?.preview?.summary || waiDraft?.answer || '',
+            query_spec: qs,
+            source_prompt: sourcePrompt
         })
     });
     const data = await res.json();
     if (!res.ok) return toast(data.error || 'Errore salvataggio');
     toast(`Audience salvata (${data.member_count} possessori)`);
-    switchAudienceTab('saved');
+    dismissWai();
+    if (typeof switchAudienceTab === 'function') switchAudienceTab('saved');
     loadAudiences();
     loadPushAudienceSelect();
 }
-
 
 let editingAudienceId = null;
 
@@ -6650,6 +6645,7 @@ function toggleWaiOverlay(forceOpen) {
         if (preview) preview.style.display = 'none';
         waiResetStripPreview();
         waiResetRefinementState();
+        waiResetAudienceMode();
     }
 }
 
@@ -6777,14 +6773,15 @@ async function askWai() {
     waiIntegrationTrace = '';
 
     try {
+        const routedPrompt = waiWrapAudiencePrompt(prompt);
         const res = await fetch(`${API}/wai/ask`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, brand_id: brandId })
+            body: JSON.stringify({ prompt: routedPrompt, brand_id: brandId })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) return alert(data.error || 'Errore W.AI');
-        waiOriginalPrompt = prompt;
+        waiOriginalPrompt = routedPrompt;
         await applyWaiAskResponse(data);
     } finally {
         if (btn) {
@@ -6818,7 +6815,7 @@ async function refineWai() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 brand_id: brandId,
-                prompt: originalPrompt,
+                prompt: waiWrapAudiencePrompt(originalPrompt),
                 followup,
                 previous_proposal: waiBuildPreviousProposal()
             })
@@ -6847,6 +6844,35 @@ async function refineWai() {
     }
 }
 
+function renderWaiAudienceQueryPreview(data, warnHtml) {
+    const count = data.preview?.details?.member_count;
+    const querySpec = data.payload?.query_spec || data.preview?.details?.query_spec;
+    const periodDays = data.preview?.details?.since_days || querySpec?.behavior?.since_days;
+    const periodFrom = data.preview?.details?.period_from;
+    const periodTo = data.preview?.details?.period_to;
+    const periodHtml = periodDays
+        ? `<div style="font-size:11px;color:#888;margin-bottom:6px;">Periodo: ultimi ${periodDays} giorni${periodFrom && periodTo ? ` (${periodFrom} → ${periodTo})` : ''}</div>`
+        : '';
+    const samples = (data.preview?.details?.sample_members || []).slice(0, 5);
+    const sampleLine = samples.length
+        ? `<div style="margin-top:8px;font-size:11px;color:#999;">Esempi: ${samples.map((m) => esc(m.email || m.name || m.serial_number || '')).filter(Boolean).join(' · ')}</div>`
+        : '';
+    const canSave = !!querySpec;
+    return `
+        <div style="font-size:12px;font-weight:700;color:#f4ede2;margin-bottom:6px;">Segmento audience</div>
+        ${count !== undefined && count !== null
+            ? `<div style="font-size:28px;font-weight:700;color:#00D4AA;line-height:1.2;">${count}</div><div style="font-size:12px;color:#999;margin-bottom:8px;">possessori</div>`
+            : ''}
+        ${periodHtml}
+        <p style="font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${esc(data.answer || data.preview?.summary || '')}</p>
+        ${sampleLine}
+        ${warnHtml}
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+            ${canSave ? `<button type="button" onclick="waiSaveAudience()" style="flex:1;min-width:140px;padding:8px;background:#00D4AA;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">Salva come audience</button>` : ''}
+            <button type="button" onclick="dismissWai()" style="flex:1;min-width:100px;padding:8px;background:rgba(255,255,255,0.06);color:#999;border:1px solid rgba(255,255,255,0.08);border-radius:6px;font-size:12px;cursor:pointer;">Chiudi</button>
+        </div>`;
+}
+
 function renderWaiPreview(data) {
     const box = document.getElementById('waiPreview');
     if (!box || !data) return;
@@ -6856,11 +6882,20 @@ function renderWaiPreview(data) {
         ? `<div style="margin-top:8px;font-size:11px;color:#f5a623;line-height:1.45;">${warnings.map((w) => esc(w)).join('<br>')}</div>`
         : '';
 
+    if (data.intent === 'audience.query') {
+        box.innerHTML = renderWaiAudienceQueryPreview(data, warnHtml);
+        box.style.display = 'block';
+        return;
+    }
+
     if (isQuery) {
         box.innerHTML = `
             <div style="font-size:12px;font-weight:700;color:#f4ede2;margin-bottom:6px;">Risposta</div>
             <p style="font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${esc(data.answer || data.preview?.summary || '')}</p>
-            ${warnHtml}`;
+            ${warnHtml}
+            <div style="margin-top:12px;">
+                <button type="button" onclick="dismissWai()" style="width:100%;padding:8px;background:rgba(255,255,255,0.06);color:#999;border:1px solid rgba(255,255,255,0.08);border-radius:6px;font-size:12px;cursor:pointer;">Chiudi</button>
+            </div>`;
     } else {
         const details = data.preview?.details || {};
         const isStripGenerate = data.intent === 'strip.generate';
@@ -6915,6 +6950,7 @@ function renderWaiPreview(data) {
 }
 
 async function confirmWai() {
+    if (waiDraft?.intent === 'audience.query') return waiSaveAudience();
     if (!waiDraft?.payload || !Object.keys(waiDraft.payload).length) return alert('Nessuna azione da confermare');
     if (waiDraft.intent === 'strip.generate') {
         await waiHandleStripGenerate(waiBuildStripPayload(waiDraft));
@@ -7098,6 +7134,7 @@ function waiCancelStrip() {
 
 function dismissWai() {
     waiDraft = null;
+    waiResetAudienceMode();
     waiResetComboPushFlow();
     const preview = document.getElementById('waiPreview');
     const prompt = document.getElementById('waiPrompt');
@@ -7117,7 +7154,8 @@ function refreshDashboardSection(intent) {
         reward: () => { if (typeof loadRewards === 'function') loadRewards(); },
         member: () => { if (typeof loadMembers === 'function') loadMembers(); },
         campaign: () => { loadCampaigns(); },
-        strip: () => { loadStripPromos(); loadMediaLibrary(); }
+        strip: () => { loadStripPromos(); loadMediaLibrary(); },
+        audience: () => { loadAudiences(); loadPushAudienceSelect(); if (typeof loadAudienceBehavior === 'function') loadAudienceBehavior(); }
     };
     (refreshMap[prefix] || (() => {}))();
 }
