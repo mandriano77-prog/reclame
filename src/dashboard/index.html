@@ -604,10 +604,20 @@
                         </div>
                         <div class="form-group" style="margin-top:4px;">
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-                                <input type="checkbox" id="pushUpdatePass" checked style="width:auto;accent-color:var(--teal);">
+                                <input type="checkbox" id="pushUpdatePass" checked onchange="togglePushStripBlock()" style="width:auto;accent-color:var(--teal);">
                                 <span>Aggiorna contenuto pass (notifica visibile sul lock screen)</span>
                             </label>
-                            <p style="font-size:11px;color:var(--text2);margin:8px 0 0 24px;line-height:1.4;">Strip e asset grafici dal pass si gestiscono in <strong>Media Library</strong> / Design del pass — qui non sono necessari.</p>
+                        </div>
+                        <div id="pushStripBlock" class="form-group" style="margin-top:8px;">
+                            <label class="form-label">Strip per questa push (opzionale)</label>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Solo per questo invio — non modifica la strip permanente del brand. Priorità su Instant Win / Gamification se selezioni entrambi.</p>
+                            <div id="pushStripPreview" style="width:100%;max-width:420px;aspect-ratio:750/246;background:var(--bg3);border-radius:8px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px;display:flex;align-items:center;justify-content:center;">
+                                <span style="color:var(--text2);font-size:12px;">Nessuna strip — resta quella del pass</span>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" class="btn small" onclick="pushPickStripFromMedia()">Scegli da Media Library</button>
+                                <button type="button" class="btn small danger" id="pushStripClearBtn" onclick="pushClearStrip()" style="display:none;">Rimuovi strip</button>
+                            </div>
                         </div>
                         <div class="form-group" style="margin-top:8px;">
                             <label class="form-label">Link out — retro Link 1 (opzionale)</label>
@@ -2212,6 +2222,7 @@ function nav(id) {
         push: () => {
             loadPushHistory();
             loadScheduledPush();
+            if (typeof togglePushStripBlock === 'function') togglePushStripBlock();
             const rest = () => {
                 loadPushCampaignSelect();
                 loadSchedCampaignSelect();
@@ -3941,6 +3952,38 @@ async function loadPushAudienceSelect() {
 }
 
 // --- TAB 1: Push Immediata ---
+let pushStripMediaId = null;
+
+function togglePushStripBlock() {
+    const block = document.getElementById('pushStripBlock');
+    const on = document.getElementById('pushUpdatePass')?.checked;
+    if (block) block.style.display = on ? 'block' : 'none';
+}
+
+function pushPickStripFromMedia() {
+    if (!brandId) return toast('Seleziona un brand');
+    openMediaPicker((mediaId, imageUrl) => {
+        pushStripMediaId = mediaId;
+        const prev = document.getElementById('pushStripPreview');
+        if (prev) {
+            prev.innerHTML = `<img src="${imageUrl}" alt="Strip push" style="width:100%;height:100%;object-fit:cover;">`;
+        }
+        const clr = document.getElementById('pushStripClearBtn');
+        if (clr) clr.style.display = '';
+        toast('Strip selezionata per la push');
+    }, 'strip');
+}
+
+function pushClearStrip() {
+    pushStripMediaId = null;
+    const prev = document.getElementById('pushStripPreview');
+    if (prev) {
+        prev.innerHTML = '<span style="color:var(--text2);font-size:12px;">Nessuna strip — resta quella del pass</span>';
+    }
+    const clr = document.getElementById('pushStripClearBtn');
+    if (clr) clr.style.display = 'none';
+}
+
 async function sendImmediatePush() {
     const title = document.getElementById('pushTitle').value;
     const message = document.getElementById('pushMessage').value;
@@ -3964,6 +4007,7 @@ async function sendImmediatePush() {
         body.back_link_url = backLinkUrl;
         body.back_link_label = (document.getElementById('pushBackLinkLabel')?.value || '').trim();
     }
+    if (updatePass && pushStripMediaId) body.strip_media_id = pushStripMediaId;
     const res = await fetch(`${API}/push/send`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const data = await res.json();
     if (data.error) { alert('Errore push: ' + data.error); return; }
@@ -3989,6 +4033,7 @@ async function sendImmediatePush() {
     const pbu = document.getElementById('pushBackLinkUrl');
     if (pbl) pbl.value = '';
     if (pbu) pbu.value = '';
+    pushClearStrip();
     loadPushHistory();
 }
 
@@ -6687,6 +6732,31 @@ function waiIsComboPushStep() {
     return !!waiPushComboDraft && waiComboStripSaved;
 }
 
+function waiGetActiveDraft() {
+    return waiDraft || waiPushComboDraft;
+}
+
+function waiCanConfirm(data) {
+    if (!data) return false;
+    if (data.intent === 'audience.query') {
+        return !!(data.payload?.query_spec || data.preview?.details?.query_spec);
+    }
+    if (data.intent === 'strip.generate') {
+        return !!(data.payload?.prompt_en || data.preview?.details?.prompt_en);
+    }
+    if (data.intent === 'push.send' || data.intent === 'push.schedule') {
+        if (waiDraftHasPushWithStrip(data) && !waiIsComboPushStep() && !waiIsComboStripStep()) return true;
+        const p = data.payload || {};
+        const d = data.preview?.details || {};
+        return !!(
+            (p.title && p.message)
+            || (d.title && (d.message || d.message_it))
+        );
+    }
+    const p = data.payload || {};
+    return Object.keys(p).filter((k) => k !== 'brand_id').length > 0;
+}
+
 function waiResetComboPushFlow() {
     waiPushComboDraft = null;
     waiComboStripSaved = false;
@@ -6941,6 +7011,7 @@ function renderWaiPreview(data) {
         const stripPushBox = hasStripOnPush
             ? `<div style="margin:8px 0;padding:10px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);font-size:11px;color:#aaa;line-height:1.5;white-space:pre-wrap;word-break:break-word;"><strong style="color:#ccc;">Strip AI:</strong> ${esc(stripPromptEn)}</div>`
             : '';
+        const canConfirm = waiCanConfirm(data);
         const confirmLabel = isStripGenerate
             ? 'Genera immagine'
             : (comboPushReady
@@ -6948,6 +7019,7 @@ function renderWaiPreview(data) {
                 : (hasStripOnPush
                     ? 'Avvia flusso strip + push'
                     : 'Conferma'));
+        const confirmDisabledAttr = canConfirm ? '' : ' disabled title="Proposta incompleta: chiedi a W.AI di aggiungere titolo e messaggio push"';
         const pushHint = isPushIntent && !hasStripOnPush && !comboPushReady
             ? '<div style="margin-top:8px;font-size:11px;color:#999;line-height:1.45;">Le push sono solo testo. Per una strip AI descrivi la scena da generare (es. «genera strip estiva con cocktail»).</div>'
             : (comboPushReady
@@ -6965,8 +7037,8 @@ function renderWaiPreview(data) {
             ${pushHint}
             ${warnHtml}
             <div style="display:flex;gap:8px;margin-top:12px;">
-                <button onclick="confirmWai()" style="flex:1;padding:8px;background:#00D4AA;color:#0a0a0a;
-                    border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">${confirmLabel}</button>
+                <button onclick="confirmWai()"${confirmDisabledAttr} style="flex:1;padding:8px;background:${canConfirm ? '#00D4AA' : 'rgba(255,255,255,0.12)'};color:${canConfirm ? '#0a0a0a' : '#666'};
+                    border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:${canConfirm ? 'pointer' : 'not-allowed'};">${confirmLabel}</button>
                 <button onclick="dismissWai()" style="flex:1;padding:8px;background:rgba(255,255,255,0.06);
                     color:#999;border:1px solid rgba(255,255,255,0.08);border-radius:6px;font-size:12px;
                     cursor:pointer;">Annulla</button>
@@ -6976,21 +7048,22 @@ function renderWaiPreview(data) {
 }
 
 async function confirmWai() {
-    if (waiDraft?.intent === 'audience.query') return waiSaveAudience();
-    if (!waiDraft?.payload || !Object.keys(waiDraft.payload).length) return alert('Nessuna azione da confermare');
-    if (waiDraft.intent === 'strip.generate') {
-        await waiHandleStripGenerate(waiBuildStripPayload(waiDraft));
+    const draft = waiGetActiveDraft();
+    if (draft?.intent === 'audience.query') return waiSaveAudience();
+    if (!waiCanConfirm(draft)) return alert('Nessuna azione da confermare. Integra titolo e messaggio push, poi usa «Aggiorna proposta».');
+    if (draft.intent === 'strip.generate') {
+        await waiHandleStripGenerate(waiBuildStripPayload(draft));
         return;
     }
-    if (waiDraftHasPushWithStrip(waiDraft) && !waiIsComboPushStep() && !waiIsComboStripStep()) {
-        await waiStartComboPushStripFlow(waiDraft);
+    if (waiDraftHasPushWithStrip(draft) && !waiIsComboPushStep() && !waiIsComboStripStep()) {
+        await waiStartComboPushStripFlow(draft);
         return;
     }
-    const payload = { ...waiDraft.payload, brand_id: waiDraft.payload.brand_id || brandId };
+    const payload = { ...draft.payload, brand_id: draft.payload.brand_id || brandId };
     if (waiIsComboStripStep()) {
         return alert('Salva la strip in libreria prima di inviare la push');
     }
-    const comboPushStrip = waiIsComboPushStep() || (waiDraftHasPushWithStrip(waiDraft) && waiCurrentStripBase64);
+    const comboPushStrip = waiIsComboPushStep() || (waiDraftHasPushWithStrip(draft) && waiCurrentStripBase64);
     if (comboPushStrip) {
         if (!waiComboStripSaved && waiPushComboDraft) {
             return alert('Salva la strip in libreria prima di inviare la push');
@@ -7011,7 +7084,7 @@ async function confirmWai() {
         const res = await fetch(`${API}/wai/execute`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ intent: waiDraft.intent, payload, prompt: waiGetPromptTrace() })
+            body: JSON.stringify({ intent: draft.intent, payload, prompt: waiGetPromptTrace() })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -7023,7 +7096,7 @@ async function confirmWai() {
         }
         toast(data.message || 'Azione completata');
         dismissWai();
-        refreshDashboardSection(waiDraft.intent);
+        refreshDashboardSection(draft.intent);
     } catch (err) {
         if (preview && prevHtml) {
             preview.innerHTML = prevHtml;

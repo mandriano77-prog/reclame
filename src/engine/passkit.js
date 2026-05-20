@@ -810,10 +810,17 @@ async function createPkpass(template, instance, brand, options = {}) {
     console.log('✓ Using template-level logo');
   }
 
-  // Strip images — template → brand → default file → generated
+  // Strip images — push override → template → brand → default file → generated
   let stripBuffers;
   const defaultStripPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-strip.png');
-  if (tplImages.strip) {
+  const pushStripB64 = brandCfg.stripOverride;
+  if (pushStripB64) {
+    const rawStrip = Buffer.from(pushStripB64, 'base64');
+    const strip1x = await sharp(rawStrip).resize(375, 123, { fit: 'cover' }).png().toBuffer();
+    const strip2x = await sharp(rawStrip).resize(750, 246, { fit: 'cover' }).png().toBuffer();
+    stripBuffers = { strip: strip1x, strip2x: strip2x };
+    console.log('✓ Using push strip override');
+  } else if (tplImages.strip) {
     const rawStrip = Buffer.from(tplImages.strip, 'base64');
     const strip1x = await sharp(rawStrip).resize(375, 123, { fit: 'cover' }).png().toBuffer();
     const strip2x = await sharp(rawStrip).resize(750, 246, { fit: 'cover' }).png().toBuffer();

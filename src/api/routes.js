@@ -124,6 +124,22 @@ async function pdfToPngIfNeeded(base64Data) {
   }
 }
 
+/** Strip per push: media library id o base64 inline; verifica tenant. */
+async function resolvePushStripBase64({ brand_id, strip_media_id, strip_base64 }) {
+  if (strip_media_id) {
+    const media = await getMedia(strip_media_id);
+    if (!media || String(media.brand_id) !== String(brand_id)) {
+      throw new Error('Media strip non trovato o non appartiene al brand');
+    }
+    if (!media.image_base64) throw new Error('Media senza immagine');
+    return pdfToPngIfNeeded(media.image_base64);
+  }
+  if (strip_base64) {
+    return pdfToPngIfNeeded(strip_base64);
+  }
+  return null;
+}
+
 async function notifySamsungSavedPasses(passes) {
   return samsungWallet.notifySavedPassesUpdates(passes);
 }
@@ -1725,7 +1741,8 @@ router.post('/push/send', async (req, res) => {
     const {
       brand_id, title, message, campaign_id, audience_id, update_pass, field_values,
       instant_win_id, gamification_id, channel = 'apple',
-      back_link_label, back_link_url
+      back_link_label, back_link_url,
+      strip_media_id, strip_base64
     } = req.body;
     if (!brand_id || !title || !message) return res.status(400).json({ error: 'brand_id, title, message richiesti' });
     if (!requireBrandId(req, res, brand_id)) return;
@@ -1785,7 +1802,15 @@ router.post('/push/send', async (req, res) => {
       // If not selected in this request, clear old sticky values.
       if (!instant_win_id) delete config.instantWinActive;
       if (!gamification_id) delete config.gamificationActive;
-      if (!instant_win_id && !gamification_id) delete config.stripOverride;
+
+      let pushStripB64 = null;
+      try {
+        pushStripB64 = await resolvePushStripBase64({ brand_id, strip_media_id, strip_base64 });
+      } catch (stripErr) {
+        return res.status(400).json({ error: stripErr.message });
+      }
+      delete config.stripOverride;
+
       const linkOutUrl = (back_link_url || '').trim();
       if (linkOutUrl) {
         config.pushLinkOut = {
@@ -1797,6 +1822,11 @@ router.post('/push/send', async (req, res) => {
         delete config.pushLinkOut;
       }
 
+      if (pushStripB64) {
+        config.stripOverride = pushStripB64;
+        console.log('[PUSH] Strip override from media library / upload');
+      }
+
       // Instant Win: inject play link into pass back field
       if (instant_win_id) {
         const iwCampaign = await getInstantWinCampaign(instant_win_id);
@@ -1806,8 +1836,7 @@ router.post('/push/send', async (req, res) => {
             label: iwCampaign.push_message || iwCampaign.name || 'Gioca e Vinci!',
             game_type: iwCampaign.game_type
           };
-          // If campaign has a strip image, inject it
-          if (iwCampaign.strip_base64) {
+          if (!pushStripB64 && iwCampaign.strip_base64) {
             config.stripOverride = iwCampaign.strip_base64;
           }
           console.log(`[PUSH] Instant Win injected: campaign=${iwCampaign.id}, game=${iwCampaign.game_type}`);
@@ -1823,8 +1852,7 @@ router.post('/push/send', async (req, res) => {
             label: gamCampaign.push_message || gamCampaign.name || 'Gioca ora!',
             game_type: gamCampaign.game_type
           };
-          // If campaign has a strip image, inject it
-          if (gamCampaign.strip_base64) {
+          if (!pushStripB64 && gamCampaign.strip_base64) {
             config.stripOverride = gamCampaign.strip_base64;
           }
           console.log(`[PUSH] Gamification injected: campaign=${gamCampaign.id}, game=${gamCampaign.game_type}`);

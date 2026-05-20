@@ -338,6 +338,46 @@ function normalizePayload(intent, payload, brandId) {
   return next;
 }
 
+/** LLM sometimes puts push fields only in preview.details or mis-tags type as system. */
+function rehydratePushPayloadFromPreview(intent, payload, preview) {
+  if (intent !== 'push.send' && intent !== 'push.schedule') return false;
+  const details = preview?.details && typeof preview.details === 'object' ? preview.details : {};
+  const summary = String(preview?.summary || '');
+  if (!payload.title && details.title) payload.title = String(details.title).trim();
+  if (!payload.message && details.message) payload.message = String(details.message).trim();
+  if (!payload.message && details.message_it) payload.message = String(details.message_it).trim();
+  if (!payload.strip_prompt_en && details.strip_prompt_en) {
+    payload.strip_prompt_en = String(details.strip_prompt_en).trim();
+  }
+  if (intent === 'push.schedule') {
+    if (!payload.schedule_time && details.schedule_time) {
+      payload.schedule_time = String(details.schedule_time).trim();
+    }
+    if (!payload.schedule_time) {
+      const tm = summary.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
+      if (tm) payload.schedule_time = tm[0];
+    }
+    if (!payload.schedule_type && details.schedule_type) {
+      payload.schedule_type = details.schedule_type;
+    }
+    if (!payload.date && details.date) payload.date = String(details.date).trim();
+    if (Array.isArray(details.days) && details.days.length && !Array.isArray(payload.days)) {
+      payload.days = details.days;
+    }
+  }
+  return !!(payload.title && payload.message);
+}
+
+function hasMeaningfulExecutablePayload(intent, payload, preview) {
+  if (!payload || typeof payload !== 'object') return false;
+  const keys = Object.keys(payload).filter((k) => k !== 'brand_id');
+  if (!keys.length) return false;
+  if (intent === 'push.send' || intent === 'push.schedule') {
+    return rehydratePushPayloadFromPreview(intent, payload, preview);
+  }
+  return keys.length > 0;
+}
+
 function wantsPushAndStrip(prompt) {
   const text = String(prompt || '').trim();
   if (!text) return false;
@@ -533,7 +573,7 @@ function validateWaiResponse(raw, brandId) {
   const preview = normalizePreview(raw);
   const answer = String(raw.answer || preview.summary || '').trim();
   const payload = normalizePayload(intent, raw.payload, brandId);
-  const hasExecutablePayload = payload && typeof payload === 'object' && Object.keys(payload).length > 0;
+  const hasExecutablePayload = hasMeaningfulExecutablePayload(intent, payload, preview);
 
   if (EXECUTABLE_INTENTS.has(intent) && hasExecutablePayload) {
     type = 'create';
@@ -567,10 +607,15 @@ function validateWaiResponse(raw, brandId) {
   }
 
   if (type === 'query' || type === 'system') {
-    if (!answer && intent === 'help') {
-      preview.summary = 'Posso programmare push, inviarle subito, creare campagne instant win, strip promo e generare immagini strip con AI, e rispondere su pass e analytics.';
+    if (EXECUTABLE_INTENTS.has(intent) && hasExecutablePayload) {
+      type = 'create';
+      preview.warnings.push('Proposta corretta: azione eseguibile (il modello aveva indicato type system/query).');
+    } else {
+      if (!answer && intent === 'help') {
+        preview.summary = 'Posso programmare push, inviarle subito, creare campagne instant win, strip promo e generare immagini strip con AI, e rispondere su pass e analytics.';
+      }
+      return { intent, type, preview, payload: {}, answer: answer || preview.summary };
     }
-    return { intent, type, preview, payload: {}, answer: answer || preview.summary };
   }
 
   if (!EXECUTABLE_INTENTS.has(intent)) {
@@ -578,8 +623,11 @@ function validateWaiResponse(raw, brandId) {
   }
 
   if (intent === 'push.schedule' || intent === 'push.send') {
-    payload.title = String(payload.title || '').trim().slice(0, 60);
-    payload.message = String(payload.message || '').trim().slice(0, 180);
+    rehydratePushPayloadFromPreview(intent, payload, preview);
+    payload.title = String(payload.title || preview.details?.title || '').trim().slice(0, 60);
+    payload.message = String(
+      payload.message || preview.details?.message || preview.details?.message_it || preview.summary || ''
+    ).trim().slice(0, 180);
     if (!payload.title || !payload.message) {
       throw new Error('Titolo e messaggio push obbligatori');
     }
@@ -598,17 +646,26 @@ function validateWaiResponse(raw, brandId) {
   }
 
   if (intent === 'push.schedule') {
-    payload.schedule_type = ['once', 'daily', 'weekly'].includes(payload.schedule_type) ? payload.schedule_type : 'weekly';
-    payload.schedule_time = String(payload.schedule_time || '10:00').trim();
+    payload.schedule_type = ['once', 'daily', 'weekly'].includes(payload.schedule_type)
+      ? payload.schedule_type
+      : (preview.details?.schedule_type && ['once', 'daily', 'weekly'].includes(preview.details.schedule_type)
+        ? preview.details.schedule_type
+        : 'weekly');
+    payload.schedule_time = String(
+      payload.schedule_time || preview.details?.schedule_time || '10:00'
+    ).trim();
     if (payload.schedule_type === 'weekly') {
       const days = Array.isArray(payload.days) ? payload.days : [];
       payload.days = [...new Set(days.filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))];
       if (!payload.days.length) payload.days = [1];
     }
     if (payload.schedule_type === 'once') {
-      payload.date = String(payload.date || '').trim();
+      payload.date = String(payload.date || preview.details?.date || '').trim();
       if (!/^\d{4}-\d{2}-\d{2}$/.test(payload.date)) {
-        throw new Error('Data obbligatoria per push una tantum');
+        const fallback = new Date();
+        fallback.setDate(fallback.getDate() + 1);
+        payload.date = fallback.toISOString().slice(0, 10);
+        preview.warnings.push('Data push una tantum non specificata: proposta per domani.');
       }
     }
   }
