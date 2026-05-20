@@ -78,16 +78,61 @@ function applySinceDaysToQuerySpec(spec, prompt) {
   };
 }
 
+/**
+ * Applica la finestra dai giorni nel prompt; se manca, usa behavior.since_days nel query_spec
+ * così fromDate/toDate sono sempre valorizzati quando il modello ha messo i giorni nella spec.
+ */
+function resolveAudienceQueryWindow(spec, prompt) {
+  const w = applySinceDaysToQuerySpec(spec, prompt);
+  let outSpec = w.spec;
+  let sinceDays = w.sinceDays;
+  let fromDate = w.fromDate;
+  let toDate = w.toDate;
+  let overridden = w.overridden;
+
+  const fromBehavior = parseInt(outSpec?.behavior?.since_days, 10);
+  if ((!sinceDays || !fromDate || !toDate) && Number.isFinite(fromBehavior) && fromBehavior > 0) {
+    const d = Math.min(fromBehavior, 365);
+    sinceDays = d;
+    fromDate = dateDaysAgoInTimezone(d, TZ);
+    toDate = todayInTimezone(TZ);
+    outSpec = {
+      ...outSpec,
+      behavior: { ...(outSpec.behavior || {}), since_days: d, min_count: outSpec.behavior?.min_count || 1 }
+    };
+    if (!w.sinceDays) overridden = false;
+  }
+
+  return {
+    spec: outSpec,
+    sinceDays,
+    fromDate,
+    toDate,
+    overridden
+  };
+}
+
 const STALE_AUDIENCE_WARNING = [
   /audience_behavior_30d/i,
   /30 giorni aggregat/i,
-  /granularit[aà].*periodo/i,
+  /contesto disponibile/i,
+  /copre solo aggregat/i,
+  /impossibile isolare/i,
+  /senza query diretta/i,
+  /query diretta al database/i,
+  /granularit[aà]/i,
   /necessaria una query sul server/i,
   /non possono essere filtrati/i,
   /dati disponibili nel contesto/i,
   /Query spec generata automaticamente/i,
   /estratto da audience_behavior/i,
-  /filtro temporale.*server/i
+  /filtro temporale.*server/i,
+  /scheduled_sent/i,
+  /batch di invio/i,
+  /destinatari singol/i,
+  /stima\s*~?/i,
+  /media lineare/i,
+  /aperture\/settimana/i
 ];
 
 function sanitizeAudienceQueryWarnings(warnings) {
@@ -104,30 +149,32 @@ const ACTION_LABELS = {
   gamification_played: 'giocato gamification'
 };
 
-function buildAudienceQueryServerWarnings({ sinceDays, fromDate, toDate, behavior }) {
-  const lines = [
-    `Conteggio calcolato sul database · ultimi ${sinceDays} giorni (${fromDate} → ${toDate}).`
-  ];
-  if (behavior?.did_action) {
-    lines.push(`Filtro: ${ACTION_LABELS[behavior.did_action] || behavior.did_action}.`);
-  }
+function buildAudienceQueryServerWarnings({ behavior }) {
+  const lines = ['Numero da tabella eventi holder_events (non da testo W.AI).'];
   if (behavior?.did_action === 'opened') {
-    lines.push('Nota: "opened" = pass aperto dal Wallet (spesso dopo una push, ma non è il tap sulla notifica).');
+    lines.push(
+      'Pass aperti = possessori con almeno un evento "opened" nel periodo (apertura nel Wallet; non distingue tap notifica vs apertura manuale).'
+    );
   }
   return lines;
 }
 
 function formatAudienceQueryAnswer({ count, sinceDays, fromDate, toDate, behavior }) {
-  const action = behavior?.did_action ? (ACTION_LABELS[behavior.did_action] || behavior.did_action) : 'criteri richiesti';
-  return `${count} possessori negli ultimi ${sinceDays} giorni (${fromDate} → ${toDate}), filtro: ${action}.`;
+  if (behavior?.did_action === 'opened') {
+    return `${count} possessori con almeno un’apertura pass nel periodo ${fromDate}–${toDate} (ultimi ${sinceDays} giorni, evento opened).`;
+  }
+  const action = behavior?.did_action ? ACTION_LABELS[behavior.did_action] || behavior.did_action : 'criteri richiesti';
+  return `${count} possessori nel periodo ${fromDate}–${toDate} (ultimi ${sinceDays} giorni) · filtro: ${action}.`;
 }
 
 module.exports = {
   TZ,
   stripAudiencePrefix,
   todayInTimezone,
+  dateDaysAgoInTimezone,
   parseSinceDaysFromPrompt,
   applySinceDaysToQuerySpec,
+  resolveAudienceQueryWindow,
   sanitizeAudienceQueryWarnings,
   buildAudienceQueryServerWarnings,
   formatAudienceQueryAnswer,

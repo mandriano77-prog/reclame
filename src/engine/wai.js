@@ -173,8 +173,8 @@ In preview.details includi description_it, prompt_en, style, dimensions "1125x43
 - Per "ha aperto il pass" → did_action: "opened".
 - Per "mai cliccato" / "non ha mai cliccato" / "senza click" → never_did_action: "link_click" (opzionale target_key per un link specifico). Non usare did_action insieme a never_did_action.
 - Per "aperto ma mai cliccato" → behavior: { did_action: "opened", never_did_action: "link_click", since_days: <giorni dalla richiesta> } — il motore applica entrambi i filtri.
-- answer: una frase breve sul segmento. NON citare audience_behavior_30d, NON dire che servono altre query al server, NON elencare serial/email (il server mette gli esempi).
-- preview.warnings: lascia vuoto [] per audience.query — il server aggiunge le note dopo l'esecuzione.
+- answer: una sola frase fint placeholder (es. "Segmento impostato.") — il server sostituisce con statistiche reali; NON elencare serial, email, stime da contesto LLM né disclaimer su 30 giorni.
+- preview.warnings: sempre [] per audience.query — zero testo qui.
 - type: "query" (non "create"). payload DEVE contenere query_spec completo.
 
 ### audience.create

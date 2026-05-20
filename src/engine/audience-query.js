@@ -36,7 +36,8 @@ async function executeAudienceQuery(brandId, spec, { limit = 50, offset = 0 } = 
   );
 
   const { listAudienceMembers } = require('./audiences');
-  const members = await listAudienceMembers(brandId, validated.rules, { limit, offset });
+  const members =
+    limit > 0 ? await listAudienceMembers(brandId, validated.rules, { limit, offset }) : [];
 
   return {
     count: countResult.rows[0].count,

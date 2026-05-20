@@ -51,10 +51,12 @@ const {
 } = require('../engine/audiences');
 const { executeAudienceQuery, mergeSpecToAudienceRules } = require('../engine/audience-query');
 const {
-  applySinceDaysToQuerySpec,
-  sanitizeAudienceQueryWarnings,
+  resolveAudienceQueryWindow,
   buildAudienceQueryServerWarnings,
-  formatAudienceQueryAnswer
+  formatAudienceQueryAnswer,
+  todayInTimezone,
+  dateDaysAgoInTimezone,
+  TZ
 } = require('../engine/audience-prompt');
 const { getHolderBehaviorInsights, listRecentHolderEvents, exportHolderEvents } = require('../engine/holder-events');
 const { createPkpass } = require('../engine/passkit');
@@ -3957,44 +3959,46 @@ router.post('/wai/ask', async (req, res) => {
     if (proposal.intent === 'audience.query' && audienceQuerySpec) {
       try {
         const userPrompt = String(followup || prompt || '').trim();
-        const window = applySinceDaysToQuerySpec(audienceQuerySpec, userPrompt);
+        const window = resolveAudienceQueryWindow(audienceQuerySpec, userPrompt);
         audienceQuerySpec = window.spec;
         if (!proposal.payload?.query_spec) proposal.payload = { ...(proposal.payload || {}), query_spec: audienceQuerySpec };
         else proposal.payload.query_spec = audienceQuerySpec;
-        const result = await executeAudienceQuery(brand_id, audienceQuerySpec, { limit: 8, offset: 0 });
+        const result = await executeAudienceQuery(brand_id, audienceQuerySpec, { limit: 0, offset: 0 });
         const sinceDays = window.sinceDays || audienceQuerySpec.behavior?.since_days;
-        const fromDate = window.fromDate;
-        const toDate = window.toDate;
+        let fromDate = window.fromDate;
+        let toDate = window.toDate;
+        if (sinceDays && (!fromDate || !toDate)) {
+          toDate = todayInTimezone(TZ);
+          fromDate = dateDaysAgoInTimezone(Number(sinceDays), TZ);
+        }
+        const answerLine =
+          sinceDays && fromDate && toDate
+            ? formatAudienceQueryAnswer({
+              count: result.count,
+              sinceDays,
+              fromDate,
+              toDate,
+              behavior: audienceQuerySpec.behavior
+            })
+            : `${result.count} possessori nel segmento.`;
         proposal.preview.details = {
           ...(proposal.preview.details || {}),
           member_count: result.count,
-          sample_members: result.members,
+          sample_members: [],
+          metric_label:
+            audienceQuerySpec.behavior?.did_action === 'opened'
+              ? 'pass aperti (possessori distinti)'
+              : 'nel segmento',
           query_spec: audienceQuerySpec,
           since_days: sinceDays,
           period_from: fromDate,
           period_to: toDate
         };
-        proposal.preview.summary = String(audienceQuerySpec.description || '').trim()
-          || `Segmento: ${result.count} possessori (ultimi ${sinceDays} giorni)`;
-        proposal.answer = sinceDays && fromDate && toDate
-          ? formatAudienceQueryAnswer({
-            count: result.count,
-            sinceDays,
-            fromDate,
-            toDate,
-            behavior: audienceQuerySpec.behavior
-          })
-          : `${result.count} possessori nel segmento.`;
-        if (sinceDays && fromDate && toDate) {
-          proposal.preview.warnings = buildAudienceQueryServerWarnings({
-            sinceDays,
-            fromDate,
-            toDate,
-            behavior: audienceQuerySpec.behavior
-          });
-        } else {
-          proposal.preview.warnings = sanitizeAudienceQueryWarnings(proposal.preview.warnings);
-        }
+        proposal.preview.summary = answerLine.slice(0, 280);
+        proposal.answer = answerLine;
+        proposal.preview.warnings = buildAudienceQueryServerWarnings({
+          behavior: audienceQuerySpec.behavior
+        });
       } catch (qErr) {
         proposal.preview.warnings = [...(proposal.preview.warnings || []), qErr.message];
       }
