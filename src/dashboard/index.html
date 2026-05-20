@@ -518,14 +518,31 @@
                 <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Logo, strip image e stile visivo del pass Apple Wallet.</p>
                 <div class="card">
                     <div class="sec-title" style="font-size:16px;">Immagini Pass</div>
+                    <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">Carica da file o scegli dalla <strong>Media Library</strong> (immagini già ritagliate).</p>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Logo Pass (PNG, max 320x100)</label>
-                            <input type="file" id="bsLogoFile" accept="image/*,.pdf" style="font-size:12px;">
+                            <div id="bsLogoPreviewBox" style="min-height:40px;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                                <img id="bsLogoPreview" alt="Logo" style="display:none;max-height:40px;max-width:160px;border-radius:4px;">
+                                <span id="bsLogoPlaceholder" style="font-size:12px;color:var(--text2);">Nessun logo</span>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" class="btn small" onclick="pickMediaForPassDesign('logo')">Da Media Library</button>
+                                <button type="button" class="btn small sec" onclick="document.getElementById('bsLogoFile').click()">Upload file</button>
+                            </div>
+                            <input type="file" id="bsLogoFile" accept="image/*,.pdf" style="display:none;" onchange="onPassDesignFile(this,'logo')">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Strip Image (PNG, 750x246)</label>
-                            <input type="file" id="bsStripFile" accept="image/*,.pdf" style="font-size:12px;">
+                            <div id="bsStripPreviewBox" style="width:100%;max-width:360px;aspect-ratio:750/246;background:var(--bg3);border-radius:8px;border:1px solid var(--border);overflow:hidden;margin-bottom:8px;display:flex;align-items:center;justify-content:center;">
+                                <img id="bsStripPreview" alt="Strip" style="display:none;width:100%;height:100%;object-fit:cover;">
+                                <span id="bsStripPlaceholder" style="font-size:12px;color:var(--text2);">Nessuna strip</span>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" class="btn small" onclick="pickMediaForPassDesign('strip')">Da Media Library</button>
+                                <button type="button" class="btn small sec" onclick="document.getElementById('bsStripFile').click()">Upload file</button>
+                            </div>
+                            <input type="file" id="bsStripFile" accept="image/*,.pdf" style="display:none;" onchange="onPassDesignFile(this,'strip')">
                         </div>
                     </div>
                     <button class="btn" onclick="savePassDesign()" style="margin-top:12px;">Salva Immagini</button>
@@ -1017,16 +1034,30 @@
 
                 <!-- STEP 2: Creatività -->
                 <div id="wzStep2" class="wz-step">
+                    <div class="card" style="margin-bottom:16px;">
+                        <div class="sec-title" style="font-size:16px;">Logo Pass</div>
+                        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Logo in alto a sinistra sul pass (PNG, max 320×100). Usa la Media Library dopo il ritaglio.</p>
+                        <div id="wzLogoPreviewBox" style="min-height:48px;margin-bottom:12px;display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+                            <img id="wzLogoPreview" alt="Logo" style="display:none;max-height:44px;max-width:200px;object-fit:contain;">
+                            <span id="wzLogoPlaceholder" style="color:var(--text2);font-size:12px;">Nessun logo selezionato</span>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button type="button" class="btn small" onclick="wzPickFromMedia('logo')">Scegli da Media Library</button>
+                            <button type="button" class="btn small sec" onclick="wzUploadLogo()">Upload file</button>
+                            <button type="button" class="btn small danger" onclick="wzRemoveLogo()" id="wzLogoDeleteBtn" style="display:none;">Rimuovi</button>
+                        </div>
+                        <input type="file" id="wzLogoFile" accept="image/*,.pdf" style="display:none;" onchange="wzOnLogoFile(this)">
+                    </div>
                     <div class="card">
                         <div class="sec-title" style="font-size:16px;">Strip Image</div>
-                        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">L'immagine principale del pass (750x246px). Scegli dalla Media Library o genera con AI.</p>
+                        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Immagine principale del pass (750×246). Scegli dalla Media Library dopo il ritaglio.</p>
                         <div id="wzStripPreview" style="width:100%;max-width:500px;aspect-ratio:750/246;background:var(--bg3);border-radius:8px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;display:flex;align-items:center;justify-content:center;">
                             <span style="color:var(--text2);font-size:12px;">Nessuna strip selezionata</span>
                         </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn small" onclick="wzPickFromMedia('strip')">Scegli da Media Library</button>
-                            <button class="btn small sec" onclick="wzUploadStrip()">Upload</button>
-                            <button class="btn small danger" onclick="wzRemoveStrip()" id="wzStripDeleteBtn" style="display:none;">Elimina</button>
+                            <button type="button" class="btn small" onclick="wzPickFromMedia('strip')">Scegli da Media Library</button>
+                            <button type="button" class="btn small sec" onclick="wzUploadStrip()">Upload file</button>
+                            <button type="button" class="btn small danger" onclick="wzRemoveStrip()" id="wzStripDeleteBtn" style="display:none;">Rimuovi</button>
                         </div>
                         <input type="file" id="wzStripFile" accept="image/*,.pdf" style="display:none;" onchange="wzOnStripFile(this)">
                     </div>
@@ -1535,6 +1566,9 @@
                     <div class="form-row" id="tplImgLogoRow">
                         <div class="form-group" style="flex:1;">
                             <label class="form-label">Logo (PNG, max 320x100)</label>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                                <button type="button" class="btn small" onclick="tplPickFromMedia('logo')">Da Media Library</button>
+                            </div>
                             <input type="file" id="tplImgLogo" accept="image/*,.pdf" onchange="previewTplImage(this,'logo')" style="font-size:12px;">
                             <img id="tplImgLogoPreview" style="display:none;height:32px;margin-top:4px;border-radius:4px;">
                         </div>
@@ -1542,11 +1576,11 @@
                     <div class="form-row" id="tplImgStripRow">
                         <div class="form-group" style="flex:1;">
                             <label class="form-label">Strip Image (PNG, 750x246)</label>
-                            <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-                                <select id="tplStripPromoSelect" onchange="loadStripFromPromo()" style="flex:1;font-size:12px;">
-                                    <option value="">-- Scegli da Strip Promo --</option>
+                            <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+                                <button type="button" class="btn small" onclick="tplPickFromMedia('strip')">Da Media Library</button>
+                                <select id="tplStripPromoSelect" onchange="loadStripFromPromo()" style="flex:1;min-width:140px;font-size:12px;">
+                                    <option value="">-- Strip Promo --</option>
                                 </select>
-                                <span style="font-size:11px;color:var(--text2);">oppure</span>
                             </div>
                             <input type="file" id="tplImgStrip" accept="image/*,.pdf" onchange="previewTplImage(this,'strip')" style="font-size:12px;">
                             <img id="tplImgStripPreview" style="display:none;width:100%;max-width:300px;margin-top:4px;border-radius:4px;">
@@ -3830,7 +3864,7 @@ async function uploadTemplateImages(templateId) {
         if (tplImageCache[imgType]) {
             await fetch(`${API}/templates/${templateId}/images`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ image_type: imgType, image_base64: tplImageCache[imgType] })
             });
         }
@@ -5652,6 +5686,7 @@ function downloadBlob(blob, filename) {
 // ==================== PASS WIZARD ====================
 let wzCurrentStep = 1;
 let wzStripBase64 = null;
+let wzLogoBase64 = null;
 
 function wzGoStep(step) {
     wzCurrentStep = step;
@@ -5684,7 +5719,12 @@ function wzBuildPreview() {
     const aValue = document.getElementById('wzAuxValue').value;
 
     // Front
-    document.getElementById('wzPpLogo').textContent = brandName;
+    const wzPpLogo = document.getElementById('wzPpLogo');
+    if (wzLogoBase64) {
+        wzPpLogo.innerHTML = `<img src="data:image/png;base64,${wzLogoBase64}" style="height:20px;max-width:120px;object-fit:contain;" alt="">`;
+    } else {
+        wzPpLogo.textContent = brandName;
+    }
     document.getElementById('wzPpBackLogo').textContent = brandName;
     const hf = document.getElementById('wzPpHeaderField');
     hf.innerHTML = (hLabel||hValue) ? `<div class="pp-field-label">${esc(hLabel)}</div><div class="pp-field-value">${esc(hValue)}</div>` : '';
@@ -5699,6 +5739,9 @@ function wzBuildPreview() {
     if (wzStripBase64) {
         strip.style.backgroundImage = `url(data:image/png;base64,${wzStripBase64})`;
         strip.style.backgroundSize = 'cover';
+        strip.style.display = '';
+    } else {
+        strip.style.backgroundImage = '';
     }
 
     // Back
@@ -5730,21 +5773,71 @@ function wzBuildPreview() {
             <span style="font-weight:600;color:var(--text1);">Link retro</span><span>${backLinks} link</span>
             <span style="font-weight:600;color:var(--text1);">Regolamento</span><span>${hasReg ? 'Presente' : 'Non configurato'}</span>
             <span style="font-weight:600;color:var(--text1);">Contatti</span><span>${hasCont ? 'Presenti' : 'Non configurati'}</span>
+            <span style="font-weight:600;color:var(--text1);">Logo</span><span>${wzLogoBase64 ? '&#10003; Selezionato' : 'Nessuno'}</span>
             <span style="font-weight:600;color:var(--text1);">Strip</span><span>${wzStripBase64 ? '&#10003; Selezionata' : 'Nessuna'}</span>
         </div>
     `;
 }
 
+function wzSetLogoPreview(base64, previewUrl) {
+    wzLogoBase64 = base64;
+    const img = document.getElementById('wzLogoPreview');
+    const ph = document.getElementById('wzLogoPlaceholder');
+    const del = document.getElementById('wzLogoDeleteBtn');
+    if (img && previewUrl) {
+        img.src = previewUrl.startsWith('data:') ? previewUrl : previewUrl;
+        img.style.display = 'block';
+    }
+    if (ph) ph.style.display = 'none';
+    if (del) del.style.display = 'inline-block';
+}
+
+function wzSetStripPreview(base64, previewUrl) {
+    wzStripBase64 = base64;
+    const box = document.getElementById('wzStripPreview');
+    if (box) {
+        const src = previewUrl.startsWith('data:') ? previewUrl : previewUrl;
+        box.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;" alt="">`;
+    }
+    const del = document.getElementById('wzStripDeleteBtn');
+    if (del) del.style.display = 'inline-block';
+}
+
+function wzUploadLogo() { document.getElementById('wzLogoFile').click(); }
 function wzUploadStrip() { document.getElementById('wzStripFile').click(); }
+
+function wzOnLogoFile(input) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const base64 = e.target.result.split(',')[1];
+        wzSetLogoPreview(base64, e.target.result);
+        window._wzSelectedLogo = null;
+        wzUpdatePreview();
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+function wzRemoveLogo() {
+    wzLogoBase64 = null;
+    window._wzSelectedLogo = null;
+    const img = document.getElementById('wzLogoPreview');
+    const ph = document.getElementById('wzLogoPlaceholder');
+    if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
+    if (ph) ph.style.display = '';
+    document.getElementById('wzLogoDeleteBtn').style.display = 'none';
+    document.getElementById('wzLogoFile').value = '';
+    wzUpdatePreview();
+}
 
 function wzOnStripFile(input) {
     if (!input.files || !input.files[0]) return;
     const reader = new FileReader();
     reader.onload = e => {
         const base64 = e.target.result.split(',')[1];
-        wzStripBase64 = base64;
-        document.getElementById('wzStripPreview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
-        document.getElementById('wzStripDeleteBtn').style.display = 'inline-block';
+        wzSetStripPreview(base64, e.target.result);
+        window._wzSelectedStrip = null;
+        wzUpdatePreview();
     };
     reader.readAsDataURL(input.files[0]);
 }
@@ -5794,25 +5887,76 @@ function wzDrawQR(canvas, text) {
 
 function wzRemoveStrip() {
     wzStripBase64 = null;
+    window._wzSelectedStrip = null;
     document.getElementById('wzStripPreview').innerHTML = '<span style="color:var(--text2);font-size:12px;">Nessuna strip selezionata</span>';
     document.getElementById('wzStripDeleteBtn').style.display = 'none';
     document.getElementById('wzStripFile').value = '';
+    wzUpdatePreview();
 }
 
 function wzPickFromMedia(target) {
-    openMediaPicker((mediaId, imageUrl) => {
-        // target could be 'strip', 'logo', 'background'
+    if (!brandId) return toast('Seleziona un brand');
+    openMediaPicker(async (mediaId, imageUrl) => {
+        const base64 = await fetchMediaImageBase64(mediaId);
+        const dataUrl = 'data:image/png;base64,' + base64;
         if (target === 'strip') {
-            document.getElementById('wzStripPreview').innerHTML = `<img src="${imageUrl}" style="width:100%;height:100%;object-fit:cover;">`;
-            document.getElementById('wzStripPreview').style.display = 'block';
-            // Store the mediaId for when publishing
+            wzSetStripPreview(base64, dataUrl);
             window._wzSelectedStrip = { mediaId, imageUrl };
+            toast('Strip dalla Media Library');
         } else if (target === 'logo') {
-            const logoEl = document.getElementById('wzLogoPreview');
-            if (logoEl) { logoEl.src = imageUrl; logoEl.style.display = 'block'; }
+            wzSetLogoPreview(base64, dataUrl);
             window._wzSelectedLogo = { mediaId, imageUrl };
+            toast('Logo dalla Media Library');
         }
-    }, target || 'strip');
+        wzUpdatePreview();
+    }, 'all');
+}
+
+async function tplPickFromMedia(imageType) {
+    if (!brandId) return toast('Seleziona un brand');
+    openMediaPicker(async (mediaId, imageUrl) => {
+        const base64 = await fetchMediaImageBase64(mediaId);
+        tplImageCache[imageType] = base64;
+        const cap = imageType.charAt(0).toUpperCase() + imageType.slice(1);
+        const preview = document.getElementById('tplImg' + cap + 'Preview');
+        if (preview) {
+            preview.src = 'data:image/png;base64,' + base64;
+            preview.style.display = 'block';
+        }
+        updatePassPreview();
+        toast((imageType === 'logo' ? 'Logo' : 'Strip') + ' dalla Media Library');
+    }, 'all');
+}
+
+async function wzApplyWizardImages(tplId) {
+    const types = [];
+    if (wzLogoBase64) types.push({ image_type: 'logo', image_base64: wzLogoBase64 });
+    if (wzStripBase64) types.push({ image_type: 'strip', image_base64: wzStripBase64 });
+    for (const u of types) {
+        const res = await fetch(`${API}/templates/${tplId}/images`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(u)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `Errore upload ${u.image_type}`);
+        }
+    }
+    if (wzLogoBase64) {
+        await fetch(`${API}/brands/${brandId}/logo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ logo_base64: wzLogoBase64 })
+        });
+    }
+    if (wzStripBase64) {
+        await fetch(`${API}/brands/${brandId}/strip`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ strip_base64: wzStripBase64 })
+        });
+    }
 }
 
 // AI strip functions removed
@@ -5921,13 +6065,8 @@ async function wzPublish() {
         const saved = await res.json();
         const tplId = editId || saved.id;
 
-        // Upload strip if selected
-        if (wzStripBase64 && tplId) {
-            await fetch(`${API}/brands/${brandId}/strip`, {
-                method: 'POST',
-                headers: {'Content-Type':'application/json', ...getAuthHeaders()},
-                body: JSON.stringify({ strip_base64: wzStripBase64 })
-            });
+        if (tplId && (wzStripBase64 || wzLogoBase64)) {
+            await wzApplyWizardImages(tplId);
         }
 
         if (editId && saved.wallet_refresh) {
@@ -5962,6 +6101,9 @@ async function wzPublish() {
 
         window.wzEditingTemplateId = null;
         wzStripBase64 = null;
+        wzLogoBase64 = null;
+        window._wzSelectedStrip = null;
+        window._wzSelectedLogo = null;
         loadWzTemplates();
     } catch(e) { toast('Errore: ' + e.message); }
 }
@@ -5971,6 +6113,9 @@ function loadPassWizard() {
     window.wzEditingTemplateId = null;
     wzCurrentStep = 1;
     wzStripBase64 = null;
+    wzLogoBase64 = null;
+    window._wzSelectedStrip = null;
+    window._wzSelectedLogo = null;
     [1,2,3].forEach(s => {
         document.getElementById('wzStep'+s).classList.toggle('active', s === 1);
         document.getElementById('wzDot'+s).classList.toggle('active', s === 1);
@@ -6042,6 +6187,19 @@ async function wzEditTemplate(id) {
         }
         document.getElementById('wzRegolamento').value = f.regolamento || '';
         document.getElementById('wzContatti').value = f.contatti || '';
+        const imgs = t.style?.images || {};
+        wzStripBase64 = null;
+        wzLogoBase64 = null;
+        if (imgs.strip) {
+            wzSetStripPreview(imgs.strip, 'data:image/png;base64,' + imgs.strip);
+        } else {
+            wzRemoveStrip();
+        }
+        if (imgs.logo) {
+            wzSetLogoPreview(imgs.logo, 'data:image/png;base64,' + imgs.logo);
+        } else {
+            wzRemoveLogo();
+        }
         // Store template ID for update instead of create
         window.wzEditingTemplateId = id;
         wzGoStep(1);
@@ -6343,6 +6501,23 @@ async function normalizeMediaForUpload(file, type) {
 }
 
 // ==================== MEDIA PICKER ====================
+/** Scarica immagine dalla Media Library come base64 (per pass / template). */
+async function fetchMediaImageBase64(mediaId) {
+    const res = await fetch(`${API}/media/${mediaId}/image`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Impossibile caricare il media');
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            const base64 = String(dataUrl).includes(',') ? String(dataUrl).split(',')[1] : String(dataUrl);
+            resolve(base64);
+        };
+        reader.onerror = () => reject(new Error('Errore lettura immagine'));
+        reader.readAsDataURL(blob);
+    });
+}
+
 let mpCallback = null;
 let mpCurrentFilter = 'all';
 
@@ -6381,8 +6556,15 @@ function mpFilter(type) {
   mpLoadItems();
 }
 
-function mpSelect(mediaId) {
-  if (mpCallback) mpCallback(mediaId, `/api/v1/media/${mediaId}/image`);
+async function mpSelect(mediaId) {
+  const imageUrl = `/api/v1/media/${mediaId}/image`;
+  if (mpCallback) {
+    try {
+      await mpCallback(mediaId, imageUrl);
+    } catch (err) {
+      toast(err.message || 'Errore selezione media');
+    }
+  }
   closeMediaPicker();
 }
 
@@ -6500,39 +6682,90 @@ async function deleteAllMedia() {
 }
 
 // ==================== PASS DESIGN ====================
+function setPassDesignPreview(kind, imageUrl) {
+    if (kind === 'logo') {
+        const img = document.getElementById('bsLogoPreview');
+        const ph = document.getElementById('bsLogoPlaceholder');
+        if (img) { img.src = imageUrl; img.style.display = 'block'; }
+        if (ph) ph.style.display = 'none';
+    } else {
+        const img = document.getElementById('bsStripPreview');
+        const ph = document.getElementById('bsStripPlaceholder');
+        if (img) { img.src = imageUrl; img.style.display = 'block'; }
+        if (ph) ph.style.display = 'none';
+    }
+}
+
+async function onPassDesignFile(input, kind) {
+    if (!input.files || !input.files[0]) return;
+    const b64 = await fileToBase64(input.files[0]);
+    const previewUrl = 'data:image/png;base64,' + b64;
+    setPassDesignPreview(kind, previewUrl);
+    input._pendingBase64 = b64;
+}
+
+async function pickMediaForPassDesign(kind) {
+    if (!brandId) return toast('Seleziona un brand');
+    openMediaPicker(async (mediaId, imageUrl) => {
+        const base64 = await fetchMediaImageBase64(mediaId);
+        const endpoint = kind === 'logo' ? 'logo' : 'strip';
+        const body = kind === 'logo' ? { logo_base64: base64 } : { strip_base64: base64 };
+        const res = await fetch(`${API}/brands/${brandId}/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Salvataggio fallito');
+        }
+        setPassDesignPreview(kind, 'data:image/png;base64,' + base64);
+        toast((kind === 'logo' ? 'Logo' : 'Strip') + ' salvato dal media');
+    }, 'all');
+}
+
 async function loadPassDesign() {
     if (!brandId) return;
     try {
-        const r = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
-        const brand = await r.json();
-        const config = brand.config || {};
-        // AI style prompt removed
+        const logoRes = await fetch(`${API}/brands/${brandId}/logo?t=${Date.now()}`, { headers: getAuthHeaders() });
+        if (logoRes.ok) {
+            const blob = await logoRes.blob();
+            const url = URL.createObjectURL(blob);
+            setPassDesignPreview('logo', url);
+        }
+        const brandRes = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
+        const brand = await brandRes.json();
+        const stripB64 = brand.config?.logos?.strip || brand.config?.strip_base64;
+        if (stripB64) {
+            setPassDesignPreview('strip', 'data:image/png;base64,' + stripB64);
+        }
     } catch(e) { console.error('Load pass design error:', e); }
 }
 
 async function savePassDesign() {
     if (!brandId) return;
-    // Upload logo if selected
-    const logoFile = document.getElementById('bsLogoFile').files[0];
-    if (logoFile) {
-        const logoB64 = await fileToBase64(logoFile);
+    let saved = false;
+    const logoFile = document.getElementById('bsLogoFile');
+    const stripFile = document.getElementById('bsStripFile');
+    if (logoFile?.files?.[0]) {
+        const logoB64 = logoFile._pendingBase64 || await fileToBase64(logoFile.files[0]);
         await fetch(`${API}/brands/${brandId}/logo`, {
             method: 'POST',
             headers: {'Content-Type':'application/json', ...getAuthHeaders()},
             body: JSON.stringify({ logo_base64: logoB64 })
         });
+        saved = true;
     }
-    // Upload strip if selected
-    const stripFile = document.getElementById('bsStripFile').files[0];
-    if (stripFile) {
-        const stripB64 = await fileToBase64(stripFile);
+    if (stripFile?.files?.[0]) {
+        const stripB64 = stripFile._pendingBase64 || await fileToBase64(stripFile.files[0]);
         await fetch(`${API}/brands/${brandId}/strip`, {
             method: 'POST',
             headers: {'Content-Type':'application/json', ...getAuthHeaders()},
             body: JSON.stringify({ strip_base64: stripB64 })
         });
+        saved = true;
     }
-    if (!logoFile && !stripFile) return toast('Seleziona almeno un file');
+    if (!saved) return toast('Seleziona un file o usa Media Library');
     toast('Immagini pass salvate!');
 }
 
