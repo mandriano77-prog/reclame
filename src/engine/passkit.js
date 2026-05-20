@@ -194,6 +194,62 @@ function normalizePassLocations(brandConfig) {
   return out;
 }
 
+/** Map template back-field keys to link slot index 0..2 (Link 1–3). */
+function backFieldLinkSlotIndex(key) {
+  const k = String(key || '').toLowerCase();
+  if (k === 'link1' || k === 'link_0' || k === 'link0') return 0;
+  if (k === 'link2' || k === 'link_1') return 1;
+  if (k === 'link3' || k === 'link_2') return 2;
+  return -1;
+}
+
+const TEMPLATE_LINK_FIELD_KEYS = new Set(['link1', 'link2', 'link3', 'link_0', 'link_1', 'link_2', 'link0']);
+
+/**
+ * Always three slots — empty middle links must not shift Link 3 into Link 2 position.
+ */
+function resolveTemplateLinkSlots(tplFields) {
+  const slots = [
+    { label: '', url: '' },
+    { label: '', url: '' },
+    { label: '', url: '' }
+  ];
+  if (!tplFields) return slots;
+
+  const put = (idx, label, url) => {
+    if (idx < 0 || idx > 2) return;
+    const l = label != null ? String(label).trim() : '';
+    const u = url != null ? String(url).trim() : '';
+    if (!l && !u) return;
+    slots[idx] = { label: l, url: u };
+  };
+
+  if (!Array.isArray(tplFields) && Array.isArray(tplFields.links)) {
+    tplFields.links.forEach((link, i) => {
+      if (i > 2 || !link) return;
+      put(i, link.label, link.url);
+    });
+    return slots;
+  }
+
+  if (!Array.isArray(tplFields) && Array.isArray(tplFields.backFields)) {
+    tplFields.backFields.forEach((bf) => {
+      const idx = backFieldLinkSlotIndex(bf.key);
+      if (idx >= 0) put(idx, bf.label, bf.value || bf.url);
+    });
+    return slots;
+  }
+
+  if (Array.isArray(tplFields)) {
+    tplFields.forEach((field) => {
+      if (field.type !== 'back') return;
+      const idx = backFieldLinkSlotIndex(field.key);
+      if (idx >= 0) put(idx, field.label, field.value);
+    });
+  }
+  return slots;
+}
+
 /**
  * Generate the pass.json content for Apple Wallet
  */
@@ -375,10 +431,10 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  const links = (!Array.isArray(tplFields) && Array.isArray(tplFields.links)) ? tplFields.links : [];
+  const linkSlots = resolveTemplateLinkSlots(tplFields);
   const link1 = resolveBackLink1(brandConfig, instance.serial_number)
-    || (links[0] && (links[0].label || links[0].url)
-      ? makeBackLinkField('link_0', links[0].label, links[0].url)
+    || (linkSlots[0].label || linkSlots[0].url
+      ? makeBackLinkField('link_0', linkSlots[0].label, linkSlots[0].url)
       : null);
   if (link1) orderedBackFields.push(link1);
 
@@ -395,8 +451,8 @@ function generatePassJson(template, instance, brand, options = {}) {
   }
 
   [1, 2].forEach((idx) => {
-    const link = links[idx];
-    if (!link || (!link.label && !link.url)) return;
+    const link = linkSlots[idx];
+    if (!link.label && !link.url) return;
     orderedBackFields.push(makeBackLinkField(`link_${idx}`, link.label, link.url));
   });
 
@@ -413,9 +469,10 @@ function generatePassJson(template, instance, brand, options = {}) {
 
   // 5. Any remaining template back fields (fallback)
   backFields.forEach(f => {
-    // Skip if already covered by backContent
+    // Skip if already covered by backContent or link slots
     if (f.key === 'regolamento' && backContent.regolamento) return;
     if (f.key === 'contatti' && backContent.contatti) return;
+    if (TEMPLATE_LINK_FIELD_KEYS.has(String(f.key || '').toLowerCase())) return;
     orderedBackFields.push(f);
   });
 

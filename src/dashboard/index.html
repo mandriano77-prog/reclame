@@ -3568,12 +3568,10 @@ async function editTemplate(id) {
 
 async function saveTemplate() {
     const editId = document.getElementById('templateEditId').value;
-    const links = [];
-    for (let i = 1; i <= 3; i++) {
-        const label = document.getElementById('tplLink'+i+'Label').value.trim();
-        const url = document.getElementById('tplLink'+i+'Url').value.trim();
-        if (label || url) links.push({ label, url });
-    }
+    const links = [1, 2, 3].map(i => ({
+        label: document.getElementById('tplLink'+i+'Label').value.trim(),
+        url: document.getElementById('tplLink'+i+'Url').value.trim()
+    }));
     const body = {
         brand_id: brandId,
         name: document.getElementById('tplName').value,
@@ -3599,7 +3597,12 @@ async function saveTemplate() {
         await uploadTemplateImages(tplId);
     }
     closeModal('templateModal');
-    toast(editId ? 'Template aggiornato!' : 'Template creato!');
+    if (editId && saved.wallet_refresh) {
+        const wr = saved.wallet_refresh;
+        toast(`Template aggiornato — ${wr.passes_touched || 0} pass segnati, ${wr.push_sent || 0} notifiche Wallet`);
+    } else {
+        toast(editId ? 'Template aggiornato!' : 'Template creato!');
+    }
     invalidateBrandCache();
     loadTemplates();
 }
@@ -5841,12 +5844,10 @@ async function wzPublish() {
     const name = document.getElementById('wzName').value;
     if (!name) return toast('Inserisci un nome per il template');
 
-    const links = [];
-    for (let i = 1; i <= 3; i++) {
-        const label = document.getElementById('wzLink'+i+'Label').value.trim();
-        const url = document.getElementById('wzLink'+i+'Url').value.trim();
-        if (label || url) links.push({ label, url });
-    }
+    const links = [1, 2, 3].map(i => ({
+        label: document.getElementById('wzLink'+i+'Label').value.trim(),
+        url: document.getElementById('wzLink'+i+'Url').value.trim()
+    }));
 
     const body = {
         brand_id: brandId,
@@ -5884,7 +5885,12 @@ async function wzPublish() {
             });
         }
 
-        toast(editId ? 'Template aggiornato!' : 'Pass pubblicato!');
+        if (editId && saved.wallet_refresh) {
+            const wr = saved.wallet_refresh;
+            toast(`Template aggiornato — ${wr.passes_touched || 0} pass, ${wr.push_sent || 0} notifiche Wallet`);
+        } else {
+            toast(editId ? 'Template aggiornato!' : 'Pass pubblicato!');
+        }
 
         // Show QR + link for newly created template
         const tplIdFinal = tplId;

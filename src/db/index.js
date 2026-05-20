@@ -864,6 +864,25 @@ async function touchPass(id) {
   return { success: true };
 }
 
+async function touchPassesForTemplate(templateId) {
+  const result = await pool.query(
+    'UPDATE pass_instances SET last_updated = NOW() WHERE template_id = $1',
+    [templateId]
+  );
+  return { touched: result.rowCount || 0 };
+}
+
+async function getDevicesForTemplate(templateId) {
+  const result = await pool.query(
+    `SELECT DISTINCT dr.push_token, dr.serial_number
+     FROM device_registrations dr
+     JOIN pass_instances pi ON dr.serial_number = pi.serial_number
+     WHERE pi.template_id = $1 AND dr.push_token IS NOT NULL AND dr.push_token <> ''`,
+    [templateId]
+  );
+  return result.rows;
+}
+
 async function listPasses(brandId, options = {}) {
   // install_date: Google callback sets google_installed_at; Apple Wallet sets device_registrations on POST register.
   // Dashboard column "Installato il" reads install_date (was undefined before — always showed "-").
@@ -1916,6 +1935,7 @@ module.exports = {
   getPassBySerial,
   updatePassInstance,
   touchPass,
+  touchPassesForTemplate,
   listPasses,
   deletePass,
   // Events
@@ -1925,6 +1945,7 @@ module.exports = {
   registerDevice,
   getDevicesForPass,
   getDevicesForBrand,
+  getDevicesForTemplate,
   unregisterDevice,
   getSerialsForDevice,
   // Analytics

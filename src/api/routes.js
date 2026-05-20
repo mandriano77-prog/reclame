@@ -8,9 +8,9 @@ const {
   createTemplate, getTemplate, listTemplates, updateTemplate, deleteTemplate,
   createCampaign, getCampaign, listCampaigns, updateCampaign, deleteCampaign,
   incrementCampaignDownloads, incrementCampaignInstalls,
-  createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, listPasses, deletePass,
+  createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesForTemplate, listPasses, deletePass,
   logEvent, listEvents,
-  registerDevice, getDevicesForPass, getDevicesForBrand, unregisterDevice, getSerialsForDevice,
+  registerDevice, getDevicesForPass, getDevicesForBrand, getDevicesForTemplate, unregisterDevice, getSerialsForDevice,
   getAnalytics, getCampaignAnalytics,
   logPush, listPushes, deletePush, clearPushHistory,
   createScheduledPush, listScheduledPush, getScheduledPush, updateScheduledPush, deleteScheduledPush, logPushAssistantInteraction, logWaiInteraction, listWaiLog,
@@ -1523,7 +1523,18 @@ router.put('/templates/:id', async (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Template non trovato' });
     if (!requireBrandId(req, res, existing.brand_id)) return;
     const template = await updateTemplate(req.params.id, req.body);
-    res.json(template);
+    const { touched } = await touchPassesForTemplate(req.params.id);
+    let wallet_push_sent = 0;
+    const devices = await getDevicesForTemplate(req.params.id);
+    for (const device of devices) {
+      try {
+        const result = await sendPushUpdate(device.push_token);
+        if (result.success) wallet_push_sent++;
+      } catch (pushErr) {
+        console.error('[Template] Wallet push error:', pushErr.message);
+      }
+    }
+    res.json({ ...template, wallet_refresh: { passes_touched: touched, push_sent: wallet_push_sent } });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
