@@ -75,11 +75,12 @@ const WALLET_API_BASE = 'https://walletobjects.googleapis.com/walletobjects/v1';
 const SAVE_LINK_BASE = 'https://pay.google.com/gp/v/save';
 
 function resolveApiBase() {
-  const host =
+  const rawHost =
     (process.env.CUSTOM_DOMAIN && process.env.CUSTOM_DOMAIN.trim()) ||
     (process.env.RAILWAY_PUBLIC_DOMAIN && process.env.RAILWAY_PUBLIC_DOMAIN.trim()) ||
     (process.env.APP_PUBLIC_DOMAIN && process.env.APP_PUBLIC_DOMAIN.trim()) ||
     '';
+  const host = rawHost.replace(/^https?:\/\//i, '').replace(/\/+$/g, '');
   return host ? `https://${host}/api/v1` : '';
 }
 const API_BASE = resolveApiBase();
@@ -181,46 +182,17 @@ function buildPassClass(brand, template) {
 
   const classObj = {
     id: classId,
+    reviewStatus: 'UNDER_REVIEW',
     issuerName: brand.name,
-    programName: template.name || brand.name,
-    classTemplateInfo: {
-      cardTemplateOverride: {
-        cardRowTemplateInfos: [
-          {
-            twoItems: {
-              startItem: {
-                firstValue: { fields: [{ fieldPath: 'object.textModulesData["points"]' }] }
-              },
-              endItem: {
-                firstValue: { fields: [{ fieldPath: 'object.textModulesData["tier"]' }] }
-              }
-            }
-          }
-        ]
-      }
-    },
-    imageModulesData: [],
-    textModulesData: [],
-    linksModuleData: { uris: [] }
-    // NOTE: callbackOptions removed — callbacks require a pre-registered class.
-    // If you need callbacks, re-add: callbackOptions: API_BASE ? { url: `${API_BASE}/google-wallet/callback` } : undefined
+    programName: (template.name || brand.name || 'Loyalty Program').slice(0, 64)
   };
 
-  // Brand logo
+  // Loyalty classes use programLogo (not logo/heroImage as in generic-like payloads).
   const logoUri = walletPublicBrandAssetUri(brand, 'logo');
   if (logoUri && (brand.config?.logo_base64 || brand.config?.logos?.logo)) {
-    classObj.logo = {
+    classObj.programLogo = {
       sourceUri: { uri: logoUri },
       contentDescription: { defaultValue: { language: 'it', value: brand.name } }
-    };
-  }
-
-  // Hero image (strip)
-  const stripUri = walletPublicBrandAssetUri(brand, 'strip');
-  if (stripUri && (brand.config?.strip_base64 || brand.config?.logos?.strip || template.style?.stripImage)) {
-    classObj.heroImage = {
-      sourceUri: { uri: stripUri },
-      contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
     };
   }
 
@@ -253,16 +225,23 @@ function buildPassObject(brand, template, instance, member) {
     classId: classId,
     state: 'ACTIVE',
     accountId: instance.serial_number,
-    accountName: `${firstName} ${lastName}`.trim(),
+    accountName: (`${firstName} ${lastName}`.trim() || 'Guest').slice(0, 64),
     barcode: {
       type: 'QR_CODE',
       value: instance.serial_number,
       alternateText: instance.serial_number
     },
-    hexBackgroundColor: rgbToHex(template.style?.backgroundColor || '#0D0B1A'),
     textModulesData: [],
-    linksModuleData: { uris: [] },
-    imageModulesData: []
+    linksModuleData: { uris: [] }
+  };
+
+  const pointsValue = instance.field_values?.points || '0';
+  const parsedPoints = Number.parseInt(String(pointsValue).replace(/[^0-9-]/g, ''), 10);
+  obj.loyaltyPoints = {
+    label: 'Points',
+    balance: Number.isFinite(parsedPoints)
+      ? { int: parsedPoints }
+      : { string: String(pointsValue).slice(0, 32) }
   };
 
   // Map template fields to text modules
@@ -294,24 +273,6 @@ function buildPassObject(brand, template, instance, member) {
         }
       }
     });
-  }
-
-  // Hero image
-  const stripUri = walletPublicBrandAssetUri(brand, 'strip');
-  if (stripUri && (brand.config?.strip_base64 || brand.config?.logos?.strip || template.style?.stripImage)) {
-    obj.heroImage = {
-      sourceUri: { uri: stripUri },
-      contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
-    };
-  }
-
-  // Logo
-  const logoUri = walletPublicBrandAssetUri(brand, 'logo');
-  if (logoUri && (brand.config?.logo_base64 || brand.config?.logos?.logo)) {
-    obj.logo = {
-      sourceUri: { uri: logoUri },
-      contentDescription: { defaultValue: { language: 'it', value: brand.name } }
-    };
   }
 
   return obj;
@@ -501,11 +462,12 @@ function isConfigured() {
 }
 
 function getStatusInfo() {
-  const domain =
+  const rawDomain =
     (process.env.CUSTOM_DOMAIN && process.env.CUSTOM_DOMAIN.trim()) ||
     (process.env.RAILWAY_PUBLIC_DOMAIN && process.env.RAILWAY_PUBLIC_DOMAIN.trim()) ||
     (process.env.APP_PUBLIC_DOMAIN && process.env.APP_PUBLIC_DOMAIN.trim()) ||
     '';
+  const domain = rawDomain.replace(/^https?:\/\//i, '').replace(/\/+$/g, '');
   const base = domain ? `https://${domain}/api/v1` : '';
   return {
     configured: isConfigured(),

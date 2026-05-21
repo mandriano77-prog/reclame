@@ -3563,8 +3563,6 @@ router.get('/google-wallet/pass/:id', async (req, res) => {
     const template = await getTemplate(instance.template_id);
     const brand = await getBrand(instance.brand_id);
 
-    await googleWallet.createOrUpdatePassClass(brand, template);
-
     const passObject = googleWallet.buildPassObject(brand, template, instance, instance.customer_data);
 
     await googleWallet.createPassObjectOnServer(passObject);
