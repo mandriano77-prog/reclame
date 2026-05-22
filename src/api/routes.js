@@ -517,8 +517,12 @@ router.post('/signup/google-wallet', async (req, res) => {
     await logEvent({ pass_id: passInstance.id, brand_id: brand.id, event_type: 'pass_created', metadata: { source: 'landing_google', campaign_id, utm } });
     if (campaign_id) await incrementCampaignDownloads(campaign_id);
 
-    // Create Google Wallet pass class + object and generate save link
+    // Create/update class + object first. In Generic mode this ensures class/object exist before save link.
+    await googleWallet.createOrUpdatePassClass(brand, template);
+
     const passObject = googleWallet.buildPassObject(brand, template, passInstance, passInstance.customer_data || {});
+    await googleWallet.createPassObjectOnServer(passObject);
+
     const saveLink = googleWallet.generateSaveLink(brand, template, passObject);
 
     await updatePassInstance(passInstance.id, {
