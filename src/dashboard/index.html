@@ -4,8 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ads2Wallet</title>
+    <meta name="description" content="Dashboard piattaforma Wallet">
+    <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="/dashboard/boot.js"></script>
+    <script>
+    (function () {
+        try {
+            var lock = window.__2WALLET_PRODUCT_LOCK__;
+            var productTitle = (window.__2WALLET_PRODUCT_TITLE__ || '').trim();
+            var byline = (typeof window.__2WALLET_CHROME_BYLINE__ === 'string')
+                ? window.__2WALLET_CHROME_BYLINE__.trim() : 'by Underdogs Group';
+            if (!byline && lock === 'hr') byline = '';
+            var base = productTitle || (lock === 'hr' ? 'Filo Diretto' : 'Ads2Wallet');
+            document.title = byline ? (base + ' — ' + byline) : base;
+            var desc = document.querySelector('meta[name="description"]');
+            if (desc) desc.content = base + (lock === 'hr' ? ' — piattaforma HR Wallet' : ' — dashboard');
+        } catch (e) {}
+    })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2623,6 +2640,16 @@ function bylineForTitle(productTitle) {
     return byline ? `${productTitle} — ${byline}` : productTitle;
 }
 
+function syncDocumentTitle(line) {
+    if (brandId) return;
+    document.title = bylineForTitle(getDashboardProductDisplayTitle(line || getDashboardProductLine()));
+    const desc = document.querySelector('meta[name="description"]');
+    if (!desc) return;
+    const base = getDashboardProductDisplayTitle(line || getDashboardProductLine());
+    const lock = getLockedProductLine();
+    desc.content = base + (lock === 'hr' ? ' — piattaforma HR Wallet' : ' — dashboard');
+}
+
 function getDashboardLoginAllowlist() {
     try {
         const raw = window.__2WALLET_LOGIN_ALLOWLIST__;
@@ -2682,6 +2709,7 @@ function initDashboardProductTheme() {
     const line = getDashboardProductLine();
     applyProductShellTheme(line);
     syncChromeProductTitles(line);
+    syncDocumentTitle(line);
     applyProductMenuCopy(line);
     syncProductLineSelector();
 }
