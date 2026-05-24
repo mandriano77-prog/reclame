@@ -2592,12 +2592,12 @@
 
 
 <dialog id="appConfirmDialog" class="confirm-dialog" aria-labelledby="appConfirmTitle">
-  <form id="appConfirmForm" method="dialog" class="confirm-dialog__inner">
+  <form id="appConfirmForm" class="confirm-dialog__inner">
     <h2 id="appConfirmTitle" class="confirm-dialog__title">Confermi?</h2>
     <p id="appConfirmMessage" class="confirm-dialog__message"></p>
     <div class="confirm-dialog__actions">
-      <button type="submit" name="action" value="cancel" class="btn sec">Annulla</button>
-      <button type="submit" name="action" value="confirm" id="appConfirmBtn" class="btn danger">Elimina</button>
+      <button type="button" id="appConfirmCancelBtn" class="btn sec">Annulla</button>
+      <button type="button" id="appConfirmBtn" class="btn danger">Elimina</button>
     </div>
   </form>
 </dialog>
