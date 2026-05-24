@@ -4986,11 +4986,18 @@ async function editTemplate(id) {
 
 async function saveTemplate() {
     const editId = document.getElementById('templateEditId').value;
+    let existingStyle = {};
+    if (editId) {
+        try {
+            const existing = await fetch(`${API}/templates/${editId}`, { headers: { ...getAuthHeaders() } }).then(r => r.json());
+            existingStyle = existing.style || {};
+        } catch (_) {}
+    }
     const body = {
         brand_id: brandId,
         name: document.getElementById('tplName').value,
         pass_type: document.getElementById('tplType').value,
-        style: { description: document.getElementById('tplDescription').value },
+        style: { ...existingStyle, description: document.getElementById('tplDescription').value },
         fields: {
             headerFields: [{ key: 'header_info', label: document.getElementById('tplHeaderLabel').value, value: document.getElementById('tplHeaderValue').value }],
             secondaryFields: [{ key: 'info', label: document.getElementById('tplSecLabel').value, value: document.getElementById('tplSecValue').value, type: 'secondary' }],
@@ -7462,11 +7469,20 @@ async function wzPublish() {
         url: document.getElementById('wzLink'+i+'Url').value.trim()
     }));
 
+    let existingStyle = {};
+    const editId = window.wzEditingTemplateId;
+    if (editId) {
+        try {
+            const existing = await fetch(`${API}/templates/${editId}`, { headers: { ...getAuthHeaders() } }).then(r => r.json());
+            existingStyle = existing.style || {};
+        } catch (_) {}
+    }
+
     const body = {
         brand_id: brandId,
         name,
         pass_type: document.getElementById('wzType').value,
-        style: { description: '' },
+        style: { ...existingStyle, description: '' },
         fields: {
             headerFields: [{ key: 'header_info', label: document.getElementById('wzHeaderLabel').value, value: document.getElementById('wzHeaderValue').value }],
             secondaryFields: [{ key: 'info', label: document.getElementById('wzSecLabel').value, value: document.getElementById('wzSecValue').value }],
@@ -7478,7 +7494,6 @@ async function wzPublish() {
     };
 
     try {
-        const editId = window.wzEditingTemplateId;
         const url = editId ? `${API}/templates/${editId}` : `${API}/templates`;
         const method = editId ? 'PUT' : 'POST';
         const res = await fetch(url, {
@@ -7644,7 +7659,7 @@ async function wzDeleteTemplate(id) {
 const BRAND_PASS_FIXED_COLORS = {
     backgroundColor: '#0D0B1A',
     foregroundColor: '#FFFFFF',
-    labelColor: '#FFFFFF'
+    labelColor: '#A78BFA'
 };
 
 async function loadBrandIdentity() {
