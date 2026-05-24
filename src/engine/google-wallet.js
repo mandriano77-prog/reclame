@@ -366,6 +366,9 @@ function buildPassObject(brand, template, instance, member) {
   const firstName = member?.first_name || instance.customer_data?.name || 'Guest';
   const lastName = member?.last_name || '';
 
+  const { buildIdentifyingQrBarcode } = require('./passkit');
+  const { message: barcodeValue, altText: barcodeAlt } = buildIdentifyingQrBarcode(instance);
+
   const obj = passKind === 'loyalty'
     ? {
       id: objectId,
@@ -375,8 +378,8 @@ function buildPassObject(brand, template, instance, member) {
       accountName: (`${firstName} ${lastName}`.trim() || 'Guest').slice(0, 64),
       barcode: {
         type: 'QR_CODE',
-        value: instance.serial_number,
-        alternateText: instance.serial_number
+        value: barcodeValue || instance.serial_number,
+        alternateText: barcodeAlt || instance.serial_number
       },
       textModulesData: [],
       linksModuleData: { uris: [] }
@@ -390,8 +393,8 @@ function buildPassObject(brand, template, instance, member) {
       header: { defaultValue: { language: 'it', value: (`${firstName} ${lastName}`.trim() || 'Guest') } },
       barcode: {
         type: 'QR_CODE',
-        value: instance.serial_number,
-        alternateText: instance.serial_number
+        value: barcodeValue || instance.serial_number,
+        alternateText: barcodeAlt || instance.serial_number
       },
       hexBackgroundColor: rgbToHex(template.style?.backgroundColor || '#0D0B1A'),
       textModulesData: [],

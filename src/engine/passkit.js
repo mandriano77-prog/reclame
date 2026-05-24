@@ -167,6 +167,23 @@ function parseColor(color) {
   };
 }
 
+/** Legacy Ads2Wallet accent greens — no longer used on pass text. */
+function isLegacyGreenPassAccent(color) {
+  if (!color) return false;
+  const c = parseColor(color);
+  // Teal (#00D4AA) and lime (#D4E600 / rgb(212,230,0))
+  if (c.g > 180 && c.r < 100 && c.b < 140) return true;
+  if (c.r > 180 && c.g > 200 && c.b < 100) return true;
+  return false;
+}
+
+function colorToRgbString(color) {
+  if (!color) return null;
+  if (String(color).trim().toLowerCase().startsWith('rgb')) return String(color).trim();
+  const c = parseColor(color);
+  return `rgb(${c.r}, ${c.g}, ${c.b})`;
+}
+
 /**
  * Apple: max 10 locations per pass; invalid coordinates must not appear in pass.json.
  * @param {Record<string, unknown>} brandConfig
@@ -204,6 +221,54 @@ function backFieldLinkSlotIndex(key) {
 }
 
 const TEMPLATE_LINK_FIELD_KEYS = new Set(['link1', 'link2', 'link3', 'link_0', 'link_1', 'link_2', 'link0']);
+
+function parsePassFieldValues(instance) {
+  const raw = instance?.field_values;
+  if (!raw) return {};
+  if (typeof raw === 'object') return { ...raw };
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function resolvePassHolderName(instance, fv) {
+  const fromIt = [fv.nome || fv.name, fv.cognome || fv.surname].filter(Boolean).join(' ').trim();
+  if (fromIt) return fromIt;
+  if (fv.display_name) return String(fv.display_name).trim();
+  if (fv.full_name) return String(fv.full_name).trim();
+  const fromEn = [fv.first_name, fv.last_name].filter(Boolean).join(' ').trim();
+  if (fromEn) return fromEn;
+  const cd = instance?.customer_data;
+  if (cd && typeof cd === 'object' && cd.name) return String(cd.name).trim();
+  if (typeof cd === 'string') {
+    try {
+      const parsed = JSON.parse(cd);
+      if (parsed?.name) return String(parsed.name).trim();
+    } catch { /* ignore */ }
+  }
+  return 'Membro';
+}
+
+function resolvePassMatricola(instance, fv) {
+  const m = fv.matricola || fv.badge_id;
+  if (m != null && String(m).trim()) return String(m).trim();
+  return instance?.id || '';
+}
+
+/** QR identificativo — codifica serialNumber, altText nome · #matricola (placeholder badge). */
+function buildIdentifyingQrBarcode(instance) {
+  const fv = parsePassFieldValues(instance);
+  const name = resolvePassHolderName(instance, fv);
+  const matricola = resolvePassMatricola(instance, fv);
+  return {
+    format: 'PKBarcodeFormatQR',
+    message: instance.serial_number || '',
+    messageEncoding: 'iso-8859-1',
+    altText: `${name} · #${matricola}`.slice(0, 64)
+  };
+}
 
 /**
  * Always three slots — empty middle links must not shift Link 3 into Link 2 position.
@@ -264,11 +329,19 @@ function generatePassJson(template, instance, brand, options = {}) {
   // Read colors from brand.config first, then template.style, then defaults
   const brandConfig = brand.config || {};
   const fgHex = brandConfig.foregroundColor || null;
-  const foregroundColor = fgHex ? `rgb(${parseColor(fgHex).r}, ${parseColor(fgHex).g}, ${parseColor(fgHex).b})` : (template.style?.foregroundColor || 'rgb(255, 255, 255)');
+  const defaultForeground = template.style?.foregroundColor || 'rgb(255, 255, 255)';
+  const foregroundColor = fgHex && !isLegacyGreenPassAccent(fgHex)
+    ? colorToRgbString(fgHex)
+    : (isLegacyGreenPassAccent(defaultForeground) ? 'rgb(255, 255, 255)' : colorToRgbString(defaultForeground) || 'rgb(255, 255, 255)');
   const bgHex = brandConfig.backgroundColor || null;
-  const backgroundColor = bgHex ? `rgb(${parseColor(bgHex).r}, ${parseColor(bgHex).g}, ${parseColor(bgHex).b})` : (template.style?.backgroundColor || 'rgb(0, 0, 0)');
+  const backgroundColor = bgHex ? colorToRgbString(bgHex) : (template.style?.backgroundColor ? colorToRgbString(template.style.backgroundColor) : 'rgb(0, 0, 0)');
   const lblHex = brandConfig.labelColor || null;
-  const labelColor = lblHex ? `rgb(${parseColor(lblHex).r}, ${parseColor(lblHex).g}, ${parseColor(lblHex).b})` : (template.style?.labelColor || 'rgb(212, 230, 0)');
+  const tplLbl = template.style?.labelColor || null;
+  let labelColor = foregroundColor;
+  const labelCandidate = lblHex || tplLbl;
+  if (labelCandidate && !isLegacyGreenPassAccent(labelCandidate)) {
+    labelColor = colorToRgbString(labelCandidate);
+  }
 
   // ── Build field arrays ──────────────────────────────────────────
   // Layout (storeCard): Header → Strip → Secondary → Auxiliary → Back
@@ -491,6 +564,8 @@ function generatePassJson(template, instance, brand, options = {}) {
   if (auxiliaryFields.length > 0) passStructure.auxiliaryFields = auxiliaryFields;
   if (orderedBackFields.length > 0) passStructure.backFields = orderedBackFields;
 
+  const barcodePayload = buildIdentifyingQrBarcode(instance);
+
   const passJson = {
     formatVersion: 1,
     passTypeIdentifier,
@@ -504,21 +579,9 @@ function generatePassJson(template, instance, brand, options = {}) {
     authenticationToken: instance.auth_token,
     webServiceURL: `${baseUrl}/api`,
     [structureKey]: passStructure,
-    // Barcode — PDF417 compact rectangle (scannable, low visual footprint)
-    barcodes: [
-      {
-        message: instance.serial_number,
-        format: 'PKBarcodeFormatPDF417',
-        messageEncoding: 'iso-8859-1',
-        altText: `N° ${instance.serial_number.substring(0, 13)}`
-      }
-    ],
-    barcode: {
-      message: instance.serial_number,
-      format: 'PKBarcodeFormatPDF417',
-      messageEncoding: 'iso-8859-1',
-      altText: `N° ${instance.serial_number.substring(0, 13)}`
-    }
+  // Barcode — QR identificativo (serialNumber); altText nome · #matricola
+    barcodes: [barcodePayload],
+    barcode: barcodePayload
   };
 
   // Geofencing — iOS shows the pass on lock screen when inside maxDistance (m) of any location.
@@ -966,6 +1029,7 @@ async function generateDefaultImages(brandName, primaryColor = '#0D0B1A') {
 
 module.exports = {
   generatePassJson,
+  buildIdentifyingQrBarcode,
   generateIcon,
   generateLogo,
   generateStrip,

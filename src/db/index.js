@@ -952,7 +952,7 @@ async function createPassInstance(data) {
   const { template_id, brand_id, campaign_id = null, field_values = {}, utm = {}, device_token = null, user_agent = null, referrer_url = null } = data;
   const auth_token = data.auth_token || uuidv4();
   if (!template_id || !brand_id) throw new Error('Template ID and Brand ID are required');
-  const fieldObj = typeof field_values === 'string' ? JSON.parse(field_values) : field_values;
+  const fieldObj = typeof field_values === 'string' ? JSON.parse(field_values) : { ...field_values };
   const utmObj = typeof utm === 'string' ? JSON.parse(utm) : utm;
   await pool.query(
     `INSERT INTO pass_instances (id, serial_number, template_id, brand_id, campaign_id, field_values, utm, device_token, auth_token, user_agent, referrer_url)
