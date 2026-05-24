@@ -33,7 +33,7 @@ module.exports = {
     style: {
       backgroundColor: "#0D0B1A",
       foregroundColor: "#FFFFFF",
-      labelColor: "#00D4AA"
+      labelColor: "#FFFFFF"
     }
   },
 
@@ -209,7 +209,7 @@ module.exports = {
     style: {
       backgroundColor: "#0D0B1A",
       foregroundColor: "#FFFFFF",
-      labelColor: "#00D4AA"
+      labelColor: "#FFFFFF"
     }
   },
 
@@ -300,7 +300,7 @@ module.exports = {
     style: {
       backgroundColor: "#0D0B1A",
       foregroundColor: "#FFFFFF",
-      labelColor: "#00D4AA"
+      labelColor: "#FFFFFF"
     }
   }
 };
