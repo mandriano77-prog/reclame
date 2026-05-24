@@ -1411,7 +1411,7 @@
                                 <button type="button" class="btn small danger" id="pushStripClearBtn" onclick="pushClearStrip()" style="display:none;">Rimuovi strip</button>
                             </div>
                         </div>
-                        <motionmotiondiv class="form-group" style="margin-top:8px;">
+                        <div class="form-group" style="margin-top:8px;">
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
                                 <input type="checkbox" id="pushIncludePassLink" onchange="togglePushPassLinkFields()" style="width:auto;accent-color:var(--accent);">
                                 <span>Includi link nel pass</span>
@@ -1622,8 +1622,10 @@
                 <div class="card" style="margin-bottom:14px;">
                     <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Specifiche tecniche consigliate</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;color:var(--text2);">
-                        <div><strong style="color:var(--text)">Logo</strong>: PNG trasparente, max 320x100 px (1 solo logo attivo).</div>
-                        <div><strong style="color:var(--text)">Strip</strong>: PNG/JPG 750x246 px (puoi avere strip diverse per campagna).</div>
+                        <div><strong style="color:var(--text)">Logo</strong>: PNG trasparente, max 320x100 px.</div>
+                        <div><strong style="color:var(--text)">Strip</strong>: PNG/JPG 750x246 px.</div>
+                        <div><strong style="color:var(--text)">Thumbnail</strong>: PNG/JPG 90x90 px (event ticket).</div>
+                        <div><strong style="color:var(--text)">Background</strong>: PNG/JPG 360x440 px (event ticket).</div>
                     </div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
@@ -1649,6 +1651,16 @@
                         <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Mantieni più varianti e assegna un riferimento campagna nel nome.</p>
                         <div id="mediaStripGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                     </div>
+                    <div class="card" style="margin:0;">
+                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Thumbnail</div>
+                        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">90x90 px — usato su Event Ticket (fronte pass).</p>
+                        <div id="mediaThumbnailGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                    </div>
+                    <div class="card" style="margin:0;">
+                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Background</div>
+                        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">360x440 px — sfondo intero su Event Ticket.</p>
+                        <div id="mediaBackgroundGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                    </div>
                 </div>
             </div>
 
@@ -1662,10 +1674,11 @@
                         <select id="mediaUploadType" onchange="onMediaUploadTypeChange()">
                             <option value="strip">Strip Image</option>
                             <option value="logo">Logo</option>
-                            <!-- Background Landing removed -->
+                            <option value="thumbnail">Thumbnail</option>
+                            <option value="background">Background</option>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="mediaUploadCampaignGroup">
                         <label class="form-label">Campagna (opzionale, per strip)</label>
                         <select id="mediaUploadCampaignId" title="Scegli tra le campagne create nella tab Campagne">
                             <option value="">— Nessuna campagna —</option>
@@ -1729,6 +1742,7 @@
                   <button class="mp-filter active" data-type="all" onclick="mpFilter('all')">Tutti</button>
                   <button class="mp-filter" data-type="logo" onclick="mpFilter('logo')">Logo</button>
                   <button class="mp-filter" data-type="strip" onclick="mpFilter('strip')">Strip</button>
+                  <button class="mp-filter" data-type="thumbnail" onclick="mpFilter('thumbnail')">Thumbnail</button>
                   <button class="mp-filter" data-type="background" onclick="mpFilter('background')">Background</button>
                   <button class="mp-filter" data-type="generic" onclick="mpFilter('generic')">Altro</button>
                 </div>
@@ -1739,6 +1753,7 @@
                     <option value="generic">Generico</option>
                     <option value="logo">Logo</option>
                     <option value="strip">Strip</option>
+                    <option value="thumbnail">Thumbnail</option>
                     <option value="background">Background</option>
                   </select>
                   <button onclick="mpUpload()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:6px;cursor:pointer">Carica</button>
@@ -2388,6 +2403,9 @@
                     <div class="form-row" id="tplImgThumbRow" style="display:none;">
                         <div class="form-group" style="flex:1;">
                             <label class="form-label">Thumbnail (PNG, 90x90 — mostrato sul fronte)</label>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                                <button type="button" class="btn small" onclick="tplPickFromMedia('thumbnail')">Da Media Library</button>
+                            </div>
                             <input type="file" id="tplImgThumb" accept="image/*,.pdf" onchange="previewTplImage(this,'thumbnail')" style="font-size:12px;">
                             <img id="tplImgThumbPreview" style="display:none;width:60px;height:60px;object-fit:cover;margin-top:4px;border-radius:4px;">
                         </div>
@@ -2395,6 +2413,9 @@
                     <div class="form-row" id="tplImgBgRow" style="display:none;">
                         <div class="form-group" style="flex:1;">
                             <label class="form-label">Background (PNG, 360x440 — sfondo intero pass)</label>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                                <button type="button" class="btn small" onclick="tplPickFromMedia('background')">Da Media Library</button>
+                            </div>
                             <input type="file" id="tplImgBg" accept="image/*,.pdf" onchange="previewTplImage(this,'background')" style="font-size:12px;">
                             <img id="tplImgBgPreview" style="display:none;width:100px;margin-top:4px;border-radius:4px;">
                         </div>
@@ -4949,8 +4970,7 @@ async function editTemplate(id) {
     ['tplImgLogo','tplImgStrip','tplImgThumb','tplImgBg'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
     const existingImages = t.style?.images || {};
     ['logo','strip','thumbnail','background'].forEach(imgType => {
-        const previewId = 'tplImg' + imgType.charAt(0).toUpperCase() + imgType.slice(1) + 'Preview';
-        const previewEl = document.getElementById(previewId);
+        const previewEl = document.getElementById(tplMediaPreviewId(imgType));
         if (existingImages[imgType] && previewEl) {
             previewEl.src = 'data:image/png;base64,' + existingImages[imgType];
             previewEl.style.display = 'block';
@@ -5171,6 +5191,36 @@ function onPassTypeChange() {
 
 let tplImageCache = {}; // { logo: base64, strip: base64, ... }
 
+function tplMediaPreviewId(imageType) {
+    const ids = { logo: 'tplImgLogoPreview', strip: 'tplImgStripPreview', thumbnail: 'tplImgThumbPreview', background: 'tplImgBgPreview' };
+    return ids[imageType] || ('tplImg' + imageType.charAt(0).toUpperCase() + imageType.slice(1) + 'Preview');
+}
+
+function mediaTypeLabel(type) {
+    return { logo: 'Logo', strip: 'Strip', thumbnail: 'Thumbnail', background: 'Background' }[type] || type;
+}
+
+function getMediaSpecHint(type) {
+    const hints = {
+        logo: 'Spec target: max 320x100 px (logo)',
+        strip: 'Spec target: 750x246 px (strip)',
+        thumbnail: 'Spec target: 90x90 px (thumbnail)',
+        background: 'Spec target: 360x440 px (background)'
+    };
+    return hints[type] || hints.strip;
+}
+
+function renderMediaGalleryCards(items, emptyMsg) {
+    if (!items.length) return `<p style="color:var(--text2)">${emptyMsg}</p>`;
+    return items.map(it => `
+        <div class="media-card" style="display:inline-block;width:150px;margin:8px;text-align:center;vertical-align:top">
+            <img src="/api/v1/media/${it.id}/image" style="width:130px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #333">
+            <div style="font-size:11px;color:#ccc;margin-top:4px;min-height:30px;">${esc(it.title || mediaTypeLabel(it.type))}</div>
+            <button onclick="deleteMediaItem('${it.id}')" style="font-size:10px;color:#f66;background:none;border:none;cursor:pointer;margin-top:2px">Elimina</button>
+        </div>
+    `).join('');
+}
+
 function previewTplImage(input, imageType) {
     const file = input.files[0];
     if (!file) return;
@@ -5178,7 +5228,7 @@ function previewTplImage(input, imageType) {
     reader.onload = (e) => {
         const base64 = e.target.result.split(',')[1];
         tplImageCache[imageType] = base64;
-        const preview = document.getElementById('tplImg' + imageType.charAt(0).toUpperCase() + imageType.slice(1) + 'Preview');
+        const preview = document.getElementById(tplMediaPreviewId(imageType));
         if (preview) { preview.src = e.target.result; preview.style.display = 'block'; }
         updatePassPreview();
     };
@@ -7292,15 +7342,14 @@ async function tplPickFromMedia(imageType) {
     openMediaPicker(async (mediaId, imageUrl) => {
         const base64 = await fetchMediaImageBase64(mediaId);
         tplImageCache[imageType] = base64;
-        const cap = imageType.charAt(0).toUpperCase() + imageType.slice(1);
-        const preview = document.getElementById('tplImg' + cap + 'Preview');
+        const preview = document.getElementById(tplMediaPreviewId(imageType));
         if (preview) {
             preview.src = 'data:image/png;base64,' + base64;
             preview.style.display = 'block';
         }
         updatePassPreview();
-        toast((imageType === 'logo' ? 'Logo' : 'Strip') + ' dalla Media Library');
-    }, 'all');
+        toast(mediaTypeLabel(imageType) + ' dalla Media Library');
+    }, imageType);
 }
 
 async function wzApplyWizardImages(tplId) {
@@ -7647,6 +7696,8 @@ async function loadMediaLibrary() {
     if (!brandId) return;
     const logoBox = document.getElementById('mediaLogoBox');
     const stripGrid = document.getElementById('mediaStripGrid');
+    const thumbGrid = document.getElementById('mediaThumbnailGrid');
+    const bgGrid = document.getElementById('mediaBackgroundGrid');
     const q = (document.getElementById('mediaStripSearch')?.value || '').trim().toLowerCase();
     if (!campaignsCache || !campaignsCache.length) {
         try { campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } }); } catch(_) {}
@@ -7657,11 +7708,15 @@ async function loadMediaLibrary() {
     const campaignQuery = (onlySelected && selectedCampaignId) ? `&campaign_id=${encodeURIComponent(selectedCampaignId)}` : '';
     if (logoBox) logoBox.innerHTML = '<p style="color:var(--text2)">Caricamento...</p>';
     if (stripGrid) stripGrid.innerHTML = '<p style="color:var(--text2)">Caricamento...</p>';
+    if (thumbGrid) thumbGrid.innerHTML = '<p style="color:var(--text2)">Caricamento...</p>';
+    if (bgGrid) bgGrid.innerHTML = '<p style="color:var(--text2)">Caricamento...</p>';
     try {
         const r = await fetch(`${API}/media?brand_id=${brandId}${campaignQuery}`);
         const items = await r.json();
         const logos = items.filter(it => it.type === 'logo');
         const strips = items.filter(it => it.type === 'strip');
+        const thumbnails = items.filter(it => it.type === 'thumbnail');
+        const backgrounds = items.filter(it => it.type === 'background');
 
         if (logoBox) {
             if (!logos.length) {
@@ -7696,6 +7751,13 @@ async function loadMediaLibrary() {
                 `).join('');
             }
         }
+
+        if (thumbGrid) {
+            thumbGrid.innerHTML = renderMediaGalleryCards(thumbnails, 'Nessun thumbnail caricato.');
+        }
+        if (bgGrid) {
+            bgGrid.innerHTML = renderMediaGalleryCards(backgrounds, 'Nessun background caricato.');
+        }
     } catch (err) { console.error('loadMediaLibrary error:', err); }
 }
 
@@ -7716,10 +7778,9 @@ function populateMediaCampaignFilters() {
 function onMediaUploadTypeChange() {
     const type = document.getElementById('mediaUploadType')?.value || 'strip';
     const hint = document.getElementById('mediaUploadSpecHint');
-    if (!hint) return;
-    hint.textContent = type === 'logo'
-        ? 'Spec target: max 320x100 px (logo)'
-        : 'Spec target: 750x246 px (strip)';
+    if (hint) hint.textContent = getMediaSpecHint(type);
+    const campGroup = document.getElementById('mediaUploadCampaignGroup');
+    if (campGroup) campGroup.style.display = type === 'strip' ? '' : 'none';
 }
 
 let mediaCropState = {
@@ -7736,9 +7797,13 @@ let mediaCropState = {
 let mediaUploadEditedBase64 = null;
 
 function getMediaTargetConfig(type) {
-    return type === 'logo'
-        ? { w: 320, h: 100, mode: 'contain', bg: 'rgba(0,0,0,0)' }
-        : { w: 750, h: 246, mode: 'cover', bg: '#0b0b0b' };
+    const configs = {
+        logo: { w: 320, h: 100, mode: 'contain', bg: 'rgba(0,0,0,0)' },
+        strip: { w: 750, h: 246, mode: 'cover', bg: '#0b0b0b' },
+        thumbnail: { w: 90, h: 90, mode: 'cover', bg: '#0b0b0b' },
+        background: { w: 360, h: 440, mode: 'cover', bg: '#0b0b0b' }
+    };
+    return configs[type] || configs.strip;
 }
 
 function bindMediaCropCanvasEvents() {
@@ -7775,7 +7840,7 @@ async function openMediaCropEditor() {
         if (!canvas) return;
         canvas.width = cfg.w;
         canvas.height = cfg.h;
-        if (spec) spec.textContent = type === 'logo' ? 'Target: 320x100 (logo)' : 'Target: 750x246 (strip)';
+        if (spec) spec.textContent = `Target: ${getMediaSpecHint(type).replace('Spec target: ', '')}`;
 
         mediaCropState.image = img;
         mediaCropState.zoom = 1;
@@ -8006,7 +8071,7 @@ async function doMediaUpload() {
         let base64;
         if (mediaUploadEditedBase64) {
             base64 = mediaUploadEditedBase64;
-        } else if (autoFit && (type === 'strip' || type === 'logo')) {
+        } else if (autoFit && ['strip', 'logo', 'thumbnail', 'background'].includes(type)) {
             base64 = await normalizeMediaForUpload(file, type);
         } else {
             base64 = await new Promise((resolve, reject) => {
