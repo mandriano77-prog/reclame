@@ -231,7 +231,7 @@ const {
   getBrandBySlug, getCampaign, getTemplate, listTemplates,
   createPassInstance, logEvent, incrementCampaignDownloads
 } = require('./db');
-const { createPkpass } = require('./engine/passkit');
+const { renderSaveThankYouPage, resolvePortalHref } = require('./engine/thank-you-html');
 
 app.get('/save/:slug/:campaignId?', async (req, res) => {
   try {
@@ -275,159 +275,16 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
 
     // Serve confirmation page that auto-downloads the .pkpass via API
     const brandName = brand.name || slug;
-    const bgColor = brand.config?.backgroundColor || '#0D0B1A';
-    const fgColor = brand.config?.foregroundColor || '#FFFFFF';
-    const accentColor = brand.config?.labelColor || '#00D4AA';
     const passDownloadUrl = `/api/v1/passes/${passInstance.id}/download`;
     const logoUrl = `/api/v1/brands/by-slug/${encodeURIComponent(slug)}/logo?t=${Date.now()}`;
+    const portalHref = await resolvePortalHref(passInstance.id, brand.id);
 
-    res.send(`<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <meta name="theme-color" content="${bgColor}">
-  <title>${brandName} · Pass Wallet</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
-      background: ${bgColor}; color: ${fgColor};
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      -webkit-font-smoothing: antialiased;
-    }
-    .container {
-      text-align: center; padding: 40px 24px; max-width: 400px; width: 100%;
-    }
-    .logo-area {
-      width: 160px; height: 60px; margin: 0 auto 32px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .logo-area img { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .logo-letter {
-      width: 56px; height: 56px; border-radius: 14px;
-      background: ${accentColor}22; border: 2px solid ${accentColor}44;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 28px; font-weight: 700; color: ${accentColor};
-    }
-    .icon-circle {
-      width: 72px; height: 72px; border-radius: 50%;
-      background: ${accentColor}18; border: 2px solid ${accentColor}55;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 24px;
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.05); opacity: 0.9; }
-    }
-    .icon-circle .check { font-size: 36px; }
-    .state-loading .icon-circle { animation: pulse 1s ease-in-out infinite; }
-    .state-success .icon-circle { animation: none; }
-    h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; line-height: 1.3; }
-    .subtitle {
-      font-size: 15px; opacity: 0.6; line-height: 1.5; margin-bottom: 28px;
-    }
-    .cta-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 32px; border-radius: 50px; border: none;
-      background: ${accentColor}; color: ${bgColor};
-      font-size: 16px; font-weight: 600; cursor: pointer;
-      text-decoration: none; transition: all 0.2s;
-    }
-    .cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .cta-btn svg { width: 20px; height: 20px; }
-    .footer { margin-top: 48px; opacity: 0.3; font-size: 11px; letter-spacing: 0.05em; }
-    .hidden { display: none; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="logo-area" id="logoArea">
-      <div class="logo-letter" id="logoLetter">${brandName.charAt(0).toUpperCase()}</div>
-    </div>
-
-    <!-- Loading state -->
-    <div id="stateLoading" class="state-loading">
-      <div class="icon-circle">
-        <span style="font-size:28px;">&#8987;</span>
-      </div>
-      <h1>Preparazione in corso...</h1>
-      <p class="subtitle">Il tuo pass si sta scaricando</p>
-    </div>
-
-    <!-- Success state -->
-    <div id="stateSuccess" class="hidden state-success">
-      <div class="icon-circle">
-        <span class="check">&#10003;</span>
-      </div>
-      <h1>Pass scaricato!</h1>
-      <p id="successSubtitle" class="subtitle">Apri il file e tocca <strong>Aggiungi</strong> per salvarlo nel tuo Apple Wallet. Da quel momento riceverai offerte e novit&agrave; direttamente sullo schermo.</p>
-      <a href="${passDownloadUrl}" class="cta-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Scarica di nuovo
-      </a>
-    </div>
-
-    <!-- Unsupported client state -->
-    <div id="stateUnsupported" class="hidden">
-      <div class="icon-circle" style="border-color: #ffb020;">
-        <span style="font-size:28px; color:#ffb020;">&#9888;</span>
-      </div>
-      <h1>Apri da smartphone</h1>
-      <p class="subtitle">Per evitare confusione, il flusso ufficiale supportato è mobile-first: apri questo link su <strong>iPhone</strong> e tocca <strong>Aggiungi</strong> in Wallet.</p>
-      <a href="${passDownloadUrl}" class="cta-btn">Scarica file .pkpass</a>
-    </div>
-
-    <!-- Error state -->
-    <div id="stateError" class="hidden">
-      <div class="icon-circle" style="border-color: #ff4444;">
-        <span style="font-size:32px; color:#ff4444;">&#10007;</span>
-      </div>
-      <h1>Ops, qualcosa non ha funzionato</h1>
-      <p class="subtitle">Riprova tra qualche istante.</p>
-      <a href="${passDownloadUrl}" class="cta-btn">Riprova download</a>
-    </div>
-
-    <div class="footer">Powered by Ads2Wallet</div>
-  </div>
-
-  <script>
-    // Load brand logo
-    const logoImg = new Image();
-    logoImg.onload = () => {
-      document.getElementById('logoLetter').style.display = 'none';
-      const img = document.createElement('img');
-      img.src = logoImg.src;
-      img.alt = '${brandName.replace(/'/g, "\\'")}';
-      document.getElementById('logoArea').appendChild(img);
-    };
-    logoImg.src = '${logoUrl}';
-
-    // Mobile-first policy: auto-download only on iPhone/iPad.
-    (function() {
-      const ua = navigator.userAgent || '';
-      const isIOS = /iPhone|iPad|iPod/i.test(ua);
-
-      if (!isIOS) {
-        document.getElementById('stateLoading').classList.add('hidden');
-        document.getElementById('stateUnsupported').classList.remove('hidden');
-        return;
-      }
-
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = '${passDownloadUrl}';
-      document.body.appendChild(iframe);
-
-      setTimeout(() => {
-        document.getElementById('stateLoading').classList.add('hidden');
-        document.getElementById('stateSuccess').classList.remove('hidden');
-      }, 3500);
-    })();
-  </script>
-</body>
-</html>`);
+    res.send(renderSaveThankYouPage({
+      brandName,
+      logoUrl,
+      passDownloadUrl,
+      portalHref
+    }));
 
   } catch (err) {
     console.error('Direct save error:', err);

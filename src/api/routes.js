@@ -62,6 +62,7 @@ const { getHolderBehaviorInsights, listRecentHolderEvents, exportHolderEvents } 
 const { createPkpass } = require('../engine/passkit');
 const googleWallet = require('../engine/google-wallet');
 const samsungWallet = require('../engine/samsung-wallet');
+const { resolvePortalHref } = require('../engine/thank-you-html');
 const { getFormats, getFormat, generateWithFal, composeCreative } = require('../engine/creative-ai');
 const { generateBanner, BANNER_TEMPLATES, IAB_FORMATS } = require('../engine/banner-builder');
 const { generateVideo, cleanupVideo, VIDEO_FORMATS, VIDEO_TEMPLATES } = require('../engine/video-builder');
@@ -494,6 +495,9 @@ router.post('/signup', async (req, res) => {
     // Increment campaign downloads
     if (campaign_id) await incrementCampaignDownloads(campaign_id);
 
+    const passDownloadUrl = `/api/v1/passes/${passInstance.id}/download`;
+    const portalHref = await resolvePortalHref(passInstance.id, brand.id);
+
     // Generate .pkpass
     const baseUrl = process.env.CUSTOM_DOMAIN
       ? `https://${process.env.CUSTOM_DOMAIN}`
@@ -508,7 +512,10 @@ router.post('/signup', async (req, res) => {
     res.set({
       'Content-Type': 'application/vnd.apple.pkpass',
       'Content-Disposition': `attachment; filename="${brand.slug || 'pass'}.pkpass"`,
-      'Content-Length': pkpassBuffer.length
+      'Content-Length': pkpassBuffer.length,
+      'X-Pass-Id': passInstance.id,
+      'X-Pass-Download-Url': passDownloadUrl,
+      ...(portalHref ? { 'X-Portal-Href': portalHref } : {})
     });
     res.send(pkpassBuffer);
 

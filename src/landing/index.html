@@ -6,6 +6,7 @@
   <meta name="theme-color" id="themeColor" content="#0D0B1A">
   <title>Ads2Wallet</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
@@ -181,6 +182,69 @@
       vertical-align: middle;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Filodiretto thank-you (post install) */
+    .thank-you-view {
+      display: none;
+      width: 100%;
+      max-width: 420px;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    }
+    .thank-you-view .logo-area { margin-bottom: 8px; }
+    .thank-you-view .logo-letter {
+      display: flex !important;
+      width: 56px; height: 56px; border-radius: 14px;
+      background: rgba(139, 92, 246, 0.12);
+      border: 2px solid rgba(139, 92, 246, 0.35);
+      align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 700; color: #8B5CF6;
+      margin: 0 auto 16px;
+    }
+    .thank-you-view .icon-circle {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: rgba(139, 92, 246, 0.12);
+      border: 2px solid rgba(139, 92, 246, 0.4);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      color: #8B5CF6;
+      font-size: 36px;
+    }
+    .thank-you-view h1 {
+      font-size: 22px; font-weight: 700; margin-bottom: 14px;
+      color: #F4EDE2; text-shadow: none;
+    }
+    .thank-you-view .body-copy {
+      font-size: 15px; color: #F4EDE2; line-height: 1.55;
+      margin-bottom: 12px; opacity: 0.92;
+    }
+    .thank-you-view .muted {
+      font-size: 14px; color: #8E8880; line-height: 1.5; margin-bottom: 28px;
+    }
+    .thank-you-view .cta-stack {
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    .thank-you-view .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 14px 28px; border-radius: 50px;
+      background: #8B5CF6; color: #fff;
+      font-size: 16px; font-weight: 600; text-decoration: none;
+      font-family: inherit;
+    }
+    .thank-you-view .link-secondary {
+      font-size: 14px; color: #A78BFA;
+      text-decoration: underline; text-underline-offset: 3px;
+    }
+    body.thank-you-mode {
+      background: #0A0A0A !important;
+      color: #F4EDE2 !important;
+    }
+    body.thank-you-mode .brand-dot { background: #8B5CF6; }
   </style>
 </head>
 <body>
@@ -190,11 +254,11 @@
   <div class="top">
     <div class="brand-row">
       <span class="brand-dot"></span>
-      <span>Powered by Ads2Wallet</span>
+      <span>Powered by Filodiretto</span>
     </div>
   </div>
 
-  <div class="main">
+  <div id="preInstallView" class="main">
     <!-- 1. Logo -->
     <div class="logo-area" id="logoArea">
       <span class="logo-letter" id="logoLetter">&middot;</span>
@@ -241,6 +305,21 @@
     <div class="device-note" id="deviceNote"></div>
   </div>
 
+  <div id="thankYouView" class="thank-you-view" aria-live="polite">
+    <div class="logo-area" id="tyLogoArea">
+      <span class="logo-letter" id="tyLogoLetter">&middot;</span>
+    </div>
+    <div class="icon-circle" aria-hidden="true">&#10003;</div>
+    <h1>Benvenuto in <span id="tyBrand">Wallet</span>.</h1>
+    <p class="body-copy">Il pass è ora nel tuo wallet.<br>
+    Hai appena attivato il <strong>filo diretto</strong> con <span id="tyBrandInline">Wallet</span>: le comunicazioni arrivano direttamente sulla lock-screen del tuo iPhone — niente email, niente intranet.</p>
+    <p class="muted">Puoi gestire cosa ricevere dal tuo profilo personale, in qualsiasi momento.</p>
+    <div class="cta-stack">
+      <a class="btn-primary" id="tyPortalBtn" href="/portal/">Apri il mio profilo →</a>
+      <a class="link-secondary" id="tyDownloadLink" href="#">Pass non installato? Scarica di nuovo</a>
+    </div>
+  </div>
+
   <script>
     (function () {
       const slug = location.pathname.replace(/^\/+|\/+$/g, '');
@@ -257,6 +336,8 @@
         campaignId: campaignId || null,
         utm
       };
+
+      let brandDisplayName = 'Wallet';
 
       const el = {
         logoArea: document.getElementById('logoArea'),
@@ -329,9 +410,10 @@
 
           // Brand name & text
           if (brand.name) {
+            brandDisplayName = brand.name;
             el.logoLetter.textContent = brand.name.charAt(0).toUpperCase();
             el.brandName.textContent = brand.name;
-            document.title = `${brand.name} · Ads2Wallet`;
+            document.title = `${brand.name} · Filo Diretto`;
           }
           if (c.headline) el.brandName.textContent = c.headline;
           if (c.subheadline) el.sub.textContent = c.subheadline;
@@ -398,6 +480,45 @@
         }
       }
 
+      function showThankYou(portalHref, passDownloadUrl) {
+        document.body.classList.add('thank-you-mode');
+        document.getElementById('themeColor').content = '#0A0A0A';
+        document.getElementById('preInstallView').style.display = 'none';
+        if (el.bgImage) el.bgImage.style.display = 'none';
+        if (el.bgOverlay) el.bgOverlay.style.display = 'none';
+
+        const ty = document.getElementById('thankYouView');
+        ty.style.display = 'flex';
+        document.getElementById('tyBrand').textContent = brandDisplayName;
+        document.getElementById('tyBrandInline').textContent = brandDisplayName;
+        document.getElementById('tyLogoLetter').textContent = brandDisplayName.charAt(0).toUpperCase();
+
+        const tyLogoArea = document.getElementById('tyLogoArea');
+        const existingTyImg = tyLogoArea.querySelector('img');
+        const preImg = el.logoArea.querySelector('img');
+        if (preImg && !existingTyImg) {
+          const img = preImg.cloneNode(true);
+          document.getElementById('tyLogoLetter').style.display = 'none';
+          tyLogoArea.insertBefore(img, tyLogoArea.firstChild);
+        }
+
+        const portalBtn = document.getElementById('tyPortalBtn');
+        if (portalHref) {
+          portalBtn.href = portalHref;
+          portalBtn.style.display = '';
+        } else {
+          portalBtn.style.display = 'none';
+        }
+
+        const downloadLink = document.getElementById('tyDownloadLink');
+        if (passDownloadUrl) {
+          downloadLink.href = passDownloadUrl;
+          downloadLink.style.display = '';
+        } else {
+          downloadLink.style.display = 'none';
+        }
+      }
+
       async function install() {
         el.btn.disabled = true;
         el.error.textContent = '';
@@ -417,6 +538,9 @@
             const err = await r.json().catch(() => ({}));
             throw new Error(err.error || 'Errore download pass');
           }
+          const portalHref = r.headers.get('X-Portal-Href');
+          const passDownloadUrl = r.headers.get('X-Pass-Download-Url')
+            || (r.headers.get('X-Pass-Id') ? `/api/v1/passes/${r.headers.get('X-Pass-Id')}/download` : null);
           const blob = await r.blob();
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -426,8 +550,9 @@
           a.click();
           a.remove();
           setTimeout(() => URL.revokeObjectURL(url), 5000);
-          el.btnLabel.textContent = 'Aggiunto — apri Wallet per confermare';
-          setTimeout(() => { el.btn.disabled = false; el.btnLabel.textContent = 'Aggiungi di nuovo ad Apple'; }, 2000);
+          setTimeout(function () {
+            showThankYou(portalHref, passDownloadUrl);
+          }, 1200);
         } catch (e) {
           el.error.textContent = e.message;
           el.btn.disabled = false;
