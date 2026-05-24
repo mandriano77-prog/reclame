@@ -1,0 +1,109 @@
+/**
+ * Filo Diretto / HR2Wallet design tokens
+ * @deprecated legacy aliases (--bg, --bg2, …) — migrate to semantic names below
+ */
+:root {
+  /* ── Background ── */
+  --bg-canvas: #FFFFFF;
+  --bg-app: #FAFAFA;
+  --bg-subtle: #F8FAFC;
+  --bg-hover: #F1F5F9;
+  --bg-active: #EDE9FE;
+
+  /* ── Borders ── */
+  --border-default: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --border-focus: #8B5CF6;
+
+  /* ── Text ── */
+  --text-primary: #0F172A;
+  --text-body: #334155;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --text-on-accent: #FFFFFF;
+
+  /* ── Brand accent ── */
+  --accent: #8B5CF6;
+  --accent-hover: #7C3AED;
+  --accent-subtle: #F5F3FF;
+
+  /* ── States ── */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* ── Radius ── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  /* ── Transitions ── */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+
+  /* @deprecated: use --bg-app */
+  --bg: var(--bg-app);
+  /* @deprecated: use --bg-canvas */
+  --bg2: var(--bg-canvas);
+  /* @deprecated: use --bg-hover */
+  --bg3: var(--bg-hover);
+  /* @deprecated: use --accent */
+  --teal: var(--accent);
+  /* @deprecated: use --accent-hover */
+  --purple: var(--accent-hover);
+  /* @deprecated: use --text-primary */
+  --text: var(--text-primary);
+  /* @deprecated: use --text-secondary */
+  --text2: var(--text-secondary);
+  /* @deprecated: use --border-default */
+  --border: var(--border-default);
+  /* @deprecated: use --danger */
+  --red: var(--danger);
+  /* @deprecated: use --success */
+  --green: var(--success);
+  /* @deprecated: use --warning */
+  --orange: var(--warning);
+  --yellow: #EAB308;
+}
+
+html[data-shell="dark"],
+html.theme-dark {
+  --bg-canvas: #1E1A36;
+  --bg-app: #0D0B1A;
+  --bg-subtle: #1E1A36;
+  --bg-hover: #2D2645;
+  --bg-active: rgba(124, 58, 237, 0.22);
+  --border-default: #3A3556;
+  --border-strong: #4A4568;
+  --text-primary: #FFFFFF;
+  --text-body: #E2E8F0;
+  --text-secondary: #B0A8C1;
+  --text-muted: #8B839E;
+}
