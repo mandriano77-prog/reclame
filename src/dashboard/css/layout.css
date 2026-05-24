@@ -1,0 +1,68 @@
+/* Mobile sidebar sheet + header menu toggle */
+html[data-shell="light"] .sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+html[data-shell="light"] .sidebar-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+html[data-shell="light"] .sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 150;
+}
+
+html[data-shell="light"] body.sidebar-open .sidebar-backdrop {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  html[data-shell="light"] .sidebar-toggle {
+    display: inline-flex;
+  }
+
+  html[data-shell="light"] .layout {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-shell="light"] .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 88vw);
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform var(--transition-fast);
+    box-shadow: var(--shadow-lg);
+  }
+
+  html[data-shell="light"] body.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  html[data-shell="light"] .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-canvas);
+    border-bottom: 1px solid var(--border-default);
+    padding: var(--space-2) var(--space-4);
+    margin: calc(-1 * var(--space-4));
+    margin-bottom: var(--space-4);
+  }
+}

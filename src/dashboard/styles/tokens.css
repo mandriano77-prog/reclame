@@ -26,12 +26,28 @@
   --accent: #8B5CF6;
   --accent-hover: #7C3AED;
   --accent-subtle: #F5F3FF;
+  --brand-50: #F5F3FF;
+  --brand-100: #EDE9FE;
+  --brand-600: #7C3AED;
 
   /* ── States ── */
   --success: #10B981;
+  --success-bg: #ECFDF5;
   --warning: #F59E0B;
+  --warning-bg: #FFFBEB;
   --danger: #EF4444;
+  --danger-50: #FEF2F2;
+  --danger-600: #DC2626;
   --info: #3B82F6;
+  --info-bg: #EFF6FF;
+
+  /* shadcn-aligned aliases */
+  --foreground: var(--text-primary);
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-secondary);
+  --border: var(--border-default);
+  --brand: var(--accent);
+  --radius-ui: 12px;
 
   /* ── Typography ── */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

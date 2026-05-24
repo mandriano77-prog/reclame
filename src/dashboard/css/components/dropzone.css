@@ -1,0 +1,37 @@
+/* Dropzone — push strip picker */
+html[data-shell="light"] .dropzone {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 750 / 246;
+  background: var(--bg-subtle);
+  border: 2px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+html[data-shell="light"] .dropzone:hover,
+html[data-shell="light"] .dropzone:focus-visible {
+  border-color: var(--accent-hover, var(--teal));
+  background: var(--accent-subtle, rgba(13, 148, 136, 0.06));
+  outline: none;
+}
+
+html[data-shell="light"] .dropzone__placeholder {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-3);
+  line-height: 1.45;
+}
+
+html[data-shell="light"] .dropzone img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

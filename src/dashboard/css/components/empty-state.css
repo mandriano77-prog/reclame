@@ -1,0 +1,47 @@
+/* EmptyState — list/table zero-data */
+html[data-shell="light"] .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-5);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  margin: var(--space-4) 0;
+}
+
+html[data-shell="light"] .empty-state__icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+html[data-shell="light"] .empty-state__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+html[data-shell="light"] .empty-state__desc {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  max-width: 36ch;
+  line-height: 1.5;
+}
+
+html[data-shell="light"] .empty-state .btn {
+  margin-top: var(--space-1);
+}
+
+html[data-shell="light"] td .empty-state,
+html[data-shell="light"] .table-wrap .empty-state {
+  border: none;
+  background: transparent;
+  padding: var(--space-5);
+}

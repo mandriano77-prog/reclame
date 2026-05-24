@@ -28,6 +28,19 @@
     <link rel="stylesheet" href="/dashboard/styles/tokens.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-a11y.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-layout.css">
+    <link rel="stylesheet" href="/dashboard/css/layout.css">
+    <link rel="stylesheet" href="/dashboard/css/components/page-header.css">
+    <link rel="stylesheet" href="/dashboard/css/components/empty-state.css">
+    <link rel="stylesheet" href="/dashboard/css/components/stat-card.css">
+    <link rel="stylesheet" href="/dashboard/css/components/data-table.css">
+    <link rel="stylesheet" href="/dashboard/css/components/form.css">
+    <link rel="stylesheet" href="/dashboard/css/components/dialog.css">
+    <link rel="stylesheet" href="/dashboard/css/components/danger-zone.css">
+    <link rel="stylesheet" href="/dashboard/css/components/tabs.css">
+    <link rel="stylesheet" href="/dashboard/css/components/dropzone.css">
+    <link rel="stylesheet" href="/dashboard/css/components/fab.css">
+    <script src="/dashboard/lib/utils.js"></script>
+    <script src="/dashboard/lib/nav.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1128,6 +1141,7 @@
     </div>
 </div>
 
+<div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 <div class="layout" id="mainLayout" style="display:none;">
     <aside class="sidebar" role="navigation" aria-label="Menu principale">
         <div class="logo"><span class="chrome-product-title">Ads2Wallet</span><small class="chrome-byline">by Underdogs Group</small></div>
@@ -1138,43 +1152,43 @@
 
         <details class="nav-group" open data-nav-group="brand">
             <summary class="nav-group-label">Brand</summary>
-            <div class="nav-item" onclick="nav('brand-identity')">Identità</div>
-            <div class="nav-item" onclick="nav('media-library')">Media Library</div>
+            <div class="nav-item" onclick="nav('brand-identity')" data-section-id="brand-identity">Identità Brand</div>
+            <div class="nav-item" onclick="nav('media-library')" data-section-id="media-library">Media Library</div>
         </details>
 
         <details class="nav-group" open data-nav-group="pass">
             <summary class="nav-group-label">Pass</summary>
-            <div class="nav-item" onclick="nav('templates')">Template Pass</div>
-            <div class="nav-item" onclick="nav('passes')">Pass Emessi</div>
+            <div class="nav-item" onclick="nav('templates')" data-section-id="templates">Template Pass</div>
+            <div class="nav-item" onclick="nav('passes')" data-section-id="passes">Pass Emessi</div>
         </details>
 
         <details class="nav-group" open data-nav-group="comunicazione">
             <summary class="nav-group-label">Comunicazione</summary>
-            <div class="nav-item" onclick="nav('campaigns')">Campagne</div>
-            <div class="nav-item" onclick="nav('push')">Push Notification</div>
+            <div class="nav-item" onclick="nav('campaigns')" data-section-id="campaigns">Campagne</div>
+            <div class="nav-item" onclick="nav('push')" data-section-id="push">Push &amp; Notifiche</div>
         </details>
 
         <details class="nav-group" open data-nav-group="engagement">
             <summary class="nav-group-label">Engagement</summary>
-            <div class="nav-item" onclick="nav('instant-win')">Instant Win</div>
-            <div class="nav-item" onclick="nav('gamification')">Gamification</div>
+            <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win">Instant Win</div>
+            <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification">Gamification</div>
         </details>
 
         <details class="nav-group" open data-nav-group="database">
             <summary class="nav-group-label">Database</summary>
-            <div class="nav-item" onclick="nav('leads')" data-menu-key="nav_leads" data-menu-default="Leads">Leads</div>
-            <div class="nav-item" onclick="nav('audiences')">Audience</div>
+            <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-menu-key="nav_leads" data-menu-default="Contatti">Contatti</div>
+            <div class="nav-item" onclick="nav('audiences')" data-section-id="audiences">Audience</div>
         </details>
 
         <details class="nav-group" open data-nav-group="insights">
             <summary class="nav-group-label">Insights</summary>
-            <div class="nav-item" onclick="nav('analytics')">Analytics</div>
-            <div class="nav-item" onclick="nav('activity-log')">Attività</div>
+            <div class="nav-item" onclick="nav('analytics')" data-section-id="analytics">Analytics</div>
+            <div class="nav-item" onclick="nav('activity-log')" data-section-id="activity-log">Log Attività</div>
         </details>
 
         <details class="nav-group" open data-nav-group="setup">
             <summary class="nav-group-label">Setup</summary>
-            <div class="nav-item" onclick="nav('users')" data-role-min="admin">Utenti</div>
+            <div class="nav-item" onclick="nav('users')" data-section-id="users" data-role-min="admin">Utenti</div>
         </details>
 
         <div class="sidebar-footer">
@@ -1184,7 +1198,8 @@
 
     <div class="main">
         <header class="header app-header">
-            <div class="header-start">
+            <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Apri menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+                <div class="header-start">
                 <nav class="app-breadcrumb" aria-label="Percorso" id="appBreadcrumb">
                     <ol class="breadcrumb-list">
                         <li><span id="breadcrumbBrand">Ads2Wallet</span></li>
@@ -1340,10 +1355,10 @@
                 <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Gestisci le 3 modalità di notifica: push diretta, programmata nel tempo, e prossimità geofencing. Nella push diretta puoi scegliere il canale: <strong>Apple (APNs)</strong>, <strong>Google Wallet</strong> o entrambi.</p>
 
                 <!-- Sub-tab navigation -->
-                <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
-                    <button class="push-subtab active" onclick="switchPushTab('immediate')" id="pushTab_immediate" style="flex:1;padding:10px 12px;background:none;border:none;border-bottom:2px solid var(--teal);margin-bottom:-2px;color:var(--teal);font-weight:700;font-size:13px;cursor:pointer;">&#9889; Immediata</button>
-                    <button class="push-subtab" onclick="switchPushTab('scheduled')" id="pushTab_scheduled" style="flex:1;padding:10px 12px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2);font-weight:600;font-size:13px;cursor:pointer;">&#128337; Programmata</button>
-                    <button class="push-subtab" onclick="switchPushTab('geofencing')" id="pushTab_geofencing" style="flex:1;padding:10px 12px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2);font-weight:600;font-size:13px;cursor:pointer;">&#128205; Geofencing</button>
+                <div class="tabs-bar" role="tablist" aria-label="Modalità push">
+                    <button type="button" class="tabs-bar__tab push-subtab active" role="tab" aria-selected="true" onclick="switchPushTab('immediate')" id="pushTab_immediate"><svg class="tabs-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>Immediata</button>
+                    <button type="button" class="tabs-bar__tab push-subtab" role="tab" aria-selected="false" onclick="switchPushTab('scheduled')" id="pushTab_scheduled"><svg class="tabs-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Programmata</button>
+                    <button type="button" class="tabs-bar__tab push-subtab" role="tab" aria-selected="false" onclick="switchPushTab('geofencing')" id="pushTab_geofencing"><svg class="tabs-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-4.35 7-10a7 7 0 1 0-14 0c0 5.65 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>Geofencing</button>
                 </div>
 
                 <!-- TAB 1: Push Immediata -->
@@ -1387,8 +1402,8 @@
                         <div id="pushStripBlock" class="form-group" style="margin-top:8px;">
                             <label class="form-label">Strip per questa push (opzionale)</label>
                             <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Solo per questo invio — non modifica la strip permanente del brand. Priorità su Instant Win / Gamification se selezioni entrambi.</p>
-                            <div id="pushStripPreview" style="width:100%;max-width:420px;aspect-ratio:750/246;background:var(--bg3);border-radius:8px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px;display:flex;align-items:center;justify-content:center;">
-                                <span style="color:var(--text2);font-size:12px;">Nessuna strip — resta quella del pass</span>
+                            <div id="pushStripPreview" class="dropzone" role="button" tabindex="0" title="Scegli una strip temporanea per questa push" onclick="pushPickStripFromMedia()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pushPickStripFromMedia();}">
+                                <span class="dropzone__placeholder">Trascina o clicca per scegliere una strip temporanea</span>
                             </div>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                                 <button type="button" class="btn small" onclick="pushPickStripFromMedia()">Scegli da Media Library</button>
@@ -1564,9 +1579,13 @@
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:24px;">
-                    <button class="btn" onclick="saveBrandIdentity()">Salva Identità</button>
-                    <button class="btn danger" onclick="deleteBrandAction()">Elimina Brand</button>
+                    <button class="btn" onclick="saveBrandIdentity()">Salva identità</button>
                 </div>
+                <section class="danger-zone" aria-labelledby="brandDangerTitle">
+                    <h2 id="brandDangerTitle" class="danger-zone__title">Zona pericolosa</h2>
+                    <p class="danger-zone__desc">Elimina il brand e tutti i dati collegati (pass, campagne, contatti). L'operazione è irreversibile.</p>
+                    <button type="button" class="btn danger" onclick="deleteBrandAction()">Elimina brand</button>
+                </section>
                 <!-- Landing link removed -->
             </div>
 
@@ -2031,7 +2050,7 @@
 
             <!-- LEADS DATABASE -->
             <div id="leads" class="section">
-                <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Lista contatti">Lista contatti</h1>
+                <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Contatti">Contatti</h1>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
                     <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." style="color:var(--text2);font-size:13px;">Elenco delle persone collegate ai pass di questo brand.</p>
                     <div style="display:flex;gap:8px;align-items:center;">
@@ -2051,7 +2070,7 @@
 
             <!-- AUDIENCES -->
                         <div id="audiences" class="section">
-                <h1 class="sec-title page-title">Audience Platform</h1>
+                <h1 class="sec-title page-title">Audience</h1>
                 <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">Segmentazione possessori pass, statistiche di apertura e click sul retro, audience salvate. Per segmenti in linguaggio naturale usa <strong>W.AI</strong> (pulsante in basso a destra).</p>
                 <button type="button" class="btn sec" style="margin-bottom:16px;" onclick="openWaiForAudience()">Apri W.AI · segmenta audience</button>
 
@@ -2214,7 +2233,7 @@
             <div id="activity-log" class="section">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
                     <div>
-                        <h1 class="sec-title page-title">Log attività</h1>
+                        <h1 class="sec-title page-title">Log Attività</h1>
                         <p style="font-size:12px;color:var(--text2);margin-top:8px;max-width:42rem;line-height:1.45;">
                             Cronologia eventi del brand (pass creati, installazioni, wallet, landing, ecc.) registrati dal server.<br>Righe più recenti in alto · massimo 500 per richiesta.</p>
                     </div>
@@ -2236,7 +2255,7 @@
 
             <!-- USERS -->
             <div class="section" id="users">
-                <h1 class="sec-title page-title">Gestione Utenti</h1>
+                <h1 class="sec-title page-title">Utenti</h1>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                     <p style="color:var(--text2);font-size:13px;">Crea e gestisci gli accessi alla dashboard.</p>
                     <button class="btn" onclick="openCreateUserModal()" data-role-min="admin" id="createUserBtn">+ Nuovo Utente</button>
@@ -2480,6 +2499,18 @@
     </div>
 </div>
 
+
+<dialog id="appConfirmDialog" class="confirm-dialog" aria-labelledby="appConfirmTitle">
+  <form id="appConfirmForm" method="dialog" class="confirm-dialog__inner">
+    <h2 id="appConfirmTitle" class="confirm-dialog__title">Confermi?</h2>
+    <p id="appConfirmMessage" class="confirm-dialog__message"></p>
+    <div class="confirm-dialog__actions">
+      <button type="submit" name="action" value="cancel" class="btn sec">Annulla</button>
+      <button type="submit" name="action" value="confirm" id="appConfirmBtn" class="btn danger">Elimina</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toastEl" class="toast"></div>
 
 <button type="button" id="waiBtn" class="wai-fab" onclick="toggleWaiOverlay()" aria-label="Chiedi a W.AI" data-tooltip="Chiedi a W.AI" title="Chiedi a W.AI">W.AI</button>
@@ -2517,6 +2548,11 @@
     </div>
   </div>  </div>
 </div>
+
+<script src="/dashboard/js/components/confirm-dialog.js"></script>
+<script src="/dashboard/js/components/empty-state.js"></script>
+<script src="/dashboard/js/components/page-header.js"></script>
+<script src="/dashboard/js/components/sidebar.js"></script>
 
 <script>
 const API = '/api/v1';
@@ -2655,7 +2691,7 @@ function syncBreadcrumb(sectionId) {
     const sectionEl = document.getElementById('breadcrumbSection');
     if (!brandEl || !sectionEl) return;
     const sid = sectionId || getActiveSectionId();
-    sectionEl.textContent = SECTION_PAGE_TITLES[sid] || sid;
+    sectionEl.textContent = typeof getSectionPageTitle === 'function' ? getSectionPageTitle(sid) : (SECTION_PAGE_TITLES[sid] || sid);
     const productTitle = getDashboardProductDisplayTitle(getDashboardProductLine());
     brandEl.textContent = (brandId && currentBrandName) ? currentBrandName : productTitle;
 }
@@ -3060,6 +3096,7 @@ let analyticsDateTo = '';
 document.addEventListener('DOMContentLoaded', () => {
     initDashboardProductTheme();
     initFiloNavGroups();
+    if (typeof enhancePageHeaders === 'function') enhancePageHeaders();
     initUserMenu();
     initFiloNavA11y();
     syncNavAriaCurrent(getActiveSectionId());
@@ -3077,25 +3114,38 @@ document.addEventListener('DOMContentLoaded', () => {
     bootstrapSession();
 });
 
-// ==================== SECTION TITLES (Filo / a11y) ====================
-const SECTION_PAGE_TITLES = {
-    welcome: 'Inizio',
-    'brand-identity': 'Identità Brand',
-    'media-library': 'Media Library',
-    templates: 'Template Pass',
-    passes: 'Pass Emessi',
-    campaigns: 'Campagne',
-    push: 'Push & Notifiche',
-    'instant-win': 'Instant Win',
-    gamification: 'Gamification',
-    leads: 'People',
-    audiences: 'Audience',
-    analytics: 'Analytics',
-    'activity-log': 'Attività',
-    users: 'Utenti',
-    'pass-design': 'Design Pass',
-    'pass-wizard': 'Crea Pass'
-};
+// ==================== SECTION TITLES (Filo / a11y) — source: /dashboard/lib/nav.js ====================
+const SECTION_PAGE_TITLES = (typeof window !== 'undefined' && window.FD_NAV && window.FD_NAV.buildSectionPageTitles)
+    ? window.FD_NAV.buildSectionPageTitles()
+    : {
+        welcome: 'Inizio',
+        'brand-identity': 'Identità Brand',
+        'media-library': 'Media Library',
+        templates: 'Template Pass',
+        passes: 'Pass Emessi',
+        campaigns: 'Campagne',
+        push: 'Push & Notifiche',
+        'instant-win': 'Instant Win',
+        gamification: 'Gamification',
+        leads: 'Contatti',
+        audiences: 'Audience',
+        analytics: 'Analytics',
+        'activity-log': 'Log Attività',
+        users: 'Utenti',
+        'pass-design': 'Design Pass',
+        'pass-wizard': 'Crea Pass'
+    };
+
+function getSectionPageTitle(sectionId) {
+    const copy = typeof getMergedProductMenuCopy === 'function'
+        ? getMergedProductMenuCopy(getDashboardProductLine())
+        : {};
+    if (sectionId === 'leads' && copy.leads_page_title) return copy.leads_page_title;
+    if (window.FD_NAV && typeof window.FD_NAV.getPageTitle === 'function') {
+        return window.FD_NAV.getPageTitle(sectionId);
+    }
+    return SECTION_PAGE_TITLES[sectionId] || sectionId;
+}
 
 function getActiveSectionId() {
     const el = document.querySelector('.section.active');
@@ -3104,12 +3154,17 @@ function getActiveSectionId() {
 
 function syncSectionDocumentTitle(sectionId) {
     const sid = sectionId || getActiveSectionId();
-    const sectionLabel = SECTION_PAGE_TITLES[sid] || sid;
+    const sectionLabel = getSectionPageTitle(sid);
     const appTitle = getDashboardProductDisplayTitle(getDashboardProductLine());
     const brand = brandId && currentBrandName ? currentBrandName : null;
-    document.title = brand
-        ? `${sectionLabel} · ${brand} · ${appTitle}`
-        : `${sectionLabel} · ${appTitle}`;
+    const lightShell = document.documentElement.getAttribute('data-shell') === 'light';
+    if (lightShell) {
+        document.title = `${sectionLabel} · ${appTitle}`;
+    } else {
+        document.title = brand
+            ? `${sectionLabel} · ${brand} · ${appTitle}`
+            : `${sectionLabel} · ${appTitle}`;
+    }
 }
 
 function syncNavAriaCurrent(sectionId) {
@@ -3411,8 +3466,8 @@ const PRODUCT_THEMES = {
 };
 
 const PRODUCT_MENU_DEFAULTS = {
-    nav_leads: 'Leads',
-    leads_page_title: 'Lista contatti',
+    nav_leads: 'Contatti',
+    leads_page_title: 'Contatti',
     leads_page_blurb: 'Elenco delle persone collegate ai pass di questo brand.',
     leads_stat_total: 'Contatti totali',
     leads_stat_device: 'Con device registrato',
@@ -3427,12 +3482,12 @@ const PRODUCT_MENU_COPY = {
     ads: {},
     live: {},
     hr: {
-        nav_leads: 'People',
-        leads_page_title: 'Dipendenti',
-        leads_page_blurb: 'Elenco dei dipendenti: nominativi, contatti e pass associati al brand.',
-        leads_stat_total: 'Dipendenti totali',
-        leads_empty: 'Nessun dipendente registrato',
-        leads_export_empty: 'Nessun dipendente da esportare',
+        nav_leads: 'Contatti',
+        leads_page_title: 'Contatti',
+        leads_page_blurb: 'Elenco contatti collegati ai pass di questo brand.',
+        leads_stat_total: 'Contatti totali',
+        leads_empty: 'Nessun contatto registrato',
+        leads_export_empty: 'Nessun contatto da esportare',
     },
     engage: {
         nav_leads: 'Customer',
@@ -3686,6 +3741,9 @@ function initDashboardProductTheme() {
     applyProductShellTheme(line);
     syncChromeProductTitles(line);
     syncDocumentTitle(line);
+    if (window.FD_NAV && typeof window.FD_NAV.applyNavNaming === 'function') {
+        window.FD_NAV.applyNavNaming();
+    }
     applyProductMenuCopy(line);
     syncProductLineSelector();
     syncFiloHeaderChrome();
@@ -3783,7 +3841,7 @@ function adjustAlpha(hex, alpha) {
 
 async function deleteBrandAction() {
     if (!brandId) return alert('Seleziona una brand');
-    if (!confirm('Eliminare la brand e TUTTI i dati? Non si puo annullare.')) return;
+    if (!await appConfirm({ title: 'Elimina brand', message: 'Eliminare il brand e tutti i dati collegati? Non si può annullare.', confirmLabel: 'Elimina brand', tone: 'danger' })) return;
     const res = await fetch(`${API}/brands/${brandId}`, { method: 'DELETE', headers: getAuthHeaders() });
     if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -3810,7 +3868,7 @@ async function loadCampaigns() {
     if (!brandId) return;
     campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('campaignsList');
-    if (!campaignsCache.length) { el.innerHTML = '<p style="color:var(--text2)">Nessuna campagna. Crea la prima!</p>'; return; }
+    if (!campaignsCache.length) { el.innerHTML = renderEmptyState({ title: 'Nessuna campagna', description: 'Crea la prima campagna per iniziare.', ctaLabel: 'Nuova campagna', ctaOnclick: 'openCampaignModal()', icon: 'ticket' }); return; }
     el.innerHTML = campaignsCache.map(c => `
         <div class="card">
             <div class="card-row">
@@ -3920,7 +3978,7 @@ async function toggleCampaign(id, active) {
 }
 
 async function deleteCampaign(id) {
-    if (!confirm('Eliminare questa campagna?')) return;
+    if (!await appConfirm({ title: 'Elimina campagna', message: 'Eliminare questa campagna?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     await fetch(`${API}/campaigns/${id}`, { method: 'DELETE' });
     toast('Campagna eliminata');
     invalidateBrandCache();
@@ -4262,7 +4320,7 @@ async function loadPasses(resetPage = false) {
     const el = document.getElementById('passesContent');
 
     if (!passes.length) {
-        el.innerHTML = '<p style="color:var(--text2)">Nessun pass emesso.</p>';
+        el.innerHTML = renderEmptyState({ title: 'Nessun pass emesso', description: 'I pass compariranno qui dopo la pubblicazione o l\'iscrizione.', icon: 'inbox' });
         persistPassFilters();
         return;
     }
@@ -4622,7 +4680,7 @@ async function openSamsungWalletSaveLink(passId) {
 }
 
 async function deletePassInstance(id) {
-    if (!confirm('Eliminare questo pass?')) return;
+    if (!await appConfirm({ title: 'Elimina pass', message: 'Eliminare questo pass?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     const guard = prompt('Conferma definitiva: scrivi ELIMINA per procedere.');
     if (guard !== 'ELIMINA') {
         toast('Eliminazione annullata');
@@ -4641,7 +4699,7 @@ async function loadTemplates() {
     if (!brandId) return;
     const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('templatesList');
-    if (!templates.length) { el.innerHTML = '<p style="color:var(--text2)">Nessun template. Crea il primo!</p>'; return; }
+    if (!templates.length) { el.innerHTML = renderEmptyState({ title: 'Nessun template', description: 'Crea un template riutilizzabile per i tuoi pass.', ctaLabel: 'Nuovo template', ctaOnclick: 'openTemplateModal()', icon: 'inbox' }); return; }
     el.innerHTML = templates.map(t => `
         <div class="card">
             <div class="card-row">
@@ -4984,7 +5042,7 @@ async function uploadTemplateImages(templateId) {
 }
 
 async function deleteTemplate(id) {
-    if (!confirm('Eliminare questo template?')) return;
+    if (!await appConfirm({ title: 'Elimina template', message: 'Eliminare questo template?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     await fetch(`${API}/templates/${id}`, { method: 'DELETE' });
     toast('Template eliminato');
     invalidateBrandCache();
@@ -4998,8 +5056,10 @@ function switchPushTab(tab) {
     ['immediate', 'scheduled', 'geofencing'].forEach(t => {
         document.getElementById('pushPanel_' + t).style.display = t === tab ? 'block' : 'none';
         const btn = document.getElementById('pushTab_' + t);
-        btn.style.borderBottomColor = t === tab ? 'var(--teal)' : 'transparent';
-        btn.style.color = t === tab ? 'var(--teal)' : 'var(--text2)';
+        if (!btn) return;
+        const active = t === tab;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
 }
 
@@ -5124,7 +5184,7 @@ function pushClearStrip() {
     pushStripMediaId = null;
     const prev = document.getElementById('pushStripPreview');
     if (prev) {
-        prev.innerHTML = '<span style="color:var(--text2);font-size:12px;">Nessuna strip — resta quella del pass</span>';
+        prev.innerHTML = '<span class="dropzone__placeholder">Trascina o clicca per scegliere una strip temporanea</span>';
     }
     const clr = document.getElementById('pushStripClearBtn');
     if (clr) clr.style.display = 'none';
@@ -5228,7 +5288,7 @@ async function loadScheduledPush() {
     const res = await fetch(`${API}/push/scheduled?brand_id=${brandId}`);
     const list = await res.json();
     const el = document.getElementById('scheduledList');
-    if (!list.length) { el.innerHTML = '<p style="color:var(--text2)">Nessuna notifica programmata.</p>'; return; }
+    if (!list.length) { el.innerHTML = renderEmptyState({ title: 'Nessuna notifica programmata', description: 'Programma push ricorrenti o una tantum.', icon: 'inbox' }); return; }
     el.innerHTML = list.map(s => {
         const typeLabel = s.schedule_type === 'once' ? 'Una tantum' : s.schedule_type === 'daily' ? 'Giornaliera' : 'Settimanale';
         const channelLabel = pushChannelDisplayLabel(s.channel || 'apple');
@@ -5255,7 +5315,7 @@ async function toggleScheduled(id, active) {
 }
 
 async function deleteScheduled(id) {
-    if (!confirm('Eliminare questa notifica programmata?')) return;
+    if (!await appConfirm({ title: 'Elimina notifica', message: 'Eliminare questa notifica programmata?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     await fetch(`${API}/push/scheduled/${id}`, { method: 'DELETE' });
     toast('Eliminata'); loadScheduledPush();
 }
@@ -5665,7 +5725,7 @@ async function applyStripToPass(promoId) {
 }
 
 async function deleteStripPromo(id) {
-    if (!confirm('Eliminare?')) return;
+    if (!await appConfirm({ title: 'Elimina strip promo', message: 'Eliminare questa strip promo?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     await fetch(`${API}/strip-promos/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     toast('Eliminata'); loadStripPromos();
 }
@@ -5713,7 +5773,7 @@ async function loadInstantWin() {
 
         const tbody = document.getElementById('iwTable').querySelector('tbody');
         if (!campaigns.length) {
-            tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna campagna Instant Win. Creane una per iniziare.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">' + renderEmptyState({ title: 'Nessuna campagna Instant Win', description: 'Creane una per coinvolgere i possessori del pass.', ctaLabel: 'Nuova campagna', ctaOnclick: 'openIwModal()', icon: 'ticket' }) + '</td></tr>';
             return;
         }
         const gameLabels = { scratch: '🎫 Scratch', wheel: '🎡 Ruota', slots: '🎰 Slot' };
@@ -5795,7 +5855,7 @@ async function editIwCampaign(id) {
 }
 
 async function deleteIwCampaign(id) {
-    if (!confirm('Eliminare questa campagna e tutte le giocate associate?')) return;
+    if (!await appConfirm({ title: 'Elimina campagna', message: 'Eliminare questa campagna e tutte le giocate associate?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     try {
         const res = await fetch(`${API}/instant-win/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         if (!res.ok) return toast('Errore eliminazione');
@@ -6075,7 +6135,7 @@ async function loadAudiences() {
 function renderAudiencesList(list) {
     const el = document.getElementById('audiencesList');
     if (!list.length) {
-        el.innerHTML = '<p style="color:var(--text2);font-size:13px;">Nessuna audience salvata. Crea un segmento con i filtri sui possessori del pass.</p>';
+        el.innerHTML = renderEmptyState({ title: 'Nessuna audience', description: 'Crea un segmento con i filtri sui possessori del pass.', ctaLabel: 'Nuova audience', ctaOnclick: 'openAudienceEditor()', icon: 'users' });
         return;
     }
     el.innerHTML = `<table class="table"><thead><tr><th>Nome</th><th>Membri</th><th>Aggiornata</th><th></th></tr></thead><tbody>${
@@ -6158,7 +6218,7 @@ async function saveAudience() {
 }
 
 async function deleteAudienceItem(id) {
-    if (!confirm('Eliminare questa audience?')) return;
+    if (!await appConfirm({ title: 'Elimina audience', message: 'Eliminare questa audience?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     const res = await fetch(`${API}/audiences/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     if (!res.ok) { const d = await res.json().catch(() => ({})); return toast(d.error || 'Errore'); }
     toast('Audience eliminata');
@@ -6217,7 +6277,7 @@ function renderLeadsTable(leads) {
     const mc = getMergedProductMenuCopy(getDashboardProductLine());
     const tbody = document.getElementById('leadsTable').querySelector('tbody');
     if (!leads.length) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text2);text-align:center;">${esc(mc.leads_empty)}</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="7">' + renderEmptyState({ title: mc.leads_empty, description: 'I contatti raccolti da landing e pass compariranno qui.', icon: 'users' }) + '</td></tr>';
         return;
     }
     tbody.innerHTML = leads.map(l => `<tr>
@@ -6278,7 +6338,7 @@ async function loadGamification() {
 
         const tbody = document.getElementById('gamTable').querySelector('tbody');
         if (!campaigns.length) {
-            tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna campagna. Creane una per iniziare.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">' + renderEmptyState({ title: 'Nessuna campagna gamification', description: 'Creane una per quiz, memory o puzzle.', ctaLabel: 'Nuova campagna', ctaOnclick: 'openGamModal()', icon: 'ticket' }) + '</td></tr>';
             return;
         }
         const gameLabels = { quiz: 'Quiz', memory: 'Memory Match', puzzle: 'Puzzle' };
@@ -6379,7 +6439,7 @@ async function editGamCampaign(id) {
 }
 
 async function deleteGamCampaign(id) {
-    if (!confirm('Eliminare questa campagna e tutte le giocate associate?')) return;
+    if (!await appConfirm({ title: 'Elimina campagna', message: 'Eliminare questa campagna e tutte le giocate associate?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     try {
         const res = await fetch(`${API}/gamification/campaign/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         if (!res.ok) throw new Error('Errore eliminazione');
@@ -6399,7 +6459,7 @@ async function loadActivityLog() {
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
         const events = await res.json();
         if (!events.length) {
-            body.innerHTML = '<tr><td colspan="5" style="color:var(--text2)">Nessun evento ancora per questo brand.</td></tr>';
+            body.innerHTML = '<tr><td colspan="5">' + renderEmptyState({ title: 'Nessun evento', description: 'Le attività su pass e campagne compariranno qui.', icon: 'inbox' }) + '</td></tr>';
             return;
         }
         body.innerHTML = events.map(ev => {
@@ -7244,7 +7304,7 @@ async function loadWzTemplates() {
         const res = await fetch(`${API}/templates?brand_id=${brandId}`, { headers: getAuthHeaders() });
         if (!res.ok) { list.innerHTML = '<p style="color:var(--text2)">Errore caricamento</p>'; return; }
         const templates = await res.json();
-        if (!templates.length) { list.innerHTML = '<p style="color:var(--text2)">Nessun template creato. Usa il wizard sopra per crearne uno.</p>'; return; }
+        if (!templates.length) { list.innerHTML = renderEmptyState({ title: 'Nessun template', description: 'Usa il wizard sopra per crearne uno.', icon: 'inbox' }); return; }
         list.innerHTML = templates.map(t => `
             <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg3);border-radius:8px;margin-bottom:8px;border:1px solid var(--border);">
                 <div style="flex:1;">
@@ -7320,7 +7380,7 @@ async function wzEditTemplate(id) {
 }
 
 async function wzDeleteTemplate(id) {
-    if (!confirm('Eliminare questo template?')) return;
+    if (!await appConfirm({ title: 'Elimina template', message: 'Eliminare questo template?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     try {
         await fetch(`${API}/templates/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         toast('Template eliminato');
@@ -7774,7 +7834,7 @@ async function doMediaUpload() {
 }
 
 async function deleteMediaItem(id) {
-    if (!confirm('Eliminare questo media?')) return;
+    if (!await appConfirm({ title: 'Elimina media', message: 'Eliminare questo media?', confirmLabel: 'Elimina', tone: 'danger' })) return;
     try {
         await fetch(`${API}/media/${id}`, { method: 'DELETE' });
         toast('Media eliminato');
@@ -7784,7 +7844,7 @@ async function deleteMediaItem(id) {
 
 async function deleteAllMedia() {
     if (!brandId) return;
-    if (!confirm('Eliminare TUTTI i media di questo brand? Azione irreversibile.')) return;
+    if (!await appConfirm({ title: 'Elimina tutti i media', message: 'Eliminare tutti i media di questo brand? Azione irreversibile.', confirmLabel: 'Elimina tutto', tone: 'danger' })) return;
     try {
         const res = await fetch(`${API}/media?brand_id=${brandId}`, { method: 'DELETE' });
         const data = await res.json();
@@ -7960,7 +8020,7 @@ async function resendInvite(id) {
 }
 
 async function deleteUser(id) {
-    if (!confirm('Eliminare questo utente? L\'operazione vale per tutto il database condiviso.')) return;
+    if (!await appConfirm({ title: 'Elimina utente', message: 'Eliminare questo utente? L\'operazione vale per tutto il database condiviso.', confirmLabel: 'Elimina', tone: 'danger' })) return;
     const res = await fetch(`${API}/users/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -8645,3 +8705,4 @@ function fileToBase64(file) {
 
 </body>
 </html>
+<script type="module" src="/dashboard/js/main.js"></script>

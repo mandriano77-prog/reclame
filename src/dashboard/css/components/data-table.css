@@ -1,0 +1,48 @@
+/* DataTable — consistent table styling */
+html[data-shell="light"] .table,
+html[data-shell="light"] table.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--text-sm);
+}
+
+html[data-shell="light"] .table thead th {
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-subtle);
+}
+
+html[data-shell="light"] .table tbody td {
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-body);
+  vertical-align: middle;
+}
+
+html[data-shell="light"] .table tbody tr:hover td {
+  background: var(--bg-hover);
+}
+
+html[data-shell="light"] .table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-canvas);
+}
+
+html[data-shell="light"] .table-wrap .table thead th:first-child,
+html[data-shell="light"] .table-wrap .table tbody td:first-child {
+  padding-left: var(--space-4);
+}
+
+html[data-shell="light"] .table-wrap .table thead th:last-child,
+html[data-shell="light"] .table-wrap .table tbody td:last-child {
+  padding-right: var(--space-4);
+}

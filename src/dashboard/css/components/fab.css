@@ -1,0 +1,25 @@
+/* FabAssistant — W.AI FAB polish */
+html[data-shell="light"] .wai-fab {
+  position: fixed;
+  z-index: 900;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-pill);
+  border: none;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  background: var(--accent-hover, var(--teal));
+  color: #fff;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+html[data-shell="light"] .wai-fab:hover {
+  transform: scale(1.04);
+}
+
+html[data-shell="light"] .wai-fab:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 3px;
+}

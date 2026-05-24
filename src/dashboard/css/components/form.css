@@ -1,0 +1,45 @@
+/* Form — sentence-case labels, spacing */
+html[data-shell="light"] .form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+html[data-shell="light"] .form-hint {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+  line-height: 1.45;
+}
+
+html[data-shell="light"] .form-group {
+  margin-bottom: var(--space-4);
+}
+
+html[data-shell="light"] .form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+html[data-shell="light"] .card .block-title,
+html[data-shell="light"] .card > .sec-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+html[data-shell="light"] input[type="text"],
+html[data-shell="light"] input[type="email"],
+html[data-shell="light"] input[type="url"],
+html[data-shell="light"] input[type="number"],
+html[data-shell="light"] input[type="date"],
+html[data-shell="light"] input[type="password"],
+html[data-shell="light"] select,
+html[data-shell="light"] textarea {
+  font-size: var(--text-sm);
+}

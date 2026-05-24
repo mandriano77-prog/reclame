@@ -1,0 +1,44 @@
+/* PageHeader — section title + description + actions */
+html[data-shell="light"] .page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) 0 var(--space-5);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-shell="light"] .page-header__main {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+html[data-shell="light"] .page-header__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+html[data-shell="light"] .page-header__desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 56ch;
+}
+
+html[data-shell="light"] .page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+html[data-shell="light"] .section > .page-header--legacy-row {
+  display: none;
+}
