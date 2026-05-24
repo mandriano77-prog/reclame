@@ -77,46 +77,6 @@ const os = require('os');
 
 const router = express.Router();
 
-const DEPLOY_PRODUCT_LINES = ['ads', 'hr', 'engage', 'live'];
-/** When set (e.g. hr on hr.2wallet.app), API only exposes brands for that product line. */
-function deployProductLineLock() {
-  const v = String(process.env.DASHBOARD_PRODUCT_LINE || '').trim().toLowerCase();
-  return DEPLOY_PRODUCT_LINES.includes(v) ? v : null;
-}
-function brandProductLine(brand) {
-  const pl = brand?.config?.product_line;
-  return DEPLOY_PRODUCT_LINES.includes(pl) ? pl : 'ads';
-}
-function brandAllowedOnDeploy(brand) {
-  const lock = deployProductLineLock();
-  if (!lock) return true;
-  return brandProductLine(brand) === lock;
-}
-
-/** Comma-separated emails allowed to log in on this deploy (e.g. Filo Diretto → admin@nudj.studio). */
-function dashboardLoginAllowlist() {
-  const raw = String(process.env.DASHBOARD_LOGIN_ALLOWLIST || '').trim();
-  if (raw) {
-    return raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-  }
-  if (deployProductLineLock() === 'hr') return ['admin@nudj.studio'];
-  return null;
-}
-
-function isDashboardLoginAllowed(email) {
-  const list = dashboardLoginAllowlist();
-  if (!list) return true;
-  return list.includes(String(email || '').trim().toLowerCase());
-}
-
-function rejectIfDeployLoginNotAllowed(req, res) {
-  if (!isDashboardLoginAllowed(req.user?.email)) {
-    res.status(403).json({ error: 'Accesso non autorizzato su questa istanza dashboard' });
-    return true;
-  }
-  return false;
-}
-
 /** Canali ammessi su API/dashboard (solo singoli + all). Legacy `both` resta nei record DB ma non è più selezionabile. */
 const PUSH_CHANNELS = ['apple', 'google', 'samsung', 'all'];
 function assertPushChannel(ch) {
@@ -227,9 +187,6 @@ router.post('/auth/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Email e password richiesti' });
     const user = await getUserByEmail(email);
     if (!user) return res.status(401).json({ error: 'Credenziali non valide' });
-    if (!isDashboardLoginAllowed(user.email)) {
-      return res.status(403).json({ error: 'Accesso non autorizzato su questa istanza dashboard' });
-    }
     const valid = await verifyPassword(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Credenziali non valide' });
     const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role, brand_id: user.brand_id }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
@@ -560,12 +517,8 @@ router.post('/signup/google-wallet', async (req, res) => {
     await logEvent({ pass_id: passInstance.id, brand_id: brand.id, event_type: 'pass_created', metadata: { source: 'landing_google', campaign_id, utm } });
     if (campaign_id) await incrementCampaignDownloads(campaign_id);
 
-    // Create/update class + object first. In Generic mode this ensures class/object exist before save link.
-    await googleWallet.createOrUpdatePassClass(brand, template);
-
+    // Create Google Wallet pass class + object and generate save link
     const passObject = googleWallet.buildPassObject(brand, template, passInstance, passInstance.customer_data || {});
-    await googleWallet.createPassObjectOnServer(passObject);
-
     const saveLink = googleWallet.generateSaveLink(brand, template, passObject);
 
     await updatePassInstance(passInstance.id, {
@@ -1041,9 +994,6 @@ function authMiddleware(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Token mancante. Effettua il login.' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (!isDashboardLoginAllowed(decoded.email)) {
-      return res.status(403).json({ error: 'Accesso non autorizzato su questa istanza dashboard' });
-    }
     req.user = decoded;
     next();
   } catch (err) {
@@ -1175,11 +1125,6 @@ router.get('/users', async (req, res) => {
 router.post('/users', async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    if (rejectIfDeployLoginNotAllowed(req, res)) return;
-    const newEmail = String(req.body.email || '').trim().toLowerCase();
-    if (dashboardLoginAllowlist() && !isDashboardLoginAllowed(newEmail)) {
-      return res.status(403).json({ error: 'Su questa istanza sono ammessi solo gli account autorizzati dal deploy' });
-    }
     const tempPassword = req.body.password || Math.random().toString(36).slice(-10);
     req.body.password = tempPassword;
     const user = await createUser(req.body);
@@ -1236,16 +1181,6 @@ router.put('/users/:id', async (req, res) => {
 router.delete('/users/:id', async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    if (rejectIfDeployLoginNotAllowed(req, res)) return;
-    const target = await getUser(req.params.id);
-    if (!target) return res.status(404).json({ error: 'Utente non trovato' });
-    if (String(target.id) === String(req.user.id)) {
-      return res.status(400).json({ error: 'Non puoi eliminare il tuo account mentre sei connesso' });
-    }
-    const allowlist = dashboardLoginAllowlist();
-    if (allowlist && isDashboardLoginAllowed(target.email)) {
-      return res.status(400).json({ error: 'Non puoi eliminare un account amministratore autorizzato su questo deploy' });
-    }
     await deleteUser(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1261,8 +1196,6 @@ router.get('/brands', async (req, res) => {
       if (u.brand_id) brands = brands.filter((b) => String(b.id) === String(u.brand_id));
       else brands = [];
     }
-    const lock = deployProductLineLock();
-    if (lock) brands = brands.filter((b) => brandProductLine(b) === lock);
     res.json(brands);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1270,12 +1203,7 @@ router.get('/brands', async (req, res) => {
 router.post('/brands', async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    const lock = deployProductLineLock();
-    const body = { ...req.body };
-    if (lock) {
-      body.config = { ...(body.config || {}), product_line: lock };
-    }
-    const brand = await createBrand(body);
+    const brand = await createBrand(req.body);
     res.json(brand);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1285,7 +1213,6 @@ router.get('/brands/:id', async (req, res) => {
     if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
-    if (!brandAllowedOnDeploy(brand)) return res.status(404).json({ error: 'Brand non trovato' });
     res.json(brand);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1795,8 +1722,7 @@ router.post('/passes/:id/regenerate', async (req, res) => {
     const pkpassBuffer = await createPkpass(template, pass, brand, {
       baseUrl,
       passTypeIdentifier: process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj',
-      teamIdentifier: process.env.TEAM_IDENTIFIER || 'YOUR_TEAM_ID',
-      rotatePortalLink: true
+      teamIdentifier: process.env.TEAM_IDENTIFIER || 'YOUR_TEAM_ID'
     });
 
     res.set({
@@ -1808,6 +1734,7 @@ router.post('/passes/:id/regenerate', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Push Notifications ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 
 router.post('/push/send', async (req, res) => {
   try {

@@ -74,30 +74,6 @@ const SERVICE_ACCOUNT_JSON = loadServiceAccount();
 const WALLET_API_BASE = 'https://walletobjects.googleapis.com/walletobjects/v1';
 const SAVE_LINK_BASE = 'https://pay.google.com/gp/v/save';
 
-function getPassKind() {
-  const raw = String(process.env.GOOGLE_WALLET_PASS_KIND || 'generic').trim().toLowerCase();
-  return raw === 'loyalty' ? 'loyalty' : 'generic';
-}
-
-function isLoyaltyMode() {
-  return getPassKind() === 'loyalty';
-}
-
-function isDebugEnabled() {
-  const raw = String(process.env.GOOGLE_WALLET_DEBUG || '').trim().toLowerCase();
-  if (!raw) return true;
-  return !['0', 'false', 'off', 'no'].includes(raw);
-}
-
-function logWalletDebug(event, payload) {
-  if (!isDebugEnabled()) return;
-  try {
-    console.log(`[GoogleWallet][Debug] ${event} ${JSON.stringify(payload)}`);
-  } catch (e) {
-    console.log(`[GoogleWallet][Debug] ${event}`);
-  }
-}
-
 function resolveApiBase() {
   const rawHost =
     (process.env.CUSTOM_DOMAIN && process.env.CUSTOM_DOMAIN.trim()) ||
@@ -112,42 +88,6 @@ const API_BASE = resolveApiBase();
 function walletPublicBrandAssetUri(brand, asset) {
   if (!API_BASE || !brand?.slug) return null;
   return `${API_BASE}/brands/by-slug/${encodeURIComponent(brand.slug)}/${asset}`;
-}
-
-function buildGenericClassId(brand, template) {
-  // Keep legacy Generic IDs to reuse existing active classes.
-  return `${ISSUER_ID}.${brand.slug}_${template.id}`;
-}
-
-function buildGenericObjectId(serialNumber) {
-  // Keep legacy Generic object IDs for update/callback compatibility.
-  return `${ISSUER_ID}.${serialNumber}`;
-}
-
-function buildLoyaltyClassId(brand, template) {
-  // Use a loyalty-specific namespace to avoid collisions with legacy Generic classes.
-  return `${ISSUER_ID}.loyalty_${brand.slug}_${template.id}`;
-}
-
-function buildLoyaltyObjectId(serialNumber) {
-  // Keep object IDs in the same loyalty namespace for type-safe uniqueness.
-  return `${ISSUER_ID}.loyalty_${serialNumber}`;
-}
-
-function buildLegacyObjectId(serialNumber) {
-  return `${ISSUER_ID}.${serialNumber}`;
-}
-
-function buildClassId(brand, template) {
-  return isLoyaltyMode()
-    ? buildLoyaltyClassId(brand, template)
-    : buildGenericClassId(brand, template);
-}
-
-function buildObjectId(serialNumber) {
-  return isLoyaltyMode()
-    ? buildLoyaltyObjectId(serialNumber)
-    : buildGenericObjectId(serialNumber);
 }
 
 // ── JWT helpers ───────────────────────────────────────────────────────
@@ -212,17 +152,6 @@ function createSaveJWT(classObject, passObject) {
   const host = rawHost.replace(/^https?:\/\//i, '').replace(/\/+$/g, '');
   const origin = host ? `https://${host}` : 'https://localhost';
 
-  const passKind = getPassKind();
-  const payloadData = passKind === 'loyalty'
-    ? {
-      loyaltyClasses: [classObject],
-      loyaltyObjects: [passObject]
-    }
-    : {
-      // Generic mode uses pre-created classes and sends object only.
-      genericObjects: [passObject]
-    };
-
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
   const payload = {
@@ -231,21 +160,11 @@ function createSaveJWT(classObject, passObject) {
     origins: [origin],
     typ: 'savetowallet',
     iat: now,
-    payload: payloadData
+    payload: {
+      loyaltyClasses: [classObject],  // embed class (skips pre-registration)
+      loyaltyObjects: [passObject]    // embed object
+    }
   };
-
-  logWalletDebug('createSaveJWT.payload', {
-    iss: SERVICE_ACCOUNT_JSON.client_email,
-    aud: payload.aud,
-    origin,
-    iat: now,
-    classId: classObject?.id || null,
-    objectId: passObject?.id || null,
-    classReviewStatus: classObject?.reviewStatus || null,
-    objectClassId: passObject?.classId || null,
-    passKind,
-    registrationMode: passKind === 'loyalty' ? 'jwt-embedded' : 'pre-registered-class'
-  });
 
   const headerB64 = base64url(JSON.stringify(header));
   const payloadB64 = base64url(JSON.stringify(payload));
@@ -267,64 +186,26 @@ function createSaveJWT(classObject, passObject) {
  * It just returns the class object to be embedded in the JWT.
  */
 function buildPassClass(brand, template) {
-  const passKind = getPassKind();
-  const classId = buildClassId(brand, template);
+  const classId = `${ISSUER_ID}.${brand.slug}_${template.id}`;
 
-  let classObj;
-  if (passKind === 'loyalty') {
-    classObj = {
-      id: classId,
-      reviewStatus: 'UNDER_REVIEW',
-      issuerName: brand.name,
-      programName: (template.name || brand.name || 'Loyalty Program').slice(0, 64)
+  const classObj = {
+    id: classId,
+    reviewStatus: 'DRAFT',
+    issuerName: brand.name,
+    programName: (template.name || brand.name || 'Loyalty Program').slice(0, 64)
+  };
+
+  // Loyalty classes use programLogo (not logo/heroImage as in generic-like payloads).
+  const logoUri = walletPublicBrandAssetUri(brand, 'logo');
+  if (logoUri && (brand.config?.logo_base64 || brand.config?.logos?.logo)) {
+    classObj.programLogo = {
+      sourceUri: { uri: logoUri },
+      contentDescription: { defaultValue: { language: 'it', value: brand.name } }
     };
-
-    const logoUri = walletPublicBrandAssetUri(brand, 'logo');
-    if (logoUri && (brand.config?.logo_base64 || brand.config?.logos?.logo)) {
-      classObj.programLogo = {
-        sourceUri: { uri: logoUri },
-        contentDescription: { defaultValue: { language: 'it', value: brand.name } }
-      };
-    }
-  } else {
-    classObj = {
-      id: classId,
-      issuerName: brand.name,
-      reviewStatus: 'UNDER_REVIEW'
-    };
-
-    const logoUri = walletPublicBrandAssetUri(brand, 'logo');
-    if (logoUri && (brand.config?.logo_base64 || brand.config?.logos?.logo)) {
-      classObj.logo = {
-        sourceUri: { uri: logoUri },
-        contentDescription: { defaultValue: { language: 'it', value: brand.name } }
-      };
-    }
-
-    const stripUri = walletPublicBrandAssetUri(brand, 'strip');
-    if (stripUri && (brand.config?.strip_base64 || brand.config?.logos?.strip || template.style?.stripImage)) {
-      classObj.heroImage = {
-        sourceUri: { uri: stripUri },
-        contentDescription: { defaultValue: { language: 'it', value: 'Banner' } }
-      };
-    }
-
-    if (API_BASE) {
-      classObj.callbackOptions = { url: `${API_BASE}/google-wallet/callback` };
-    }
   }
 
+  // Background color
   classObj.hexBackgroundColor = rgbToHex(template.style?.backgroundColor || '#0D0B1A');
-
-  logWalletDebug('buildPassClass', {
-    classId,
-    passKind,
-    reviewStatus: classObj.reviewStatus,
-    issuerName: classObj.issuerName,
-    programName: classObj.programName || null,
-    hasProgramLogo: !!classObj.programLogo,
-    hasLogo: !!classObj.logo
-  });
 
   return classObj;
 }
@@ -334,86 +215,42 @@ function buildPassClass(brand, template) {
  * Kept for backward compatibility — now just builds without API call.
  */
 async function createOrUpdatePassClass(brand, template) {
-  if (isLoyaltyMode()) {
-    console.warn('[GoogleWallet] Loyalty mode uses JWT-embedded class. Skipping pre-registration.');
-    return buildPassClass(brand, template);
-  }
-
-  const classObj = buildPassClass(brand, template);
-  try {
-    const existing = await walletApiGet(`/genericClass/${classObj.id}`);
-    if (existing && existing.id) {
-      const updated = await walletApiPatch(`/genericClass/${classObj.id}`, classObj);
-      console.log(`[GoogleWallet] Updated generic class ${classObj.id}`);
-      return updated;
-    }
-  } catch (e) {
-    // 404 means class does not exist yet.
-  }
-
-  const created = await walletApiPost('/genericClass', classObj);
-  console.log(`[GoogleWallet] Created generic class ${classObj.id}`);
-  return created;
+  console.warn('[GoogleWallet] createOrUpdatePassClass() is deprecated. Use buildPassClass() — no API pre-registration needed.');
+  return buildPassClass(brand, template);
 }
 
 // ── Pass Object (instance) ────────────────────────────────────────────
 
 function buildPassObject(brand, template, instance, member) {
-  const passKind = getPassKind();
-  const classId = buildClassId(brand, template);
-  const objectId = buildObjectId(instance.serial_number);
+  const classId = `${ISSUER_ID}.${brand.slug}_${template.id}`;
+  const objectId = `${ISSUER_ID}.${instance.serial_number}`;
 
   const firstName = member?.first_name || instance.customer_data?.name || 'Guest';
   const lastName = member?.last_name || '';
 
-  const obj = passKind === 'loyalty'
-    ? {
-      id: objectId,
-      classId: classId,
-      state: 'ACTIVE',
-      accountId: instance.serial_number,
-      accountName: (`${firstName} ${lastName}`.trim() || 'Guest').slice(0, 64),
-      barcode: {
-        type: 'QR_CODE',
-        value: instance.serial_number,
-        alternateText: instance.serial_number
-      },
-      textModulesData: [],
-      linksModuleData: { uris: [] }
-    }
-    : {
-      id: objectId,
-      classId: classId,
-      state: 'ACTIVE',
-      cardTitle: { defaultValue: { language: 'it', value: brand.name } },
-      subheader: { defaultValue: { language: 'it', value: 'Membro' } },
-      header: { defaultValue: { language: 'it', value: (`${firstName} ${lastName}`.trim() || 'Guest') } },
-      barcode: {
-        type: 'QR_CODE',
-        value: instance.serial_number,
-        alternateText: instance.serial_number
-      },
-      hexBackgroundColor: rgbToHex(template.style?.backgroundColor || '#0D0B1A'),
-      textModulesData: [],
-      linksModuleData: { uris: [] }
-    };
+  const obj = {
+    id: objectId,
+    classId: classId,
+    state: 'ACTIVE',
+    accountId: instance.serial_number,
+    accountName: (`${firstName} ${lastName}`.trim() || 'Guest').slice(0, 64),
+    barcode: {
+      type: 'QR_CODE',
+      value: instance.serial_number,
+      alternateText: instance.serial_number
+    },
+    textModulesData: [],
+    linksModuleData: { uris: [] }
+  };
 
   const pointsValue = instance.field_values?.points || '0';
   const parsedPoints = Number.parseInt(String(pointsValue).replace(/[^0-9-]/g, ''), 10);
-  if (passKind === 'loyalty') {
-    obj.loyaltyPoints = {
-      label: 'Points',
-      balance: Number.isFinite(parsedPoints)
-        ? { int: parsedPoints }
-        : { string: String(pointsValue).slice(0, 32) }
-    };
-  } else {
-    obj.textModulesData.push({
-      id: 'points',
-      header: 'Points',
-      body: Number.isFinite(parsedPoints) ? String(parsedPoints) : String(pointsValue).slice(0, 32)
-    });
-  }
+  obj.loyaltyPoints = {
+    label: 'Points',
+    balance: Number.isFinite(parsedPoints)
+      ? { int: parsedPoints }
+      : { string: String(pointsValue).slice(0, 32) }
+  };
 
   // Map template fields to text modules
   if (template.fields && Array.isArray(template.fields)) {
@@ -446,16 +283,6 @@ function buildPassObject(brand, template, instance, member) {
     });
   }
 
-  logWalletDebug('buildPassObject', {
-    passKind,
-    objectId,
-    classId,
-    state: obj.state,
-    accountId: obj.accountId,
-    textModulesCount: obj.textModulesData.length,
-    linksCount: obj.linksModuleData?.uris?.length || 0
-  });
-
   return obj;
 }
 
@@ -468,12 +295,6 @@ function buildPassObject(brand, template, instance, member) {
 function generateSaveLink(brand, template, passObject) {
   const classObject = buildPassClass(brand, template);
   const jwt = createSaveJWT(classObject, passObject);
-  logWalletDebug('generateSaveLink', {
-    classId: classObject?.id || null,
-    objectId: passObject?.id || null,
-    reviewStatus: classObject?.reviewStatus || null,
-    jwtLength: jwt.length
-  });
   return `${SAVE_LINK_BASE}/${jwt}`;
 }
 
@@ -521,49 +342,30 @@ function generateSaveLinkLegacy(passObject) {
  * Still useful if you want server-side push updates later.
  */
 async function createPassObjectOnServer(passObject) {
-  const passKind = getPassKind();
-  const objectPath = passKind === 'loyalty' ? 'loyaltyObject' : 'genericObject';
   try {
-    const existing = await walletApiGet(`/${objectPath}/${passObject.id}`);
+    const existing = await walletApiGet(`/loyaltyObject/${passObject.id}`);
     if (existing && existing.id) {
-      const updated = await walletApiPatch(`/${objectPath}/${passObject.id}`, passObject);
+      const updated = await walletApiPatch(`/loyaltyObject/${passObject.id}`, passObject);
       console.log(`[GoogleWallet] Updated object ${passObject.id}`);
       return updated;
     }
   } catch (e) {
-    const status = e?.statusCode || null;
-    if (status && status !== 404) {
-      console.warn(`[GoogleWallet] lookup loyaltyObject failed for ${passObject.id}: ${e.message}`);
-    }
+    // 404 = doesn't exist
   }
 
-  const created = await walletApiPost(`/${objectPath}`, passObject);
+  const created = await walletApiPost('/loyaltyObject', passObject);
   console.log(`[GoogleWallet] Created object ${passObject.id}`);
   return created;
 }
 
 async function updatePassObject(serialNumber, updates) {
-  const passKind = getPassKind();
-  const objectPath = passKind === 'loyalty' ? 'loyaltyObject' : 'genericObject';
-  const objectId = buildObjectId(serialNumber);
+  const objectId = `${ISSUER_ID}.${serialNumber}`;
 
   try {
-    const updated = await walletApiPatch(`/${objectPath}/${objectId}`, updates);
+    const updated = await walletApiPatch(`/loyaltyObject/${objectId}`, updates);
     console.log(`[GoogleWallet] Updated object ${objectId}`);
     return updated;
   } catch (e) {
-    // Backward compatibility for old objects created before loyalty namespace migration.
-    const legacyObjectId = buildLegacyObjectId(serialNumber);
-    if (legacyObjectId !== objectId) {
-      try {
-        const updatedLegacy = await walletApiPatch(`/${objectPath}/${legacyObjectId}`, updates);
-        console.log(`[GoogleWallet] Updated legacy object ${legacyObjectId}`);
-        return updatedLegacy;
-      } catch (legacyErr) {
-        console.error(`[GoogleWallet] Failed to update ${objectId} and legacy ${legacyObjectId}:`, legacyErr.message);
-        throw legacyErr;
-      }
-    }
     console.error(`[GoogleWallet] Failed to update ${objectId}:`, e.message);
     throw e;
   }
@@ -685,12 +487,11 @@ function getStatusInfo() {
   const base = domain ? `https://${domain}/api/v1` : '';
   return {
     configured: isConfigured(),
-    pass_kind: getPassKind(),
     issuer_id: ISSUER_ID || null,
     custom_domain: domain || null,
     callback_url: base ? `${base}/google-wallet/callback` : null,
     callback_path: '/api/v1/google-wallet/callback',
-    registration_mode: isLoyaltyMode() ? 'jwt-embedded (no pre-registration)' : 'generic-class pre-registration',
+    registration_mode: 'jwt-embedded (no pre-registration)',
     warning:
       !domain
         ? 'No public domain configured (CUSTOM_DOMAIN/RAILWAY_PUBLIC_DOMAIN/APP_PUBLIC_DOMAIN).'
