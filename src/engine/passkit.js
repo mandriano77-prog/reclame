@@ -173,14 +173,53 @@ function parseColor(color) {
   };
 }
 
-/** Legacy Ads2Wallet accent greens — no longer used on pass text. */
+/** Legacy Ads2Wallet accent greens/teals — not part of Filo/HR palette. */
 function isLegacyGreenPassAccent(color) {
   if (!color) return false;
+  const normalized = String(color).trim().toLowerCase().replace(/\s/g, '');
+  const legacy = [
+    '#00d4aa', '#00d4a9', '#3cdfff', '#d4e600',
+    'rgb(0,212,170)', 'rgb(0,212,169)', 'rgb(60,223,255)', 'rgb(212,230,0)'
+  ];
+  if (legacy.includes(normalized)) return true;
   const c = parseColor(color);
-  // Teal (#00D4AA) and lime (#D4E600 / rgb(212,230,0))
-  if (c.g > 180 && c.r < 100 && c.b < 140) return true;
+  // Teal/cyan (#00D4AA has b≈170 — old check missed it)
+  if (c.g > 150 && c.r < 100 && c.b >= 100 && c.b <= 220) return true;
+  // Lime
   if (c.r > 180 && c.g > 200 && c.b < 100) return true;
   return false;
+}
+
+/** Pass text colors — brand/template with HR (Filo) defaults. */
+function resolvePassColors(template, brandConfig) {
+  const line = String(brandConfig.product_line || '').toLowerCase();
+  const hrLabelDefault = '#A78BFA';
+  const hrFgDefault = '#FFFFFF';
+
+  const fgHex = brandConfig.foregroundColor || null;
+  const defaultForeground = template.style?.foregroundColor || hrFgDefault;
+  let foregroundColor = fgHex && !isLegacyGreenPassAccent(fgHex)
+    ? colorToRgbString(fgHex)
+    : (isLegacyGreenPassAccent(defaultForeground) ? hrFgDefault : colorToRgbString(defaultForeground) || hrFgDefault);
+  if (line === 'hr') foregroundColor = colorToRgbString(hrFgDefault);
+
+  const bgHex = brandConfig.backgroundColor || null;
+  const backgroundColor = bgHex
+    ? colorToRgbString(bgHex)
+    : (template.style?.backgroundColor ? colorToRgbString(template.style.backgroundColor) : 'rgb(13, 11, 26)');
+
+  const lblHex = brandConfig.labelColor || null;
+  const tplLbl = template.style?.labelColor || null;
+  const labelCandidate = lblHex || tplLbl;
+  let labelColor = foregroundColor;
+  if (line === 'hr') {
+    labelColor = colorToRgbString(
+      labelCandidate && !isLegacyGreenPassAccent(labelCandidate) ? labelCandidate : hrLabelDefault
+    );
+  } else if (labelCandidate && !isLegacyGreenPassAccent(labelCandidate)) {
+    labelColor = colorToRgbString(labelCandidate);
+  }
+  return { foregroundColor, backgroundColor, labelColor };
 }
 
 function colorToRgbString(color) {
@@ -335,20 +374,7 @@ function generatePassJson(template, instance, brand, options = {}) {
 
   // Read colors from brand.config first, then template.style, then defaults
   const brandConfig = brand.config || {};
-  const fgHex = brandConfig.foregroundColor || null;
-  const defaultForeground = template.style?.foregroundColor || 'rgb(255, 255, 255)';
-  const foregroundColor = fgHex && !isLegacyGreenPassAccent(fgHex)
-    ? colorToRgbString(fgHex)
-    : (isLegacyGreenPassAccent(defaultForeground) ? 'rgb(255, 255, 255)' : colorToRgbString(defaultForeground) || 'rgb(255, 255, 255)');
-  const bgHex = brandConfig.backgroundColor || null;
-  const backgroundColor = bgHex ? colorToRgbString(bgHex) : (template.style?.backgroundColor ? colorToRgbString(template.style.backgroundColor) : 'rgb(0, 0, 0)');
-  const lblHex = brandConfig.labelColor || null;
-  const tplLbl = template.style?.labelColor || null;
-  let labelColor = foregroundColor;
-  const labelCandidate = lblHex || tplLbl;
-  if (labelCandidate && !isLegacyGreenPassAccent(labelCandidate)) {
-    labelColor = colorToRgbString(labelCandidate);
-  }
+  const { foregroundColor, backgroundColor, labelColor } = resolvePassColors(template, brandConfig);
 
   // ── Build field arrays ──────────────────────────────────────────
   // Layout (storeCard): Header → Strip → Secondary → Auxiliary → Back
@@ -996,10 +1022,12 @@ async function createPkpass(template, instance, brand, options = {}) {
     files['strip@2x.png'] = stripBuffers.strip2x;
   }
 
-  // Thumbnail for generic/eventTicket
+  // Thumbnail for generic/eventTicket (Apple ignores on storeCard/coupon)
   if (thumbnailBuffers && (passType === 'generic' || passType === 'eventTicket')) {
     files['thumbnail.png'] = thumbnailBuffers.thumb;
     files['thumbnail@2x.png'] = thumbnailBuffers.thumb2x;
+  } else if (thumbnailBuffers && (passType === 'storeCard' || passType === 'coupon')) {
+    console.warn('[passkit] thumbnail ignorata su Apple Wallet per pass_type=%s — usa eventTicket', passType);
   }
 
   // Background for eventTicket
