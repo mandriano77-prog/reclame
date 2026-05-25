@@ -59,11 +59,26 @@
     matricolaChecking: false
   };
 
+  function resolveBrandId() {
+    if (global.brandId) return global.brandId;
+    if (typeof global.ensureBrandIdFromContext === 'function') {
+      return global.ensureBrandIdFromContext();
+    }
+    var sel = global.document && global.document.getElementById('brandSelector');
+    if (sel && sel.value) return sel.value;
+    try {
+      var qp = new URLSearchParams(global.location.search).get('brand_id');
+      return qp || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   function deps() {
     return {
       isFiloShell: typeof global.isFiloShell === 'function' ? global.isFiloShell : function () { return false; },
       isHrBrandContext: typeof global.isHrBrandContext === 'function' ? global.isHrBrandContext : function () { return false; },
-      brandId: global.brandId,
+      brandId: resolveBrandId(),
       API: global.API,
       getAuthHeaders: global.getAuthHeaders,
       fetchCachedJson: global.fetchCachedJson,

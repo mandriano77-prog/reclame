@@ -3801,6 +3801,31 @@ function syncBrandUrl() {
     history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
 }
 
+/** Sync global brandId from header dropdown or ?brand_id= URL (Contatti modals). */
+function ensureBrandIdFromContext() {
+    if (brandId) return brandId;
+    const sel = document.getElementById('brandSelector');
+    const fromSel = sel?.value?.trim();
+    if (fromSel) {
+        brandId = fromSel;
+        currentBrandName = sel.options[sel.selectedIndex]?.textContent || currentBrandName;
+        syncBrandUrl();
+        return brandId;
+    }
+    const urlBid = new URLSearchParams(window.location.search).get('brand_id');
+    if (urlBid) {
+        const b = (brandsListCache || []).find((x) => String(x.id) === String(urlBid));
+        if (b) {
+            brandId = b.id;
+            currentBrandName = b.name || currentBrandName;
+            if (sel) sel.value = brandId;
+            syncBrandUrl();
+            return brandId;
+        }
+    }
+    return null;
+}
+
 // ==================== PRODUCT SHELL THEME (2wallet lines) ====================
 // UI shell uses fixed palettes per product line; pass colors in brand.config stay for the pass only.
 const PRODUCT_LINE_STORAGE_KEY = '2wallet_product_line';
@@ -6961,11 +6986,11 @@ function updateLeadsImportButton() {
 let manualEmployeeQueue = []; // legacy shim; filoHrContatti.manualModal owns queue state on HR shell
 
 function openEmployeeManualModal() {
+    if (!ensureBrandIdFromContext()) return toast('Seleziona un brand');
     const trigger = document.getElementById('leadsAddBtn');
     if (window.filoHrContatti && filoHrContatti.manualModal && filoHrContatti.manualModal.isEnabled()) {
         return filoHrContatti.manualModal.open(trigger);
     }
-    if (!brandId) return toast('Seleziona un brand');
     toast('Modulo HR non disponibile in questa shell');
 }
 
@@ -7445,6 +7470,7 @@ function showImportWizardPhase(phase) {
 }
 
 function openEmployeeImportModal() {
+    if (!ensureBrandIdFromContext()) return toast('Seleziona un brand');
     importPreviewState = null;
     window.leadsFilterNoMatricola = false;
     document.getElementById('importFileInput').value = '';
