@@ -35,6 +35,7 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-analytics.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-push.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-media-library.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
     <link rel="stylesheet" href="/dashboard/css/layout.css">
     <link rel="stylesheet" href="/dashboard/css/components/page-header.css">
@@ -1817,14 +1818,15 @@
 
             <!-- MEDIA LIBRARY -->
             <div id="media-library" class="section">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <div id="a2wMediaPageHeader"></div>
+                <div id="media-library-legacy-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1 class="sec-title page-title" style="margin-bottom:0">Media Library</h1>
                     <div style="display:flex;gap:8px;">
                         <button class="btn" onclick="openMediaUpload()">+ Carica Immagine</button>
                         <button class="btn sec" style="color:#f66;border-color:#f66;" onclick="deleteAllMedia()">Svuota tutto</button>
                     </div>
                 </div>
-                <div class="card" style="margin-bottom:14px;">
+                <div class="card a2w-media-specs-legacy" style="margin-bottom:14px;">
                     <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Specifiche tecniche consigliate</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;color:var(--text2);">
                         <div><strong style="color:var(--text)">Logo</strong>: PNG trasparente, max 320x100 px.</div>
@@ -1833,14 +1835,34 @@
                         <div><strong style="color:var(--text)">Background</strong>: PNG/JPG 360x440 px (event ticket).</div>
                     </div>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
+
+                <section id="a2wMediaSystemSection" class="a2w-media-system-section" hidden>
+                    <h2 class="a2w-media-section-title">Asset di sistema</h2>
+                    <p class="a2w-media-section-desc">Immagini usate nei pass Wallet (logo, strip, thumbnail, background).</p>
+                    <div class="a2w-media-system-grid">
+                        <div class="card a2w-media-bucket" data-a2w-bucket="logo" style="margin:0;">
+                            <div id="mediaLogoBox" class="a2w-media-host"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
+                        <div class="card a2w-media-bucket" data-a2w-bucket="strip" style="margin:0;">
+                            <div id="mediaStripGrid" class="a2w-media-host strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
+                        <div class="card a2w-media-bucket" data-a2w-bucket="thumbnail" style="margin:0;">
+                            <div id="mediaThumbnailGrid" class="a2w-media-host strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
+                        <div class="card a2w-media-bucket" data-a2w-bucket="background" style="margin:0;">
+                            <div id="mediaBackgroundGrid" class="a2w-media-host strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <div id="media-library-legacy-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
                     <div class="card" style="margin:0;">
                         <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Logo brand</div>
                         <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Normalmente unico. Cambialo solo in caso di rebranding.</p>
-                        <div id="mediaLogoBox"><p style="color:var(--text2)">Caricamento...</p></div>
+                        <div id="mediaLogoBoxLegacy" data-legacy-host="mediaLogoBox"><p style="color:var(--text2)">Caricamento...</p></div>
                     </div>
                     <div class="card" style="margin:0;">
-                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+                        <div id="media-library-legacy-strip-tools" style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
                             <div class="sec-title" style="font-size:15px;margin:0;">Strip per campagna</div>
                             <input id="mediaStripSearch" type="search" placeholder="Filtra per campagna/nome..." oninput="loadMediaLibrary()" style="max-width:220px;">
                         </div>
@@ -1854,19 +1876,26 @@
                             </label>
                         </div>
                         <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Mantieni più varianti e assegna un riferimento campagna nel nome.</p>
-                        <div id="mediaStripGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        <div id="mediaStripGridLegacy" data-legacy-host="mediaStripGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                     </div>
                     <div class="card" style="margin:0;">
                         <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Thumbnail</div>
                         <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">90x90 px — usato su Event Ticket (fronte pass).</p>
-                        <div id="mediaThumbnailGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        <div id="mediaThumbnailGridLegacy" data-legacy-host="mediaThumbnailGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                     </div>
                     <div class="card" style="margin:0;">
                         <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Background</div>
                         <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">360x440 px — sfondo intero su Event Ticket.</p>
-                        <div id="mediaBackgroundGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        <div id="mediaBackgroundGridLegacy" data-legacy-host="mediaBackgroundGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                     </div>
                 </div>
+
+                <section id="a2wMediaFreeSection" class="a2w-media-free-section" hidden>
+                    <h2 class="a2w-media-section-title">Libreria immagini</h2>
+                    <p class="a2w-media-section-desc">Immagini libere e varianti aggiuntive per campagne e creatività.</p>
+                    <div id="a2wMediaToolbarMount"></div>
+                    <div id="mediaFreeGallery" class="a2w-media-gallery a2w-media-gallery--grid"></div>
+                </section>
             </div>
 
             <!-- MEDIA UPLOAD MODAL -->
@@ -3031,6 +3060,7 @@
 <script src="/dashboard/js/components/ui/danger-action-button.js"></script>
 <script src="/dashboard/js/components/ui/action-menu.js"></script>
 <script src="/dashboard/js/components/ui/index.js"></script>
+<script src="/dashboard/js/components/media-library.js"></script>
 <script src="/dashboard/js/a2w-shell.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
 

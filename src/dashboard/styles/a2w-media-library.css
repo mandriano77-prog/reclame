@@ -1,0 +1,310 @@
+/* Ads2Wallet Media Library — scoped to dark A2W shell only */
+
+html[data-shell="dark"].a2w-shell #media-library #media-library-legacy-head,
+html[data-shell="dark"].a2w-shell #media-library #media-library-legacy-grid,
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-specs-legacy {
+  display: none !important;
+}
+
+html[data-shell="dark"].a2w-shell #media-library #a2wMediaSystemSection,
+html[data-shell="dark"].a2w-shell #media-library #a2wMediaFreeSection {
+  display: block;
+}
+
+html[data-shell="dark"].a2w-shell #media-library #a2wMediaSystemSection[hidden],
+html[data-shell="dark"].a2w-shell #media-library #a2wMediaFreeSection[hidden] {
+  display: none;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-section-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--a2w-text-primary);
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-section-desc {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--a2w-text-secondary);
+  max-width: 56rem;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-section {
+  margin-bottom: 28px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-bucket {
+  border-color: var(--a2w-border-default);
+  padding: 14px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-host--system {
+  display: block;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card__preview {
+  border: 1px solid var(--a2w-border-default);
+  border-radius: 10px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card__preview img {
+  max-width: 100%;
+  max-height: 140px;
+  object-fit: contain;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card__empty {
+  font-size: 12px;
+  color: var(--a2w-text-tertiary);
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card__hint,
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card__name {
+  margin: 0;
+  font-size: 12px;
+  color: var(--a2w-text-secondary);
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-system-card__replace {
+  min-height: 34px;
+  font-size: 12px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-dropzone {
+  border: 1px dashed var(--a2w-border-default);
+  border-radius: 10px;
+  min-height: 72px;
+  padding: 10px;
+  margin-bottom: 10px;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-dropzone--dragover {
+  border-color: var(--a2w-action-primary);
+  background: rgba(63, 224, 200, 0.12);
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-free-section {
+  margin-top: 8px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library #a2wMediaToolbarMount {
+  margin-bottom: 14px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-toolbar-search {
+  min-width: 200px;
+  max-width: 280px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-toolbar-select {
+  min-width: 140px;
+  max-width: 220px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--a2w-border-default);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-view-btn {
+  border: 0;
+  background: transparent;
+  color: var(--a2w-text-secondary);
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-view-btn.is-active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--a2w-text-primary);
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery--grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 1024px) {
+  html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery--grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery--grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery--list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card {
+  position: relative;
+  border: 1px solid var(--a2w-border-default);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card--list {
+  flex-direction: row;
+  align-items: center;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card__check {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card__check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--a2w-action-primary);
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card__thumb {
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card--list .a2w-media-gallery-card__thumb {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card__meta {
+  flex: 1;
+  min-width: 0;
+  padding-top: 18px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card--list .a2w-media-gallery-card__meta {
+  padding-top: 0;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--a2w-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-gallery-card__menu {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-campaign-badge {
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-badge-muted {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-badge-info {
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-bulk-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: var(--a2w-z-sticky, 20);
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--a2w-border-default);
+  background: rgba(15, 23, 42, 0.96);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-bulk-bar__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+html[data-shell="dark"].a2w-shell #media-library .a2w-media-bulk-bar__count {
+  font-size: 13px;
+  color: var(--a2w-text-primary);
+}
