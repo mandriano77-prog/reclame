@@ -301,6 +301,345 @@
     }
   }
 
+  function a2wMediaState() {
+    A2W.media = A2W.media || {};
+    return A2W.media;
+  }
+
+  function a2wMediaSpecsMap() {
+    return {
+      logo: 'PNG trasparente, max 320x100 px. Un logo chiaro migliora leggibilita nel pass.',
+      strip: 'PNG/JPG 750x246 px. Usa immagini promozionali con testo minimo e focus visuale.',
+      thumbnail: 'PNG/JPG 90x90 px. Usato nel fronte Event Ticket come miniatura.',
+      background: 'PNG/JPG 360x440 px. Sfondo intero su Event Ticket, preferire contrasto alto.'
+    };
+  }
+
+  function a2wMediaSection() {
+    return document.getElementById('media-library');
+  }
+
+  function a2wMediaFindCardByHostId(hostId) {
+    const host = document.getElementById(hostId);
+    return host ? host.closest('.card') : null;
+  }
+
+  function a2wEnsureMediaPageMenu(section) {
+    if (!section) return;
+    const head = section.querySelector(':scope > div');
+    if (!head) return;
+    const actions = head.querySelector('div');
+    if (!actions) return;
+    actions.classList.add('a2w-media-page-actions');
+
+    const uploadBtn = actions.querySelector('button[onclick*="openMediaUpload"]');
+    const deleteBtn = actions.querySelector('button[onclick*="deleteAllMedia"]');
+    if (uploadBtn) uploadBtn.classList.add('a2w-media-upload-btn');
+
+    let menuWrap = actions.querySelector('.a2w-media-page-menu');
+    if (!menuWrap) {
+      menuWrap = document.createElement('div');
+      menuWrap.className = 'a2w-media-page-menu';
+      menuWrap.setAttribute('data-a2w-component', 'media-page-menu');
+      menuWrap.innerHTML = [
+        '<button type="button" class="a2w-icon-btn a2w-media-kebab-btn" aria-label="Azioni media library" data-a2w-tooltip-label="Azioni pagina">⋯</button>',
+        '<div class="a2w-media-kebab-menu" hidden>',
+        '  <button type="button" class="a2w-media-kebab-item a2w-media-kebab-item--danger">Svuota tutto</button>',
+        '</div>'
+      ].join('');
+      actions.appendChild(menuWrap);
+    }
+
+    if (deleteBtn) deleteBtn.style.display = 'none';
+
+    const trigger = menuWrap.querySelector('.a2w-media-kebab-btn');
+    const panel = menuWrap.querySelector('.a2w-media-kebab-menu');
+    const clearItem = menuWrap.querySelector('.a2w-media-kebab-item--danger');
+    if (!trigger || !panel || !clearItem) return;
+
+    if (!trigger.dataset.a2wBound) {
+      trigger.dataset.a2wBound = '1';
+      trigger.addEventListener('click', function a2wMediaMenuToggle(e) {
+        e.stopPropagation();
+        const open = panel.hidden;
+        panel.hidden = !open;
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }, { capture: false });
+    }
+
+    if (!clearItem.dataset.a2wBound) {
+      clearItem.dataset.a2wBound = '1';
+      clearItem.addEventListener('click', function a2wMediaClearAll() {
+        panel.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+        if (typeof deleteAllMedia === 'function') deleteAllMedia();
+      }, { capture: false });
+    }
+
+    const state = a2wMediaState();
+    if (!state.menuCloseBound) {
+      state.menuCloseBound = true;
+      document.addEventListener('click', function a2wMediaMenuDocClick() {
+        const p = document.querySelector('.a2w-media-kebab-menu');
+        const t = document.querySelector('.a2w-media-kebab-btn');
+        if (p) p.hidden = true;
+        if (t) t.setAttribute('aria-expanded', 'false');
+      }, { capture: false });
+    }
+  }
+
+  function a2wEnsureMediaSpecButton(card, bucketKey) {
+    if (!card) return;
+    const title = card.querySelector('.sec-title');
+    if (!title || card.querySelector('.a2w-media-spec-btn')) return;
+    const head = document.createElement('div');
+    head.className = 'a2w-media-bucket-head';
+    title.parentNode.insertBefore(head, title);
+    head.appendChild(title);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'a2w-icon-btn a2w-media-spec-btn';
+    btn.setAttribute('data-a2w-component', 'media-spec-tooltip');
+    btn.setAttribute('aria-label', 'Specifiche ' + bucketKey);
+    btn.setAttribute('data-a2w-tooltip-label', 'Specifiche');
+    const tip = a2wMediaSpecsMap()[bucketKey] || '';
+    btn.title = tip;
+    btn.textContent = 'ⓘ';
+    head.appendChild(btn);
+  }
+
+  function a2wMediaDropzoneMarkup(bucketKey) {
+    return [
+      '<div class="a2w-media-dropzone" data-a2w-component="dropzone" data-a2w-media-type="' + bucketKey + '" tabindex="0" role="button">',
+      '  <div class="a2w-media-dropzone__title">Trascina o clicca per caricare</div>',
+      '  <div class="a2w-media-dropzone__hint">' + bucketKey.toUpperCase() + '</div>',
+      '</div>'
+    ].join('');
+  }
+
+  async function a2wUploadDroppedMedia(file, bucketKey) {
+    if (!file || !window.brandId) return;
+    try {
+      const b64 = await fileToBase64(file);
+      const campaignId = bucketKey === 'strip'
+        ? (document.getElementById('mediaFilterCampaignId')?.value || null)
+        : null;
+      await fetch(`${API}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand_id: brandId,
+          campaign_id: campaignId,
+          type: bucketKey,
+          title: file.name,
+          image_base64: b64
+        })
+      });
+      toast('Media caricato');
+      if (typeof loadMediaLibrary === 'function') loadMediaLibrary();
+      a2wDispatchSidebarEvent('a2w:media:drop', { type: bucketKey });
+    } catch (err) {
+      toast('Errore upload: ' + err.message);
+    }
+  }
+
+  function a2wBindDropzone(dropzone) {
+    if (!dropzone || dropzone.dataset.a2wBound) return;
+    dropzone.dataset.a2wBound = '1';
+    const bucketKey = dropzone.getAttribute('data-a2w-media-type');
+
+    dropzone.addEventListener('click', function a2wDropzoneClick() {
+      if (typeof openMediaUpload === 'function') {
+        openMediaUpload(bucketKey === 'strip' ? (document.getElementById('mediaFilterCampaignId')?.value || '') : '');
+      }
+    }, { capture: false });
+
+    dropzone.addEventListener('dragover', function a2wDropzoneDragOver(e) {
+      e.preventDefault();
+      dropzone.classList.add('a2w-media-dropzone--dragover');
+    }, { capture: false });
+
+    dropzone.addEventListener('dragleave', function a2wDropzoneDragLeave() {
+      dropzone.classList.remove('a2w-media-dropzone--dragover');
+    }, { capture: false });
+
+    dropzone.addEventListener('drop', function a2wDropzoneDrop(e) {
+      e.preventDefault();
+      dropzone.classList.remove('a2w-media-dropzone--dragover');
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      a2wUploadDroppedMedia(file, bucketKey);
+    }, { capture: false });
+  }
+
+  function a2wEnsureMediaDropzones(section) {
+    if (!section) return;
+    const buckets = [
+      { key: 'logo', hostId: 'mediaLogoBox', cardId: 'a2wMediaLogoCard' },
+      { key: 'strip', hostId: 'mediaStripGrid', cardId: 'a2wMediaStripCard' },
+      { key: 'thumbnail', hostId: 'mediaThumbnailGrid', cardId: 'a2wMediaThumbCard' },
+      { key: 'background', hostId: 'mediaBackgroundGrid', cardId: 'a2wMediaBackgroundCard' }
+    ];
+
+    buckets.forEach((bucket) => {
+      const card = a2wMediaFindCardByHostId(bucket.hostId);
+      if (!card) return;
+      card.id = bucket.cardId;
+      card.classList.add('a2w-media-bucket');
+      card.setAttribute('data-a2w-bucket', bucket.key);
+      a2wEnsureMediaSpecButton(card, bucket.key);
+
+      const host = document.getElementById(bucket.hostId);
+      if (!host) return;
+      let dropzone = card.querySelector('.a2w-media-dropzone');
+      if (!dropzone) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = a2wMediaDropzoneMarkup(bucket.key);
+        dropzone = wrap.firstChild;
+        host.parentNode.insertBefore(dropzone, host);
+      }
+      a2wBindDropzone(dropzone);
+    });
+  }
+
+  function a2wMediaSkeletonMarkup(kind) {
+    const count = kind === 'logo' ? 1 : 3;
+    let out = '';
+    for (let i = 0; i < count; i++) {
+      out += [
+        '<div class="a2w-skeleton a2w-skeleton-card">',
+        '  <div class="a2w-skeleton a2w-skeleton-media"></div>',
+        '  <div class="a2w-skeleton a2w-skeleton-line"></div>',
+        '</div>'
+      ].join('');
+    }
+    return '<div class="a2w-skeleton-grid">' + out + '</div>';
+  }
+
+  function a2wReplaceLoadingWithSkeleton(hostId, kind) {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    const txt = String(host.textContent || '').trim().toLowerCase();
+    if (!txt.includes('caricamento')) return;
+    host.innerHTML = a2wMediaSkeletonMarkup(kind);
+  }
+
+  function a2wEnhanceStripBadges() {
+    const grid = document.getElementById('mediaStripGrid');
+    if (!grid) return;
+    grid.querySelectorAll('.media-card').forEach((card) => {
+      card.classList.add('a2w-media-item');
+      const rows = card.querySelectorAll('div');
+      const label = rows[1];
+      if (!label) return;
+      const raw = String(label.textContent || '').trim();
+      label.classList.add('a2w-media-campaign-badge');
+      if (!raw || /nessuna campagna/i.test(raw)) {
+        label.textContent = 'Non assegnata';
+        label.classList.add('a2w-badge-muted');
+        label.classList.remove('a2w-badge-info');
+      } else {
+        label.textContent = 'Campagna: ' + raw;
+        label.classList.add('a2w-badge-info');
+        label.classList.remove('a2w-badge-muted');
+      }
+    });
+  }
+
+  function a2wEnhanceMediaCards() {
+    ['mediaLogoBox', 'mediaStripGrid', 'mediaThumbnailGrid', 'mediaBackgroundGrid'].forEach((id) => {
+      const host = document.getElementById(id);
+      if (!host) return;
+      host.classList.add('a2w-media-host');
+      host.querySelectorAll('.media-card').forEach((card) => {
+        card.classList.add('a2w-media-item');
+        if (card.querySelector('.a2w-media-item-actions')) return;
+        const actions = document.createElement('div');
+        actions.className = 'a2w-media-item-actions';
+        actions.innerHTML = [
+          '<button type="button" class="a2w-media-item-action" data-a2w-action="rename">Rinomina</button>',
+          '<button type="button" class="a2w-media-item-action" data-a2w-action="replace">Sostituisci</button>',
+          '<button type="button" class="a2w-media-item-action a2w-media-item-action--danger" data-a2w-action="delete">Elimina</button>'
+        ].join('');
+        card.appendChild(actions);
+      });
+    });
+  }
+
+  function a2wBindMediaItemActions(section) {
+    if (!section || section.dataset.a2wMediaActionsBound === '1') return;
+    section.dataset.a2wMediaActionsBound = '1';
+    section.addEventListener('click', function a2wMediaCardActionClick(e) {
+      const btn = e.target.closest('.a2w-media-item-action');
+      if (!btn) return;
+      const card = btn.closest('.media-card');
+      if (!card) return;
+      const deleteBtn = card.querySelector('button[onclick*="deleteMediaItem"]');
+      const action = btn.getAttribute('data-a2w-action');
+      if (action === 'delete' && deleteBtn) {
+        deleteBtn.click();
+        return;
+      }
+      if (action === 'replace') {
+        if (typeof openMediaUpload === 'function') openMediaUpload(document.getElementById('mediaFilterCampaignId')?.value || '');
+        return;
+      }
+      toast('Rinomina media: in arrivo');
+    }, { capture: false });
+  }
+
+  function a2wNormalizeStripFilters() {
+    const search = document.getElementById('mediaStripSearch');
+    const select = document.getElementById('mediaFilterCampaignId');
+    const check = document.getElementById('mediaOnlySelectedCampaign');
+    if (search) search.classList.add('a2w-media-strip-search');
+    if (select) select.classList.add('a2w-media-strip-select');
+    if (check) check.closest('label')?.classList.add('a2w-media-strip-check');
+  }
+
+  function a2wEnhanceMediaLibraryDom() {
+    const section = a2wMediaSection();
+    if (!section) return;
+    section.setAttribute('data-a2w-component', 'media-library');
+    a2wEnsureMediaPageMenu(section);
+    const specsCard = [...section.querySelectorAll('.card')].find((card) =>
+      /Specifiche tecniche consigliate/i.test(card.textContent || '')
+    );
+    if (specsCard) specsCard.style.display = 'none';
+    a2wEnsureMediaDropzones(section);
+    a2wReplaceLoadingWithSkeleton('mediaLogoBox', 'logo');
+    a2wReplaceLoadingWithSkeleton('mediaStripGrid', 'strip');
+    a2wReplaceLoadingWithSkeleton('mediaThumbnailGrid', 'thumb');
+    a2wReplaceLoadingWithSkeleton('mediaBackgroundGrid', 'bg');
+    a2wEnhanceMediaCards();
+    a2wEnhanceStripBadges();
+    a2wNormalizeStripFilters();
+    a2wBindMediaItemActions(section);
+  }
+
+  function initA2WMediaLibraryEnhancer() {
+    const state = a2wMediaState();
+    if (state.hooked) return;
+    if (typeof loadMediaLibrary !== 'function') {
+      if (!state.waitTimer) {
+        state.waitTimer = window.setTimeout(function a2wWaitMediaHook() {
+          state.waitTimer = null;
+          initA2WMediaLibraryEnhancer();
+        }, 250);
+      }
+      return;
+    }
+    state.hooked = true;
+    const original = loadMediaLibrary;
+    window.loadMediaLibrary = async function a2wLoadMediaLibraryWrapped() {
+      const result = await original.apply(this, arguments);
+      a2wEnhanceMediaLibraryDom();
+      a2wDispatchSidebarEvent('a2w:media:render', {});
+      return result;
+    };
+    a2wEnhanceMediaLibraryDom();
+  }
+
   // UX-AUDIT[a2w]: activate ads shell chrome once per session
   function initA2wShell() {
     if (!isA2wDeploy()) return;
@@ -310,6 +649,7 @@
     root.setAttribute('data-product-line', line);
     initA2wUserMenuChrome();
     initA2WSidebarChrome();
+    initA2WMediaLibraryEnhancer();
     ensureA2wLeadsLayout();
     syncA2wHeaderChrome();
     syncA2wWaiPadding();
