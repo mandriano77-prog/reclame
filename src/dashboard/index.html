@@ -1235,7 +1235,7 @@
 
         <details class="nav-group" open data-nav-group="database">
             <summary class="nav-group-label">Database</summary>
-            <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-menu-key="nav_leads" data-menu-default="Contatti">Contatti</div>
+            <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-menu-key="nav_leads" data-menu-default="Contatti">Contatti <span id="navNoMatricolaBadge" class="nav-badge" style="display:none;" title="Dipendenti senza matricola"></span></div>
             <div class="nav-item" onclick="nav('audiences')" data-section-id="audiences">Audience</div>
         </details>
 
@@ -1848,13 +1848,17 @@
                                         <label class="form-label">Nome Template</label>
                                         <input type="text" id="wzName" placeholder="es. Pass Loyalty Primavera">
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" id="wzTypeSelectGroup">
                                         <label class="form-label">Tipo Pass</label>
                                         <select id="wzType" onchange="wzUpdatePreview()">
                                             <option value="storeCard">Store Card</option>
                                             <option value="coupon">Coupon</option>
                                             <option value="eventTicket">Event Ticket</option>
                                         </select>
+                                    </div>
+                                    <div class="form-group" id="wzTypeHrStatic" style="display:none">
+                                        <label class="form-label">Layout</label>
+                                        <div class="form-static-value" style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text1);">Pass dipendente</div>
                                     </div>
                                 </div>
                             </div>
@@ -2150,7 +2154,33 @@
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                         <input type="text" id="leadsSearch" placeholder="Cerca nome, email..." oninput="filterLeads()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px;">
                         <button type="button" class="btn sec" id="leadsImportBtn" onclick="openEmployeeImportModal()" style="display:none;white-space:nowrap;">✨ Importa da file</button>
+                        <button type="button" class="btn sec" id="leadsNoMatricolaBtn" onclick="filterLeadsNoMatricola()" style="display:none;white-space:nowrap;">⚠ Senza matricola</button>
+                        <button type="button" class="btn sec" id="leadsDistributeBtn" onclick="distributeActivationAll()" style="display:none;white-space:nowrap;">✉ Invia attivazione</button>
                         <button class="btn" onclick="exportLeadsCSV()" style="white-space:nowrap;">⬇ Export CSV</button>
+                    </div>
+                </div>
+                <div id="hrActivationPanel" class="card" style="display:none;margin-bottom:16px;padding:16px 20px;">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Distribuzione pass (ibrida)</div>
+                    <div class="stats-grid" id="activationStats" style="margin-bottom:12px;"></div>
+                    <div class="form-row" style="align-items:flex-end;gap:12px;flex-wrap:wrap;">
+                        <div class="form-group" style="flex:1;min-width:200px;">
+                            <label class="form-label">Join pubblico / QR</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
+                                <input type="checkbox" id="hrPublicQrEnabled" onchange="saveHrDistributionSettings()"> Abilita pagina <code>/join/{slug}</code>
+                            </label>
+                        </div>
+                        <div class="form-group" style="flex:1;min-width:160px;">
+                            <label class="form-label">Slug join (opz.)</label>
+                            <input type="text" id="hrPublicQrSlug" placeholder="es. acme-hr" onblur="saveHrDistributionSettings()">
+                        </div>
+                        <div class="form-group" style="flex:2;min-width:220px;">
+                            <label class="form-label">Domini email ammessi (virgola)</label>
+                            <input type="text" id="hrAllowedDomains" placeholder="acme.it, acme.com" onblur="saveHrDistributionSettings()">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+                        <input type="text" id="hrJoinUrl" readonly style="flex:1;min-width:200px;padding:8px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">
+                        <button type="button" class="btn small sec" onclick="copyHrJoinUrl()">Copia link join</button>
                     </div>
                 </div>
                 <div class="stats-grid" id="leadsStats"></div>
@@ -2185,6 +2215,8 @@
                     </header>
                     <div class="import-wizard__body">
                         <div id="importStepUpload">
+                            <p class="import-wizard__matricola-help"><strong>Matricola obbligatoria.</strong> Le righe senza matricola vengono rifiutate. La prima riga del file deve contenere una colonna <code>matricola</code> (o equivalente).</p>
+                            <p style="margin:0 0 12px;"><button type="button" class="btn sec small" onclick="downloadEmployeeImportTemplate()">📥 Scarica template CSV</button></p>
                             <label class="import-dropzone" id="importDropzone" for="importFileInput">
                                 <span id="importDropzoneLabel">Trascina qui il file oppure clicca per scegliere</span>
                                 <span class="import-dropzone__hint">.csv · .xlsx · .xls — max ~5 MB</span>
@@ -2192,8 +2224,9 @@
                             <input type="file" id="importFileInput" accept=".csv,.txt,.xlsx,.xls,.ods" style="display:none;" onchange="onImportFileSelected(event)">
                             <div class="form-group import-wizard__paste">
                                 <label class="import-wizard__field-label" for="importCsvPaste">Oppure incolla CSV</label>
-                                <textarea id="importCsvPaste" rows="4" placeholder="Nome;Cognome;Matricola;Email;Sede&#10;Mario;Rossi;A001;..."></textarea>
+                                <textarea id="importCsvPaste" rows="4" placeholder="matricola,nome,cognome,email,reparto,sede&#10;4721,Mario,Rossi,mario.rossi@acme.it,..."></textarea>
                             </div>
+                            <p id="importMatricolaWarn" class="import-wizard__warn" style="display:none;" role="alert"></p>
                         </div>
                         <div id="importStepMap" style="display:none;">
                             <p class="import-wizard__map-hint">Verifica che ogni colonna sia abbinata al campo giusto.</p>
@@ -2224,6 +2257,11 @@
                                     </table>
                                 </div>
                             </div>
+                        </div>
+                        <div id="importStepResult" style="display:none;">
+                            <div class="import-result-summary" id="importResultSummary"></div>
+                            <ul id="importRejectedList" class="import-rejected-list"></ul>
+                            <button type="button" class="btn sec" id="importExportRejectedBtn" style="display:none;margin-top:12px;" onclick="exportImportRejectedCsv()">📤 Esporta CSV righe rifiutate</button>
                         </div>
                         <p id="importStatusMsg" class="import-wizard__status" role="status"></p>
                     </div>
@@ -2486,8 +2524,12 @@
             <div style="flex:1;min-width:0;">
                 <div class="form-group"><label class="form-label">Nome</label><input type="text" id="tplName" placeholder="es. Coupon -20%" oninput="updatePassPreview()"></div>
                 <div class="form-row">
-                    <div class="form-group"><label class="form-label">Tipo Pass <span class="pass-type-info-btn" onclick="togglePassTypeInfo()" title="Info sul tipo di pass">ⓘ</span></label>
+                    <div class="form-group" id="tplTypeSelectGroup"><label class="form-label">Tipo Pass <span class="pass-type-info-btn" onclick="togglePassTypeInfo()" title="Info sul tipo di pass">ⓘ</span></label>
                         <select id="tplType" onchange="onPassTypeChange()"><option value="storeCard">Store Card</option><option value="coupon">Coupon</option><option value="eventTicket">Event Ticket</option></select>
+                    </div>
+                    <div class="form-group" id="tplTypeHrStatic" style="display:none">
+                        <label class="form-label">Layout</label>
+                        <div class="form-static-value" style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text1);">Pass dipendente</div>
                     </div>
                     <div class="form-group"><label class="form-label">Descrizione</label><input type="text" id="tplDescription" placeholder="es. Sconto benvenuto" oninput="updatePassPreview()"></div>
                 </div>
@@ -2496,8 +2538,8 @@
                 </div>
 
                 <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Fronte — Campi</div>
-                <p id="tplFrontHrNote" style="display:none;font-size:12px;color:var(--text-secondary);margin:0 0 10px;line-height:1.45;">
-                    Su Filo Diretto HR il fronte del pass è generato automaticamente: nome e matricola sotto la strip, QR con solo matricola. I campi Header/Secondary qui sotto non vengono usati in Wallet (solo anteprima Ads).
+<p id="tplFrontHrNote" style="display:none;font-size:12px;color:var(--text2);margin:0 0 12px;line-height:1.5;">
+                    Su Filodiretto il fronte del pass è definito dal profilo dipendente (DIPENDENTE, MATRICOLA, REPARTO, SEDE). I campi fronte del template non vengono applicati al pass emesso.
                 </p>
                 <div id="tplFrontFieldsBlock">
                 <div class="form-row">
@@ -2581,13 +2623,14 @@
 
                     <details class="hr-fieldset" open>
                         <summary>2 — Contatti HR aziendali</summary>
+                        <p class="form-hint">Salvati su questo template (con fallback ai valori brand se lasci vuoto).</p>
                         <div class="form-row">
-                            <div class="form-group"><label class="form-label">People Operations email</label><input type="email" id="hrBrandEmail" placeholder="people@azienda.it"></div>
-                            <div class="form-group"><label class="form-label">Telefono HR</label><input type="text" id="hrBrandPhone" placeholder="+39 ..."></div>
+                            <div class="form-group"><label class="form-label">People Operations email</label><input type="email" id="hrBrandEmail" placeholder="people@azienda.it" oninput="updatePassPreview()"></div>
+                            <div class="form-group"><label class="form-label">Telefono HR</label><input type="text" id="hrBrandPhone" placeholder="+39 ..." oninput="updatePassPreview()"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group"><label class="form-label">Privacy / DPO email</label><input type="email" id="hrBrandDpo" placeholder="dpo@azienda.it"></div>
-                            <div class="form-group"><label class="form-label">Emergenze telefono</label><input type="text" id="hrBrandEmergency" placeholder="+39 ..."></div>
+                            <div class="form-group"><label class="form-label">Privacy / DPO email</label><input type="email" id="hrBrandDpo" placeholder="dpo@azienda.it" oninput="updatePassPreview()"></div>
+                            <div class="form-group"><label class="form-label">Emergenze telefono</label><input type="text" id="hrBrandEmergency" placeholder="+39 ..." oninput="updatePassPreview()"></div>
                         </div>
                     </details>
 
@@ -3331,8 +3374,7 @@ let analyticsTrendMetric = 'both';
 let analyticsDateFrom = '';
 let analyticsDateTo = '';
 
-// ==================== INIT ====================
-document.addEventListener('DOMContentLoaded', () => {
+// ==================== INIT =============document.addEventListener('DOMContentLoaded', () => {
     initDashboardProductTheme();
     togglePassBackEditorMode();
     initFiloNavGroups();
@@ -3354,8 +3396,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bootstrapSession();
 });
 
-// ==================== SECTION TITLES (Filo / a11y) — source: /dashboard/lib/nav.js ====================
-const SECTION_PAGE_TITLES = (typeof window !== 'undefined' && window.FD_NAV && window.FD_NAV.buildSectionPageTitles)
+// ==================== SECTION TITLES (Filo / a11y) — source: /dashboard/lib/nav.js =============const SECTION_PAGE_TITLES = (typeof window !== 'undefined' && window.FD_NAV && window.FD_NAV.buildSectionPageTitles)
     ? window.FD_NAV.buildSectionPageTitles()
     : {
         welcome: 'Inizio',
@@ -3442,8 +3483,7 @@ function initFiloNavA11y() {
     });
 }
 
-// ==================== NAV ====================
-function updateNavState() {
+// ==================== NAV =============function updateNavState() {
     const role = currentUser?.role || 'admin';
     const isViewer = role === 'viewer';
     const isAdmin = role === 'admin';
@@ -3585,8 +3625,7 @@ function closeModal(id) {
 }
 function toast(msg) { const t = document.getElementById('toastEl'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 
-// ==================== BRANDS ====================
-async function loadBrands() {
+// ==================== BRANDS =============async function loadBrands() {
     const res = await fetch(`${API}/brands`, { headers: { ...getAuthHeaders() } });
     if (!res.ok) return;
     const brands = await res.json();
@@ -3682,8 +3721,7 @@ function syncBrandUrl() {
     history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
 }
 
-// ==================== PRODUCT SHELL THEME (2wallet lines) ====================
-// UI shell uses fixed palettes per product line; pass colors in brand.config stay for the pass only.
+// ==================== PRODUCT SHELL THEME (2wallet lines) =============// UI shell uses fixed palettes per product line; pass colors in brand.config stay for the pass only.
 const PRODUCT_LINE_STORAGE_KEY = '2wallet_product_line';
 const VALID_PRODUCT_LINES = ['ads', 'hr', 'engage', 'live'];
 const PRODUCT_DISPLAY_TITLES = { ads: 'Ads2Wallet', hr: 'HR2Wallet', engage: 'Engage2Wallet', live: 'Live2Wallet' };
@@ -4016,8 +4054,7 @@ function onDashboardProductLineChange() {
     if (getActiveSectionId() === 'leads') loadLeads();
 }
 
-// ==================== BRAND THEMING (header only; shell = product theme) ====================
-function applyBrandTheme() {
+// ==================== BRAND THEMING (header only; shell = product theme) =============function applyBrandTheme() {
     const line = getDashboardProductLine();
     applyProductShellTheme(line);
     syncChromeProductTitles(line);
@@ -4097,8 +4134,7 @@ async function deleteBrandAction() {
     toast('Brand eliminata'); brandId = null; await loadBrands();
 }
 
-// ==================== OVERVIEW ====================
-async function refreshOverview() {
+// ==================== OVERVIEW =============async function refreshOverview() {
     if (!brandId) return;
     try {
         const [analytics, campaigns] = await Promise.all([
@@ -4110,8 +4146,7 @@ async function refreshOverview() {
 }
 
 
-// ==================== CAMPAIGNS ====================
-async function loadCampaigns() {
+// ==================== CAMPAIGNS =============async function loadCampaigns() {
     if (!brandId) return;
     campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('campaignsList');
@@ -4557,8 +4592,7 @@ async function loadPassWalletChannelsDiag() {
     }
 }
 
-// ==================== PASSES ====================
-async function loadPasses(resetPage = false) {
+// ==================== PASSES =============async function loadPasses(resetPage = false) {
     if (!brandId) return;
     const el = document.getElementById('passesContent');
     try {
@@ -4988,8 +5022,7 @@ async function deletePassInstance(id) {
     } catch (err) { alert('Errore: ' + err.message); }
 }
 
-// ==================== TEMPLATES ====================
-async function loadTemplates() {
+// ==================== TEMPLATES =============async function loadTemplates() {
     if (!brandId) return;
     const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('templatesList');
@@ -5000,7 +5033,7 @@ async function loadTemplates() {
                 <div class="card-icon">&#127915;</div>
                 <div class="card-info">
                     <div class="card-title">${esc(t.name)}</div>
-                    <div class="card-desc">Tipo: ${t.pass_type || 'coupon'}</div>
+                    <div class="card-desc">Layout: ${formatTemplatePassTypeLabel(t.pass_type)}</div>
                 </div>
                 <div class="card-actions">
                     <button class="btn small" onclick="editTemplate('${t.id}')">Modifica</button>
@@ -5011,6 +5044,43 @@ async function loadTemplates() {
     `).join('');
 }
 
+const EMPLOYEE_PASS_TYPE = 'employee_pass';
+
+function formatTemplatePassTypeLabel(passType) {
+    if (isHrDashboard() || passType === EMPLOYEE_PASS_TYPE) return 'Pass dipendente';
+    const labels = { storeCard: 'Store Card', coupon: 'Coupon', eventTicket: 'Event Ticket', generic: 'Generic', boardingPass: 'Boarding Pass' };
+    return labels[passType] || passType || 'Pass';
+}
+
+function templatePassTypeForSave() {
+    return isHrDashboard() ? EMPLOYEE_PASS_TYPE : document.getElementById('tplType').value;
+}
+
+function syncEmployeePassTypeUi() {
+    const hr = isHrDashboard();
+    const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+    show('tplTypeSelectGroup', !hr);
+    show('tplTypeHrStatic', hr);
+    show('wzTypeSelectGroup', !hr);
+    show('wzTypeHrStatic', hr);
+    const infoBox = document.getElementById('passTypeInfoBox');
+    if (infoBox && hr) infoBox.style.display = 'none';
+    if (hr) {
+        const stripRow = document.getElementById('tplImgStripRow');
+        const thumbRow = document.getElementById('tplImgThumbRow');
+        const bgRow = document.getElementById('tplImgBgRow');
+        const hrNote = document.getElementById('tplFrontHrNote');
+        if (stripRow) stripRow.style.display = '';
+        if (thumbRow) thumbRow.style.display = '';
+        if (bgRow) bgRow.style.display = 'none';
+        if (hrNote) hrNote.style.display = 'block';
+    } else {
+        const hrNote = document.getElementById('tplFrontHrNote');
+        if (hrNote) hrNote.style.display = 'none';
+        onPassTypeChange();
+    }
+}
+
 function togglePassBackEditorMode() {
     const hr = isHrDashboard();
     const hrEl = document.getElementById('hrPassBackEditor');
@@ -5019,6 +5089,7 @@ function togglePassBackEditorMode() {
     if (adsEl) adsEl.style.display = hr ? 'none' : 'block';
     const legacyPush = document.getElementById('pushLegacyLinkOut');
     if (legacyPush) legacyPush.style.display = hr ? 'none' : 'block';
+    syncEmployeePassTypeUi();
     const hrNote = document.getElementById('tplFrontHrNote');
     const frontBlock = document.getElementById('tplFrontFieldsBlock');
     if (hrNote) hrNote.style.display = hr ? 'block' : 'none';
@@ -5031,7 +5102,7 @@ function hrAddLinkRow(containerId, label = '', url = '') {
     if (box.querySelectorAll('.hr-link-row').length >= 5) return toast('Massimo 5 righe');
     const row = document.createElement('div');
     row.className = 'hr-link-row';
-    row.innerHTML = `<input type="text" class="hr-row-label" placeholder="Label" value="${esc(label)}"><input type="url" class="hr-row-url" placeholder="https://..." value="${esc(url)}"><button type="button" class="btn small sec" onclick="this.parentElement.remove()">Rimuovi</button>`;
+    row.innerHTML = `<input type="text" class="hr-row-label" placeholder="Label" value="${esc(label)}" oninput="updatePassPreview()"><input type="url" class="hr-row-url" placeholder="https://..." value="${esc(url)}" oninput="updatePassPreview()"><button type="button" class="btn small sec" onclick="this.parentElement.remove();updatePassPreview();">Rimuovi</button>`;
     box.appendChild(row);
 }
 
@@ -5054,21 +5125,8 @@ function hrCollectLinkRows(containerId) {
 function hrAddResourceRow() { hrAddLinkRow('hrResourcesRows'); }
 function hrAddDocumentRow() { hrAddLinkRow('hrDocumentsRows'); }
 
-async function loadHrBrandBackFields() {
-    if (!brandId || !isHrDashboard()) return;
-    const brand = await fetch(`${API}/brands/${brandId}`, { headers: { ...getAuthHeaders() } }).then(r => r.json());
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
-    set('hrBrandEmail', brand.hr_email);
-    set('hrBrandPhone', brand.hr_phone);
-    set('hrBrandDpo', brand.dpo_email);
-    set('hrBrandEmergency', brand.emergency_phone);
-    hrRenderLinkRows('hrResourcesRows', brand.back_resources || []);
-    hrRenderLinkRows('hrDocumentsRows', brand.back_documents || []);
-}
-
-async function saveHrBrandBackFields() {
-    if (!brandId) return;
-    const payload = {
+function hrTemplateBackPayloadFromForm() {
+    return {
         hr_email: document.getElementById('hrBrandEmail')?.value.trim() || null,
         hr_phone: document.getElementById('hrBrandPhone')?.value.trim() || null,
         dpo_email: document.getElementById('hrBrandDpo')?.value.trim() || null,
@@ -5076,17 +5134,30 @@ async function saveHrBrandBackFields() {
         back_resources: hrCollectLinkRows('hrResourcesRows'),
         back_documents: hrCollectLinkRows('hrDocumentsRows')
     };
-    await fetch(`${API}/brands/${brandId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify(payload)
-    });
 }
 
-function loadHrTemplateBackFields(t) {
+async function loadHrTemplateBackFields(t) {
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
     set('hrFixedLinkLabel', t?.back_fixed_link_label);
     set('hrFixedLinkUrl', t?.back_fixed_link_url);
+    let brand = {};
+    if (brandId) {
+        try {
+            brand = await fetch(`${API}/brands/${brandId}`, { headers: { ...getAuthHeaders() } }).then(r => r.json());
+        } catch (_) {}
+    }
+    const pick = (key) => (t && t[key] != null && String(t[key]).trim() !== '') ? t[key] : (brand[key] || '');
+    set('hrBrandEmail', pick('hr_email'));
+    set('hrBrandPhone', pick('hr_phone'));
+    set('hrBrandDpo', pick('dpo_email'));
+    set('hrBrandEmergency', pick('emergency_phone'));
+    const resources = (Array.isArray(t?.back_resources) && t.back_resources.length)
+        ? t.back_resources : (brand.back_resources || []);
+    const documents = (Array.isArray(t?.back_documents) && t.back_documents.length)
+        ? t.back_documents : (brand.back_documents || []);
+    hrRenderLinkRows('hrResourcesRows', resources);
+    hrRenderLinkRows('hrDocumentsRows', documents);
+    updatePassPreview();
 }
 
 function togglePushPassLinkFields() {
@@ -5112,7 +5183,7 @@ function syncPushPassLinkLabel() {
     labelEl.value = titleEl.value.trim().slice(0, 40);
 }
 
-function openTemplateModal() {
+async function openTemplateModal() {
     nav('templates');
     togglePassBackEditorMode();
     document.getElementById('templateEditId').value = '';
@@ -5121,15 +5192,13 @@ function openTemplateModal() {
     ['tplImgLogo','tplImgStrip','tplImgThumb','tplImgBg'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
     ['tplImgLogoPreview','tplImgStripPreview','tplImgThumbPreview','tplImgBgPreview'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
     tplImageCache = {};
-    document.getElementById('tplType').value = 'storeCard';
+    if (!isHrDashboard()) document.getElementById('tplType').value = 'storeCard';
     document.getElementById('templateModal').classList.add('active');
     document.body.classList.add('modal-open');
     populateStripPromoSelect();
     onPassTypeChange();
     if (isHrDashboard()) {
-        hrRenderLinkRows('hrResourcesRows', []);
-        hrRenderLinkRows('hrDocumentsRows', []);
-        loadHrBrandBackFields();
+        await loadHrTemplateBackFields(null);
     }
 }
 
@@ -5141,7 +5210,7 @@ async function editTemplate(id) {
     document.getElementById('templateEditId').value = t.id;
     document.getElementById('templateModalTitle').textContent = 'Modifica Template';
     document.getElementById('tplName').value = t.name || '';
-    document.getElementById('tplType').value = t.pass_type || 'coupon';
+    if (!isHrDashboard()) document.getElementById('tplType').value = t.pass_type || 'coupon';
     document.getElementById('tplDescription').value = t.style?.description || '';
     const fields = t.fields || {};
     const header = (fields.headerFields || [])[0] || {};
@@ -5164,8 +5233,7 @@ async function editTemplate(id) {
     document.getElementById('tplRegolamento').value = fields.regolamento || '';
     document.getElementById('tplContatti').value = fields.contatti || '';
     if (isHrDashboard()) {
-        loadHrTemplateBackFields(t);
-        await loadHrBrandBackFields();
+        await loadHrTemplateBackFields(t);
     }
     // Reset and load existing images
     tplImageCache = {};
@@ -5198,7 +5266,7 @@ async function saveTemplate() {
     const body = {
         brand_id: brandId,
         name: document.getElementById('tplName').value,
-        pass_type: document.getElementById('tplType').value,
+        pass_type: templatePassTypeForSave(),
         style: { ...existingStyle, description: document.getElementById('tplDescription').value },
         fields: {
             headerFields: [{ key: 'header_info', label: document.getElementById('tplHeaderLabel').value, value: document.getElementById('tplHeaderValue').value }],
@@ -5210,6 +5278,7 @@ async function saveTemplate() {
     if (isHrDashboard()) {
         body.back_fixed_link_label = (document.getElementById('hrFixedLinkLabel')?.value || '').trim().slice(0, 64) || null;
         body.back_fixed_link_url = (document.getElementById('hrFixedLinkUrl')?.value || '').trim() || null;
+        Object.assign(body, hrTemplateBackPayloadFromForm());
     } else {
         const links = [1, 2, 3].map(i => ({
             label: document.getElementById('tplLink'+i+'Label').value.trim(),
@@ -5221,7 +5290,6 @@ async function saveTemplate() {
     }
 
     if (!body.name) return alert('Nome template obbligatorio');
-    if (isHrDashboard() && brandId) await saveHrBrandBackFields();
     const url = editId ? `${API}/templates/${editId}` : `${API}/templates`;
     const method = editId ? 'PUT' : 'POST';
     const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
@@ -5244,7 +5312,60 @@ async function saveTemplate() {
 
 function updatePassPreview() {
     const brandName = currentBrandName || 'BRAND';
-    const passType = document.getElementById('tplType').value;
+    const passType = isHrDashboard() ? 'storeCard' : document.getElementById('tplType').value;
+
+    if (isHrDashboard()) {
+        document.getElementById('ppLogo').textContent = brandName;
+        document.getElementById('ppBackLogo').textContent = brandName;
+        const logoPreview = document.getElementById('tplImgLogoPreview');
+        if (logoPreview && logoPreview.style.display !== 'none') {
+            document.getElementById('ppLogo').innerHTML = `<img src="${logoPreview.src}" style="height:20px;">`;
+        }
+        const strip = document.getElementById('ppStrip');
+        const stripPreview = document.getElementById('tplImgStripPreview');
+        if (stripPreview && stripPreview.style.display !== 'none') {
+            strip.style.backgroundImage = `url(${stripPreview.src})`;
+            strip.style.backgroundSize = 'cover';
+            strip.style.display = '';
+        } else {
+            strip.style.backgroundImage = '';
+            strip.style.display = '';
+        }
+        document.getElementById('passPreviewFront').className = 'pass-flip-face pass-front pass-type-storeCard';
+        document.getElementById('ppHeaderField').innerHTML = '';
+        document.getElementById('ppSecondary').innerHTML =
+            '<div class="pp-field"><div class="pp-field-label">DIPENDENTE</div><div class="pp-field-value">Mario Rossi</div></div>' +
+            '<div class="pp-field"><div class="pp-field-label">MATRICOLA</div><div class="pp-field-value">#4721</div></div>';
+        document.getElementById('ppAuxiliary').innerHTML =
+            '<div class="pp-field"><div class="pp-field-label">REPARTO</div><div class="pp-field-value">Engineering</div></div>' +
+            '<div class="pp-field"><div class="pp-field-label">SEDE</div><div class="pp-field-value">Milano</div></div>';
+
+        let backHtml = '';
+        const addBackText = (lbl, val) => {
+            if (val) backHtml += `<div class="pp-back-field"><div class="pp-back-field-label">${esc(lbl)}</div><div class="pp-back-field-value">${esc(val)}</div></div>`;
+        };
+        const addBackLink = (lbl, url) => {
+            if (lbl || url) backHtml += `<div class="pp-back-field"><div class="pp-back-field-label">${esc(lbl || 'LINK')}</div><div class="pp-back-field-value"><a href="#">${esc(url || lbl)}</a></div></div>`;
+        };
+        addBackLink(
+            document.getElementById('hrFixedLinkLabel')?.value.trim(),
+            document.getElementById('hrFixedLinkUrl')?.value.trim()
+        );
+        addBackText('DIPENDENTE', 'Mario Rossi (da anagrafica import)');
+        addBackText('MATRICOLA', '#4721');
+        addBackText('REPARTO', 'Engineering');
+        addBackText('SEDE', 'Milano');
+        addBackText('PEOPLE OPERATIONS', document.getElementById('hrBrandEmail')?.value.trim());
+        addBackText('TELEFONO HR', document.getElementById('hrBrandPhone')?.value.trim());
+        addBackText('PRIVACY / DPO', document.getElementById('hrBrandDpo')?.value.trim());
+        addBackText('EMERGENZE', document.getElementById('hrBrandEmergency')?.value.trim());
+        hrCollectLinkRows('hrResourcesRows').forEach(r => addBackLink(r.label, r.url));
+        hrCollectLinkRows('hrDocumentsRows').forEach(r => addBackLink(r.label, r.url));
+        addBackText('PROFILO PERSONALE', 'Portale dipendente — in implementazione');
+        document.getElementById('ppBackContent').innerHTML = backHtml || '<div class="pp-back-empty">Configura il retro HR</div>';
+        return;
+    }
+
     const headerLabel = document.getElementById('tplHeaderLabel').value;
     const headerValue = document.getElementById('tplHeaderValue').value;
     const secLabel = document.getElementById('tplSecLabel').value;
@@ -5388,6 +5509,11 @@ function updatePassTypeInfo() {
 }
 
 function onPassTypeChange() {
+    if (isHrDashboard()) {
+        syncEmployeePassTypeUi();
+        updatePassPreview();
+        return;
+    }
     const type = document.getElementById('tplType').value;
     const slots = PASS_IMAGE_SLOTS[type] || PASS_IMAGE_SLOTS.storeCard;
     document.getElementById('tplImgStripRow').style.display = slots.strip ? '' : 'none';
@@ -5510,8 +5636,7 @@ async function deleteTemplate(id) {
     } catch (err) { alert('Errore: ' + err.message); }
 }
 
-// ==================== PUSH NOTIFICATIONS ====================
-
+// ==================== PUSH NOTIFICATIONS =============
 // --- Sub-tab switching ---
 function switchPushTab(tab) {
     ['immediate', 'scheduled', 'geofencing'].forEach(t => {
@@ -6111,8 +6236,7 @@ async function loadPushHistory() {
     </table>`;
 }
 
-// ==================== STRIP PROMOS ====================
-async function loadStripPromos() {
+// ==================== STRIP PROMOS =============async function loadStripPromos() {
     const el = document.getElementById('stripPromosList');
     if (!brandId || !el) return;
     const res = await fetch(`${API}/brands/${brandId}/strip-promos`, { headers: getAuthHeaders() });
@@ -6203,8 +6327,7 @@ async function deleteStripPromo(id) {
     toast('Eliminata'); loadStripPromos();
 }
 
-// ==================== AD SERVING ====================
-async function ensureCampaignsCache() {
+// ==================== AD SERVING =============async function ensureCampaignsCache() {
     if (!brandId) return;
     if (!campaignsCache.length) {
         const res = await fetch(`${API}/campaigns?brand_id=${brandId}`);
@@ -6226,8 +6349,7 @@ function populateCampaignSelect(selId, placeholder) {
 }
 
 
-// ==================== INSTANT WIN ====================
-async function loadInstantWin() {
+// ==================== INSTANT WIN =============async function loadInstantWin() {
     if (!brandId) return;
     try {
         // Load stats
@@ -6338,8 +6460,7 @@ async function deleteIwCampaign(id) {
 }
 
 
-// ==================== AUDIENCES ====================
-
+// ==================== AUDIENCES =============
 function switchAudienceTab(tab) {
     ['overview', 'behavior', 'saved'].forEach(t => {
         const panel = document.getElementById('audPanel_' + t);
@@ -6718,8 +6839,7 @@ async function exportAudienceCsv(id) {
 }
 
 
-// ==================== LEADS DATABASE ====================
-let allLeads = [];
+// ==================== LEADS DATABASE =============let allLeads = [];
 let leadsHrMode = false;
 let importPreviewState = null;
 
@@ -6732,8 +6852,13 @@ function isHrBrandContext() {
 }
 
 function updateLeadsImportButton() {
+    const hr = isHrBrandContext();
     const btn = document.getElementById('leadsImportBtn');
-    if (btn) btn.style.display = isHrBrandContext() ? '' : 'none';
+    if (btn) btn.style.display = hr ? '' : 'none';
+    const distBtn = document.getElementById('leadsDistributeBtn');
+    if (distBtn) distBtn.style.display = hr ? '' : 'none';
+    const panel = document.getElementById('hrActivationPanel');
+    if (panel) panel.style.display = hr ? '' : 'none';
 }
 
 function setLeadsTableHead(hr) {
@@ -6742,7 +6867,7 @@ function setLeadsTableHead(hr) {
     if (hr) {
         thead.innerHTML = `<tr>
             <th>Nome</th><th>Cognome</th><th>Matricola</th><th>Reparto</th><th>Sede</th>
-            <th>Email</th><th>Pass</th><th>Wallet</th><th>Creato</th>
+            <th>Email</th><th>Attivazione</th><th>Pass</th><th>Wallet</th><th>Azioni</th>
         </tr>`;
     } else {
         thead.innerHTML = `<tr>
@@ -6787,13 +6912,114 @@ async function loadLeads() {
             <div class="stat-card"><div class="stat-num">${data.with_email || 0}</div><div class="stat-label">${esc(mc.leads_stat_email)}</div></div>
         `;
 
+        updateLeadsNoMatricolaBadge();
         renderLeadsTable(allLeads);
+        if (leadsHrMode) loadActivationStats();
     } catch(e) {
         console.error('loadLeads error:', e);
         toast(e.message || mc.leads_load_error);
-        const cols = leadsHrMode ? 9 : 7;
+        const cols = leadsHrMode ? 10 : 7;
         document.getElementById('leadsTable').querySelector('tbody').innerHTML =
             `<tr><td colspan="${cols}" style="color:var(--text2);text-align:center;">${esc(e.message || mc.leads_load_error)}</td></tr>`;
+    }
+}
+
+function activationStatusLabel(status) {
+    const map = { candidate: 'Da invitare', invited: 'Invitato', activated: 'Attivo' };
+    return map[status] || status || '—';
+}
+
+async function loadActivationStats() {
+    if (!brandId || !leadsHrMode) return;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/activation/stats`, { headers: getAuthHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        const c = data.counts || {};
+        const el = document.getElementById('activationStats');
+        if (el) {
+            el.innerHTML = `
+                <div class="stat-card"><div class="stat-num">${c.candidate || 0}</div><div class="stat-label">Da invitare</div></div>
+                <div class="stat-card"><div class="stat-num">${c.invited || 0}</div><div class="stat-label">Invitati</div></div>
+                <div class="stat-card"><div class="stat-num">${c.activated || 0}</div><div class="stat-label">Attivi</div></div>
+            `;
+        }
+        const chk = document.getElementById('hrPublicQrEnabled');
+        const slugIn = document.getElementById('hrPublicQrSlug');
+        const domIn = document.getElementById('hrAllowedDomains');
+        const joinIn = document.getElementById('hrJoinUrl');
+        if (chk) chk.checked = !!data.public_qr_enabled;
+        if (slugIn) slugIn.value = data.public_qr_slug || '';
+        if (domIn) domIn.value = (data.allowed_email_domains || []).join(', ');
+        if (joinIn) joinIn.value = data.join_url || '';
+    } catch (e) {
+        console.warn('activation stats', e.message);
+    }
+}
+
+async function saveHrDistributionSettings() {
+    if (!brandId) return;
+    const domainsRaw = (document.getElementById('hrAllowedDomains')?.value || '').trim();
+    const allowed_email_domains = domainsRaw
+        ? domainsRaw.split(',').map((d) => d.trim().toLowerCase()).filter(Boolean)
+        : [];
+    const body = {
+        public_qr_enabled: !!document.getElementById('hrPublicQrEnabled')?.checked,
+        public_qr_slug: (document.getElementById('hrPublicQrSlug')?.value || '').trim() || null,
+        allowed_email_domains
+    };
+    try {
+        const res = await fetch(`${API}/brands/${brandId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        await loadActivationStats();
+        toast('Impostazioni distribuzione salvate');
+    } catch (e) {
+        toast(e.message);
+    }
+}
+
+function copyHrJoinUrl() {
+    const v = document.getElementById('hrJoinUrl')?.value;
+    if (!v) return toast('Abilita join pubblico e salva');
+    navigator.clipboard.writeText(v).then(() => toast('Link copiato')).catch(() => toast(v));
+}
+
+async function distributeActivationAll() {
+    if (!brandId) return;
+    if (!await appConfirm({ title: 'Invia email attivazione', message: 'Inviare il link di attivazione a tutti i dipendenti non ancora attivi (con email)?', confirmLabel: 'Invia' })) return;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/employees/distribute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ all_pending: true })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        toast(`Inviate ${data.sent || 0} email (${data.skipped || 0} saltate)`);
+        await loadLeads();
+    } catch (e) {
+        toast(e.message);
+    }
+}
+
+async function resendMemberActivation(memberId) {
+    if (!brandId) return;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/members/${memberId}/activation/resend`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        toast('Email di attivazione inviata');
+        await loadLeads();
+    } catch (e) {
+        toast(e.message);
     }
 }
 
@@ -6809,7 +7035,7 @@ function walletStatusLabel(l) {
 function renderLeadsTable(leads) {
     const mc = getMergedProductMenuCopy(getDashboardProductLine());
     const tbody = document.getElementById('leadsTable').querySelector('tbody');
-    const cols = leadsHrMode ? 9 : 7;
+    const cols = leadsHrMode ? 10 : 7;
     if (!leads.length) {
         tbody.innerHTML = '<tr><td colspan="' + cols + '">' + renderEmptyState({
             title: mc.leads_empty,
@@ -6823,17 +7049,28 @@ function renderLeadsTable(leads) {
         return;
     }
     if (leadsHrMode) {
-        tbody.innerHTML = leads.map((l) => `<tr>
+        tbody.innerHTML = leads.map((l) => {
+            const matCell = l.employee_id
+                ? esc(l.employee_id)
+                : `<span style="display:inline-flex;gap:6px;align-items:center;"><input type="text" class="hr-inline-matricola" placeholder="Matricola" style="width:88px;padding:4px 8px;font-size:12px;"><button type="button" class="btn small" onclick="saveMemberMatricola('${l.id}', this)">Salva</button></span>`;
+            const act = l.activation_status || 'candidate';
+            const actBadge = act === 'activated' ? 'var(--accent)' : (act === 'invited' ? '#f5a623' : 'var(--text2)');
+            const resendBtn = l.player_email && act !== 'activated'
+                ? `<button type="button" class="btn small sec" onclick="resendMemberActivation('${l.id}')">Reinvia</button>`
+                : '—';
+            return `<tr>
             <td>${esc(l.player_first_name || '-')}</td>
             <td>${esc(l.player_last_name || '-')}</td>
-            <td>${esc(l.employee_id || '-')}</td>
+            <td>${matCell}</td>
             <td>${esc(l.department || '-')}</td>
             <td>${esc(l.office_location || '-')}</td>
             <td>${l.player_email ? `<a href="mailto:${esc(l.player_email)}" style="color:var(--accent);">${esc(l.player_email)}</a>` : '—'}</td>
+            <td style="font-size:12px;color:${actBadge};">${esc(activationStatusLabel(act))}</td>
             <td style="font-size:11px;font-family:monospace;">${l.pass_id ? esc(String(l.pass_id).substring(0, 8)) + '…' : '—'}</td>
             <td style="font-size:12px;">${esc(walletStatusLabel(l))}</td>
-            <td style="font-size:12px;">${l.registered_at ? new Date(l.registered_at).toLocaleDateString('it-IT') : '-'}</td>
-        </tr>`).join('');
+            <td>${resendBtn}</td>
+        </tr>`;
+        }).join('');
         return;
     }
     tbody.innerHTML = leads.map(l => `<tr>
@@ -6847,7 +7084,48 @@ function renderLeadsTable(leads) {
     </tr>`).join('');
 }
 
+function updateLeadsNoMatricolaBadge() {
+    if (!leadsHrMode) return;
+    const noMat = allLeads.filter((l) => !l.employee_id || !String(l.employee_id).trim()).length;
+    const badge = document.getElementById('navNoMatricolaBadge');
+    const btn = document.getElementById('leadsNoMatricolaBtn');
+    if (badge) {
+        badge.style.display = noMat > 0 ? 'inline-block' : 'none';
+        badge.textContent = noMat > 0 ? String(noMat) : '';
+        badge.title = `${noMat} dipendenti senza matricola`;
+    }
+    if (btn) btn.style.display = noMat > 0 ? '' : 'none';
+}
+
+function filterLeadsNoMatricola() {
+    window.leadsFilterNoMatricola = true;
+    document.getElementById('leadsSearch').value = '';
+    renderLeadsTable(allLeads.filter((l) => !l.employee_id || !String(l.employee_id).trim()));
+    toast('Filtro: solo dipendenti senza matricola');
+}
+
+async function saveMemberMatricola(memberId, btnEl) {
+    const row = btnEl?.closest('tr');
+    const input = row?.querySelector('.hr-inline-matricola');
+    const matricola = (input?.value || '').trim();
+    if (!matricola) return toast('Inserisci una matricola');
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/members/${memberId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ employee_id: matricola })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Salvataggio fallito');
+        toast(data.wallet_push_sent ? 'Matricola salvata — pass aggiornato' : 'Matricola salvata');
+        await loadLeads();
+    } catch (e) {
+        toast(e.message);
+    }
+}
+
 function filterLeads() {
+    window.leadsFilterNoMatricola = false;
     const q = document.getElementById('leadsSearch').value.toLowerCase();
     if (!q) return renderLeadsTable(allLeads);
     const filtered = allLeads.filter(l =>
@@ -6868,10 +7146,11 @@ function exportLeadsCSV() {
     let header;
     let rows;
     if (leadsHrMode) {
-        header = 'Nome,Cognome,Matricola,Reparto,Sede,Email,Pass ID,Wallet,Creato';
+        header = 'Nome,Cognome,Matricola,Reparto,Sede,Email,Attivazione,Pass ID,Wallet,Creato';
         rows = allLeads.map(l => [
             l.player_first_name || '', l.player_last_name || '', l.employee_id || '',
             l.department || '', l.office_location || '', l.player_email || '',
+            activationStatusLabel(l.activation_status),
             l.pass_id || '', walletStatusLabel(l),
             l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
         ]);
@@ -6893,6 +7172,9 @@ function exportLeadsCSV() {
     URL.revokeObjectURL(url);
     toast('CSV esportato!');
 }
+
+const IMPORT_CSV_TEMPLATE_HEADER = 'matricola,nome,cognome,email,reparto,sede,data_assunzione,manager_email';
+const IMPORT_CSV_TEMPLATE_SAMPLE = '4721,Mario,Rossi,mario.rossi@acme.it,Engineering,Milano,2024-03-12,laura.b@acme.it';
 
 const IMPORT_FIELD_LABELS = {
     first_name: 'Nome', last_name: 'Cognome', full_name: 'Nome completo', email: 'Email',
@@ -6935,7 +7217,12 @@ function updateImportSummaryChips(data) {
     chips.hidden = false;
     const chipValid = document.getElementById('importChipValid');
     const chipMap = document.getElementById('importChipMapping');
-    if (chipValid) chipValid.textContent = `${valid} righe valide${total ? ` / ${total}` : ''}`;
+    const rejected = data?.rejected_count || data?.invalid_count || 0;
+    if (chipValid) {
+        chipValid.textContent = rejected
+            ? `${valid} importabili · ${rejected} rifiutate${total ? ` / ${total}` : ''}`
+            : `${valid} righe valide${total ? ` / ${total}` : ''}`;
+    }
     if (chipMap) chipMap.textContent = `Mapping: ${mapped}/${fieldTotal} campi`;
 }
 
@@ -6956,9 +7243,11 @@ function updateImportCommitButton() {
     const btn = document.getElementById('importCommitBtn');
     if (!btn) return;
     const valid = importPreviewState?.preview?.valid_count || 0;
+    const mapping = getImportMappingFromUi();
+    const matricolaMapped = mapping.employee_id != null && mapping.employee_id !== '';
     const createPasses = document.getElementById('importCreatePasses')?.checked;
     const templateId = document.getElementById('importTemplateId')?.value;
-    btn.disabled = valid <= 0 || btn.classList.contains('is-loading') || (!!createPasses && !templateId);
+    btn.disabled = valid <= 0 || !matricolaMapped || btn.classList.contains('is-loading') || (!!createPasses && !templateId);
 }
 
 function bindImportWizardControls() {
@@ -6981,20 +7270,25 @@ function bindImportWizardControls() {
 
 function showImportWizardPhase(phase) {
     const upload = phase === 'upload';
+    const result = phase === 'result';
     document.getElementById('importStepUpload').style.display = upload ? '' : 'none';
-    document.getElementById('importStepMap').style.display = upload ? 'none' : '';
+    document.getElementById('importStepMap').style.display = (!upload && !result) ? '' : 'none';
+    document.getElementById('importStepResult').style.display = result ? '' : 'none';
     document.getElementById('importFooterUpload').style.display = upload ? 'flex' : 'none';
-    document.getElementById('importFooterMap').style.display = upload ? 'none' : 'flex';
-    document.getElementById('importSummaryChips').hidden = upload;
+    document.getElementById('importFooterMap').style.display = (!upload && !result) ? 'flex' : 'none';
+    document.getElementById('importSummaryChips').hidden = upload || result;
     refreshImportWizardStepper();
 }
 
 function openEmployeeImportModal() {
     importPreviewState = null;
+    window.leadsFilterNoMatricola = false;
     document.getElementById('importFileInput').value = '';
     document.getElementById('importCsvPaste').value = '';
     document.getElementById('importDropzoneLabel').textContent = 'Trascina qui il file oppure clicca per scegliere';
     document.getElementById('importStatusMsg').textContent = '';
+    const warn = document.getElementById('importMatricolaWarn');
+    if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
     const commitBtn = document.getElementById('importCommitBtn');
     if (commitBtn) {
         commitBtn.classList.remove('is-loading');
@@ -7054,6 +7348,18 @@ async function runImportPreview() {
     } else {
         return toast('Seleziona un file o incolla CSV');
     }
+    const warnEl = document.getElementById('importMatricolaWarn');
+    const headerHint = paste ? clientMatricolaHeaderWarning(paste) : null;
+    if (warnEl) {
+        if (headerHint) {
+            warnEl.style.display = 'block';
+            warnEl.textContent = headerHint;
+        } else {
+            warnEl.style.display = 'none';
+            warnEl.textContent = '';
+        }
+    }
+
     document.getElementById('importStatusMsg').textContent = 'Analisi colonne in corso…';
     try {
         const res = await fetch(`${API}/brands/${brandId}/employees/import/preview`, {
@@ -7063,6 +7369,10 @@ async function runImportPreview() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Preview fallita');
+        if (!data.matricola_header_ok && warnEl) {
+            warnEl.style.display = 'block';
+            warnEl.textContent = clientMatricolaHeaderWarning(data.headers || []) || warnEl.textContent;
+        }
         importPreviewState = { ...importPreviewState, preview: data, mapping: { ...data.mapping } };
         renderImportMappingStep(data);
         showImportWizardPhase('map');
@@ -7073,10 +7383,39 @@ async function runImportPreview() {
     }
 }
 
+function downloadEmployeeImportTemplate() {
+    const csv = [IMPORT_CSV_TEMPLATE_HEADER, IMPORT_CSV_TEMPLATE_SAMPLE].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'filodiretto-import-dipendenti.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function clientMatricolaHeaderWarning(headersOrText) {
+    let headers = [];
+    if (Array.isArray(headersOrText)) {
+        headers = headersOrText;
+    } else {
+        const line = String(headersOrText || '').split(/\r?\n/).find((l) => l.trim());
+        if (!line) return 'Nessuna intestazione trovata nel file.';
+        const delim = (line.match(/;/g) || []).length > (line.match(/,/g) || []).length ? ';' : ',';
+        headers = line.split(delim).map((h) => h.trim().replace(/^"|"$/g, ''));
+    }
+    const ok = headers.some((h) => {
+        const n = String(h).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return n.includes('matricola') || n.includes('badge') || n.includes('employee') || n === 'codice';
+    });
+    return ok ? null : 'La prima riga non contiene una colonna matricola. Scarica il template o correggi le intestazioni.';
+}
+
 function importMapSelectHtml(key, headers, cur) {
     const label = IMPORT_FIELD_LABELS[key] || key;
     const ignored = cur === '';
-    const rowCls = ignored ? 'import-map-row is-ignored' : 'import-map-row is-mapped';
+    const required = key === 'employee_id';
+    const rowCls = (ignored ? 'import-map-row is-ignored' : 'import-map-row is-mapped') + (required ? ' import-map-row--required' : '');
     const opts = ['<option value="">— ignora —</option>']
         .concat(headers.map((h, i) => {
             const title = esc(h || '(colonna ' + i + ')');
@@ -7115,20 +7454,26 @@ function renderImportMappingStep(data) {
             : '—';
     }
 
+    const rejectedByRow = {};
+    (data.rejected || []).forEach((r) => { rejectedByRow[r.row] = r.reason; });
+
     const head = document.getElementById('importPreviewHead');
-    head.innerHTML = '<th class="col-num">#</th><th>Nome</th><th>Cognome</th><th class="col-num">Matricola</th><th class="col-email">Email</th><th>Sede</th>';
+    head.innerHTML = '<th class="col-num">#</th><th>Nome</th><th>Cognome</th><th class="col-num">Matricola</th><th class="col-email">Email</th><th>Sede</th><th>Motivo</th>';
     const body = document.getElementById('importPreviewBody');
     body.innerHTML = previewRows.map((row) => {
         const m = row.mapped || {};
-        const ok = row.valid ? '' : ' class="import-preview-row--invalid"';
+        const rowNum = row.row_number || row.row_index + 2;
+        const reason = rejectedByRow[rowNum] || (!row.valid ? 'Matricola mancante o non valida' : '');
+        const ok = row.valid && !reason ? '' : ' class="import-preview-row--invalid"';
         const email = m.email || '';
         return `<tr${ok}>
-            <td class="col-num">${row.row_index + 1}</td>
+            <td class="col-num">${rowNum}</td>
             <td>${esc(m.first_name || '')}</td>
             <td>${esc(m.last_name || '')}</td>
-            <td class="col-num">${esc(m.employee_id || '')}</td>
+            <td class="col-num">${esc(m.employee_id || '—')}</td>
             <td class="col-email" title="${esc(email)}">${esc(email)}</td>
             <td>${esc(m.office_location || '')}</td>
+            <td style="font-size:11px;color:var(--danger,#dc2626);max-width:160px;white-space:normal;">${esc(reason)}</td>
         </tr>`;
     }).join('');
 
@@ -7148,6 +7493,41 @@ function getImportMappingFromUi() {
 
 function importBackToUpload() {
     showImportWizardPhase('upload');
+}
+
+function showImportResultStep({ imported, rejected, errors }) {
+    showImportWizardPhase('result');
+    const sum = document.getElementById('importResultSummary');
+    if (sum) {
+        sum.innerHTML = `<p>✓ <strong>${imported}</strong> dipendenti importati</p><p>✕ <strong>${rejected}</strong> righe rifiutate</p>`;
+    }
+    const ul = document.getElementById('importRejectedList');
+    if (ul) {
+        ul.innerHTML = (errors || []).map((e) =>
+            `<li>Riga ${e.row}: <strong>${esc(e.name || '—')}</strong> — ${esc(e.reason)}</li>`
+        ).join('') || '<li>Nessun dettaglio</li>';
+    }
+    const exp = document.getElementById('importExportRejectedBtn');
+    if (exp) exp.style.display = (errors || []).length ? '' : 'none';
+}
+
+function exportImportRejectedCsv() {
+    const rows = importPreviewState?.lastRejected || [];
+    if (!rows.length) return toast('Nessuna riga rifiutata da esportare');
+    const header = 'riga,nome,motivo';
+    const lines = rows.map((r) => [
+        r.row,
+        (r.name || '').replace(/"/g, '""'),
+        (r.reason || '').replace(/"/g, '""')
+    ].map((v) => `"${v}"`).join(','));
+    const csv = [header, ...lines].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `import-rifiutate_${importPreviewState?.lastBatchId || 'batch'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 async function runEmployeeImportCommit() {
@@ -7187,8 +7567,15 @@ async function runEmployeeImportCommit() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Import fallito');
         const errN = (data.errors || []).length;
-        toast(`Importati: ${data.created} nuovi, ${data.updated} aggiornati, ${data.passes_created} pass${errN ? ` (${errN} righe saltate)` : ''}`);
-        closeEmployeeImportModal();
+        const imported = data.imported != null ? data.imported : ((data.created || 0) + (data.updated || 0));
+        importPreviewState.lastRejected = data.errors || [];
+        importPreviewState.lastBatchId = data.batch_id;
+        toast(`Importati: ${imported}${errN ? ` · ${errN} righe rifiutate` : ''}`);
+        if (errN) {
+            showImportResultStep({ imported, rejected: errN, errors: data.errors });
+        } else {
+            closeEmployeeImportModal();
+        }
         await loadLeads();
     } catch (e) {
         document.getElementById('importStatusMsg').textContent = e.message;
@@ -7202,8 +7589,7 @@ async function runEmployeeImportCommit() {
     }
 }
 
-// ==================== GAMIFICATION ====================
-async function loadGamification() {
+// ==================== GAMIFICATION =============async function loadGamification() {
     if (!brandId) return;
     try {
         const [statsRes, campaignsRes] = await Promise.all([
@@ -7329,8 +7715,7 @@ async function deleteGamCampaign(id) {
     } catch(e) { toast('Errore: ' + e.message); }
 }
 
-// ==================== ACTIVITY LOG ====================
-async function loadActivityLog() {
+// ==================== ACTIVITY LOG =============async function loadActivityLog() {
     const body = document.getElementById('activityLogBody');
     if (!brandId) return;
     if (!body) return;
@@ -7366,8 +7751,7 @@ async function loadActivityLog() {
     }
 }
 
-// ==================== ANALYTICS ====================
-async function loadAnalytics() {
+// ==================== ANALYTICS =============async function loadAnalytics() {
     if (!brandId) return;
     const [analytics, campaigns, passes] = await Promise.all([
         fetchCachedJson(`${API}/analytics/${brandId}`, { headers: { ...getAuthHeaders() } }),
@@ -7736,8 +8120,7 @@ function downloadBlob(blob, filename) {
     toast('Export completato');
 }
 
-// ==================== PASS WIZARD ====================
-let wzCurrentStep = 1;
+// ==================== PASS WIZARD =============let wzCurrentStep = 1;
 let wzStripBase64 = null;
 let wzLogoBase64 = null;
 
@@ -7763,7 +8146,7 @@ function wzUpdatePreview() {
 
 function wzBuildPreview() {
     const brandName = currentBrandName || 'BRAND';
-    const type = document.getElementById('wzType').value;
+    const type = isHrDashboard() ? EMPLOYEE_PASS_TYPE : document.getElementById('wzType').value;
     const hLabel = document.getElementById('wzHeaderLabel').value;
     const hValue = document.getElementById('wzHeaderValue').value;
     const sLabel = document.getElementById('wzSecLabel').value;
@@ -7821,7 +8204,7 @@ function wzBuildPreview() {
     document.getElementById('wzSummary').innerHTML = `
         <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 12px;font-size:13px;">
             <span style="font-weight:600;color:var(--text1);">Nome</span><span>${esc(document.getElementById('wzName').value || '—')}</span>
-            <span style="font-weight:600;color:var(--text1);">Tipo</span><span>${type}</span>
+            <span style="font-weight:600;color:var(--text1);">Layout</span><span>${formatTemplatePassTypeLabel(type)}</span>
             <span style="font-weight:600;color:var(--text1);">Campi fronte</span><span>${frontFields} configurati</span>
             <span style="font-weight:600;color:var(--text1);">Link retro</span><span>${backLinks} link</span>
             <span style="font-weight:600;color:var(--text1);">Regolamento</span><span>${hasReg ? 'Presente' : 'Non configurato'}</span>
@@ -8102,7 +8485,7 @@ async function wzPublish() {
     const body = {
         brand_id: brandId,
         name,
-        pass_type: document.getElementById('wzType').value,
+        pass_type: isHrDashboard() ? EMPLOYEE_PASS_TYPE : document.getElementById('wzType').value,
         style: { ...existingStyle, description: '' },
         fields: {
             headerFields: [{ key: 'header_info', label: document.getElementById('wzHeaderLabel').value, value: document.getElementById('wzHeaderValue').value }],
@@ -8198,7 +8581,7 @@ async function loadWzTemplates() {
                 <div style="flex:1;">
                     <div style="font-weight:600;font-size:14px;">${esc(t.name)}</div>
                     <div style="font-size:11px;color:var(--text2);margin-top:2px;">
-                        ${t.pass_type || 'storeCard'} · Creato ${new Date(t.created_at).toLocaleDateString('it-IT')}
+                        ${formatTemplatePassTypeLabel(t.pass_type)} · Creato ${new Date(t.created_at).toLocaleDateString('it-IT')}
                     </div>
                 </div>
                 <div style="display:flex;gap:6px;">
@@ -8218,7 +8601,7 @@ async function wzEditTemplate(id) {
         const t = await res.json();
         // Fill wizard fields
         document.getElementById('wzName').value = t.name || '';
-        document.getElementById('wzType').value = t.pass_type || 'storeCard';
+        if (!isHrDashboard()) document.getElementById('wzType').value = t.pass_type || 'storeCard';
         const f = t.fields || {};
         if (f.headerFields && f.headerFields[0]) {
             document.getElementById('wzHeaderLabel').value = f.headerFields[0].label || '';
@@ -8286,8 +8669,7 @@ async function wzDeleteTemplate(id) {
     } catch(e) { alert('Errore: ' + e.message); }
 }
 
-// ==================== BRAND IDENTITY ====================
-const BRAND_PASS_FIXED_COLORS = {
+// ==================== BRAND IDENTITY =============const BRAND_PASS_FIXED_COLORS = {
     backgroundColor: '#0D0B1A',
     foregroundColor: '#FFFFFF',
     labelColor: '#A78BFA'
@@ -8337,8 +8719,7 @@ async function saveBrandIdentity() {
     loadBrandIdentity();
 }
 
-// ==================== MEDIA LIBRARY ====================
-async function loadMediaLibrary() {
+// ==================== MEDIA LIBRARY =============async function loadMediaLibrary() {
     if (!brandId) return;
     const logoBox = document.getElementById('mediaLogoBox');
     const stripGrid = document.getElementById('mediaStripGrid');
@@ -8586,8 +8967,7 @@ async function normalizeMediaForUpload(file, type) {
     return canvas.toDataURL('image/png').split(',')[1];
 }
 
-// ==================== MEDIA PICKER ====================
-/** Scarica immagine dalla Media Library come base64 (per pass / template). */
+// ==================== MEDIA PICKER =============/** Scarica immagine dalla Media Library come base64 (per pass / template). */
 async function fetchMediaImageBase64(mediaId) {
     const res = await fetch(`${API}/media/${mediaId}/image`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Impossibile caricare il media');
@@ -8767,8 +9147,7 @@ async function deleteAllMedia() {
     } catch (err) { toast('Errore: ' + err.message); }
 }
 
-// ==================== PASS DESIGN ====================
-function setPassDesignPreview(kind, imageUrl) {
+// ==================== PASS DESIGN =============function setPassDesignPreview(kind, imageUrl) {
     if (kind === 'logo') {
         const img = document.getElementById('bsLogoPreview');
         const ph = document.getElementById('bsLogoPlaceholder');
@@ -8857,8 +9236,7 @@ async function savePassDesign() {
 
 // AI strip functions removed
 
-// ==================== USERS ====================
-async function loadUsers() {
+// ==================== USERS =============async function loadUsers() {
     const res = await fetch(`${API}/users`, { headers: getAuthHeaders() });
     if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -8944,8 +9322,7 @@ async function deleteUser(id) {
     loadUsers();
 }
 
-// ==================== W.AI ====================
-let waiDraft = null;
+// ==================== W.AI =============let waiDraft = null;
 let waiPushComboDraft = null;
 let waiComboStripSaved = false;
 let waiOriginalPrompt = '';
@@ -9603,8 +9980,7 @@ function refreshDashboardSection(intent) {
     (refreshMap[prefix] || (() => {}))();
 }
 
-// ==================== UTILS ====================
-function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+// ==================== UTILS =============function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 // File to base64 helper
 function fileToBase64(file) {

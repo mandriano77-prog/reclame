@@ -3,13 +3,14 @@
  */
 
 const XLSX = require('xlsx');
+const { randomUUID } = require('crypto');
 
 const IMPORT_FIELDS = [
   { key: 'first_name', label: 'Nome', required: false },
   { key: 'last_name', label: 'Cognome', required: false },
   { key: 'full_name', label: 'Nome completo', required: false },
   { key: 'email', label: 'Email', required: false },
-  { key: 'employee_id', label: 'Matricola', required: false },
+  { key: 'employee_id', label: 'Matricola', required: true },
   { key: 'department', label: 'Reparto', required: false },
   { key: 'office_location', label: 'Sede', required: false },
   { key: 'hire_date', label: 'Data assunzione', required: false },
@@ -17,6 +18,9 @@ const IMPORT_FIELDS = [
   { key: 'manager_email', label: 'Email manager', required: false },
   { key: 'phone', label: 'Telefono', required: false }
 ];
+
+const CSV_TEMPLATE_HEADER =
+  'matricola,nome,cognome,email,reparto,sede,data_assunzione,manager_email';
 
 const FIELD_ALIASES = {
   first_name: ['nome', 'name', 'first name', 'first_name', 'prenome', 'nominativo', 'dipendente'],
@@ -81,6 +85,14 @@ function suggestColumnMapping(headers) {
   }
 
   return mapping;
+}
+
+function headersIncludeMatricola(headers, mapping = null) {
+  if (mapping && mapping.employee_id != null) return true;
+  return headers.some((h) => {
+    const norm = normalizeHeader(h);
+    return FIELD_ALIASES.employee_id.some((alias) => scoreHeaderMatch(norm, alias) >= 65);
+  });
 }
 
 function detectDelimiter(line) {
@@ -195,11 +207,13 @@ function mapRowToEmployee(row, mapping) {
     last_name = split.last_name;
   }
 
+  const employee_id = get('employee_id') || null;
+
   return {
     first_name: first_name || null,
     last_name: last_name || null,
     email: get('email') || null,
-    employee_id: get('employee_id') || null,
+    employee_id: employee_id ? String(employee_id).trim() : null,
     department: get('department') || null,
     office_location: get('office_location') || null,
     hire_date: parseHireDate(get('hire_date')),
@@ -209,27 +223,73 @@ function mapRowToEmployee(row, mapping) {
   };
 }
 
+function isValidEmail(email) {
+  const s = String(email || '').trim();
+  if (!s) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+function rowDisplayName(emp) {
+  const name = [emp.first_name, emp.last_name].filter(Boolean).join(' ').trim();
+  return name || emp.email || 'Riga senza nome';
+}
+
+function validateImportRow(emp, { seenInFile = null, existingEmployeeId = false } = {}) {
+  const matricula = String(emp?.employee_id || '').trim();
+  if (!matricula) {
+    return { valid: false, reason: 'Matricola mancante' };
+  }
+  if (seenInFile) {
+    const key = matricula.toLowerCase();
+    if (seenInFile.has(key)) {
+      return { valid: false, reason: `Matricola #${matricula} duplicata nel file` };
+    }
+  }
+  if (existingEmployeeId) {
+    return { valid: false, reason: `Matricola #${matricula} già presente` };
+  }
+  if (emp.email && !isValidEmail(emp.email)) {
+    return { valid: false, reason: 'Email non valida' };
+  }
+  if (seenInFile) seenInFile.add(matricula.toLowerCase());
+  return { valid: true, reason: null };
+}
+
 function rowIsValid(emp) {
-  const hasName = !!(emp.first_name || emp.last_name);
-  const hasId = !!emp.employee_id;
-  return hasName || hasId;
+  return validateImportRow(emp).valid;
 }
 
 function buildImportPreview({ headers, rows, mapping }) {
   const effectiveMapping = mapping && Object.keys(mapping).length ? mapping : suggestColumnMapping(headers);
+  const seenInFile = new Set();
+  const rejected = [];
+
+  rows.forEach((row, idx) => {
+    const mapped = mapRowToEmployee(row, effectiveMapping);
+    const v = validateImportRow(mapped, { seenInFile });
+    if (!v.valid) {
+      rejected.push({
+        row: idx + 2,
+        name: rowDisplayName(mapped),
+        reason: v.reason,
+        mapped
+      });
+    }
+  });
+
   const preview_rows = rows.slice(0, 25).map((row, idx) => {
     const mapped = mapRowToEmployee(row, effectiveMapping);
     return {
       row_index: idx,
+      row_number: idx + 2,
       mapped,
       valid: rowIsValid(mapped),
       raw: row
     };
   });
 
-  const mapped_all = rows.map((row) => mapRowToEmployee(row, effectiveMapping));
-  const valid_count = mapped_all.filter(rowIsValid).length;
-  const invalid_count = rows.length - valid_count;
+  const valid_count = rows.length - rejected.length;
+  const invalid_count = rejected.length;
 
   const unmapped_headers = headers
     .map((h, i) => ({ header: h, index: i }))
@@ -244,7 +304,10 @@ function buildImportPreview({ headers, rows, mapping }) {
     total_rows: rows.length,
     valid_count,
     invalid_count,
-    unmapped_headers
+    rejected_count: invalid_count,
+    rejected,
+    matricola_header_ok: headersIncludeMatricola(headers, effectiveMapping),
+    matricola_mapped: effectiveMapping.employee_id != null
   };
 }
 
@@ -252,6 +315,62 @@ function previewImport({ file_base64, filename, csv_text, mapping }) {
   const { headers, rows } = parseImportFile({ file_base64, filename, csv_text });
   if (!headers.length) throw new Error('File vuoto o senza intestazioni');
   return buildImportPreview({ headers, rows, mapping });
+}
+
+function newImportBatchId() {
+  const day = new Date().toISOString().slice(0, 10);
+  return `import-${day}-${randomUUID().slice(0, 8)}`;
+}
+
+/**
+ * Evaluate all rows for import; optional async checkExisting(employee_id) → member row | null.
+ */
+async function evaluateImportRows({ headers, rows, mapping, checkExisting = null, allowExisting = false }) {
+  const effectiveMapping = mapping && Object.keys(mapping).length ? mapping : suggestColumnMapping(headers);
+  const seenInFile = new Set();
+  const employees = [];
+  const rejected = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const mapped = mapRowToEmployee(row, effectiveMapping);
+    const v = validateImportRow(mapped, { seenInFile });
+    let reason = v.valid ? null : v.reason;
+
+    if (!reason && checkExisting) {
+      const existing = await checkExisting(mapped.employee_id);
+      if (existing && !allowExisting) {
+        reason = `Matricola #${mapped.employee_id} duplicata`;
+      }
+    }
+
+    if (reason) {
+      rejected.push({
+        row: i + 2,
+        name: rowDisplayName(mapped),
+        reason,
+        raw: row,
+        mapped
+      });
+    } else {
+      employees.push(mapped);
+    }
+  }
+
+  return { employees, rejected, mapping: effectiveMapping };
+}
+
+function rejectedRowsToCsv(rejected) {
+  const header = 'riga,nome,motivo';
+  const lines = rejected.map((r) => {
+    const cols = [
+      r.row,
+      rowDisplayName(r.mapped || {}),
+      r.reason
+    ].map((v) => `"${String(v).replace(/"/g, '""')}"`);
+    return cols.join(',');
+  });
+  return [header, ...lines].join('\n');
 }
 
 function employeesToFieldValues(emp) {
@@ -277,11 +396,18 @@ function employeesToFieldValues(emp) {
 
 module.exports = {
   IMPORT_FIELDS,
+  CSV_TEMPLATE_HEADER,
   parseImportFile,
   suggestColumnMapping,
+  headersIncludeMatricola,
   mapRowToEmployee,
   rowIsValid,
+  validateImportRow,
   buildImportPreview,
   previewImport,
-  employeesToFieldValues
+  evaluateImportRows,
+  newImportBatchId,
+  rejectedRowsToCsv,
+  employeesToFieldValues,
+  rowDisplayName
 };

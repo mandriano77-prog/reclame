@@ -167,6 +167,15 @@ app.get(['/dashboard', '/dashboard/'], (req, res) => {
 app.use('/landing', express.static(path.join(__dirname, 'landing')));
 app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
 
+app.get('/join/:slug', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'join', 'index.html'));
+});
+app.get('/activate/:token', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'activate', 'index.html'));
+});
+
 // Health check + wallet debug
 const BUILD_VERSION = '3.0.0-' + Date.now();
 app.get('/health', async (req, res) => {
@@ -296,7 +305,7 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
 // Short URL: /:slug serves the landing page for that brand
 app.get('/:slug', (req, res, next) => {
   const slug = req.params.slug;
-  if (slug.includes('.') || ['api', 'dashboard', 'landing', 'debug', 'health', 'privacy', 'play', 'save', 'game'].includes(slug)) {
+  if (slug.includes('.') || ['api', 'dashboard', 'landing', 'debug', 'health', 'privacy', 'play', 'save', 'game', 'join', 'activate'].includes(slug)) {
     return next();
   }
   res.sendFile(path.join(__dirname, 'landing', 'index.html'));
@@ -326,6 +335,22 @@ getDb().then(db => {
     console.log('🎨 Strip Promo scheduler started (every 60 min)');
     setInterval(() => runStripPromoCheck(), 60 * 60 * 1000);
     setTimeout(() => runStripPromoCheck(), 30 * 1000);
+
+    const { runActivationReminders } = require('./engine/hr-activation');
+    const hrReminderDb = () => ({
+      pool: db.pool,
+      getBrand: require('./db').getBrand,
+      getTemplate: require('./db').getTemplate,
+      listTemplates: require('./db').listTemplates,
+      updateMemberRecord: require('./db').updateMemberRecord,
+      updatePassInstance: require('./db').updatePassInstance,
+      createPassInstance: require('./db').createPassInstance,
+      logEvent: require('./db').logEvent,
+      logEnrollmentAttempt: require('./db').logEnrollmentAttempt
+    });
+    console.log('📧 Activation reminder cron started (every 6h)');
+    setInterval(() => runActivationReminders(hrReminderDb()).catch((e) => console.error('[activation-reminder]', e.message)), 6 * 60 * 60 * 1000);
+    setTimeout(() => runActivationReminders(hrReminderDb()).catch(() => {}), 2 * 60 * 1000);
   });
 }).catch(err => {
   console.error('Failed to initialize database:', err);

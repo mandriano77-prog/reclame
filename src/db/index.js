@@ -762,6 +762,12 @@ async function getDb() {
       hire_date DATE,
       manager_name VARCHAR(128),
       manager_email VARCHAR(255),
+      activation_status VARCHAR(32) DEFAULT 'candidate',
+      activation_token VARCHAR(255),
+      activation_token_expires_at TIMESTAMPTZ,
+      invited_at TIMESTAMPTZ,
+      activated_at TIMESTAMPTZ,
+      activation_source VARCHAR(32),
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )`).catch(() => {});
@@ -783,6 +789,48 @@ async function getDb() {
     await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(64)`).catch(() => {});
     await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS back_resources JSONB DEFAULT '[]'::jsonb`).catch(() => {});
     await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS back_documents JSONB DEFAULT '[]'::jsonb`).catch(() => {});
+    await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS allowed_email_domains TEXT[] DEFAULT '{}'`).catch(() => {});
+    await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS public_qr_enabled BOOLEAN DEFAULT false`).catch(() => {});
+    await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS public_qr_slug VARCHAR(64)`).catch(() => {});
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_brands_qr_slug ON brands(public_qr_slug) WHERE public_qr_slug IS NOT NULL`
+    ).catch(() => {});
+
+    await pool.query(`ALTER TABLE pass_templates ADD COLUMN IF NOT EXISTS hr_email VARCHAR(255)`).catch(() => {});
+    await pool.query(`ALTER TABLE pass_templates ADD COLUMN IF NOT EXISTS hr_phone VARCHAR(64)`).catch(() => {});
+    await pool.query(`ALTER TABLE pass_templates ADD COLUMN IF NOT EXISTS dpo_email VARCHAR(255)`).catch(() => {});
+    await pool.query(`ALTER TABLE pass_templates ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(64)`).catch(() => {});
+    await pool.query(`ALTER TABLE pass_templates ADD COLUMN IF NOT EXISTS back_resources JSONB DEFAULT '[]'::jsonb`).catch(() => {});
+    await pool.query(`ALTER TABLE pass_templates ADD COLUMN IF NOT EXISTS back_documents JSONB DEFAULT '[]'::jsonb`).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS enrollment_attempts (
+      id SERIAL PRIMARY KEY,
+      brand_id TEXT REFERENCES brands(id) ON DELETE SET NULL,
+      email_attempted VARCHAR(255),
+      ip_address VARCHAR(64),
+      user_agent TEXT,
+      result VARCHAR(32),
+      attempted_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_enrollment_attempts_ip ON enrollment_attempts(ip_address, attempted_at DESC)`
+    ).catch(() => {});
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_enrollment_attempts_brand ON enrollment_attempts(brand_id, attempted_at DESC)`
+    ).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS import_errors (
+      id SERIAL PRIMARY KEY,
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      import_batch_id VARCHAR(64),
+      row_number INTEGER,
+      row_data JSONB,
+      error_reason VARCHAR(255),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_import_errors_brand_batch ON import_errors(brand_id, import_batch_id, created_at DESC)`
+    ).catch(() => {});
 
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS include_pass_link BOOLEAN DEFAULT false`).catch(() => {});
     await pool.query(`ALTER TABLE scheduled_push ADD COLUMN IF NOT EXISTS pass_link_url VARCHAR(512)`).catch(() => {});
@@ -899,6 +947,19 @@ async function updateBrand(id, data) {
     sets.push(`back_documents = $${idx++}`);
     vals.push(JSON.stringify(arr.slice(0, 5)));
   }
+  if (data.allowed_email_domains !== undefined) {
+    const domains = Array.isArray(data.allowed_email_domains) ? data.allowed_email_domains : [];
+    sets.push(`allowed_email_domains = $${idx++}`);
+    vals.push(domains.map((d) => String(d).trim().toLowerCase()).filter(Boolean));
+  }
+  if (data.public_qr_enabled !== undefined) {
+    sets.push(`public_qr_enabled = $${idx++}`);
+    vals.push(!!data.public_qr_enabled);
+  }
+  if (data.public_qr_slug !== undefined) {
+    sets.push(`public_qr_slug = $${idx++}`);
+    vals.push(data.public_qr_slug ? String(data.public_qr_slug).trim() : null);
+  }
 
   vals.push(id);
   await pool.query(`UPDATE brands SET ${sets.join(', ')} WHERE id = $${idx}`, vals);
@@ -914,6 +975,7 @@ async function deleteBrand(id) {
   await pool.query('DELETE FROM holder_events WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM pass_instances WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM members WHERE brand_id = $1', [id]);
+  await pool.query('DELETE FROM import_errors WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM campaigns WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM strip_promos WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM pass_templates WHERE brand_id = $1', [id]);
@@ -923,46 +985,74 @@ async function deleteBrand(id) {
 
 // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Templates Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
+function parseTemplateRow(row) {
+  if (!row) return null;
+  const parseJson = (v, fallback) => {
+    if (v == null) return fallback;
+    if (typeof v === 'object') return v;
+    try { return JSON.parse(v); } catch { return fallback; }
+  };
+  const backResources = parseJson(row.back_resources, []);
+  const backDocuments = parseJson(row.back_documents, []);
+  return {
+    ...row,
+    style: parseJson(row.style, {}),
+    fields: parseJson(row.fields, {}),
+    config: parseJson(row.config, {}),
+    back_resources: Array.isArray(backResources) ? backResources : [],
+    back_documents: Array.isArray(backDocuments) ? backDocuments : []
+  };
+}
+
 async function createTemplate(data) {
   const id = data.id || uuidv4();
   const {
     brand_id, name, pass_type = 'coupon', style = {}, fields = [], config = {},
-    back_fixed_link_label = null, back_fixed_link_url = null
+    back_fixed_link_label = null, back_fixed_link_url = null,
+    hr_email = null, hr_phone = null, dpo_email = null, emergency_phone = null,
+    back_resources = [], back_documents = []
   } = data;
   if (!brand_id || !name) throw new Error('Brand ID and template name are required');
   const styleObj = typeof style === 'string' ? JSON.parse(style) : style;
   const fieldsObj = typeof fields === 'string' ? JSON.parse(fields) : fields;
   const configObj = typeof config === 'string' ? JSON.parse(config) : config;
+  const resourcesArr = Array.isArray(back_resources) ? back_resources.slice(0, 5) : [];
+  const documentsArr = Array.isArray(back_documents) ? back_documents.slice(0, 5) : [];
   await pool.query(
-    `INSERT INTO pass_templates (id, brand_id, name, pass_type, style, fields, config, back_fixed_link_label, back_fixed_link_url)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-    [id, brand_id, name, pass_type, JSON.stringify(styleObj), JSON.stringify(fieldsObj), JSON.stringify(configObj), back_fixed_link_label, back_fixed_link_url]
+    `INSERT INTO pass_templates (
+       id, brand_id, name, pass_type, style, fields, config,
+       back_fixed_link_label, back_fixed_link_url,
+       hr_email, hr_phone, dpo_email, emergency_phone, back_resources, back_documents
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    [
+      id, brand_id, name, pass_type,
+      JSON.stringify(styleObj), JSON.stringify(fieldsObj), JSON.stringify(configObj),
+      back_fixed_link_label, back_fixed_link_url,
+      hr_email, hr_phone, dpo_email, emergency_phone,
+      JSON.stringify(resourcesArr), JSON.stringify(documentsArr)
+    ]
   );
-  return { id, brand_id, name, pass_type, style: styleObj, fields: fieldsObj, config: configObj, back_fixed_link_label, back_fixed_link_url };
+  return parseTemplateRow({
+    id, brand_id, name, pass_type,
+    style: styleObj, fields: fieldsObj, config: configObj,
+    back_fixed_link_label, back_fixed_link_url,
+    hr_email, hr_phone, dpo_email, emergency_phone,
+    back_resources: resourcesArr, back_documents: documentsArr
+  });
 }
 
 async function getTemplate(id) {
   const result = await pool.query('SELECT * FROM pass_templates WHERE id = $1', [id]);
   if (result.rows.length === 0) return null;
-  const row = result.rows[0];
-  return {
-    ...row,
-    style: typeof row.style === 'string' ? JSON.parse(row.style) : row.style,
-    fields: typeof row.fields === 'string' ? JSON.parse(row.fields) : row.fields,
-    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config
-  };
+  return parseTemplateRow(result.rows[0]);
 }
 
 async function listTemplates(brandId) {
   const result = await pool.query(
     'SELECT * FROM pass_templates WHERE brand_id = $1 ORDER BY created_at DESC', [brandId]
   );
-  return result.rows.map(row => ({
-    ...row,
-    style: typeof row.style === 'string' ? JSON.parse(row.style) : row.style,
-    fields: typeof row.fields === 'string' ? JSON.parse(row.fields) : row.fields,
-    config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config
-  }));
+  return result.rows.map(parseTemplateRow);
 }
 
 async function updateTemplate(id, data) {
@@ -976,12 +1066,29 @@ async function updateTemplate(id, data) {
   if (data.config !== undefined) { sets.push(`config = $${idx++}`); vals.push(JSON.stringify(data.config)); }
   if (data.back_fixed_link_label !== undefined) { sets.push(`back_fixed_link_label = $${idx++}`); vals.push(data.back_fixed_link_label || null); }
   if (data.back_fixed_link_url !== undefined) { sets.push(`back_fixed_link_url = $${idx++}`); vals.push(data.back_fixed_link_url || null); }
+  const tplScalarCols = ['hr_email', 'hr_phone', 'dpo_email', 'emergency_phone'];
+  for (const col of tplScalarCols) {
+    if (data[col] !== undefined) {
+      sets.push(`${col} = $${idx++}`);
+      vals.push(data[col] || null);
+    }
+  }
+  if (data.back_resources !== undefined) {
+    const arr = Array.isArray(data.back_resources) ? data.back_resources : [];
+    sets.push(`back_resources = $${idx++}`);
+    vals.push(JSON.stringify(arr.slice(0, 5)));
+  }
+  if (data.back_documents !== undefined) {
+    const arr = Array.isArray(data.back_documents) ? data.back_documents : [];
+    sets.push(`back_documents = $${idx++}`);
+    vals.push(JSON.stringify(arr.slice(0, 5)));
+  }
   sets.push(`updated_at = NOW()`);
   vals.push(id);
   const result = await pool.query(
     `UPDATE pass_templates SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`, vals
   );
-  return result.rows[0] || null;
+  return result.rows[0] ? parseTemplateRow(result.rows[0]) : null;
 }
 
 async function deleteTemplate(id) {
@@ -1160,6 +1267,13 @@ async function ensureMembersHrSchema() {
   await addColumn('manager_email', 'VARCHAR(255)');
   await addColumn('created_at', 'TIMESTAMPTZ DEFAULT NOW()');
   await addColumn('updated_at', 'TIMESTAMPTZ DEFAULT NOW()');
+  await addColumn('activation_status', "VARCHAR(32) DEFAULT 'candidate'");
+  await addColumn('activation_token', 'VARCHAR(255)');
+  await addColumn('activation_token_expires_at', 'TIMESTAMPTZ');
+  await addColumn('invited_at', 'TIMESTAMPTZ');
+  await addColumn('activated_at', 'TIMESTAMPTZ');
+  await addColumn('activation_source', 'VARCHAR(32)');
+  await addColumn('activation_reminder_count', 'INTEGER DEFAULT 0');
 
   if (have.has('name') && have.has('first_name')) {
     await pool.query(`
@@ -1193,6 +1307,12 @@ async function ensureMembersHrSchema() {
   await pool.query(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_members_brand_employee ON members(brand_id, employee_id) WHERE employee_id IS NOT NULL`
   ).catch(() => {});
+  await pool.query(
+    `CREATE INDEX IF NOT EXISTS idx_members_activation_token ON members(activation_token) WHERE activation_token IS NOT NULL`
+  ).catch(() => {});
+  await pool.query(
+    `CREATE INDEX IF NOT EXISTS idx_members_activation_status ON members(brand_id, activation_status)`
+  ).catch(() => {});
 }
 
 async function getMemberForPass(passId) {
@@ -1224,6 +1344,11 @@ async function listEmployeesForBrand(brandId) {
       m.manager_email,
       m.created_at,
       m.updated_at,
+      m.activation_status,
+      m.invited_at,
+      m.activated_at,
+      m.activation_source,
+      m.activation_reminder_count,
       pi.serial_number,
       pi.status AS pass_status,
       COALESCE(pi.google_wallet_saved, false) AS google_wallet_saved,
@@ -1334,13 +1459,13 @@ async function importEmployeesBatch(brandId, employees, options = {}) {
   for (let i = 0; i < employees.length; i++) {
     const emp = employees[i];
     try {
-      if (!emp || (!emp.first_name && !emp.last_name && !emp.employee_id)) {
+      if (!emp || !String(emp.employee_id || '').trim()) {
         if (skip_invalid) {
           summary.skipped++;
-          summary.errors.push({ row: i + 1, reason: 'Riga senza nome o matricola' });
+          summary.errors.push({ row: i + 1, reason: 'Matricola mancante' });
           continue;
         }
-        throw new Error('Riga senza nome o matricola');
+        throw new Error('Matricola mancante');
       }
 
       const existing = await findMemberByBrandKey(brandId, {
@@ -1828,6 +1953,65 @@ async function listWaiLog(brand_id, limit = 20) {
     [brand_id, safeLimit]
   );
   return result.rows;
+}
+
+async function logEnrollmentAttempt({ brand_id = null, email_attempted = null, ip_address = null, user_agent = null, result }) {
+  if (!result) throw new Error('enrollment attempt result is required');
+  const r = await pool.query(
+    `INSERT INTO enrollment_attempts (brand_id, email_attempted, ip_address, user_agent, result)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [brand_id || null, email_attempted || null, ip_address || null, user_agent || null, result]
+  );
+  return r.rows[0];
+}
+
+async function listEnrollmentAttempts(brand_id, { limit = 50, since = null } = {}) {
+  const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 500);
+  const params = [brand_id];
+  let sql = 'SELECT * FROM enrollment_attempts WHERE brand_id = $1';
+  if (since) {
+    params.push(since);
+    sql += ` AND attempted_at >= $${params.length}`;
+  }
+  params.push(safeLimit);
+  sql += ` ORDER BY attempted_at DESC LIMIT $${params.length}`;
+  const result = await pool.query(sql, params);
+  return result.rows;
+}
+
+async function createImportError({ brand_id, import_batch_id, row_number, row_data, error_reason }) {
+  if (!brand_id || !error_reason) throw new Error('brand_id and error_reason are required');
+  const r = await pool.query(
+    `INSERT INTO import_errors (brand_id, import_batch_id, row_number, row_data, error_reason)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [
+      brand_id,
+      import_batch_id || null,
+      row_number != null ? parseInt(row_number, 10) : null,
+      row_data != null ? JSON.stringify(row_data) : null,
+      String(error_reason).slice(0, 255)
+    ]
+  );
+  return r.rows[0];
+}
+
+async function listImportErrors(brand_id, { import_batch_id = null, limit = 500 } = {}) {
+  const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 500, 1), 5000);
+  const params = [brand_id];
+  let sql = 'SELECT * FROM import_errors WHERE brand_id = $1';
+  if (import_batch_id) {
+    params.push(import_batch_id);
+    sql += ` AND import_batch_id = $${params.length}`;
+  }
+  params.push(safeLimit);
+  sql += ` ORDER BY created_at DESC, id DESC LIMIT $${params.length}`;
+  const result = await pool.query(sql, params);
+  return result.rows.map((row) => ({
+    ...row,
+    row_data: typeof row.row_data === 'string' ? JSON.parse(row.row_data) : row.row_data
+  }));
 }
 
 // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Strip Promos Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
@@ -2563,6 +2747,10 @@ module.exports = {
   logPushAssistantInteraction,
   logWaiInteraction,
   listWaiLog,
+  logEnrollmentAttempt,
+  listEnrollmentAttempts,
+  createImportError,
+  listImportErrors,
   // Strip Promos
   createStripPromo,
   listStripPromos,

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#8B5CF6">
+  <title>Attiva il pass — Filodiretto</title>
+  <link rel="stylesheet" href="/shared/theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fafafa;
+      color: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 32px 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8B5CF6;
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    p { color: #475569; font-size: 15px; line-height: 1.55; margin-bottom: 20px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #334155; }
+    input[type=email] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #8B5CF6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .msg { margin-top: 16px; font-size: 14px; padding: 12px; border-radius: 8px; display: none; }
+    .msg.ok { display: block; background: #ecfdf5; color: #047857; }
+    .msg.err { display: block; background: #fef2f2; color: #b91c1c; }
+    .foot { margin-top: 24px; text-align: center; font-size: 12px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Filodiretto</div>
+    <h1 id="title">Attiva il tuo pass</h1>
+    <p id="subtitle">Inserisci la tua email aziendale. Ti invieremo un link per attivare il pass dipendente.</p>
+    <form id="form">
+      <label for="email">Email aziendale</label>
+      <input type="email" id="email" name="email" required autocomplete="email" placeholder="nome.cognome@azienda.it">
+      <button type="submit" id="btn">Invia link di attivazione</button>
+    </form>
+    <div id="msg" class="msg"></div>
+    <p class="foot">Powered by Filodiretto</p>
+  </div>
+  <script>
+    const slug = location.pathname.split('/').filter(Boolean).pop() || '';
+    const API = '/api/v1';
+
+    fetch(`${API}/join/${encodeURIComponent(slug)}/info`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.brand_name) {
+          document.getElementById('title').textContent = data.brand_name;
+          document.title = data.brand_name + ' — Filodiretto';
+        }
+      })
+      .catch(() => {});
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn');
+      const msg = document.getElementById('msg');
+      const email = document.getElementById('email').value.trim();
+      msg.className = 'msg';
+      msg.textContent = '';
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API}/join/${encodeURIComponent(slug)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          msg.className = 'msg ok';
+          msg.textContent = data.message || 'Controlla la tua casella email.';
+          document.getElementById('form').style.display = 'none';
+        } else {
+          msg.className = 'msg err';
+          msg.textContent = data.message || data.error || 'Richiesta non riuscita.';
+        }
+      } catch (err) {
+        msg.className = 'msg err';
+        msg.textContent = 'Errore di rete. Riprova.';
+      }
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#8B5CF6">
+  <title>Attivazione pass — Filodiretto</title>
+  <link rel="stylesheet" href="/shared/theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fafafa;
+      color: #0f172a;
+      min-height: 100vh;
+      padding: 24px 20px 48px;
+    }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px 24px;
+      margin-bottom: 16px;
+    }
+    .badge { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8B5CF6; }
+    h1 { font-size: 22px; margin: 8px 0 4px; }
+    .meta { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+    h2 { font-size: 15px; margin: 20px 0 10px; }
+    .consent { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-size: 14px; color: #334155; }
+    .consent input { margin-top: 3px; }
+    button.primary {
+      width: 100%;
+      padding: 14px;
+      background: #8B5CF6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button.primary:disabled { opacity: 0.6; }
+    a.dl {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      padding: 14px;
+      background: #0f172a;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .err { color: #b91c1c; background: #fef2f2; padding: 12px; border-radius: 8px; font-size: 14px; }
+    .hidden { display: none; }
+    select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="loading" class="card"><p>Caricamento…</p></div>
+    <div id="error" class="card hidden"><p class="err" id="errorText"></p></div>
+    <div id="done" class="card hidden">
+      <div class="badge">Filodiretto</div>
+      <h1>Pass attivato</h1>
+      <p class="meta">Aggiungi il pass ad Apple Wallet per ricevere gli aggiornamenti.</p>
+      <a class="dl" id="downloadBtn" href="#">Scarica pass Apple Wallet</a>
+    </div>
+    <div id="formCard" class="card hidden">
+      <div class="badge">Filodiretto</div>
+      <h1 id="brandTitle">Attivazione pass</h1>
+      <p class="meta" id="memberLine"></p>
+      <div id="tplWrap" class="hidden">
+        <label for="template">Template pass</label>
+        <select id="template"></select>
+      </div>
+      <h2>Preferenze privacy (opzionali)</h2>
+      <div id="consents"></div>
+      <p style="font-size:12px;color:#64748b;margin-top:12px;">Proseguendo accetti l'informativa privacy del programma HR.</p>
+      <button type="button" class="primary" id="confirmBtn">Conferma e genera pass</button>
+    </div>
+  </div>
+  <script>
+    const CONSENT_LABELS = {
+      birthday: 'Compleanno e auguri',
+      welfare_geo: 'Welfare e servizi in base alla sede',
+      gamification: 'Gamification e sfide',
+      climate_survey: 'Sondaggi clima aziendale',
+      partner_offers: 'Offerte partner'
+    };
+    const token = location.pathname.split('/').filter(Boolean).pop() || '';
+    const API = '/api/v1';
+
+    let state = null;
+
+    async function load() {
+      const res = await fetch(`${API}/activate/${encodeURIComponent(token)}`);
+      const data = await res.json().catch(() => ({}));
+      document.getElementById('loading').classList.add('hidden');
+      if (!res.ok) {
+        document.getElementById('error').classList.remove('hidden');
+        document.getElementById('errorText').textContent = data.error || 'Link non valido o scaduto.';
+        return;
+      }
+      state = data;
+      if (data.already_activated) {
+        showDone('/api/v1/passes/');
+        return;
+      }
+      document.getElementById('formCard').classList.remove('hidden');
+      document.getElementById('brandTitle').textContent = data.member.brand_name || 'Attivazione pass';
+      const name = [data.member.first_name, data.member.last_name].filter(Boolean).join(' ');
+      document.getElementById('memberLine').textContent =
+        (name ? name + ' · ' : '') + (data.member.email || '') +
+        (data.member.employee_id ? ' · #' + data.member.employee_id : '');
+
+      const consentsEl = document.getElementById('consents');
+      (data.consent_types || []).forEach((type) => {
+        const label = CONSENT_LABELS[type] || type;
+        consentsEl.innerHTML += `<label class="consent"><input type="checkbox" data-consent="${type}"><span>${label}</span></label>`;
+      });
+
+      if (data.templates && data.templates.length > 1) {
+        document.getElementById('tplWrap').classList.remove('hidden');
+        const sel = document.getElementById('template');
+        data.templates.forEach((t) => {
+          const o = document.createElement('option');
+          o.value = t.id;
+          o.textContent = t.name || t.id;
+          sel.appendChild(o);
+        });
+      }
+    }
+
+    function showDone(downloadPath) {
+      document.getElementById('formCard').classList.add('hidden');
+      document.getElementById('done').classList.remove('hidden');
+      const a = document.getElementById('downloadBtn');
+      a.href = downloadPath;
+    }
+
+    document.getElementById('confirmBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('confirmBtn');
+      btn.disabled = true;
+      const consents = {};
+      document.querySelectorAll('[data-consent]').forEach((el) => {
+        consents[el.getAttribute('data-consent')] = el.checked;
+      });
+      const template_id = document.getElementById('template')?.value || undefined;
+      try {
+        const res = await fetch(`${API}/activate/${encodeURIComponent(token)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ consents, template_id })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Errore attivazione');
+        showDone(data.download_url);
+      } catch (e) {
+        alert(e.message);
+        btn.disabled = false;
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

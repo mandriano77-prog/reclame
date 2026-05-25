@@ -564,3 +564,52 @@ html[data-shell="light"] .confirm-dialog__actions {
 .import-preview-table tbody tr.import-preview-row--invalid td {
   opacity: 0.55;
 }
+
+.import-wizard__matricola-help {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.import-wizard__warn {
+  font-size: 13px;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+
+.import-map-row--required .import-wizard__field-label::after {
+  content: ' *';
+  color: #ef4444;
+}
+
+.import-rejected-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: #64748b;
+  max-height: 200px;
+  overflow: auto;
+}
+
+.import-result-summary {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #0f172a;
+}
+
+.nav-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #fef2f2;
+  color: #dc2626;
+  vertical-align: middle;
+}

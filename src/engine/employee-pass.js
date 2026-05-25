@@ -3,6 +3,11 @@
  * Single source for Filo Diretto HR pass content parity.
  */
 
+/** Canonical pass type in DB / API / UI for HR employee passes. */
+const EMPLOYEE_PASS_TYPE = 'employee_pass';
+/** Apple Wallet pass.json top-level key (implementation detail only). */
+const APPLE_EMPLOYEE_PASS_STRUCTURE = 'storeCard';
+
 const HR_BG_DEFAULT = '#8B5CF6';
 const HR_LABEL_DEFAULT = '#A78BFA';
 const HR_FG_DEFAULT = '#FFFFFF';
@@ -175,9 +180,26 @@ function makeHrLinkField(key, label, url) {
   };
 }
 
+/** Template-level HR retro fields with brand fallback (per-template config). */
+function resolveHrBackSource(template, brand) {
+  const tplRes = parseJsonArray(template?.back_resources);
+  const tplDocs = parseJsonArray(template?.back_documents);
+  const brandRes = parseJsonArray(brand?.back_resources);
+  const brandDocs = parseJsonArray(brand?.back_documents);
+  return {
+    hr_email: template?.hr_email ?? brand?.hr_email ?? null,
+    hr_phone: template?.hr_phone ?? brand?.hr_phone ?? null,
+    dpo_email: template?.dpo_email ?? brand?.dpo_email ?? null,
+    emergency_phone: template?.emergency_phone ?? brand?.emergency_phone ?? null,
+    back_resources: tplRes.length ? tplRes : brandRes,
+    back_documents: tplDocs.length ? tplDocs : brandDocs
+  };
+}
+
 function buildBackSections({ brand, template, instance, member, brandConfig = {} }) {
   const profile = resolveMemberProfile(member, instance);
   const sections = [];
+  const hrBack = resolveHrBackSource(template, brand);
 
   const dynamicLink = resolveVariableLink(instance, template, brandConfig);
   if (dynamicLink?.url) {
@@ -219,17 +241,24 @@ function buildBackSections({ brand, template, instance, member, brandConfig = {}
     sections.push({ kind: 'text', key: 'manager', label: 'MANAGER DIRETTO', body: mgr });
   }
 
-  if (brand?.hr_email) sections.push({ kind: 'text', key: 'hr_email', label: 'PEOPLE OPERATIONS', body: brand.hr_email });
-  if (brand?.hr_phone) sections.push({ kind: 'text', key: 'hr_phone', label: 'TELEFONO HR', body: brand.hr_phone });
-  if (brand?.dpo_email) sections.push({ kind: 'text', key: 'dpo', label: 'PRIVACY / DPO', body: brand.dpo_email });
-  if (brand?.emergency_phone) sections.push({ kind: 'text', key: 'emergency', label: 'EMERGENZE', body: brand.emergency_phone });
+  if (hrBack.hr_email) sections.push({ kind: 'text', key: 'hr_email', label: 'PEOPLE OPERATIONS', body: hrBack.hr_email });
+  if (hrBack.hr_phone) sections.push({ kind: 'text', key: 'hr_phone', label: 'TELEFONO HR', body: hrBack.hr_phone });
+  if (hrBack.dpo_email) sections.push({ kind: 'text', key: 'dpo', label: 'PRIVACY / DPO', body: hrBack.dpo_email });
+  if (hrBack.emergency_phone) sections.push({ kind: 'text', key: 'emergency', label: 'EMERGENZE', body: hrBack.emergency_phone });
 
-  parseJsonArray(brand?.back_resources).slice(0, 5).forEach((r, i) => {
+  hrBack.back_resources.slice(0, 5).forEach((r, i) => {
     if (r?.label && r?.url) sections.push({ kind: 'link', key: `resource_${i}`, label: r.label, url: r.url });
   });
 
-  parseJsonArray(brand?.back_documents).slice(0, 5).forEach((d, i) => {
+  hrBack.back_documents.slice(0, 5).forEach((d, i) => {
     if (d?.label && d?.url) sections.push({ kind: 'link', key: `doc_${i}`, label: d.label, url: d.url, doc: true });
+  });
+
+  sections.push({
+    kind: 'text',
+    key: 'portal_placeholder',
+    label: 'PROFILO PERSONALE',
+    body: 'Portale dipendente — in implementazione'
   });
 
   return sections;
@@ -263,34 +292,28 @@ function buildEmployeePass({ brand, template, instance, member, brandConfig, api
   const images = walletImageUrls({ apiBase, brand, template });
   const tplImages = template?.style?.images || {};
 
-  const primary = profile.full_name
-    ? { key: 'employee_name', label: '', value: profile.full_name }
-    : null;
-
+  // Front layout: strip only on top; name/matricola below strip; reparto/sede on auxiliary row.
   const secondary = [];
-  if (profile.employee_id) {
-    secondary.push({ key: 'matricola', label: 'MATRICOLA', value: `#${profile.employee_id}` });
+  if (profile.full_name) {
+    secondary.push({ key: 'name', label: 'DIPENDENTE', value: profile.full_name });
+  }
+  secondary.push({
+    key: 'matricola',
+    label: 'MATRICOLA',
+    value: profile.employee_id ? `#${profile.employee_id}` : '—'
+  });
+
+  const auxiliary = [];
+  if (profile.department) {
+    auxiliary.push({ key: 'reparto', label: 'REPARTO', value: profile.department });
   }
   if (profile.office_location) {
-    secondary.push({ key: 'sede', label: 'SEDE', value: profile.office_location });
+    auxiliary.push({ key: 'sede', label: 'SEDE', value: profile.office_location });
   }
-  if (profile.department) {
-    secondary.push({ key: 'reparto', label: 'REPARTO', value: profile.department });
-  }
-
-  // HR pass front: solo dati dipendente + hint fisso (no header/secondary marketing dal template)
-  const header = [{
-    key: 'info_hint',
-    label: 'CLICCA SUI PUNTINI',
-    value: 'per i dettagli'
-  }];
-  const auxiliary = [];
 
   const backSections = buildBackSections({ brand, template, instance, member, brandConfig: cfg });
 
   const barcodeValue = instance?.serial_number || '';
-  const employeeId = profile.employee_id || profile.id || instance?.id || '';
-  const barcodeAlt = `${profile.full_name || 'Membro'} · #${employeeId}`.slice(0, 64);
 
   return {
     member_id: member?.id || instance?.member_id || null,
@@ -298,10 +321,10 @@ function buildEmployeePass({ brand, template, instance, member, brandConfig, api
     pass_instance_id: instance?.id || null,
     serial_number: instance?.serial_number || null,
     brandName: brand?.name || '',
-    logoText: brand?.name || '',
+    logoText: '',
     programName: (template?.name || brand?.name || '').slice(0, 64),
     templateName: template?.name || '',
-    passType: template?.pass_type || 'storeCard',
+    passType: EMPLOYEE_PASS_TYPE,
     profile,
     colors,
     images,
@@ -311,9 +334,9 @@ function buildEmployeePass({ brand, template, instance, member, brandConfig, api
       background: !!tplImages.background,
       logo: !!tplImages.logo
     },
-    front: { primary, secondary, header, auxiliary },
+    front: { secondary, auxiliary },
     backSections,
-    barcode: { value: barcodeValue, altText: barcodeAlt }
+    barcode: { value: barcodeValue }
   };
 }
 
@@ -335,19 +358,19 @@ function sectionsToAppleBackFields(sections) {
   });
 }
 
-/** Apple Wallet — pass.json storeCard/eventTicket slice */
+/** Apple Wallet — pass.json storeCard slice (employee pass layout). */
 function toApplePass(employeePass) {
-  const passStructure = {};
-  if (employeePass.front.header?.length) passStructure.headerFields = employeePass.front.header;
-  if (employeePass.front.primary) passStructure.primaryFields = [employeePass.front.primary];
-  if (employeePass.front.secondary?.length) passStructure.secondaryFields = employeePass.front.secondary;
-  if (employeePass.front.auxiliary?.length) passStructure.auxiliaryFields = employeePass.front.auxiliary;
+  const passStructure = {
+    primaryFields: [],
+    secondaryFields: employeePass.front.secondary || [],
+    auxiliaryFields: employeePass.front.auxiliary || []
+  };
   if (employeePass.backSections?.length) {
     passStructure.backFields = sectionsToAppleBackFields(employeePass.backSections);
   }
 
   return {
-    logoText: employeePass.logoText,
+    logoText: '',
     organizationName: employeePass.brandName,
     description: employeePass.templateName,
     foregroundColor: employeePass.colors.foregroundColor,
@@ -357,8 +380,7 @@ function toApplePass(employeePass) {
     barcode: {
       format: 'PKBarcodeFormatQR',
       message: employeePass.barcode.value,
-      messageEncoding: 'iso-8859-1',
-      altText: employeePass.barcode.altText
+      messageEncoding: 'iso-8859-1'
     }
   };
 }
@@ -369,6 +391,25 @@ function googleImageRef(uri, description) {
     sourceUri: { uri },
     contentDescription: { defaultValue: { language: 'it', value: description || '' } }
   };
+}
+
+function buildGoogleFrontTextModules(employeePass) {
+  const modules = [];
+  (employeePass.front.secondary || []).forEach((f, i) => {
+    modules.push({
+      id: `front_sec_${i}`,
+      header: f.label,
+      body: String(f.value).slice(0, 500)
+    });
+  });
+  (employeePass.front.auxiliary || []).forEach((f, i) => {
+    modules.push({
+      id: `front_aux_${i}`,
+      header: f.label,
+      body: String(f.value).slice(0, 500)
+    });
+  });
+  return modules;
 }
 
 /** Google Wallet — generic/loyalty class + object fragments */
@@ -405,35 +446,29 @@ function toGooglePass(employeePass, { passKind = 'generic' } = {}) {
   }
 
   classPatch.hexBackgroundColor = employeePass.colors.hexBackgroundColor;
-  classPatch.programName = employeePass.programName;
+  if (!logoUri) {
+    classPatch.programName = employeePass.programName;
+  }
 
   const objectPatch = {
     hexBackgroundColor: employeePass.colors.hexBackgroundColor,
     barcode: {
       type: 'QR_CODE',
-      value: employeePass.barcode.value,
-      alternateText: employeePass.barcode.altText
+      value: employeePass.barcode.value
     },
-    textModulesData,
+    textModulesData: [...buildGoogleFrontTextModules(employeePass), ...textModulesData],
     linksModuleData
   };
 
   if (passKind === 'loyalty') {
     objectPatch.accountName = (employeePass.profile.full_name || 'Membro').slice(0, 64);
   } else {
-    objectPatch.cardTitle = { defaultValue: { language: 'it', value: employeePass.brandName } };
-    objectPatch.subheader = { defaultValue: { language: 'it', value: 'Dipendente' } };
+    objectPatch.cardTitle = { defaultValue: { language: 'it', value: 'Pass dipendente' } };
+    objectPatch.subheader = { defaultValue: { language: 'it', value: employeePass.brandName } };
     objectPatch.header = { defaultValue: { language: 'it', value: employeePass.profile.full_name || 'Membro' } };
     if (thumbUri && employeePass.hasTemplateImages.thumbnail) {
       objectPatch.mainImage = googleImageRef(thumbUri, 'Thumbnail');
     }
-    employeePass.front.secondary.slice(0, 3).forEach((f, i) => {
-      objectPatch.textModulesData.unshift({
-        id: `front_sec_${i}`,
-        header: f.label,
-        body: f.value
-      });
-    });
   }
 
   return { classPatch, objectPatch };
@@ -454,20 +489,23 @@ function toSamsungPass(employeePass) {
     .filter((s) => s.kind === 'link')
     .map((s) => ({ name: s.label, url: s.url }));
 
-  const secondaryLine = employeePass.front.secondary
-    .map((f) => f.value)
-    .filter(Boolean)
-    .join(' · ');
+  const frontContents = [];
+  (employeePass.front.secondary || []).forEach((f) => {
+    frontContents.push({ title: f.label, content: f.value });
+  });
+  (employeePass.front.auxiliary || []).forEach((f) => {
+    frontContents.push({ title: f.label, content: f.value });
+  });
 
   return {
     title: (employeePass.profile.full_name || employeePass.brandName).slice(0, 64),
-    cardSubTitle: secondaryLine.slice(0, 120) || employeePass.brandName.slice(0, 32),
+    cardSubTitle: 'Pass dipendente',
     providerName: employeePass.brandName.slice(0, 32),
     logoImage: employeePass.images.logo,
     bannerImage: employeePass.images.strip,
     bgColor: employeePass.colors.hexBackgroundColor,
-    noticeDesc: contents.length
-      ? `<p>${contents.map((c) => `${escapeHtml(c.title)}: ${escapeHtml(c.content)}`).join('<br>')}</p>`
+    noticeDesc: [...frontContents, ...contents].length
+      ? `<p>${[...frontContents, ...contents].map((c) => `${escapeHtml(c.title)}: ${escapeHtml(c.content)}`).join('<br>')}</p>`
       : `<p>${escapeHtml(employeePass.templateName)}</p>`,
     links,
     barcode: {
@@ -483,6 +521,8 @@ function isHrEmployeePass(brand) {
 }
 
 module.exports = {
+  EMPLOYEE_PASS_TYPE,
+  APPLE_EMPLOYEE_PASS_STRUCTURE,
   buildEmployeePass,
   toApplePass,
   toGooglePass,
@@ -491,6 +531,7 @@ module.exports = {
   resolveEmployeePassColors,
   walletImageUrls,
   buildBackSections,
+  resolveHrBackSource,
   sectionsToAppleBackFields,
   resolveMemberProfile,
   resolveVariableLink,

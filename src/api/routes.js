@@ -10,6 +10,8 @@ const {
   incrementCampaignDownloads, incrementCampaignInstalls,
   createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesForTemplate, listPasses, countPasses, deletePass,
   getMemberForPass, listEmployeesForBrand, importEmployeesBatch,
+  findMemberByBrandKey, updateMemberRecord,
+  createImportError, listImportErrors,
   updatePassDynamicLinks,
   logEvent, listEvents,
   registerDevice, getDevicesForPass, getDevicesForBrand, getDevicesForTemplate, unregisterDevice, getSerialsForDevice,
@@ -130,6 +132,11 @@ function validateBrandBackLinks(data) {
       if (row?.url) assertHttpsUrl(row.url, 'URL documento');
     }
   }
+}
+
+function validateTemplateBackPayload(body) {
+  if (body.back_fixed_link_url) assertHttpsUrl(body.back_fixed_link_url, 'Link fisso fallback');
+  validateBrandBackLinks(body);
 }
 
 /** Comma-separated emails allowed to log in on this deploy (e.g. Filo Diretto → admin@nudj.studio). */
@@ -255,10 +262,9 @@ async function syncGoogleWalletObjectsForPasses({ brand, passes, message }) {
 const JWT_SECRET = process.env.JWT_SECRET || 'nudj-secret-change-me-in-prod';
 const JWT_EXPIRES = '7d';
 
-// ============================================================================
-// PUBLIC ENDPOINTS (before auth middleware)
-// ============================================================================
 
+// =====================================================================// PUBLIC ENDPOINTS (before auth middleware)
+// =====================================================================
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Auth ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.post('/auth/login', async (req, res) => {
   try {
@@ -562,9 +568,10 @@ router.post('/signup', async (req, res) => {
     res.status(500).json({ error: 'Errore creazione pass: ' + err.message });
   }
 });
-// ============================================================================
-// GOOGLE WALLET SIGNUP â same flow as /signup but returns Google Wallet save link
-// ============================================================================
+
+// =====================================================================// GOOGLE WALLET SIGNUP â same flow as /signup but returns Google Wallet save link
+// =====================================================================
+
 router.post('/signup/google-wallet', async (req, res) => {
   try {
     if (!googleWallet.isConfigured()) {
@@ -628,9 +635,10 @@ router.post('/signup/google-wallet', async (req, res) => {
   }
 });
 
-// ============================================================================
-// SAMSUNG WALLET SIGNUP — Data Fetch Link (loyalty card, Partner portal)
-// ============================================================================
+
+// =====================================================================// SAMSUNG WALLET SIGNUP — Data Fetch Link (loyalty card, Partner portal)
+// =====================================================================
+
 router.post('/signup/samsung-wallet', async (req, res) => {
   try {
     if (!samsungWallet.isConfigured()) {
@@ -1076,10 +1084,109 @@ router.get('/click/:campaign_id', async (req, res) => {
   }
 });
 
-// ============================================================================
-// AUTH MIDDLEWARE ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ everything below requires JWT
-// ============================================================================
+const {
+  findBrandForPublicJoin,
+  publicJoinByEmail,
+  getMemberForActivationToken,
+  confirmMemberActivation,
+  distributeActivationEmails,
+  issueMemberActivation,
+  joinUrl
+} = require('../engine/hr-activation');
+const { sendActivationEmail } = require('../engine/mailer');
 
+function hrActivationDb() {
+  return {
+    pool,
+    getBrand,
+    getTemplate,
+    listTemplates,
+    updateMemberRecord,
+    updatePassInstance,
+    createPassInstance,
+    logEvent,
+    logEnrollmentAttempt
+  };
+}
+
+function clientIp(req) {
+  return (
+    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    req.ip ||
+    ''
+  );
+}
+
+router.get('/join/:slug/info', async (req, res) => {
+  try {
+    const brand = await findBrandForPublicJoin(hrActivationDb(), req.params.slug);
+    if (!brand) return res.status(404).json({ error: 'Programma non disponibile' });
+    res.json({
+      brand_name: brand.name,
+      slug: brand.public_qr_slug || brand.slug
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/join/:slug', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    const result = await publicJoinByEmail(hrActivationDb(), {
+      slug: req.params.slug,
+      email,
+      ip: clientIp(req),
+      userAgent: req.headers['user-agent'] || ''
+    });
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/activate/:token', async (req, res) => {
+  try {
+    const member = await getMemberForActivationToken(hrActivationDb(), req.params.token);
+    if (!member) return res.status(404).json({ error: 'Link non valido o scaduto' });
+    const templates = await listTemplates(member.brand_id);
+    const hrTemplates = templates.filter((t) => t.pass_type === 'employee_pass');
+    res.json({
+      member: {
+        first_name: member.first_name,
+        last_name: member.last_name,
+        email: member.email,
+        employee_id: member.employee_id,
+        brand_name: member.brand_name
+      },
+      templates: hrTemplates.map((t) => ({ id: t.id, name: t.name })),
+      consent_types: ['birthday', 'welfare_geo', 'gamification', 'climate_survey', 'partner_offers'],
+      already_activated: member.activation_status === 'activated'
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/activate/:token', async (req, res) => {
+  try {
+    const { consents, template_id } = req.body || {};
+    const result = await confirmMemberActivation(hrActivationDb(), req.params.token, {
+      consents: consents || {},
+      template_id,
+      ip: clientIp(req),
+      userAgent: req.headers['user-agent'] || ''
+    });
+    res.json({
+      success: true,
+      pass_id: result.pass.id,
+      download_url: result.download_url,
+      brand_name: result.brand_name
+    });
+  } catch (err) {
+    const status = /non valido|scaduto/i.test(err.message) ? 404 : 400;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+
+// =====================================================================// AUTH MIDDLEWARE ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ everything below requires JWT
+// =====================================================================
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -1165,6 +1272,10 @@ function isJwtBypassRoute(req) {
   if (path === '/google-wallet/callback' && (m === 'GET' || m === 'POST')) return true;
   if (m === 'GET' && path.startsWith('/samsung-wallet/pass/')) return true;
   if ((m === 'GET' || m === 'POST') && /^\/samsung-wallet\/cards\//.test(path)) return true;
+  if (m === 'GET' && /^\/join\/[^/]+\/info$/.test(path)) return true;
+  if (m === 'POST' && /^\/join\/[^/]+$/.test(path)) return true;
+  if (m === 'GET' && /^\/activate\/[^/]+$/.test(path)) return true;
+  if (m === 'POST' && /^\/activate\/[^/]+$/.test(path)) return true;
   return false;
 }
 
@@ -1635,10 +1746,18 @@ router.get('/templates', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+async function normalizeTemplateBodyForBrand(body, brand, req) {
+  if (!isHrBrand(brand, req)) return body;
+  return { ...body, pass_type: 'employee_pass' };
+}
+
 router.post('/templates', async (req, res) => {
   try {
     if (!requireBrandId(req, res, req.body.brand_id)) return;
-    const template = await createTemplate(req.body);
+    const brand = await getBrand(req.body.brand_id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    validateTemplateBackPayload(req.body);
+    const template = await createTemplate(await normalizeTemplateBodyForBrand(req.body, brand, req));
     res.json(template);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1657,10 +1776,12 @@ router.put('/templates/:id', async (req, res) => {
     const existing = await getTemplate(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Template non trovato' });
     if (!requireBrandId(req, res, existing.brand_id)) return;
-    if (req.body.back_fixed_link_url) {
-      assertHttpsUrl(req.body.back_fixed_link_url, 'Link fisso fallback');
-    }
-    const template = await updateTemplate(req.params.id, req.body);
+    validateTemplateBackPayload(req.body);
+    const brand = await getBrand(existing.brand_id);
+    const template = await updateTemplate(
+      req.params.id,
+      await normalizeTemplateBodyForBrand(req.body, brand, req)
+    );
     const { touched } = await touchPassesForTemplate(req.params.id);
     let wallet_push_sent = 0;
     const devices = await getDevicesForTemplate(req.params.id);
@@ -1968,6 +2089,20 @@ router.post('/push/send', async (req, res) => {
           { include_pass_link, pass_link_url, pass_link_label, pass_link_expires_at, back_link_url, back_link_label },
           title
         );
+        if (!passLink) {
+          const linkOutUrl = (back_link_url || pass_link_url || '').trim();
+          if (linkOutUrl) {
+            passLink = parsePassLinkFromPushBody(
+              {
+                include_pass_link: true,
+                pass_link_url: linkOutUrl,
+                pass_link_label: back_link_label || pass_link_label,
+                pass_link_expires_at
+              },
+              title
+            );
+          }
+        }
       } catch (linkErr) {
         return res.status(400).json({ error: linkErr.message });
       }
@@ -1975,16 +2110,8 @@ router.post('/push/send', async (req, res) => {
       if (passLink) {
         await updatePassDynamicLinks(targetPasses.map((p) => p.id), passLink);
         console.log(`[PUSH] Dynamic pass link set on ${targetPasses.length} passes until ${passLink.expiresAt}`);
-      }
-
-      const linkOutUrl = (back_link_url || pass_link_url || '').trim();
-      if (linkOutUrl && !passLink) {
-        config.pushLinkOut = {
-          label: (back_link_label || pass_link_label || '').trim() || 'Scopri di più',
-          url: linkOutUrl,
-          ts: Date.now()
-        };
-      } else if (!passLink) {
+        delete config.pushLinkOut;
+      } else {
         delete config.pushLinkOut;
       }
 
@@ -3298,8 +3425,7 @@ router.get('/play/:serial_number/info', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Leads Database (aggregated player data) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
-
+// Leads Database (aggregated player data)
 
 
 function isHrBrand(brand, req) {
@@ -3375,29 +3501,47 @@ router.post('/brands/:brand_id/employees/import', async (req, res) => {
       update_existing = false
     } = req.body || {};
 
+    const {
+      parseImportFile,
+      evaluateImportRows,
+      newImportBatchId
+    } = require('../engine/member-import');
+
     let employees = Array.isArray(employeesBody) ? employeesBody : null;
+    let rejected = [];
+    const batch_id = newImportBatchId();
 
     if (!employees) {
-      const {
-        parseImportFile,
-        mapRowToEmployee,
-        rowIsValid,
-        suggestColumnMapping
-      } = require('../engine/member-import');
+      if (!file_base64 && !csv_text) {
+        return res.status(400).json({ error: 'Carica un file CSV/Excel o incolla testo CSV' });
+      }
       const { headers, rows } = parseImportFile({ file_base64, filename, csv_text });
-      const effectiveMapping = mapping && Object.keys(mapping).length
-        ? mapping
-        : suggestColumnMapping(headers);
-      employees = rows
-        .map((row) => mapRowToEmployee(row, effectiveMapping))
-        .filter(rowIsValid);
+      const evaluated = await evaluateImportRows({
+        headers,
+        rows,
+        mapping,
+        allowExisting: !!update_existing,
+        checkExisting: async (employee_id) => findMemberByBrandKey(brand_id, { employee_id })
+      });
+      employees = evaluated.employees;
+      rejected = evaluated.rejected;
     }
 
-    if (!employees.length) {
-      return res.status(400).json({ error: 'Nessuna riga valida da importare' });
+    for (const row of rejected) {
+      await createImportError({
+        brand_id,
+        import_batch_id: batch_id,
+        row_number: row.row,
+        row_data: { raw: row.raw, mapped: row.mapped, name: row.name },
+        error_reason: row.reason
+      });
     }
 
-    if (create_passes) {
+    if (!employees.length && !rejected.length) {
+      return res.status(400).json({ error: 'File vuoto o senza righe dati' });
+    }
+
+    if (create_passes && employees.length) {
       if (!template_id) {
         return res.status(400).json({ error: 'template_id richiesto per creare i pass' });
       }
@@ -3407,14 +3551,184 @@ router.post('/brands/:brand_id/employees/import', async (req, res) => {
       }
     }
 
-    const summary = await importEmployeesBatch(brand_id, employees, {
-      template_id,
-      create_passes: !!create_passes,
-      update_existing: !!update_existing,
-      skip_invalid: true
+    const summary = employees.length
+      ? await importEmployeesBatch(brand_id, employees, {
+        template_id,
+        create_passes: !!create_passes,
+        update_existing: !!update_existing,
+        skip_invalid: true
+      })
+      : { created: 0, updated: 0, skipped: 0, passes_created: 0, errors: [] };
+
+    const imported = (summary.created || 0) + (summary.updated || 0);
+    res.json({
+      success: true,
+      imported,
+      rejected: rejected.length,
+      batch_id,
+      errors: rejected.map((r) => ({ row: r.row, name: r.name, reason: r.reason })),
+      created: summary.created,
+      updated: summary.updated,
+      passes_created: summary.passes_created,
+      skipped: summary.skipped
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/brands/:brand_id/employees/import/errors', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    const { import_batch_id } = req.query;
+    if (!requireBrandId(req, res, brand_id)) return;
+    if (!import_batch_id) {
+      return res.status(400).json({ error: 'import_batch_id richiesto' });
+    }
+    const rows = await listImportErrors(brand_id, { import_batch_id });
+    res.json({ import_batch_id, errors: rows });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch('/brands/:brand_id/members/:member_id', async (req, res) => {
+  try {
+    const { brand_id, member_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand || !isHrBrand(brand, req)) {
+      return res.status(400).json({ error: 'Aggiornamento dipendente disponibile solo per brand HR' });
+    }
+
+    const existing = await pool.query(
+      'SELECT * FROM members WHERE id = $1 AND brand_id = $2',
+      [member_id, brand_id]
+    );
+    if (!existing.rows.length) return res.status(404).json({ error: 'Dipendente non trovato' });
+
+    const member = existing.rows[0];
+    const { employee_id, department, office_location, first_name, last_name, email } = req.body || {};
+
+    if (employee_id !== undefined) {
+      const trimmed = String(employee_id || '').trim();
+      if (!trimmed) return res.status(400).json({ error: 'Matricola obbligatoria' });
+      const dup = await findMemberByBrandKey(brand_id, { employee_id: trimmed });
+      if (dup && String(dup.id) !== String(member_id)) {
+        return res.status(409).json({ error: `Matricola #${trimmed} già assegnata` });
+      }
+    }
+
+    const updated = await updateMemberRecord(member_id, {
+      employee_id,
+      department,
+      office_location,
+      first_name,
+      last_name,
+      email
     });
 
-    res.json({ success: true, ...summary });
+    let wallet_push_sent = 0;
+    if (updated.pass_id) {
+      await touchPass(updated.pass_id);
+      const devices = await pool.query(
+        `SELECT push_token FROM device_registrations WHERE serial_number = (
+          SELECT serial_number FROM pass_instances WHERE id = $1
+        ) AND push_token IS NOT NULL AND push_token <> ''`,
+        [updated.pass_id]
+      );
+      for (const d of devices.rows) {
+        try {
+          const result = await sendPushUpdate(d.push_token);
+          if (result.success) wallet_push_sent++;
+        } catch (_) {}
+      }
+    }
+
+    res.json({ member: updated, wallet_push_sent });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/brands/:brand_id/activation/stats', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand || !isHrBrand(brand, req)) {
+      return res.status(400).json({ error: 'Statistiche attivazione solo per brand HR' });
+    }
+    const r = await pool.query(
+      `SELECT activation_status, COUNT(*)::int AS c
+       FROM members WHERE brand_id = $1
+       GROUP BY activation_status`,
+      [brand_id]
+    );
+    const counts = { candidate: 0, invited: 0, activated: 0 };
+    for (const row of r.rows) {
+      const k = row.activation_status || 'candidate';
+      counts[k] = (counts[k] || 0) + row.c;
+    }
+    const joinSlug = brand.public_qr_slug || brand.slug;
+    res.json({
+      counts,
+      total: Object.values(counts).reduce((a, b) => a + b, 0),
+      public_qr_enabled: !!brand.public_qr_enabled,
+      public_qr_slug: brand.public_qr_slug,
+      allowed_email_domains: brand.allowed_email_domains || [],
+      join_url: brand.public_qr_enabled ? joinUrl(joinSlug) : null
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/brands/:brand_id/employees/distribute', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    if (!requireWriteAccess(req, res)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand || !isHrBrand(brand, req)) {
+      return res.status(400).json({ error: 'Distribuzione solo per brand HR' });
+    }
+    const { member_ids, all_pending, resend } = req.body || {};
+    let ids = Array.isArray(member_ids) ? member_ids.map(String) : [];
+    if (all_pending) {
+      const r = await pool.query(
+        `SELECT id FROM members
+         WHERE brand_id = $1
+           AND email IS NOT NULL AND TRIM(email) <> ''
+           AND (activation_status IS NULL OR activation_status IN ('candidate', 'invited'))
+         ORDER BY created_at`,
+        [brand_id]
+      );
+      ids = r.rows.map((row) => row.id);
+    }
+    if (!ids.length) return res.status(400).json({ error: 'Nessun dipendente da invitare' });
+    const summary = await distributeActivationEmails(hrActivationDb(), brand_id, ids, { resend: !!resend });
+    res.json(summary);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/brands/:brand_id/members/:member_id/activation/resend', async (req, res) => {
+  try {
+    const { brand_id, member_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    if (!requireWriteAccess(req, res)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand || !isHrBrand(brand, req)) {
+      return res.status(400).json({ error: 'Solo brand HR' });
+    }
+    const r = await pool.query(
+      'SELECT * FROM members WHERE id = $1 AND brand_id = $2',
+      [member_id, brand_id]
+    );
+    const member = r.rows[0];
+    if (!member) return res.status(404).json({ error: 'Dipendente non trovato' });
+    if (!member.email) return res.status(400).json({ error: 'Email mancante' });
+    const { url } = await issueMemberActivation(hrActivationDb(), member, { source: 'manual_resend' });
+    await sendActivationEmail({
+      to: member.email,
+      firstName: member.first_name,
+      brandName: brand.name,
+      activateUrl: url,
+      dpoEmail: brand.dpo_email
+    });
+    res.json({ success: true, activation_url: url });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -3442,7 +3756,10 @@ router.get('/brands/:brand_id/leads', async (req, res) => {
         registered_at: m.created_at,
         pass_status: m.pass_status,
         google_wallet_saved: m.google_wallet_saved,
-        samsung_wallet_saved: m.samsung_wallet_saved
+        samsung_wallet_saved: m.samsung_wallet_saved,
+        activation_status: m.activation_status || 'candidate',
+        invited_at: m.invited_at,
+        activated_at: m.activated_at
       }));
       return res.json({
         leads,

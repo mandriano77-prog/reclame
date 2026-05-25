@@ -469,10 +469,77 @@ async function sendPasswordResetEmail({ to, name, resetUrl }) {
   return result;
 }
 
+/**
+ * HR employee pass activation invite (Filodiretto).
+ */
+async function sendActivationEmail({ to, firstName, brandName, activateUrl, dpoEmail }) {
+  const resend = getResend();
+  if (!resend) {
+    console.log('⚠️ RESEND_API_KEY not set — skipping activation email to', to);
+    return { skipped: true, reason: 'RESEND_API_KEY not set' };
+  }
+  const name = firstName || 'Collega';
+  const brand = brandName || 'la tua azienda';
+  const support = dpoEmail || getFromEmail();
+  const html = `
+<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:520px;margin:0 auto;padding:32px 20px;">
+  <div style="background:#fff;border-radius:12px;padding:32px 24px;border:1px solid #e2e8f0;">
+    <p style="color:#8B5CF6;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px;">Filodiretto</p>
+    <h1 style="color:#0f172a;font-size:22px;margin:0 0 16px;">Benvenuto in ${brand}</h1>
+    <p style="color:#334155;font-size:15px;line-height:1.6;margin:0 0 16px;">Ciao <strong>${name}</strong>,</p>
+    <p style="color:#334155;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Da oggi puoi ricevere le comunicazioni della tua azienda direttamente sulla lock-screen del telefono —
+      niente email, niente intranet.
+    </p>
+    <p style="text-align:center;margin:0 0 24px;">
+      <a href="${activateUrl}" style="display:inline-block;background:#8B5CF6;color:#fff;font-weight:600;font-size:15px;padding:14px 28px;border-radius:8px;text-decoration:none;">Attiva ora →</a>
+    </p>
+    <p style="color:#64748b;font-size:13px;line-height:1.5;margin:0;">Il link è valido 30 giorni. Per assistenza: ${support}</p>
+  </div>
+  <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">Powered by Filodiretto</p>
+</div></body></html>`;
+
+  return resend.emails.send({
+    from: `${getFromName()} <${getFromEmail()}>`,
+    to: [to],
+    subject: `Benvenuto in ${brand} — Attiva il tuo pass`,
+    html
+  });
+}
+
+async function sendActivationReminderEmail({ to, firstName, brandName, activateUrl }) {
+  const resend = getResend();
+  if (!resend) return { skipped: true, reason: 'RESEND_API_KEY not set' };
+  const name = firstName || 'Collega';
+  const brand = brandName || 'la tua azienda';
+  const html = `
+<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
+<div style="max-width:520px;margin:0 auto;padding:32px 20px;">
+  <div style="background:#fff;border-radius:12px;padding:28px 24px;border:1px solid #e2e8f0;">
+    <h1 style="color:#0f172a;font-size:20px;margin:0 0 12px;">Promemoria — ${brand}</h1>
+    <p style="color:#334155;font-size:15px;line-height:1.6;">Ciao ${name}, il tuo pass dipendente è ancora in attesa di attivazione.</p>
+    <p style="text-align:center;margin:24px 0;">
+      <a href="${activateUrl}" style="display:inline-block;background:#8B5CF6;color:#fff;font-weight:600;padding:12px 24px;border-radius:8px;text-decoration:none;">Attiva il pass →</a>
+    </p>
+  </div>
+</div></body></html>`;
+  return resend.emails.send({
+    from: `${getFromName()} <${getFromEmail()}>`,
+    to: [to],
+    subject: `Promemoria: attiva il pass ${brand}`,
+    html
+  });
+}
+
 module.exports = {
   sendWelcomeEmail,
   sendUserInviteEmail,
   sendRecapEmail,
   sendScratchEmail,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendActivationEmail,
+  sendActivationReminderEmail
 };
