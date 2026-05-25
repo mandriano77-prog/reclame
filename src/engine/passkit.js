@@ -11,6 +11,23 @@ const {
 } = require('./pass-hr-back');
 const { buildEmployeePass, toApplePass } = require('./employee-pass');
 
+/** Incolla thumbnail sulla strip — Apple non mostra thumbnail.png su storeCard. */
+async function compositeThumbnailOnStrip(stripBuffer, thumbBuffer, width, height) {
+  const pad = Math.max(6, Math.round(width * 0.02));
+  const thumbW = Math.min(Math.round(width * 0.22), width - pad * 2);
+  const thumbH = Math.min(Math.round(height * 0.78), height - pad * 2);
+  const thumbSized = await sharp(thumbBuffer)
+    .resize(thumbW, thumbH, { fit: 'cover' })
+    .png()
+    .toBuffer();
+  const left = width - thumbW - pad;
+  const top = Math.max(pad, Math.round((height - thumbH) / 2));
+  return sharp(stripBuffer)
+    .composite([{ input: thumbSized, left, top }])
+    .png()
+    .toBuffer();
+}
+
 /**
  * Generate SVG path for a letter using geometric shapes (no font dependency).
  * Returns SVG elements string for the given letter, sized to fit within (w, h).
@@ -1000,7 +1017,7 @@ async function createPkpass(template, instance, brand, options = {}) {
     stripBuffers = await generateStrip(brand.name, bgColor, fgColor);
   }
 
-  // Thumbnail — for generic and eventTicket
+  // Thumbnail — for generic and eventTicket; su storeCard HR viene composita sulla strip
   let thumbnailBuffers = null;
   if (tplImages.thumbnail) {
     const rawThumb = Buffer.from(tplImages.thumbnail, 'base64');
@@ -1009,6 +1026,13 @@ async function createPkpass(template, instance, brand, options = {}) {
       thumb2x: await sharp(rawThumb).resize(180, 180, { fit: 'cover' }).png().toBuffer()
     };
     console.log('✓ Using template-level thumbnail');
+  }
+
+  const passType = template.pass_type || 'storeCard';
+  if (hrBrand && thumbnailBuffers && (passType === 'storeCard' || passType === 'coupon')) {
+    stripBuffers.strip = await compositeThumbnailOnStrip(stripBuffers.strip, thumbnailBuffers.thumb, 375, 123);
+    stripBuffers.strip2x = await compositeThumbnailOnStrip(stripBuffers.strip2x, thumbnailBuffers.thumb2x, 750, 246);
+    console.log('[passkit] Thumbnail HR composita sulla strip (storeCard non espone thumbnail nativa)');
   }
 
   // Background — for eventTicket
@@ -1032,7 +1056,6 @@ async function createPkpass(template, instance, brand, options = {}) {
   };
 
   // Strip images for storeCard/coupon/eventTicket (unless eventTicket uses background+thumbnail instead)
-  const passType = template.pass_type || 'storeCard';
   if (passType === 'coupon' || passType === 'storeCard' || (passType === 'eventTicket' && !backgroundBuffers)) {
     files['strip.png'] = stripBuffers.strip;
     files['strip@2x.png'] = stripBuffers.strip2x;
