@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-analytics.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-push.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css">
+    <link rel="stylesheet" href="/dashboard/styles/filo-contacts-refactor.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
     <link rel="stylesheet" href="/dashboard/css/layout.css">
     <link rel="stylesheet" href="/dashboard/css/components/page-header.css">
@@ -2165,43 +2166,30 @@
 
             <!-- LEADS DATABASE -->
             <div id="leads" class="section">
-                <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Contatti">Contatti</h1>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-                    <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." style="color:var(--text2);font-size:13px;">Elenco delle persone collegate ai pass di questo brand.</p>
-                    <div class="leads-toolbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <input type="text" id="leadsSearch" class="leads-toolbar__search" placeholder="Cerca nome, email..." oninput="filterLeads()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px;">
-                        <button type="button" class="btn sec" id="leadsAddBtn" onclick="openEmployeeManualModal()" style="display:none;white-space:nowrap;">+ Aggiungi</button>
-                        <button type="button" class="btn sec" id="leadsImportBtn" onclick="openEmployeeImportModal()" style="display:none;white-space:nowrap;">✨ Importa da file</button>
-                        <button type="button" class="btn sec" id="leadsNoMatricolaBtn" onclick="filterLeadsNoMatricola()" style="display:none;white-space:nowrap;">⚠ Senza matricola</button>
-                        <button type="button" class="btn sec" id="leadsDistributeBtn" onclick="distributeActivationAll()" style="display:none;white-space:nowrap;">✉ Invia attivazione</button>
-                        <button type="button" class="btn leads-export-btn" onclick="exportLeadsCSV()" style="white-space:nowrap;"><svg class="leads-export-btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>Export CSV</span></button>
+                <div class="contacts-page-header">
+                  <div>
+                    <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Contatti">Contatti</h1>
+                    <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." class="contacts-page-blurb">Elenco delle persone collegate ai pass di questo brand.</p>
+                  </div>
+                  <div class="contacts-page-menu" id="contactsPageMenu" hidden>
+                    <button type="button" class="btn sec small contacts-page-menu__trigger" id="contactsPageMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu pagina Contatti">⋮</button>
+                    <div class="contacts-page-menu__panel" id="contactsPageMenuPanel" hidden role="menu">
+                      <button type="button" role="menuitem" class="contacts-page-menu__item" id="contactsShowTourBtn">Mostra tour</button>
                     </div>
+                  </div>
                 </div>
-                <div id="hrActivationPanel" class="card" style="display:none;margin-bottom:16px;padding:16px 20px;">
-                    <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Distribuzione pass (ibrida)</div>
-                    <div class="stats-grid" id="activationStats" style="margin-bottom:12px;"></div>
-                    <div class="form-row" style="align-items:flex-end;gap:12px;flex-wrap:wrap;">
-                        <div class="form-group" style="flex:1;min-width:200px;">
-                            <label class="form-label">Join pubblico / QR</label>
-                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
-                                <input type="checkbox" id="hrPublicQrEnabled" onchange="saveHrDistributionSettings()"> Abilita pagina <code>/join/{slug}</code>
-                            </label>
-                        </div>
-                        <div class="form-group" style="flex:1;min-width:160px;">
-                            <label class="form-label">Slug join (opz.)</label>
-                            <input type="text" id="hrPublicQrSlug" placeholder="es. acme-hr" onblur="saveHrDistributionSettings()">
-                        </div>
-                        <div class="form-group" style="flex:2;min-width:220px;">
-                            <label class="form-label">Domini email ammessi (virgola)</label>
-                            <input type="text" id="hrAllowedDomains" placeholder="acme.it, acme.com" onblur="saveHrDistributionSettings()">
-                        </div>
+                <div class="contacts-top-grid">
+                  <div id="contactsCardA" class="card contacts-card">
+                    <div class="contacts-card__heading">
+                      <h2 id="contactsCardATitle" class="contacts-card__title">Anagrafica dipendenti</h2>
+                      <div id="contactsCardAHelp" class="contacts-card__help"></div>
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
-                        <input type="text" id="hrJoinUrl" readonly style="flex:1;min-width:200px;padding:8px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">
-                        <button type="button" class="btn small sec" onclick="copyHrJoinUrl()">Copia link join</button>
-                    </div>
+                    <div id="contactsToolbarHost" class="contacts-toolbar"></div>
+                    <div id="leadsStats"></div>
+                  </div>
+                  <div id="contactsCardBHost" class="card contacts-card contacts-card--distribution" hidden data-coach-step="distribution"></div>
+                  <div id="contactsCardCHost" class="card contacts-card contacts-card--join" hidden data-coach-step="join"></div>
                 </div>
-                <div class="stats-grid" id="leadsStats"></div>
                 <div id="leadsEmptyHost" class="leads-empty-host" hidden role="status"></div>
                 <table class="table" id="leadsTable">
                     <thead id="leadsTableHead"><tr>
@@ -2899,6 +2887,16 @@
 <script src="/dashboard/js/components/empty-state.js"></script>
 <script src="/dashboard/js/components/page-header.js"></script>
 <script src="/dashboard/js/components/sidebar.js"></script>
+<script src="/dashboard/js/components/contacts/contacts-toolbar.js"></script>
+<script src="/dashboard/js/components/contacts/kpi-strip.js"></script>
+<script src="/dashboard/js/components/contacts/help-popover.js"></script>
+<script src="/dashboard/js/components/contacts/distribution-mode-card.js"></script>
+<script src="/dashboard/js/components/contacts/contacts-validation.js"></script>
+<script src="/dashboard/js/components/contacts/domain-chips-input.js"></script>
+<script src="/dashboard/js/components/contacts/join-page-card.js"></script>
+<script src="/dashboard/js/components/contacts/qr-modal.js"></script>
+<script src="/dashboard/js/components/contacts/join-setup-coach.js"></script>
+<script src="/dashboard/js/components/contacts/contacts-page.js"></script>
 <script src="/dashboard/js/a2w-shell.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
 
@@ -6967,6 +6965,9 @@ async function exportAudienceCsv(id) {
 let allLeads = [];
 let leadsHrMode = false;
 let importPreviewState = null;
+let leadsActiveKpiFilter = null;
+let leadsToolbarInitialized = false;
+let hrDistributionMode = 'hybrid';
 
 function isHrBrandContext() {
     if (getDashboardProductLine() === 'hr') return true;
@@ -6974,6 +6975,145 @@ function isHrBrandContext() {
         ? brandsListCache.find((x) => String(x.id) === String(brandId))
         : null;
     return getBrandProductLine(b) === 'hr';
+}
+
+function getDistributionModeStorageKey() {
+    return `filo:contacts:distribution-mode:${brandId || 'no-brand'}`;
+}
+
+function getDistributionModeFromStorage() {
+    try {
+        const raw = localStorage.getItem(getDistributionModeStorageKey()) || '';
+        if (raw === 'direct_invite' || raw === 'public_join' || raw === 'hybrid') return raw;
+    } catch (_) {}
+    return 'hybrid';
+}
+
+function setDistributionMode(mode) {
+    if (!['direct_invite', 'public_join', 'hybrid'].includes(mode)) return;
+    hrDistributionMode = mode;
+    try {
+        localStorage.setItem(getDistributionModeStorageKey(), mode);
+    } catch (_) {}
+    if (window.ContactsPage) {
+        if (typeof ContactsPage.ensureJoinCard === 'function') {
+            ContactsPage.ensureJoinCard(mode);
+        } else if (typeof ContactsPage.setJoinCardVisible === 'function') {
+            ContactsPage.setJoinCardVisible(isJoinEnabledForMode());
+        }
+    }
+}
+
+function isJoinEnabledForMode() {
+    return hrDistributionMode === 'public_join' || hrDistributionMode === 'hybrid';
+}
+
+function renderDistributionMode() {
+    if (window.ContactsPage) ContactsPage.init(leadsHrMode);
+}
+
+function isLeadPassInstalled(lead) {
+    return !!(lead.device_id || lead.google_wallet_saved || lead.samsung_wallet_saved);
+}
+
+function getLeadsKpiMetrics(leads) {
+    const rows = Array.isArray(leads) ? leads : [];
+    return {
+        total: rows.length,
+        with_employee_id: rows.filter((l) => !!(l.employee_id && String(l.employee_id).trim())).length,
+        with_email: rows.filter((l) => !!(l.player_email && String(l.player_email).trim())).length,
+        candidate: rows.filter((l) => (l.activation_status || 'candidate') === 'candidate').length,
+        invited: rows.filter((l) => (l.activation_status || 'candidate') === 'invited').length,
+        activated: rows.filter((l) => (l.activation_status || 'candidate') === 'activated').length,
+        pass_installed: rows.filter((l) => isLeadPassInstalled(l)).length
+    };
+}
+
+function applyLeadsKpiFilter(leads, activeFilter) {
+    const rows = Array.isArray(leads) ? leads : [];
+    if (!activeFilter) return rows;
+    switch (activeFilter) {
+        case 'total':
+            return rows;
+        case 'with_employee_id':
+            return rows.filter((l) => !!(l.employee_id && String(l.employee_id).trim()));
+        case 'with_email':
+            return rows.filter((l) => !!(l.player_email && String(l.player_email).trim()));
+        case 'candidate':
+            return rows.filter((l) => (l.activation_status || 'candidate') === 'candidate');
+        case 'invited':
+            return rows.filter((l) => (l.activation_status || 'candidate') === 'invited');
+        case 'activated':
+            return rows.filter((l) => (l.activation_status || 'candidate') === 'activated');
+        case 'pass_installed':
+            return rows.filter((l) => isLeadPassInstalled(l));
+        default:
+            return rows;
+    }
+}
+
+function getFilteredLeadsByUiState() {
+    const q = (document.getElementById('leadsSearch')?.value || '').toLowerCase().trim();
+    const base = applyLeadsKpiFilter(allLeads, leadsActiveKpiFilter);
+    if (!q) return base;
+    return base.filter(l =>
+        (l.player_first_name || '').toLowerCase().includes(q) ||
+        (l.player_last_name || '').toLowerCase().includes(q) ||
+        (l.player_email || '').toLowerCase().includes(q) ||
+        (l.player_phone || '').toLowerCase().includes(q) ||
+        (l.employee_id || '').toLowerCase().includes(q) ||
+        (l.department || '').toLowerCase().includes(q) ||
+        (l.office_location || '').toLowerCase().includes(q)
+    );
+}
+
+function renderLeadsToolbar() {
+    const host = document.getElementById('contactsToolbarHost');
+    if (!host || leadsToolbarInitialized) return;
+    if (!window.ContactsToolbar || typeof window.ContactsToolbar.render !== 'function') return;
+    window.ContactsToolbar.render({
+        host,
+        searchPlaceholder: 'Cerca nome, matricola, email…',
+        onSearchInput: filterLeads,
+        onAdd: openEmployeeManualModal,
+        onImport: openEmployeeImportModal,
+        onDistribute: distributeActivationAll,
+        onExport: exportLeadsCSV
+    });
+    leadsToolbarInitialized = true;
+}
+
+function renderLeadsKpiStrip() {
+    const host = document.getElementById('leadsStats');
+    if (!host || !leadsHrMode) return;
+    host.classList.remove('stats-grid');
+    const metrics = getLeadsKpiMetrics(allLeads);
+    if (window.KpiStrip && typeof window.KpiStrip.render === 'function') {
+        window.KpiStrip.render({
+            host,
+            metrics,
+            activeFilter: leadsActiveKpiFilter,
+            onSelect: function (nextFilter) {
+                leadsActiveKpiFilter = leadsActiveKpiFilter === nextFilter ? null : nextFilter;
+                renderLeadsKpiStrip();
+                renderLeadsTable(getFilteredLeadsByUiState());
+            }
+        });
+    }
+}
+
+function renderLegacyLeadsStats(data, mc) {
+    const host = document.getElementById('leadsStats');
+    if (!host) return;
+    const statDevice = data.with_device || 0;
+    const statThird = data.with_phone || 0;
+    host.classList.add('stats-grid');
+    host.innerHTML = `
+        <div class="stat-card"><div class="stat-num">${data.total_leads || 0}</div><div class="stat-label">${esc(mc.leads_stat_total)}</div></div>
+        <div class="stat-card"><div class="stat-num">${statDevice}</div><div class="stat-label">${esc(mc.leads_stat_device)}</div></div>
+        <div class="stat-card"><div class="stat-num">${statThird}</div><div class="stat-label">${esc(mc.leads_stat_phone)}</div></div>
+        <div class="stat-card"><div class="stat-num">${data.with_email || 0}</div><div class="stat-label">${esc(mc.leads_stat_email)}</div></div>
+    `;
 }
 
 function updateLeadsImportButton() {
@@ -6984,8 +7124,7 @@ function updateLeadsImportButton() {
     if (addBtn) addBtn.style.display = hr ? '' : 'none';
     const distBtn = document.getElementById('leadsDistributeBtn');
     if (distBtn) distBtn.style.display = hr ? '' : 'none';
-    const panel = document.getElementById('hrActivationPanel');
-    if (panel) panel.style.display = hr ? '' : 'none';
+    if (window.ContactsPage) ContactsPage.init(hr);
 }
 
 let manualEmployeeQueue = []; // legacy shim; filoHrContatti.manualModal owns queue state on HR shell
@@ -7064,8 +7203,14 @@ async function loadLeads() {
     if (!brandId) return;
     const mc = getMergedProductMenuCopy(getDashboardProductLine());
     leadsHrMode = isHrBrandContext();
+    hrDistributionMode = getDistributionModeFromStorage();
+    if (!leadsHrMode) leadsActiveKpiFilter = null;
+    renderLeadsToolbar();
+    renderDistributionMode();
     updateLeadsImportButton();
     setLeadsTableHead(leadsHrMode);
+    const cardTitle = document.getElementById('contactsCardATitle');
+    if (cardTitle) cardTitle.textContent = leadsHrMode ? 'Anagrafica dipendenti' : 'Contatti';
     const searchEl = document.getElementById('leadsSearch');
     if (searchEl) {
         searchEl.placeholder = leadsHrMode
@@ -7081,23 +7226,15 @@ async function loadLeads() {
         const data = await res.json();
         allLeads = data.leads || [];
 
-        const statDevice = leadsHrMode
-            ? (data.with_device ?? allLeads.filter((l) => l.device_id).length)
-            : (data.with_device || 0);
-        const statThird = leadsHrMode
-            ? (data.with_employee_id ?? allLeads.filter((l) => l.employee_id).length)
-            : (data.with_phone || 0);
-
-        document.getElementById('leadsStats').innerHTML = `
-            <div class="stat-card"><div class="stat-num">${data.total_leads || 0}</div><div class="stat-label">${esc(mc.leads_stat_total)}</div></div>
-            <div class="stat-card"><div class="stat-num">${statDevice}</div><div class="stat-label">${esc(mc.leads_stat_device)}</div></div>
-            <div class="stat-card"><div class="stat-num">${statThird}</div><div class="stat-label">${esc(leadsHrMode ? 'Con matricola' : mc.leads_stat_phone)}</div></div>
-            <div class="stat-card"><div class="stat-num">${data.with_email || 0}</div><div class="stat-label">${esc(mc.leads_stat_email)}</div></div>
-        `;
+        if (leadsHrMode) {
+            renderLeadsKpiStrip();
+        } else {
+            renderLegacyLeadsStats(data, mc);
+        }
         if (typeof ensureA2wLeadsLayout === 'function') ensureA2wLeadsLayout();
 
         updateLeadsNoMatricolaBadge();
-        renderLeadsTable(allLeads);
+        renderLeadsTable(getFilteredLeadsByUiState());
         if (leadsHrMode) loadActivationStats();
     } catch(e) {
         console.error('loadLeads error:', e);
@@ -7126,51 +7263,17 @@ async function loadActivationStats() {
         const res = await fetch(`${API}/brands/${brandId}/activation/stats`, { headers: getAuthHeaders() });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        const c = data.counts || {};
-        const el = document.getElementById('activationStats');
-        if (el) {
-            el.innerHTML = `
-                <div class="stat-card"><div class="stat-num">${c.candidate || 0}</div><div class="stat-label">Da invitare</div></div>
-                <div class="stat-card"><div class="stat-num">${c.invited || 0}</div><div class="stat-label">Invitati</div></div>
-                <div class="stat-card"><div class="stat-num">${c.activated || 0}</div><div class="stat-label">Attivi</div></div>
-            `;
+        if (window.ContactsPage && typeof ContactsPage.onHrLeadsLoaded === 'function') {
+            await ContactsPage.onHrLeadsLoaded(data);
         }
-        const chk = document.getElementById('hrPublicQrEnabled');
-        const slugIn = document.getElementById('hrPublicQrSlug');
-        const domIn = document.getElementById('hrAllowedDomains');
-        const joinIn = document.getElementById('hrJoinUrl');
-        if (chk) chk.checked = !!data.public_qr_enabled;
-        if (slugIn) slugIn.value = data.public_qr_slug || '';
-        if (domIn) domIn.value = (data.allowed_email_domains || []).join(', ');
-        if (joinIn) joinIn.value = data.join_url || '';
     } catch (e) {
         console.warn('activation stats', e.message);
     }
 }
 
 async function saveHrDistributionSettings() {
-    if (!brandId) return;
-    const domainsRaw = (document.getElementById('hrAllowedDomains')?.value || '').trim();
-    const allowed_email_domains = domainsRaw
-        ? domainsRaw.split(',').map((d) => d.trim().toLowerCase()).filter(Boolean)
-        : [];
-    const body = {
-        public_qr_enabled: !!document.getElementById('hrPublicQrEnabled')?.checked,
-        public_qr_slug: (document.getElementById('hrPublicQrSlug')?.value || '').trim() || null,
-        allowed_email_domains
-    };
-    try {
-        const res = await fetch(`${API}/brands/${brandId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-            body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        await loadActivationStats();
-        toast('Impostazioni distribuzione salvate');
-    } catch (e) {
-        toast(e.message);
+    if (window.ContactsPage && typeof ContactsPage.saveDistributionSettings === 'function') {
+        return ContactsPage.saveDistributionSettings();
     }
 }
 
@@ -7307,7 +7410,10 @@ function updateLeadsNoMatricolaBadge() {
 
 function filterLeadsNoMatricola() {
     window.leadsFilterNoMatricola = true;
-    document.getElementById('leadsSearch').value = '';
+    const search = document.getElementById('leadsSearch');
+    if (search) search.value = '';
+    leadsActiveKpiFilter = null;
+    renderLeadsKpiStrip();
     renderLeadsTable(allLeads.filter((l) => !l.employee_id || !String(l.employee_id).trim()));
     toast('Filtro: solo dipendenti senza matricola');
 }
@@ -7360,18 +7466,7 @@ async function deleteMemberContact(memberId) {
 
 function filterLeads() {
     window.leadsFilterNoMatricola = false;
-    const q = document.getElementById('leadsSearch').value.toLowerCase();
-    if (!q) return renderLeadsTable(allLeads);
-    const filtered = allLeads.filter(l =>
-        (l.player_first_name || '').toLowerCase().includes(q) ||
-        (l.player_last_name || '').toLowerCase().includes(q) ||
-        (l.player_email || '').toLowerCase().includes(q) ||
-        (l.player_phone || '').toLowerCase().includes(q) ||
-        (l.employee_id || '').toLowerCase().includes(q) ||
-        (l.department || '').toLowerCase().includes(q) ||
-        (l.office_location || '').toLowerCase().includes(q)
-    );
-    renderLeadsTable(filtered);
+    renderLeadsTable(getFilteredLeadsByUiState());
 }
 
 function exportLeadsCSV() {
