@@ -9,7 +9,8 @@ const {
   createCampaign, getCampaign, listCampaigns, updateCampaign, deleteCampaign,
   incrementCampaignDownloads, incrementCampaignInstalls,
   createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesForTemplate, listPasses, deletePass,
-  getMemberForPass, updatePassDynamicLinks,
+  getMemberForPass, listEmployeesForBrand, importEmployeesBatch,
+  updatePassDynamicLinks,
   logEvent, listEvents,
   registerDevice, getDevicesForPass, getDevicesForBrand, getDevicesForTemplate, unregisterDevice, getSerialsForDevice,
   getAnalytics, getCampaignAnalytics,
@@ -3288,10 +3289,157 @@ router.get('/play/:serial_number/info', async (req, res) => {
 });
 
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Leads Database (aggregated player data) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+function isHrBrand(brand) {
+  const line = String(brand?.config?.product_line || process.env.DASHBOARD_PRODUCT_LINE || '').toLowerCase();
+  return line === 'hr';
+}
+
+router.get('/brands/:brand_id/employees', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    if (!isHrBrand(brand)) {
+      return res.status(400).json({ error: 'Endpoint dipendenti disponibile solo per brand HR' });
+    }
+
+    const employees = await listEmployeesForBrand(brand_id);
+    const withPass = employees.filter((e) => e.pass_id).length;
+    const withDevice = employees.filter((e) => e.device_id).length;
+    const withEmail = employees.filter((e) => e.email).length;
+    const withMatricola = employees.filter((e) => e.employee_id).length;
+
+    res.json({
+      employees,
+      total_employees: employees.length,
+      with_pass: withPass,
+      with_device: withDevice,
+      with_email: withEmail,
+      with_employee_id: withMatricola
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/brands/:brand_id/employees/import/preview', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+
+    const { file_base64, filename, csv_text, mapping } = req.body || {};
+    if (!file_base64 && !csv_text) {
+      return res.status(400).json({ error: 'Carica un file CSV/Excel o incolla testo CSV' });
+    }
+
+    const { previewImport } = require('../engine/member-import');
+    const preview = previewImport({ file_base64, filename, csv_text, mapping });
+    res.json(preview);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/brands/:brand_id/employees/import', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+
+    const {
+      file_base64,
+      filename,
+      csv_text,
+      mapping,
+      employees: employeesBody,
+      template_id,
+      create_passes = true,
+      update_existing = false
+    } = req.body || {};
+
+    let employees = Array.isArray(employeesBody) ? employeesBody : null;
+
+    if (!employees) {
+      const {
+        parseImportFile,
+        mapRowToEmployee,
+        rowIsValid,
+        suggestColumnMapping
+      } = require('../engine/member-import');
+      const { headers, rows } = parseImportFile({ file_base64, filename, csv_text });
+      const effectiveMapping = mapping && Object.keys(mapping).length
+        ? mapping
+        : suggestColumnMapping(headers);
+      employees = rows
+        .map((row) => mapRowToEmployee(row, effectiveMapping))
+        .filter(rowIsValid);
+    }
+
+    if (!employees.length) {
+      return res.status(400).json({ error: 'Nessuna riga valida da importare' });
+    }
+
+    if (create_passes) {
+      if (!template_id) {
+        return res.status(400).json({ error: 'template_id richiesto per creare i pass' });
+      }
+      const template = await getTemplate(template_id);
+      if (!template || String(template.brand_id) !== String(brand_id)) {
+        return res.status(400).json({ error: 'Template non valido per questo brand' });
+      }
+    }
+
+    const summary = await importEmployeesBatch(brand_id, employees, {
+      template_id,
+      create_passes: !!create_passes,
+      update_existing: !!update_existing,
+      skip_invalid: true
+    });
+
+    res.json({ success: true, ...summary });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/brands/:brand_id/leads', async (req, res) => {
   try {
     const { brand_id } = req.params;
     if (!requireBrandId(req, res, brand_id)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+
+    if (isHrBrand(brand)) {
+      const employees = await listEmployeesForBrand(brand_id);
+      const leads = employees.map((m) => ({
+        id: m.id,
+        player_first_name: m.first_name,
+        player_last_name: m.last_name,
+        player_email: m.email,
+        player_phone: null,
+        employee_id: m.employee_id,
+        department: m.department,
+        office_location: m.office_location,
+        pass_id: m.pass_id,
+        serial_number: m.serial_number,
+        device_id: m.device_id,
+        registered_at: m.created_at,
+        pass_status: m.pass_status,
+        google_wallet_saved: m.google_wallet_saved,
+        samsung_wallet_saved: m.samsung_wallet_saved
+      }));
+      return res.json({
+        leads,
+        hr: true,
+        total_leads: leads.length,
+        with_device: leads.filter((l) => l.device_id).length,
+        with_phone: 0,
+        with_email: leads.filter((l) => l.player_email).length,
+        with_employee_id: leads.filter((l) => l.employee_id).length
+      });
+    }
+
     const { pool } = require('../db');
 
     // Get unique leads by serial_number with their latest player data,

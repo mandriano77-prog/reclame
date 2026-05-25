@@ -77,3 +77,66 @@ html[data-shell="light"] .confirm-dialog__actions {
   justify-content: flex-end;
   gap: var(--space-2);
 }
+
+/* Employee import modal (Contatti HR) */
+.import-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  background: rgba(15, 23, 42, 0.5);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.import-modal-card {
+  max-width: 720px;
+  width: 100%;
+  max-height: 92vh;
+  overflow: auto;
+  margin: 0;
+}
+
+.import-dropzone {
+  display: block;
+  padding: 28px 16px;
+  border: 2px dashed var(--border, var(--border-default, #cbd5e1));
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text2, var(--text-secondary));
+  background: var(--bg2, var(--bg-subtle));
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.import-dropzone:hover {
+  border-color: var(--accent, var(--teal));
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.import-mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.import-map-row label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text2, var(--text-secondary));
+  margin-bottom: 4px;
+}
+
+.import-map-row select {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border, var(--border-default));
+  background: var(--bg2, #fff);
+  color: var(--text, var(--text-primary));
+}

@@ -2089,19 +2089,69 @@
                 <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Contatti">Contatti</h1>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
                     <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." style="color:var(--text2);font-size:13px;">Elenco delle persone collegate ai pass di questo brand.</p>
-                    <div style="display:flex;gap:8px;align-items:center;">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                         <input type="text" id="leadsSearch" placeholder="Cerca nome, email..." oninput="filterLeads()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px;">
+                        <button type="button" class="btn sec" id="leadsImportBtn" onclick="openEmployeeImportModal()" style="display:none;white-space:nowrap;">✨ Importa da file</button>
                         <button class="btn" onclick="exportLeadsCSV()" style="white-space:nowrap;">⬇ Export CSV</button>
                     </div>
                 </div>
                 <div class="stats-grid" id="leadsStats"></div>
                 <table class="table" id="leadsTable">
-                    <thead><tr>
+                    <thead id="leadsTableHead"><tr>
                         <th>Nome</th><th>Cognome</th><th>Email</th><th>Telefono</th>
                         <th>Device ID</th><th>Pass ID</th><th>Data registrazione</th>
                     </tr></thead>
                     <tbody></tbody>
                 </table>
+            </div>
+
+            <div id="employeeImportModal" class="import-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="employeeImportTitle">
+                <div class="card import-modal-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;">
+                        <div>
+                            <h2 id="employeeImportTitle" class="sec-title" style="margin:0;font-size:18px;">Importazione magica dipendenti</h2>
+                            <p style="color:var(--text2);font-size:12px;margin:6px 0 0;line-height:1.45;">Carica CSV o Excel (.xlsx): riconosciamo le colonne (nome, matricola, sede…) e creiamo contatti + pass.</p>
+                        </div>
+                        <button type="button" class="btn sec" onclick="closeEmployeeImportModal()">✕</button>
+                    </div>
+                    <div id="importStepUpload">
+                        <label class="import-dropzone" id="importDropzone" for="importFileInput">
+                            <span id="importDropzoneLabel">Trascina qui il file oppure clicca per scegliere</span>
+                            <span style="display:block;font-size:11px;color:var(--text2);margin-top:6px;">.csv · .xlsx · .xls — max ~5 MB</span>
+                        </label>
+                        <input type="file" id="importFileInput" accept=".csv,.txt,.xlsx,.xls,.ods" style="display:none;" onchange="onImportFileSelected(event)">
+                        <div class="form-group" style="margin-top:12px;">
+                            <label class="form-label">Oppure incolla CSV</label>
+                            <textarea id="importCsvPaste" rows="4" placeholder="Nome;Cognome;Matricola;Email;Sede&#10;Mario;Rossi;A001;..."></textarea>
+                        </div>
+                        <button type="button" class="btn" style="width:100%;margin-top:8px;" onclick="runImportPreview()">Analizza colonne</button>
+                    </div>
+                    <div id="importStepMap" style="display:none;">
+                        <p style="font-size:12px;color:var(--text2);margin:0 0 10px;"><span id="importRowCount">0</span> righe · <span id="importValidCount">0</span> valide. Regola il mapping se serve.</p>
+                        <div id="importMappingGrid" class="import-mapping-grid"></div>
+                        <div class="form-group" style="margin-top:12px;">
+                            <label class="form-label">Template pass (per creare tessere)</label>
+                            <select id="importTemplateId"></select>
+                        </div>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0;">
+                            <input type="checkbox" id="importCreatePasses" checked> Crea pass Wallet per ogni dipendente
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0 14px;">
+                            <input type="checkbox" id="importUpdateExisting"> Aggiorna dipendenti già presenti (stessa matricola/email)
+                        </label>
+                        <div style="max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:8px;">
+                            <table class="table" style="font-size:12px;margin:0;">
+                                <thead><tr id="importPreviewHead"></tr></thead>
+                                <tbody id="importPreviewBody"></tbody>
+                            </table>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                            <button type="button" class="btn sec" onclick="importBackToUpload()">← Altro file</button>
+                            <button type="button" class="btn" style="flex:1;" onclick="runEmployeeImportCommit()">Importa <span id="importCommitCount">0</span> dipendenti</button>
+                        </div>
+                    </div>
+                    <p id="importStatusMsg" style="font-size:12px;color:var(--text2);margin:12px 0 0;min-height:1.2em;"></p>
+                </div>
             </div>
 
             <!-- AUDIENCES -->
@@ -3576,10 +3626,13 @@ const PRODUCT_MENU_COPY = {
     hr: {
         nav_leads: 'Contatti',
         leads_page_title: 'Contatti',
-        leads_page_blurb: 'Elenco contatti collegati ai pass di questo brand.',
-        leads_stat_total: 'Contatti totali',
-        leads_empty: 'Nessun contatto registrato',
-        leads_export_empty: 'Nessun contatto da esportare',
+        leads_page_blurb: 'Anagrafica dipendenti: importa da CSV/Excel, crea pass e monitora installazioni.',
+        leads_stat_total: 'Dipendenti',
+        leads_stat_device: 'Pass installati (device)',
+        leads_stat_phone: 'Con matricola',
+        leads_stat_email: 'Con email',
+        leads_empty: 'Nessun dipendente — usa Importa da file',
+        leads_export_empty: 'Nessun dipendente da esportare',
     },
     engage: {
         nav_leads: 'Customer',
@@ -6507,37 +6560,116 @@ async function exportAudienceCsv(id) {
 
 // ==================== LEADS DATABASE ====================
 let allLeads = [];
+let leadsHrMode = false;
+let importPreviewState = null;
+
+function isHrBrandContext() {
+    if (getDashboardProductLine() === 'hr') return true;
+    const b = (typeof brandsListCache !== 'undefined' && brandsListCache)
+        ? brandsListCache.find((x) => String(x.id) === String(brandId))
+        : null;
+    return getBrandProductLine(b) === 'hr';
+}
+
+function updateLeadsImportButton() {
+    const btn = document.getElementById('leadsImportBtn');
+    if (btn) btn.style.display = isHrBrandContext() ? '' : 'none';
+}
+
+function setLeadsTableHead(hr) {
+    const thead = document.getElementById('leadsTableHead');
+    if (!thead) return;
+    if (hr) {
+        thead.innerHTML = `<tr>
+            <th>Nome</th><th>Cognome</th><th>Matricola</th><th>Reparto</th><th>Sede</th>
+            <th>Email</th><th>Pass</th><th>Wallet</th><th>Creato</th>
+        </tr>`;
+    } else {
+        thead.innerHTML = `<tr>
+            <th>Nome</th><th>Cognome</th><th>Email</th><th>Telefono</th>
+            <th>Device ID</th><th>Pass ID</th><th>Data registrazione</th>
+        </tr>`;
+    }
+}
 
 async function loadLeads() {
     if (!brandId) return;
     const mc = getMergedProductMenuCopy(getDashboardProductLine());
+    leadsHrMode = isHrBrandContext();
+    updateLeadsImportButton();
+    setLeadsTableHead(leadsHrMode);
+    const searchEl = document.getElementById('leadsSearch');
+    if (searchEl) {
+        searchEl.placeholder = leadsHrMode
+            ? 'Cerca nome, matricola, email…'
+            : 'Cerca nome, email...';
+    }
     try {
         const res = await fetch(`${API}/brands/${brandId}/leads`, { headers: getAuthHeaders() });
         if (!res.ok) throw new Error('Failed to load leads');
         const data = await res.json();
         allLeads = data.leads || [];
 
-        // Stats
+        const statDevice = leadsHrMode
+            ? (data.with_device ?? allLeads.filter((l) => l.device_id).length)
+            : (data.with_device || 0);
+        const statThird = leadsHrMode
+            ? (data.with_employee_id ?? allLeads.filter((l) => l.employee_id).length)
+            : (data.with_phone || 0);
+
         document.getElementById('leadsStats').innerHTML = `
             <div class="stat-card"><div class="stat-num">${data.total_leads || 0}</div><div class="stat-label">${esc(mc.leads_stat_total)}</div></div>
-            <div class="stat-card"><div class="stat-num">${data.with_device || 0}</div><div class="stat-label">${esc(mc.leads_stat_device)}</div></div>
-            <div class="stat-card"><div class="stat-num">${data.with_phone || 0}</div><div class="stat-label">${esc(mc.leads_stat_phone)}</div></div>
+            <div class="stat-card"><div class="stat-num">${statDevice}</div><div class="stat-label">${esc(mc.leads_stat_device)}</div></div>
+            <div class="stat-card"><div class="stat-num">${statThird}</div><div class="stat-label">${esc(leadsHrMode ? 'Con matricola' : mc.leads_stat_phone)}</div></div>
             <div class="stat-card"><div class="stat-num">${data.with_email || 0}</div><div class="stat-label">${esc(mc.leads_stat_email)}</div></div>
         `;
 
         renderLeadsTable(allLeads);
     } catch(e) {
         console.error('loadLeads error:', e);
+        const cols = leadsHrMode ? 9 : 7;
         document.getElementById('leadsTable').querySelector('tbody').innerHTML =
-            `<tr><td colspan="7" style="color:var(--text2);text-align:center;">${esc(mc.leads_load_error)}</td></tr>`;
+            `<tr><td colspan="${cols}" style="color:var(--text2);text-align:center;">${esc(mc.leads_load_error)}</td></tr>`;
     }
+}
+
+function walletStatusLabel(l) {
+    const parts = [];
+    if (l.device_id) parts.push('Apple');
+    if (l.google_wallet_saved) parts.push('Google');
+    if (l.samsung_wallet_saved) parts.push('Samsung');
+    if (!parts.length && l.pass_id) return 'Pass creato';
+    return parts.length ? parts.join(' · ') : '—';
 }
 
 function renderLeadsTable(leads) {
     const mc = getMergedProductMenuCopy(getDashboardProductLine());
     const tbody = document.getElementById('leadsTable').querySelector('tbody');
+    const cols = leadsHrMode ? 9 : 7;
     if (!leads.length) {
-        tbody.innerHTML = '<tr><td colspan="7">' + renderEmptyState({ title: mc.leads_empty, description: 'I contatti raccolti da landing e pass compariranno qui.', icon: 'users' }) + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="' + cols + '">' + renderEmptyState({
+            title: mc.leads_empty,
+            description: leadsHrMode
+                ? 'Carica un CSV o Excel con il pulsante Importa da file.'
+                : 'I contatti raccolti da landing e pass compariranno qui.',
+            icon: 'users',
+            ctaLabel: leadsHrMode ? 'Importa da file' : '',
+            ctaOnclick: leadsHrMode ? 'openEmployeeImportModal()' : ''
+        }) + '</td></tr>';
+        return;
+    }
+    if (leadsHrMode) {
+        tbody.innerHTML = leads.map((l) => `<tr>
+            <td>${esc(l.player_first_name || '-')}</td>
+            <td>${esc(l.player_last_name || '-')}</td>
+            <td>${esc(l.employee_id || '-')}</td>
+            <td>${esc(l.department || '-')}</td>
+            <td>${esc(l.office_location || '-')}</td>
+            <td>${l.player_email ? `<a href="mailto:${esc(l.player_email)}" style="color:var(--accent);">${esc(l.player_email)}</a>` : '—'}</td>
+            <td style="font-size:11px;font-family:monospace;">${l.pass_id ? esc(String(l.pass_id).substring(0, 8)) + '…' : '—'}</td>
+            <td style="font-size:12px;">${esc(walletStatusLabel(l))}</td>
+            <td style="font-size:12px;">${l.registered_at ? new Date(l.registered_at).toLocaleDateString('it-IT') : '-'}</td>
+        </tr>`).join('');
         return;
     }
     tbody.innerHTML = leads.map(l => `<tr>
@@ -6558,7 +6690,10 @@ function filterLeads() {
         (l.player_first_name || '').toLowerCase().includes(q) ||
         (l.player_last_name || '').toLowerCase().includes(q) ||
         (l.player_email || '').toLowerCase().includes(q) ||
-        (l.player_phone || '').toLowerCase().includes(q)
+        (l.player_phone || '').toLowerCase().includes(q) ||
+        (l.employee_id || '').toLowerCase().includes(q) ||
+        (l.department || '').toLowerCase().includes(q) ||
+        (l.office_location || '').toLowerCase().includes(q)
     );
     renderLeadsTable(filtered);
 }
@@ -6566,19 +6701,202 @@ function filterLeads() {
 function exportLeadsCSV() {
     const mc = getMergedProductMenuCopy(getDashboardProductLine());
     if (!allLeads.length) return toast(mc.leads_export_empty);
-    const header = 'Nome,Cognome,Email,Telefono,Device ID,Pass ID,Data registrazione';
-    const rows = allLeads.map(l => [
-        l.player_first_name || '', l.player_last_name || '', l.player_email || '',
-        l.player_phone || '', l.device_id || '', l.pass_id || '',
-        l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
-    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    let header;
+    let rows;
+    if (leadsHrMode) {
+        header = 'Nome,Cognome,Matricola,Reparto,Sede,Email,Pass ID,Wallet,Creato';
+        rows = allLeads.map(l => [
+            l.player_first_name || '', l.player_last_name || '', l.employee_id || '',
+            l.department || '', l.office_location || '', l.player_email || '',
+            l.pass_id || '', walletStatusLabel(l),
+            l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
+        ]);
+    } else {
+        header = 'Nome,Cognome,Email,Telefono,Device ID,Pass ID,Data registrazione';
+        rows = allLeads.map(l => [
+            l.player_first_name || '', l.player_last_name || '', l.player_email || '',
+            l.player_phone || '', l.device_id || '', l.pass_id || '',
+            l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
+        ]);
+    }
+    const csv = [header, ...rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `leads_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
+    a.href = url;
+    a.download = `contatti_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
     toast('CSV esportato!');
+}
+
+const IMPORT_FIELD_LABELS = {
+    first_name: 'Nome', last_name: 'Cognome', full_name: 'Nome completo', email: 'Email',
+    employee_id: 'Matricola', department: 'Reparto', office_location: 'Sede',
+    hire_date: 'Data assunzione', manager_name: 'Manager', manager_email: 'Email manager', phone: 'Telefono'
+};
+
+function openEmployeeImportModal() {
+    importPreviewState = null;
+    document.getElementById('importFileInput').value = '';
+    document.getElementById('importCsvPaste').value = '';
+    document.getElementById('importDropzoneLabel').textContent = 'Trascina qui il file oppure clicca per scegliere';
+    document.getElementById('importStatusMsg').textContent = '';
+    document.getElementById('importStepUpload').style.display = '';
+    document.getElementById('importStepMap').style.display = 'none';
+    document.getElementById('employeeImportModal').style.display = 'flex';
+    populateImportTemplates();
+}
+
+function closeEmployeeImportModal() {
+    document.getElementById('employeeImportModal').style.display = 'none';
+}
+
+async function populateImportTemplates() {
+    const sel = document.getElementById('importTemplateId');
+    if (!sel || !brandId) return;
+    sel.innerHTML = '<option value="">— Seleziona template —</option>';
+    try {
+        const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: getAuthHeaders() });
+        (templates || []).forEach((t) => {
+            const o = document.createElement('option');
+            o.value = t.id;
+            o.textContent = t.name || t.id;
+            sel.appendChild(o);
+        });
+        if (templates && templates.length === 1) sel.value = templates[0].id;
+    } catch (_) {}
+}
+
+async function onImportFileSelected(ev) {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+        toast('File troppo grande (max 5 MB)');
+        ev.target.value = '';
+        return;
+    }
+    const b64 = await fileToBase64(file);
+    importPreviewState = { file_base64: b64, filename: file.name, csv_text: null };
+    document.getElementById('importDropzoneLabel').textContent = file.name;
+    document.getElementById('importCsvPaste').value = '';
+}
+
+async function runImportPreview() {
+    if (!brandId) return;
+    const paste = (document.getElementById('importCsvPaste').value || '').trim();
+    let body = {};
+    if (paste) {
+        body = { csv_text: paste };
+        importPreviewState = { csv_text: paste, file_base64: null, filename: null };
+    } else if (importPreviewState && importPreviewState.file_base64) {
+        body = {
+            file_base64: importPreviewState.file_base64,
+            filename: importPreviewState.filename
+        };
+    } else {
+        return toast('Seleziona un file o incolla CSV');
+    }
+    document.getElementById('importStatusMsg').textContent = 'Analisi colonne in corso…';
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/employees/import/preview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Preview fallita');
+        importPreviewState = { ...importPreviewState, preview: data, mapping: { ...data.mapping } };
+        renderImportMappingStep(data);
+        document.getElementById('importStepUpload').style.display = 'none';
+        document.getElementById('importStepMap').style.display = '';
+        document.getElementById('importStatusMsg').textContent = '';
+    } catch (e) {
+        document.getElementById('importStatusMsg').textContent = e.message;
+        toast(e.message);
+    }
+}
+
+function renderImportMappingStep(data) {
+    document.getElementById('importRowCount').textContent = String(data.total_rows || 0);
+    document.getElementById('importValidCount').textContent = String(data.valid_count || 0);
+    document.getElementById('importCommitCount').textContent = String(data.valid_count || 0);
+
+    const grid = document.getElementById('importMappingGrid');
+    const headers = data.headers || [];
+    const fieldKeys = (data.field_options || []).map((f) => f.key);
+    grid.innerHTML = fieldKeys.map((key) => {
+        const label = IMPORT_FIELD_LABELS[key] || key;
+        const cur = data.mapping && data.mapping[key] != null ? String(data.mapping[key]) : '';
+        const opts = ['<option value="">— ignora —</option>']
+            .concat(headers.map((h, i) => `<option value="${i}"${String(i) === cur ? ' selected' : ''}>${esc(h || '(colonna ' + i + ')')}</option>`))
+            .join('');
+        return `<div class="import-map-row"><label>${esc(label)}</label><select data-import-field="${key}">${opts}</select></div>`;
+    }).join('');
+
+    const head = document.getElementById('importPreviewHead');
+    head.innerHTML = '<th>#</th><th>Nome</th><th>Cognome</th><th>Matricola</th><th>Email</th><th>Sede</th>';
+    const body = document.getElementById('importPreviewBody');
+    body.innerHTML = (data.preview_rows || []).map((row) => {
+        const m = row.mapped || {};
+        const ok = row.valid ? '' : ' style="opacity:0.55;"';
+        return `<tr${ok}><td>${row.row_index + 1}</td><td>${esc(m.first_name || '')}</td><td>${esc(m.last_name || '')}</td><td>${esc(m.employee_id || '')}</td><td>${esc(m.email || '')}</td><td>${esc(m.office_location || '')}</td></tr>`;
+    }).join('');
+}
+
+function getImportMappingFromUi() {
+    const mapping = {};
+    document.querySelectorAll('[data-import-field]').forEach((sel) => {
+        const key = sel.getAttribute('data-import-field');
+        const v = sel.value;
+        if (v !== '' && v != null) mapping[key] = parseInt(v, 10);
+    });
+    return mapping;
+}
+
+function importBackToUpload() {
+    document.getElementById('importStepMap').style.display = 'none';
+    document.getElementById('importStepUpload').style.display = '';
+}
+
+async function runEmployeeImportCommit() {
+    if (!brandId || !importPreviewState) return toast('Esegui prima l\'analisi del file');
+    const createPasses = document.getElementById('importCreatePasses').checked;
+    const templateId = document.getElementById('importTemplateId').value;
+    if (createPasses && !templateId) return toast('Seleziona un template pass');
+
+    const body = {
+        mapping: getImportMappingFromUi(),
+        create_passes: createPasses,
+        update_existing: document.getElementById('importUpdateExisting').checked,
+        template_id: templateId || undefined
+    };
+    if (importPreviewState.file_base64) {
+        body.file_base64 = importPreviewState.file_base64;
+        body.filename = importPreviewState.filename;
+    } else if (importPreviewState.csv_text) {
+        body.csv_text = importPreviewState.csv_text;
+    } else {
+        return toast('File non disponibile — ricarica');
+    }
+
+    document.getElementById('importStatusMsg').textContent = 'Importazione in corso…';
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/employees/import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Import fallito');
+        const errN = (data.errors || []).length;
+        toast(`Importati: ${data.created} nuovi, ${data.updated} aggiornati, ${data.passes_created} pass${errN ? ` (${errN} righe saltate)` : ''}`);
+        closeEmployeeImportModal();
+        await loadLeads();
+    } catch (e) {
+        document.getElementById('importStatusMsg').textContent = e.message;
+        toast(e.message);
+    }
 }
 
 // ==================== GAMIFICATION ====================

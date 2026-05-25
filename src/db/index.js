@@ -767,6 +767,7 @@ async function getDb() {
     )`).catch(() => {});
     await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_members_pass ON members(pass_id) WHERE pass_id IS NOT NULL`).catch(() => {});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_members_brand ON members(brand_id)`).catch(() => {});
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_members_brand_employee ON members(brand_id, employee_id) WHERE employee_id IS NOT NULL`).catch(() => {});
 
     await pool.query(`ALTER TABLE pass_templates ADD COLUMN IF NOT EXISTS back_fixed_link_label VARCHAR(64)`).catch(() => {});
     await pool.query(`ALTER TABLE pass_templates ADD COLUMN IF NOT EXISTS back_fixed_link_url VARCHAR(512)`).catch(() => {});
@@ -1125,6 +1126,209 @@ async function getMemberForPass(passId) {
   if (!pass?.member_id) return null;
   const byId = await pool.query('SELECT * FROM members WHERE id = $1 LIMIT 1', [pass.member_id]);
   return byId.rows[0] || null;
+}
+
+async function listEmployeesForBrand(brandId) {
+  const result = await pool.query(
+    `SELECT
+      m.id,
+      m.brand_id,
+      m.pass_id,
+      m.first_name,
+      m.last_name,
+      m.email,
+      m.employee_id,
+      m.department,
+      m.office_location,
+      m.hire_date,
+      m.manager_name,
+      m.manager_email,
+      m.created_at,
+      m.updated_at,
+      pi.serial_number,
+      pi.status AS pass_status,
+      pi.google_wallet_saved,
+      pi.samsung_wallet_saved,
+      dr.device_library_id AS device_id
+    FROM members m
+    LEFT JOIN pass_instances pi ON pi.id = m.pass_id
+    LEFT JOIN LATERAL (
+      SELECT device_library_id
+      FROM device_registrations
+      WHERE serial_number = pi.serial_number
+      ORDER BY registered_at DESC NULLS LAST
+      LIMIT 1
+    ) dr ON true
+    WHERE m.brand_id = $1
+    ORDER BY m.created_at DESC`,
+    [brandId]
+  );
+  return result.rows;
+}
+
+async function findMemberByBrandKey(brandId, { employee_id, email }) {
+  if (employee_id) {
+    const r = await pool.query(
+      'SELECT * FROM members WHERE brand_id = $1 AND employee_id = $2 LIMIT 1',
+      [brandId, String(employee_id).trim()]
+    );
+    if (r.rows.length) return r.rows[0];
+  }
+  if (email) {
+    const r = await pool.query(
+      'SELECT * FROM members WHERE brand_id = $1 AND LOWER(TRIM(email)) = LOWER(TRIM($2)) LIMIT 1',
+      [brandId, String(email).trim()]
+    );
+    if (r.rows.length) return r.rows[0];
+  }
+  return null;
+}
+
+async function createMemberRecord(data) {
+  const id = data.id || uuidv4();
+  const {
+    brand_id,
+    pass_id = null,
+    first_name = null,
+    last_name = null,
+    email = null,
+    employee_id = null,
+    department = null,
+    office_location = null,
+    hire_date = null,
+    manager_name = null,
+    manager_email = null
+  } = data;
+  await pool.query(
+    `INSERT INTO members (
+      id, brand_id, pass_id, first_name, last_name, email,
+      employee_id, department, office_location, hire_date, manager_name, manager_email
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+    [
+      id, brand_id, pass_id, first_name, last_name, email,
+      employee_id, department, office_location, hire_date, manager_name, manager_email
+    ]
+  );
+  const row = await pool.query('SELECT * FROM members WHERE id = $1', [id]);
+  return row.rows[0];
+}
+
+async function updateMemberRecord(id, data) {
+  const fields = [];
+  const values = [];
+  let p = 0;
+  const allowed = [
+    'pass_id', 'first_name', 'last_name', 'email', 'employee_id',
+    'department', 'office_location', 'hire_date', 'manager_name', 'manager_email'
+  ];
+  for (const key of allowed) {
+    if (data[key] !== undefined) {
+      p++;
+      fields.push(`${key} = $${p}`);
+      values.push(data[key]);
+    }
+  }
+  if (!fields.length) {
+    const row = await pool.query('SELECT * FROM members WHERE id = $1', [id]);
+    return row.rows[0] || null;
+  }
+  p++;
+  fields.push(`updated_at = NOW()`);
+  values.push(id);
+  await pool.query(`UPDATE members SET ${fields.join(', ')} WHERE id = $${p}`, values);
+  const row = await pool.query('SELECT * FROM members WHERE id = $1', [id]);
+  return row.rows[0] || null;
+}
+
+async function importEmployeesBatch(brandId, employees, options = {}) {
+  const {
+    template_id,
+    create_passes = true,
+    update_existing = false,
+    skip_invalid = true
+  } = options;
+
+  const summary = { created: 0, updated: 0, skipped: 0, passes_created: 0, errors: [] };
+
+  for (let i = 0; i < employees.length; i++) {
+    const emp = employees[i];
+    try {
+      if (!emp || (!emp.first_name && !emp.last_name && !emp.employee_id)) {
+        if (skip_invalid) {
+          summary.skipped++;
+          summary.errors.push({ row: i + 1, reason: 'Riga senza nome o matricola' });
+          continue;
+        }
+        throw new Error('Riga senza nome o matricola');
+      }
+
+      const existing = await findMemberByBrandKey(brandId, {
+        employee_id: emp.employee_id,
+        email: emp.email
+      });
+
+      let member;
+      if (existing) {
+        if (!update_existing) {
+          summary.skipped++;
+          summary.errors.push({
+            row: i + 1,
+            reason: `Già presente (${existing.employee_id || existing.email || existing.id})`
+          });
+          continue;
+        }
+        member = await updateMemberRecord(existing.id, {
+          first_name: emp.first_name ?? existing.first_name,
+          last_name: emp.last_name ?? existing.last_name,
+          email: emp.email ?? existing.email,
+          employee_id: emp.employee_id ?? existing.employee_id,
+          department: emp.department ?? existing.department,
+          office_location: emp.office_location ?? existing.office_location,
+          hire_date: emp.hire_date ?? existing.hire_date,
+          manager_name: emp.manager_name ?? existing.manager_name,
+          manager_email: emp.manager_email ?? existing.manager_email
+        });
+        summary.updated++;
+      } else {
+        member = await createMemberRecord({
+          brand_id: brandId,
+          first_name: emp.first_name,
+          last_name: emp.last_name,
+          email: emp.email,
+          employee_id: emp.employee_id,
+          department: emp.department,
+          office_location: emp.office_location,
+          hire_date: emp.hire_date,
+          manager_name: emp.manager_name,
+          manager_email: emp.manager_email
+        });
+        summary.created++;
+      }
+
+      if (create_passes && template_id && !member.pass_id) {
+        const { employeesToFieldValues } = require('../engine/member-import');
+        const pass = await createPassInstance({
+          brand_id: brandId,
+          template_id,
+          field_values: employeesToFieldValues(emp)
+        });
+        await updateMemberRecord(member.id, { pass_id: pass.id });
+        await updatePassInstance(pass.id, { member_id: member.id, activated_at: new Date() });
+        await logEvent({
+          pass_id: pass.id,
+          brand_id: brandId,
+          event_type: 'pass_created',
+          metadata: { source: 'employee_import', member_id: member.id }
+        });
+        summary.passes_created++;
+      }
+    } catch (err) {
+      summary.errors.push({ row: i + 1, reason: err.message });
+      if (!skip_invalid) throw err;
+    }
+  }
+
+  return summary;
 }
 
 async function updatePassDynamicLinks(passIds, { label, url, expiresAt }) {
@@ -2225,6 +2429,11 @@ module.exports = {
   updatePassInstance,
   touchPass,
   getMemberForPass,
+  listEmployeesForBrand,
+  findMemberByBrandKey,
+  createMemberRecord,
+  updateMemberRecord,
+  importEmployeesBatch,
   updatePassDynamicLinks,
   touchPassesForTemplate,
   listPasses,
