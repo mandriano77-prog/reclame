@@ -657,7 +657,8 @@ function generatePassJson(template, instance, brand, options = {}) {
       instance,
       member,
       brandConfig,
-      apiBase
+      apiBase,
+      portalUrl
     });
     const apple = toApplePass(employeePass);
     passStructure = apple.passStructure;
@@ -926,7 +927,7 @@ async function createPkpass(template, instance, brand, options = {}) {
     certPath = path.join(__dirname, '../../certs/signerCert.pem'),
     keyPath = path.join(__dirname, '../../certs/signerKey.pem'),
     wwdrPath = path.join(__dirname, '../../certs/wwdr.pem'),
-    issuePortalLink = !hrBrand,
+    issuePortalLink = true,
     rotatePortalLink = false,
     portalUrl: portalUrlOption = undefined,
     member: memberOption = undefined
