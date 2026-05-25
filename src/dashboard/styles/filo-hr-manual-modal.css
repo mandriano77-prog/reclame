@@ -12,6 +12,16 @@ html[data-shell="light"] #employeeManualModal.filo-hr-manual-modal--ready .filo-
   max-width: 680px;
   width: calc(100% - 32px);
   border-radius: 12px;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+html[data-shell="light"] #employeeManualModal.filo-hr-manual-modal--ready .import-wizard__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
 }
 
 html[data-shell="light"] #employeeManualModal.filo-hr-manual-modal--ready .filo-hr-manual-modal__required-note {
@@ -288,5 +298,9 @@ html[data-shell="light"] #filoManualDiscardDialog .filo-hr-discard__actions {
     max-height: 100vh;
     border-radius: 0;
     width: 100%;
+  }
+
+  html[data-shell="light"] #employeeManualModal.filo-hr-manual-modal--ready .import-wizard__body {
+    padding-bottom: 12px;
   }
 }
