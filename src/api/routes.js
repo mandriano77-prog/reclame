@@ -11,6 +11,7 @@ const {
   createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesForTemplate, listPasses, countPasses, deletePass,
   getMemberForPass, listEmployeesForBrand, importEmployeesBatch,
   findMemberByBrandKey, updateMemberRecord,
+  logEnrollmentAttempt,
   createImportError, listImportErrors,
   updatePassDynamicLinks,
   logEvent, listEvents,
