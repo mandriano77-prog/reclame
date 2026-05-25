@@ -2163,52 +2163,80 @@
                 </table>
             </div>
 
-            <div id="employeeImportModal" class="import-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="employeeImportTitle">
-                <div class="card import-modal-card">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;">
-                        <div>
-                            <h2 id="employeeImportTitle" class="sec-title" style="margin:0;font-size:18px;">Importazione magica dipendenti</h2>
-                            <p style="color:var(--text2);font-size:12px;margin:6px 0 0;line-height:1.45;">Carica CSV o Excel (.xlsx): riconosciamo le colonne (nome, matricola, sede…) e creiamo contatti + pass.</p>
+            <div id="employeeImportModal" class="import-modal-overlay import-wizard" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="employeeImportTitle">
+                <div class="card import-modal-card import-wizard__dialog">
+                    <header class="import-wizard__header">
+                        <ol class="import-wizard__stepper" aria-label="Passaggi importazione">
+                            <li class="import-wizard__step is-active" data-step="1"><span class="import-wizard__step-num" aria-hidden="true">1</span><span>Carica file</span></li>
+                            <li class="import-wizard__step" data-step="2"><span class="import-wizard__step-num" aria-hidden="true">2</span><span>Mappa colonne</span></li>
+                            <li class="import-wizard__step" data-step="3"><span class="import-wizard__step-num" aria-hidden="true">3</span><span>Conferma &amp; importa</span></li>
+                        </ol>
+                        <div class="import-wizard__title-row">
+                            <div class="import-wizard__title-block">
+                                <h2 id="employeeImportTitle" class="import-wizard__title">Importa dipendenti</h2>
+                                <p class="import-wizard__subtitle">Auto-rileviamo le colonne del tuo file. Verifica che ogni colonna sia abbinata al campo giusto.</p>
+                                <div id="importSummaryChips" class="import-wizard__chips" hidden>
+                                    <span class="import-wizard__chip import-wizard__chip--ok" id="importChipValid">0 righe valide</span>
+                                    <span class="import-wizard__chip" id="importChipMapping">Mapping: 0/11</span>
+                                </div>
+                            </div>
+                            <button type="button" class="import-wizard__close" onclick="closeEmployeeImportModal()" aria-label="Chiudi importazione">×</button>
                         </div>
-                        <button type="button" class="btn sec" onclick="closeEmployeeImportModal()">✕</button>
+                    </header>
+                    <div class="import-wizard__body">
+                        <div id="importStepUpload">
+                            <label class="import-dropzone" id="importDropzone" for="importFileInput">
+                                <span id="importDropzoneLabel">Trascina qui il file oppure clicca per scegliere</span>
+                                <span class="import-dropzone__hint">.csv · .xlsx · .xls — max ~5 MB</span>
+                            </label>
+                            <input type="file" id="importFileInput" accept=".csv,.txt,.xlsx,.xls,.ods" style="display:none;" onchange="onImportFileSelected(event)">
+                            <div class="form-group import-wizard__paste">
+                                <label class="import-wizard__field-label" for="importCsvPaste">Oppure incolla CSV</label>
+                                <textarea id="importCsvPaste" rows="4" placeholder="Nome;Cognome;Matricola;Email;Sede&#10;Mario;Rossi;A001;..."></textarea>
+                            </div>
+                        </div>
+                        <div id="importStepMap" style="display:none;">
+                            <p class="import-wizard__map-hint">Verifica che ogni colonna sia abbinata al campo giusto.</p>
+                            <div id="importMappingGrid" class="import-mapping-sections"></div>
+                            <div class="import-wizard__options">
+                                <div class="form-group">
+                                    <label class="import-wizard__field-label" for="importTemplateId">Template pass (per creare tessere)</label>
+                                    <select id="importTemplateId" class="import-wizard__select"></select>
+                                </div>
+                                <label class="import-wizard__option">
+                                    <input type="checkbox" id="importCreatePasses" checked>
+                                    <span>Crea pass Wallet per ogni dipendente</span>
+                                </label>
+                                <label class="import-wizard__option">
+                                    <input type="checkbox" id="importUpdateExisting">
+                                    <span>Aggiorna dipendenti già presenti<small>Stessa matricola o stessa email</small></span>
+                                </label>
+                            </div>
+                            <div class="import-preview-wrap">
+                                <div class="import-preview__toolbar">
+                                    <span class="import-preview__label">Anteprima</span>
+                                    <span class="import-preview__range" id="importPreviewRange">—</span>
+                                </div>
+                                <div class="import-preview__scroll">
+                                    <table class="table import-preview-table">
+                                        <thead><tr id="importPreviewHead"></tr></thead>
+                                        <tbody id="importPreviewBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="importStatusMsg" class="import-wizard__status" role="status"></p>
                     </div>
-                    <div id="importStepUpload">
-                        <label class="import-dropzone" id="importDropzone" for="importFileInput">
-                            <span id="importDropzoneLabel">Trascina qui il file oppure clicca per scegliere</span>
-                            <span style="display:block;font-size:11px;color:var(--text2);margin-top:6px;">.csv · .xlsx · .xls — max ~5 MB</span>
-                        </label>
-                        <input type="file" id="importFileInput" accept=".csv,.txt,.xlsx,.xls,.ods" style="display:none;" onchange="onImportFileSelected(event)">
-                        <div class="form-group" style="margin-top:12px;">
-                            <label class="form-label">Oppure incolla CSV</label>
-                            <textarea id="importCsvPaste" rows="4" placeholder="Nome;Cognome;Matricola;Email;Sede&#10;Mario;Rossi;A001;..."></textarea>
+                    <footer class="import-wizard__footer">
+                        <div id="importFooterUpload" class="import-wizard__footer-inner import-wizard__footer-inner--upload">
+                            <span></span>
+                            <button type="button" class="btn import-wizard__cta" onclick="runImportPreview()">Analizza colonne</button>
                         </div>
-                        <button type="button" class="btn" style="width:100%;margin-top:8px;" onclick="runImportPreview()">Analizza colonne</button>
-                    </div>
-                    <div id="importStepMap" style="display:none;">
-                        <p style="font-size:12px;color:var(--text2);margin:0 0 10px;"><span id="importRowCount">0</span> righe · <span id="importValidCount">0</span> valide. Regola il mapping se serve.</p>
-                        <div id="importMappingGrid" class="import-mapping-grid"></div>
-                        <div class="form-group" style="margin-top:12px;">
-                            <label class="form-label">Template pass (per creare tessere)</label>
-                            <select id="importTemplateId"></select>
+                        <div id="importFooterMap" class="import-wizard__footer-inner" style="display:none;">
+                            <button type="button" class="btn import-wizard__btn-back" onclick="importBackToUpload()">← Altro file</button>
+                            <button type="button" class="btn import-wizard__cta" id="importCommitBtn" onclick="runEmployeeImportCommit()" disabled>Importa <strong id="importCommitCount">0</strong> dipendenti</button>
                         </div>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0;">
-                            <input type="checkbox" id="importCreatePasses" checked> Crea pass Wallet per ogni dipendente
-                        </label>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0 14px;">
-                            <input type="checkbox" id="importUpdateExisting"> Aggiorna dipendenti già presenti (stessa matricola/email)
-                        </label>
-                        <div style="max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:8px;">
-                            <table class="table" style="font-size:12px;margin:0;">
-                                <thead><tr id="importPreviewHead"></tr></thead>
-                                <tbody id="importPreviewBody"></tbody>
-                            </table>
-                        </div>
-                        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-                            <button type="button" class="btn sec" onclick="importBackToUpload()">← Altro file</button>
-                            <button type="button" class="btn" style="flex:1;" onclick="runEmployeeImportCommit()">Importa <span id="importCommitCount">0</span> dipendenti</button>
-                        </div>
-                    </div>
-                    <p id="importStatusMsg" style="font-size:12px;color:var(--text2);margin:12px 0 0;min-height:1.2em;"></p>
+                    </footer>
                 </div>
             </div>
 
@@ -3232,6 +3260,7 @@ const SECTIONS_NO_BRAND = new Set(['welcome', 'users', 'brand-identity']);
 const brandDataCache = new Map();
 let passPageIndex = 0;
 let passHasNextPage = false;
+let passTotalCount = null;
 let passSearchQuery = '';
 /** sessionStorage filters per brand (campagna · ricerca · pagina) */
 const PASSES_FILTER_STORAGE_PREFIX = 'ads2wallet:passFilters:v1:';
@@ -4526,6 +4555,8 @@ async function loadPassWalletChannelsDiag() {
 // ==================== PASSES ====================
 async function loadPasses(resetPage = false) {
     if (!brandId) return;
+    const el = document.getElementById('passesContent');
+    try {
     loadPassWalletChannelsDiag();
     ensurePassFiltersFromStorage();
     if (resetPage) passPageIndex = 0;
@@ -4534,12 +4565,25 @@ async function loadPasses(resetPage = false) {
     const campaignFilter = document.getElementById('passFilterCampaign')?.value || '';
     const effectiveLimit = PASSES_PAGE_SIZE + 1;
     const offset = passPageIndex * PASSES_PAGE_SIZE;
-    let url = `${API}/passes?brand_id=${brandId}&limit=${effectiveLimit}&offset=${offset}`;
+    let url = `${API}/passes?brand_id=${brandId}&limit=${effectiveLimit}&offset=${offset}&include_total=1`;
     if (campaignFilter) url += `&campaign_id=${campaignFilter}`;
-    const res = await fetch(url);
-    const rawPasses = await res.json();
-    passHasNextPage = rawPasses.length > PASSES_PAGE_SIZE;
-    const passes = passHasNextPage ? rawPasses.slice(0, PASSES_PAGE_SIZE) : rawPasses;
+    const res = await fetch(url, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Errore caricamento pass');
+    const payload = await res.json();
+    let rawPasses;
+    if (Array.isArray(payload)) {
+        rawPasses = payload;
+        passTotalCount = null;
+    } else {
+        rawPasses = payload.passes || [];
+        passTotalCount = typeof payload.total === 'number' ? payload.total : null;
+    }
+    if (passTotalCount != null) {
+        passHasNextPage = (offset + rawPasses.length) < passTotalCount;
+    } else {
+        passHasNextPage = rawPasses.length > PASSES_PAGE_SIZE;
+    }
+    const passes = rawPasses.length > PASSES_PAGE_SIZE ? rawPasses.slice(0, PASSES_PAGE_SIZE) : rawPasses;
     const q = (passSearchQuery || '').trim().toLowerCase();
     const filteredPasses = q ? passes.filter(p => {
         const camp = campaignsCache.find(c => c.id === p.campaign_id);
@@ -4550,7 +4594,6 @@ async function loadPasses(resetPage = false) {
         return haystack.includes(q);
     }) : passes;
     window._lastPassesForExport = filteredPasses;
-    const el = document.getElementById('passesContent');
 
     if (!passes.length) {
         el.innerHTML = renderEmptyState({ title: 'Nessun pass emesso', description: 'I pass compariranno qui dopo la pubblicazione o l\'iscrizione.', icon: 'inbox' });
@@ -4567,8 +4610,15 @@ async function loadPasses(resetPage = false) {
     }).length;
     const reachableWallet = filteredPasses.filter(p => !!p.push_token || passGoogleSaved(p) || passGooglePending(p) || passSamsungSaved(p) || passSamsungPending(p)).length;
     const pushSent = filteredPasses.filter(p => p.push_count > 0).length;
+    const pageFrom = passes.length ? offset + 1 : 0;
+    const pageTo = offset + passes.length;
+    const totalLabel = passTotalCount != null ? String(passTotalCount) : '—';
+    const rangeHint = passTotalCount != null && passes.length
+        ? `Mostrati ${pageFrom}–${pageTo} di ${passTotalCount}`
+        : (passes.length ? `${passes.length} in questa pagina` : '');
     const statsHtml = `<div class="stats-grid" style="margin-bottom:16px;">
-        <div class="stat-card"><div class="stat-label">Pass visibili</div><div class="stat-value">${filteredPasses.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Pass totali (brand)</div><div class="stat-value">${totalLabel}</div>${rangeHint ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">${rangeHint}</div>` : ''}</div>
+        <div class="stat-card"><div class="stat-label">In questa pagina</div><div class="stat-value">${filteredPasses.length}</div></div>
         <div class="stat-card"><div class="stat-label">Installazioni wallet confermate</div><div class="stat-value">${installed}</div></div>
         <div class="stat-card"><div class="stat-label">Download da desktop (info)</div><div class="stat-value">${desktopPasses}</div></div>
         <div class="stat-card"><div class="stat-label">Raggiungibili (Apple / Google / Samsung)</div><div class="stat-value">${reachableWallet}</div></div>
@@ -4668,15 +4718,21 @@ async function loadPasses(resetPage = false) {
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;flex-wrap:wrap;">
             <div style="font-size:12px;color:var(--text2);">
-                Pagina ${passPageIndex + 1} · ${filteredPasses.length} risultati (${passes.length} caricati)
+                Pagina ${passPageIndex + 1}
+                ${passTotalCount != null ? ` · ${pageFrom}–${pageTo} di ${passTotalCount} pass` : ` · ${filteredPasses.length} risultati`}
+                ${passHasNextPage ? ' · <strong style="color:var(--accent);">Ci sono altri pass — usa Successiva</strong>' : ''}
             </div>
-            <div style="display:flex;gap:8px;">
-                <button type="button" class="btn small sec" onclick="goPrevPassesPage()" ${passPageIndex === 0 ? 'disabled' : ''}>Precedente</button>
-                <button type="button" class="btn small sec" onclick="goNextPassesPage()" ${!passHasNextPage ? 'disabled' : ''}>Successiva</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button type="button" class="btn small sec" onclick="goPrevPassesPage()" ${passPageIndex === 0 ? 'disabled' : ''}>← Precedente</button>
+                <button type="button" class="btn small" onclick="goNextPassesPage()" ${!passHasNextPage ? 'disabled' : ''} style="${passHasNextPage ? '' : 'opacity:0.5'}">Successiva →</button>
             </div>
         </div>
     `;
     persistPassFilters();
+    } catch (e) {
+        console.error('loadPasses', e);
+        if (el) el.innerHTML = `<p style="color:var(--danger);padding:16px;">${esc(e.message || 'Errore caricamento pass')}</p>`;
+    }
 }
 
 function handlePassSearchInput(value) {
@@ -6835,14 +6891,107 @@ const IMPORT_FIELD_LABELS = {
     hire_date: 'Data assunzione', manager_name: 'Manager', manager_email: 'Email manager', phone: 'Telefono'
 };
 
+const IMPORT_FIELD_GROUPS = [
+    { title: 'Anagrafica', fields: ['first_name', 'last_name', 'full_name', 'email', 'phone'] },
+    { title: 'Dati aziendali', fields: ['employee_id', 'department', 'office_location', 'hire_date'] },
+    { title: 'Manager', fields: ['manager_name', 'manager_email'] }
+];
+
+function refreshImportWizardStepper() {
+    const onMap = document.getElementById('importStepMap').style.display !== 'none';
+    const valid = importPreviewState?.preview?.valid_count || 0;
+    document.querySelectorAll('.import-wizard__step').forEach((el) => {
+        const n = parseInt(el.dataset.step, 10);
+        el.classList.remove('is-active', 'is-done');
+        if (!onMap) {
+            if (n === 1) el.classList.add('is-active');
+            return;
+        }
+        if (n === 1) el.classList.add('is-done');
+        if (n === 2) {
+            if (valid > 0) el.classList.add('is-done');
+            else el.classList.add('is-active');
+        }
+        if (n === 3 && valid > 0) el.classList.add('is-active');
+    });
+}
+
+function updateImportSummaryChips(data) {
+    const chips = document.getElementById('importSummaryChips');
+    if (!chips) return;
+    const total = data?.total_rows || 0;
+    const valid = data?.valid_count || 0;
+    const mapped = [...document.querySelectorAll('.import-map-row select')].filter((s) => s.value !== '').length;
+    const fieldTotal = document.querySelectorAll('.import-map-row select').length || 11;
+    chips.hidden = false;
+    const chipValid = document.getElementById('importChipValid');
+    const chipMap = document.getElementById('importChipMapping');
+    if (chipValid) chipValid.textContent = `${valid} righe valide${total ? ` / ${total}` : ''}`;
+    if (chipMap) chipMap.textContent = `Mapping: ${mapped}/${fieldTotal} campi`;
+}
+
+function syncImportSelectStates() {
+    document.querySelectorAll('.import-map-row select').forEach((sel) => {
+        const row = sel.closest('.import-map-row');
+        if (!row) return;
+        const ignored = sel.value === '';
+        row.classList.toggle('is-ignored', ignored);
+        row.classList.toggle('is-mapped', !ignored);
+    });
+    if (importPreviewState?.preview) updateImportSummaryChips(importPreviewState.preview);
+    refreshImportWizardStepper();
+    updateImportCommitButton();
+}
+
+function updateImportCommitButton() {
+    const btn = document.getElementById('importCommitBtn');
+    if (!btn) return;
+    const valid = importPreviewState?.preview?.valid_count || 0;
+    const createPasses = document.getElementById('importCreatePasses')?.checked;
+    const templateId = document.getElementById('importTemplateId')?.value;
+    btn.disabled = valid <= 0 || btn.classList.contains('is-loading') || (!!createPasses && !templateId);
+}
+
+function bindImportWizardControls() {
+    document.querySelectorAll('.import-map-row select').forEach((sel) => {
+        sel.addEventListener('change', syncImportSelectStates);
+    });
+    ['importCreatePasses', 'importUpdateExisting'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && !el.dataset.importBound) {
+            el.dataset.importBound = '1';
+            el.addEventListener('change', updateImportCommitButton);
+        }
+    });
+    const tpl = document.getElementById('importTemplateId');
+    if (tpl && !tpl.dataset.importBound) {
+        tpl.dataset.importBound = '1';
+        tpl.addEventListener('change', updateImportCommitButton);
+    }
+}
+
+function showImportWizardPhase(phase) {
+    const upload = phase === 'upload';
+    document.getElementById('importStepUpload').style.display = upload ? '' : 'none';
+    document.getElementById('importStepMap').style.display = upload ? 'none' : '';
+    document.getElementById('importFooterUpload').style.display = upload ? 'flex' : 'none';
+    document.getElementById('importFooterMap').style.display = upload ? 'none' : 'flex';
+    document.getElementById('importSummaryChips').hidden = upload;
+    refreshImportWizardStepper();
+}
+
 function openEmployeeImportModal() {
     importPreviewState = null;
     document.getElementById('importFileInput').value = '';
     document.getElementById('importCsvPaste').value = '';
     document.getElementById('importDropzoneLabel').textContent = 'Trascina qui il file oppure clicca per scegliere';
     document.getElementById('importStatusMsg').textContent = '';
-    document.getElementById('importStepUpload').style.display = '';
-    document.getElementById('importStepMap').style.display = 'none';
+    const commitBtn = document.getElementById('importCommitBtn');
+    if (commitBtn) {
+        commitBtn.classList.remove('is-loading');
+        commitBtn.disabled = true;
+    }
+    showImportWizardPhase('upload');
     document.getElementById('employeeImportModal').style.display = 'flex';
     populateImportTemplates();
 }
@@ -6907,8 +7056,7 @@ async function runImportPreview() {
         if (!res.ok) throw new Error(data.error || 'Preview fallita');
         importPreviewState = { ...importPreviewState, preview: data, mapping: { ...data.mapping } };
         renderImportMappingStep(data);
-        document.getElementById('importStepUpload').style.display = 'none';
-        document.getElementById('importStepMap').style.display = '';
+        showImportWizardPhase('map');
         document.getElementById('importStatusMsg').textContent = '';
     } catch (e) {
         document.getElementById('importStatusMsg').textContent = e.message;
@@ -6916,31 +7064,67 @@ async function runImportPreview() {
     }
 }
 
+function importMapSelectHtml(key, headers, cur) {
+    const label = IMPORT_FIELD_LABELS[key] || key;
+    const ignored = cur === '';
+    const rowCls = ignored ? 'import-map-row is-ignored' : 'import-map-row is-mapped';
+    const opts = ['<option value="">— ignora —</option>']
+        .concat(headers.map((h, i) => {
+            const title = esc(h || '(colonna ' + i + ')');
+            const short = (h && h.length > 28) ? esc(h.slice(0, 26)) + '…' : title;
+            return `<option value="${i}" title="${title}"${String(i) === cur ? ' selected' : ''}>${short}</option>`;
+        }))
+        .join('');
+    return `<div class="${rowCls}"><label class="import-wizard__field-label" for="import-field-${key}">${esc(label)}</label><select id="import-field-${key}" class="import-wizard__select" data-import-field="${key}">${opts}</select></div>`;
+}
+
 function renderImportMappingStep(data) {
-    document.getElementById('importRowCount').textContent = String(data.total_rows || 0);
-    document.getElementById('importValidCount').textContent = String(data.valid_count || 0);
     document.getElementById('importCommitCount').textContent = String(data.valid_count || 0);
+    updateImportSummaryChips(data);
 
     const grid = document.getElementById('importMappingGrid');
     const headers = data.headers || [];
-    const fieldKeys = (data.field_options || []).map((f) => f.key);
-    grid.innerHTML = fieldKeys.map((key) => {
-        const label = IMPORT_FIELD_LABELS[key] || key;
-        const cur = data.mapping && data.mapping[key] != null ? String(data.mapping[key]) : '';
-        const opts = ['<option value="">— ignora —</option>']
-            .concat(headers.map((h, i) => `<option value="${i}"${String(i) === cur ? ' selected' : ''}>${esc(h || '(colonna ' + i + ')')}</option>`))
-            .join('');
-        return `<div class="import-map-row"><label>${esc(label)}</label><select data-import-field="${key}">${opts}</select></div>`;
+    const fieldKeys = new Set((data.field_options || []).map((f) => f.key));
+    const sections = IMPORT_FIELD_GROUPS.map((sec) => {
+        const fields = sec.fields.filter((k) => fieldKeys.has(k));
+        if (!fields.length) return '';
+        const rows = fields.map((key) => {
+            const cur = data.mapping && data.mapping[key] != null ? String(data.mapping[key]) : '';
+            return importMapSelectHtml(key, headers, cur);
+        }).join('');
+        return `<section class="import-mapping-section"><h3 class="import-mapping-section__title">${esc(sec.title)}</h3><div class="import-mapping-section__grid">${rows}</div></section>`;
     }).join('');
+    grid.innerHTML = sections;
+
+    const previewRows = data.preview_rows || [];
+    const total = data.total_rows || previewRows.length;
+    const shown = previewRows.length;
+    const rangeEl = document.getElementById('importPreviewRange');
+    if (rangeEl) {
+        rangeEl.textContent = shown
+            ? (shown >= total ? `1–${total} di ${total}` : `1–${shown} di ${total}`)
+            : '—';
+    }
 
     const head = document.getElementById('importPreviewHead');
-    head.innerHTML = '<th>#</th><th>Nome</th><th>Cognome</th><th>Matricola</th><th>Email</th><th>Sede</th>';
+    head.innerHTML = '<th class="col-num">#</th><th>Nome</th><th>Cognome</th><th class="col-num">Matricola</th><th class="col-email">Email</th><th>Sede</th>';
     const body = document.getElementById('importPreviewBody');
-    body.innerHTML = (data.preview_rows || []).map((row) => {
+    body.innerHTML = previewRows.map((row) => {
         const m = row.mapped || {};
-        const ok = row.valid ? '' : ' style="opacity:0.55;"';
-        return `<tr${ok}><td>${row.row_index + 1}</td><td>${esc(m.first_name || '')}</td><td>${esc(m.last_name || '')}</td><td>${esc(m.employee_id || '')}</td><td>${esc(m.email || '')}</td><td>${esc(m.office_location || '')}</td></tr>`;
+        const ok = row.valid ? '' : ' class="import-preview-row--invalid"';
+        const email = m.email || '';
+        return `<tr${ok}>
+            <td class="col-num">${row.row_index + 1}</td>
+            <td>${esc(m.first_name || '')}</td>
+            <td>${esc(m.last_name || '')}</td>
+            <td class="col-num">${esc(m.employee_id || '')}</td>
+            <td class="col-email" title="${esc(email)}">${esc(email)}</td>
+            <td>${esc(m.office_location || '')}</td>
+        </tr>`;
     }).join('');
+
+    bindImportWizardControls();
+    syncImportSelectStates();
 }
 
 function getImportMappingFromUi() {
@@ -6954,8 +7138,7 @@ function getImportMappingFromUi() {
 }
 
 function importBackToUpload() {
-    document.getElementById('importStepMap').style.display = 'none';
-    document.getElementById('importStepUpload').style.display = '';
+    showImportWizardPhase('upload');
 }
 
 async function runEmployeeImportCommit() {
@@ -6979,6 +7162,12 @@ async function runEmployeeImportCommit() {
         return toast('File non disponibile — ricarica');
     }
 
+    const commitBtn = document.getElementById('importCommitBtn');
+    if (commitBtn) {
+        commitBtn.classList.add('is-loading');
+        commitBtn.disabled = true;
+        commitBtn.innerHTML = 'Importazione in corso…';
+    }
     document.getElementById('importStatusMsg').textContent = 'Importazione in corso…';
     try {
         const res = await fetch(`${API}/brands/${brandId}/employees/import`, {
@@ -6995,6 +7184,12 @@ async function runEmployeeImportCommit() {
     } catch (e) {
         document.getElementById('importStatusMsg').textContent = e.message;
         toast(e.message);
+        if (commitBtn) {
+            commitBtn.classList.remove('is-loading');
+            const n = importPreviewState?.preview?.valid_count || 0;
+            commitBtn.innerHTML = `Importa <strong id="importCommitCount">${n}</strong> dipendenti`;
+            updateImportCommitButton();
+        }
     }
 }
 

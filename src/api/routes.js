@@ -8,7 +8,7 @@ const {
   createTemplate, getTemplate, listTemplates, updateTemplate, deleteTemplate,
   createCampaign, getCampaign, listCampaigns, updateCampaign, deleteCampaign,
   incrementCampaignDownloads, incrementCampaignInstalls,
-  createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesForTemplate, listPasses, deletePass,
+  createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesForTemplate, listPasses, countPasses, deletePass,
   getMemberForPass, listEmployeesForBrand, importEmployeesBatch,
   updatePassDynamicLinks,
   logEvent, listEvents,
@@ -1794,12 +1794,22 @@ router.get('/passes', async (req, res) => {
     const { brand_id, status, campaign_id, limit, offset } = req.query;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
     if (!requireBrandId(req, res, brand_id)) return;
-    const passes = await listPasses(brand_id, {
+    const listOpts = {
       status,
       campaign_id,
       limit: limit ? parseInt(limit, 10) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined
-    });
+    };
+    const passes = await listPasses(brand_id, listOpts);
+    if (req.query.include_total === '1' || req.query.include_total === 'true') {
+      const total = await countPasses(brand_id, { status, campaign_id });
+      return res.json({
+        passes,
+        total,
+        limit: listOpts.limit ?? null,
+        offset: listOpts.offset ?? 0
+      });
+    }
     res.json(passes);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

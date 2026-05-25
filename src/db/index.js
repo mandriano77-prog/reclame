@@ -1472,6 +1472,16 @@ async function listPasses(brandId, options = {}) {
   return result.rows;
 }
 
+async function countPasses(brandId, options = {}) {
+  let query = 'SELECT COUNT(*)::int AS count FROM pass_instances p WHERE p.brand_id = $1';
+  const params = [brandId];
+  let idx = 2;
+  if (options.status) { query += ` AND p.status = $${idx++}`; params.push(options.status); }
+  if (options.campaign_id) { query += ` AND p.campaign_id = $${idx++}`; params.push(options.campaign_id); }
+  const result = await pool.query(query, params);
+  return result.rows[0]?.count ?? 0;
+}
+
 async function deletePass(id) {
   const pass = await getPassInstance(id);
   if (!pass) return null;
@@ -2518,6 +2528,7 @@ module.exports = {
   updatePassDynamicLinks,
   touchPassesForTemplate,
   listPasses,
+  countPasses,
   deletePass,
   // Events
   logEvent,
