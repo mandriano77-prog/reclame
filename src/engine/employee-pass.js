@@ -196,7 +196,7 @@ function resolveHrBackSource(template, brand) {
   };
 }
 
-function buildBackSections({ brand, template, instance, member, brandConfig = {} }) {
+function buildBackSections({ brand, template, instance, member, brandConfig = {}, portalUrl = null }) {
   const profile = resolveMemberProfile(member, instance);
   const sections = [];
   const hrBack = resolveHrBackSource(template, brand);
@@ -254,12 +254,14 @@ function buildBackSections({ brand, template, instance, member, brandConfig = {}
     if (d?.label && d?.url) sections.push({ kind: 'link', key: `doc_${i}`, label: d.label, url: d.url, doc: true });
   });
 
-  sections.push({
-    kind: 'text',
-    key: 'portal_placeholder',
-    label: 'PROFILO PERSONALE',
-    body: 'Portale dipendente — in implementazione'
-  });
+  if (portalUrl) {
+    sections.push({
+      kind: 'link',
+      key: 'portal_profile',
+      label: 'PROFILO PERSONALE',
+      url: portalUrl
+    });
+  }
 
   return sections;
 }
@@ -284,7 +286,7 @@ function walletImageUrls({ apiBase, brand, template }) {
 /**
  * Build unified employee_pass from DB rows.
  */
-function buildEmployeePass({ brand, template, instance, member, brandConfig, apiBase }) {
+function buildEmployeePass({ brand, template, instance, member, brandConfig, apiBase, portalUrl = null }) {
   const cfg = brandConfig || brand?.config || {};
   const profile = resolveMemberProfile(member, instance);
   const tplFields = template?.fields || {};
@@ -311,7 +313,14 @@ function buildEmployeePass({ brand, template, instance, member, brandConfig, api
     auxiliary.push({ key: 'sede', label: 'SEDE', value: profile.office_location });
   }
 
-  const backSections = buildBackSections({ brand, template, instance, member, brandConfig: cfg });
+  const backSections = buildBackSections({
+    brand,
+    template,
+    instance,
+    member,
+    brandConfig: cfg,
+    portalUrl
+  });
 
   const barcodeValue = instance?.serial_number || '';
 
