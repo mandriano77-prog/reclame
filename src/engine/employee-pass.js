@@ -278,25 +278,13 @@ function buildEmployeePass({ brand, template, instance, member, brandConfig, api
     secondary.push({ key: 'reparto', label: 'REPARTO', value: profile.department });
   }
 
-  const header = [];
+  // HR pass front: solo dati dipendente + hint fisso (no header/secondary marketing dal template)
+  const header = [{
+    key: 'info_hint',
+    label: 'CLICCA SUI PUNTINI',
+    value: 'per i dettagli'
+  }];
   const auxiliary = [];
-  if (tplFields.headerFields) {
-    tplFields.headerFields.forEach((f) => {
-      if (f.label || f.value) header.push({ key: f.key || 'header_info', label: (f.label || '').toUpperCase(), value: f.value || '' });
-    });
-  }
-  if (tplFields.secondaryFields) {
-    tplFields.secondaryFields.forEach((f) => {
-      if (f.label || f.value) {
-        secondary.push({ key: f.key || 'sec_info', label: (f.label || '').toUpperCase(), value: f.value || '' });
-      }
-    });
-  }
-  if (tplFields.auxiliaryFields) {
-    tplFields.auxiliaryFields.forEach((f) => {
-      if (f.label || f.value) auxiliary.push({ key: f.key || 'aux_info', label: (f.label || '').toUpperCase(), value: f.value || '' });
-    });
-  }
 
   const backSections = buildBackSections({ brand, template, instance, member, brandConfig: cfg });
 
