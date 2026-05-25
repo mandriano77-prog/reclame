@@ -2305,7 +2305,6 @@
                                 <option value="never">Non ha mai fatto</option>
                             </select>
                         </div>
-                        <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction">
                         <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction"><option value="">—</option><option value="opened">Aperto pass</option><option value="link_click">Click link retro</option><option value="installed">Installato</option><option value="instant_win_played">Instant Win</option><option value="gamification_played">Gamification</option></select></div>
                         <div class="form-group" style="flex:1;"><label class="form-label">Target key</label><input type="text" id="audBehaviorTargetKey" placeholder="link_0"></div>
                     </div>
@@ -6695,7 +6694,10 @@ async function loadLeads() {
     }
     try {
         const res = await fetch(`${API}/brands/${brandId}/leads`, { headers: getAuthHeaders() });
-        if (!res.ok) throw new Error('Failed to load leads');
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to load leads');
+        }
         const data = await res.json();
         allLeads = data.leads || [];
 

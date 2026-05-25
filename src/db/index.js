@@ -1157,7 +1157,7 @@ async function listEmployeesForBrand(brandId) {
       SELECT device_library_id
       FROM device_registrations
       WHERE serial_number = pi.serial_number
-      ORDER BY registered_at DESC NULLS LAST
+      ORDER BY created_at DESC NULLS LAST
       LIMIT 1
     ) dr ON true
     WHERE m.brand_id = $1
