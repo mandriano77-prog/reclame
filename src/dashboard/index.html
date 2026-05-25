@@ -341,6 +341,47 @@
 
         .pass-table-wrap { overflow-x: auto; max-height: 66vh; border-radius: var(--radius-md); }
         .pass-table thead th { position: sticky; top: 0; z-index: 2; }
+        .pass-table-legend {
+            margin-bottom: 12px;
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-default, var(--border));
+            background: var(--bg-subtle, var(--bg2));
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-secondary, var(--text2));
+        }
+        .pass-table-legend__title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-primary, var(--text));
+            margin-bottom: 8px;
+        }
+        .pass-table-legend__grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 20px;
+        }
+        .pass-table-legend__grid > span { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .legend-pill {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            line-height: 1.2;
+        }
+        .legend-pill--ok {
+            color: var(--green);
+            background: rgba(52, 211, 153, 0.12);
+            border: 1px solid rgba(52, 211, 153, 0.25);
+        }
+        .legend-pill--pending {
+            color: #b45309;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
 
         .badge {
             display: inline-flex;
@@ -938,6 +979,23 @@
             border-color: var(--accent);
             box-shadow: 0 0 0 1px var(--accent-subtle);
         }
+        html[data-shell="light"] .wallet-diag-initial { color: var(--text-primary); }
+        html[data-shell="light"] .wallet-diag-chevron {
+            border-right-color: var(--text-muted);
+            border-bottom-color: var(--text-muted);
+        }
+        html[data-shell="light"] .wallet-diag-code {
+            background: var(--bg-subtle);
+            border-color: var(--border-default);
+            color: var(--text-primary) !important;
+        }
+        html[data-shell="light"] .wallet-diag-body code.inline {
+            background: var(--bg-subtle);
+            border-color: var(--border-default);
+            color: var(--text-primary) !important;
+        }
+        html[data-shell="light"] .wallet-diag-label { color: var(--accent-hover, #7c3aed) !important; }
+        html[data-shell="light"] .wallet-diag-item:hover { border-color: var(--accent-hover, var(--teal)); }
         .wallet-diag-head {
             padding: 14px 18px 16px;
             border-bottom: 1px solid var(--wd-line);
@@ -4298,6 +4356,19 @@ function walletDiagCode(t) {
     return `<div class="wallet-diag-code">${esc(t)}</div>`;
 }
 
+function renderPassTableLegendHtml() {
+    return `<div class="pass-table-legend" role="note" aria-label="Legenda tabella pass emessi">
+        <div class="pass-table-legend__title">Legenda tabella</div>
+        <div class="pass-table-legend__grid">
+            <span><strong>Installato</strong> ☑ salvato nel wallet · ☐ solo generato (link non completato)</span>
+            <span><strong>Apple</strong> 🔔 token push (APNs) · 🔕 nessun token</span>
+            <span><strong>Google</strong> <span class="legend-pill legend-pill--ok">GW</span> salvato · <span class="legend-pill legend-pill--pending">GW°</span> in attesa · — non usato</span>
+            <span><strong>Samsung</strong> <span class="legend-pill legend-pill--ok">SW</span> salvato · <span class="legend-pill legend-pill--pending">SW°</span> in attesa</span>
+            <span><strong>Push (APNs)</strong> ✔ ultima consegnata · ✖ errore · <em>Nx</em> = numero invii</span>
+        </div>
+    </div>`;
+}
+
 async function loadPassWalletChannelsDiag() {
     const box = document.getElementById('passWalletChannelsDiag');
     if (!box) return;
@@ -4306,12 +4377,15 @@ async function loadPassWalletChannelsDiag() {
         return;
     }
     try {
+        const hdrs = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
         const [gr, sr, ar] = await Promise.all([
-            fetch(`${API}/google-wallet/status`),
-            fetch(`${API}/samsung-wallet/status`),
-            fetch(`${API}/apple-wallet/status`)
+            fetch(`${API}/google-wallet/status`, { headers: hdrs }),
+            fetch(`${API}/samsung-wallet/status`, { headers: hdrs }),
+            fetch(`${API}/apple-wallet/status`, { headers: hdrs })
         ]);
-        const [g, s, a] = await Promise.all([gr.json(), sr.json(), ar.json()]);
+        const g = gr.ok ? await gr.json() : { configured: false };
+        const s = sr.ok ? await sr.json() : { configured: false };
+        const a = ar.ok ? await ar.json() : { configured: false };
 
         const appleConfigured = !!(a && a.configured);
         const appleBadge = appleConfigured ? 'wallet-diag-badge--ok' : 'wallet-diag-badge--off';
@@ -4434,8 +4508,12 @@ async function loadPassWalletChannelsDiag() {
             googleBlock +
             samsungBlock +
             '</div></div>';
-    } catch (_) {
-        box.innerHTML = '';
+    } catch (err) {
+        console.warn('loadPassWalletChannelsDiag:', err);
+        box.innerHTML =
+            '<div class="pass-table-legend" style="margin:0;">' +
+            '<div class="pass-table-legend__title">Collegamenti Wallet</div>' +
+            '<p style="margin:0;font-size:12px;">Diagnostica non caricata. Ricarica la pagina o controlla la console.</p></div>';
     }
 }
 
@@ -4491,7 +4569,7 @@ async function loadPasses(resetPage = false) {
         <div class="stat-card"><div class="stat-label">Push inviate (APNs)</div><div class="stat-value">${pushSent}</div></div>
     </div>`;
 
-    el.innerHTML = statsHtml + `
+    el.innerHTML = statsHtml + renderPassTableLegendHtml() + `
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <input
                 type="search"
