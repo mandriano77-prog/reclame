@@ -21,9 +21,25 @@ function getPortalSecret() {
 }
 
 function getPortalBaseUrl() {
-  const raw = String(process.env.PORTAL_BASE_URL || '').trim();
-  if (!raw) return null;
-  return raw.replace(/\/$/, '');
+  const explicit = String(process.env.PORTAL_BASE_URL || '').trim();
+  if (explicit) return explicit.replace(/\/$/, '');
+
+  const customDomain = String(process.env.CUSTOM_DOMAIN || '')
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/+$/, '');
+  if (customDomain) return `https://${customDomain}/portal`;
+
+  const appUrl = String(process.env.APP_URL || '').trim();
+  if (appUrl) return `${appUrl.replace(/\/+$/, '')}/portal`;
+
+  const railwayDomain = String(process.env.RAILWAY_PUBLIC_DOMAIN || '')
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/+$/, '');
+  if (railwayDomain) return `https://${railwayDomain}/portal`;
+
+  return null;
 }
 
 function hashPortalToken(token) {

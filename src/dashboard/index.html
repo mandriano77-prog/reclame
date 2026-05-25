@@ -5482,7 +5482,7 @@ function updatePassPreview() {
         addBackText('EMERGENZE', document.getElementById('hrBrandEmergency')?.value.trim());
         hrCollectLinkRows('hrResourcesRows').forEach(r => addBackLink(r.label, r.url));
         hrCollectLinkRows('hrDocumentsRows').forEach(r => addBackLink(r.label, r.url));
-        addBackText('PROFILO PERSONALE', 'Portale dipendente — in implementazione');
+        addBackLink('PROFILO PERSONALE', `${window.location.origin}/portal/?t=TOKEN_AUTOMATICO`);
         document.getElementById('ppBackContent').innerHTML = backHtml || '<div class="pp-back-empty">Configura il retro HR</div>';
         return;
     }
