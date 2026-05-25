@@ -74,11 +74,14 @@
 
     let slugDuplicateError = null;
 
-    const domainInput = window.DomainChipsInput.render({
+    let domainInput = null;
+    domainInput = window.DomainChipsInput.render({
       host: host.querySelector('#contactsJoinDomainsHost'),
       domains: cfg.domains || [],
-      onChange: function () {
-        if (typeof cfg.onDomainsChange === 'function') cfg.onDomainsChange(domainInput.getDomains());
+      onChange: function (domains) {
+        if (typeof cfg.onDomainsChange === 'function') {
+          cfg.onDomainsChange(Array.isArray(domains) ? domains : (domainInput ? domainInput.getDomains() : []));
+        }
       }
     });
 
