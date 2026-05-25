@@ -994,6 +994,7 @@ async function updateTemplate(id, data) {
 }
 
 async function deleteTemplate(id) {
+  await pool.query('UPDATE campaigns SET template_id = NULL, updated_at = NOW() WHERE template_id = $1', [id]);
   await pool.query('DELETE FROM device_registrations WHERE serial_number IN (SELECT serial_number FROM pass_instances WHERE template_id = $1)', [id]);
   await pool.query('DELETE FROM events WHERE pass_id IN (SELECT id FROM pass_instances WHERE template_id = $1)', [id]);
   await pool.query('DELETE FROM pass_instances WHERE template_id = $1', [id]);

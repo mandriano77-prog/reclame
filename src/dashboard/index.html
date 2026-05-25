@@ -5421,11 +5421,22 @@ async function uploadTemplateImages(templateId) {
 }
 
 async function deleteTemplate(id) {
-    if (!await appConfirm({ title: 'Elimina template', message: 'Eliminare questo template?', confirmLabel: 'Elimina', tone: 'danger' })) return;
-    await fetch(`${API}/templates/${id}`, { method: 'DELETE' });
-    toast('Template eliminato');
-    invalidateBrandCache();
-    loadTemplates();
+    if (!await appConfirm({ title: 'Elimina template', message: 'Eliminare questo template? Verranno eliminati anche i pass collegati. Le campagne perderanno il riferimento al template.', confirmLabel: 'Elimina', tone: 'danger' })) return;
+    const guard = prompt('Conferma definitiva: scrivi ELIMINA per procedere.');
+    if (guard !== 'ELIMINA') {
+        toast('Eliminazione annullata');
+        return;
+    }
+    try {
+        const res = await fetch(`${API}/templates/${id}`, { method: 'DELETE', headers: { ...getAuthHeaders() } });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Errore eliminazione');
+        }
+        toast('Template eliminato');
+        invalidateBrandCache();
+        loadTemplates();
+    } catch (err) { alert('Errore: ' + err.message); }
 }
 
 // ==================== PUSH NOTIFICATIONS ====================
@@ -8043,12 +8054,22 @@ async function wzEditTemplate(id) {
 }
 
 async function wzDeleteTemplate(id) {
-    if (!await appConfirm({ title: 'Elimina template', message: 'Eliminare questo template?', confirmLabel: 'Elimina', tone: 'danger' })) return;
+    if (!await appConfirm({ title: 'Elimina template', message: 'Eliminare questo template? Verranno eliminati anche i pass collegati.', confirmLabel: 'Elimina', tone: 'danger' })) return;
+    const guard = prompt('Conferma definitiva: scrivi ELIMINA per procedere.');
+    if (guard !== 'ELIMINA') {
+        toast('Eliminazione annullata');
+        return;
+    }
     try {
-        await fetch(`${API}/templates/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+        const res = await fetch(`${API}/templates/${id}`, { method: 'DELETE', headers: { ...getAuthHeaders() } });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Errore eliminazione');
+        }
         toast('Template eliminato');
+        invalidateBrandCache();
         loadWzTemplates();
-    } catch(e) { toast('Errore: ' + e.message); }
+    } catch(e) { alert('Errore: ' + e.message); }
 }
 
 // ==================== BRAND IDENTITY ====================
