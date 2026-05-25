@@ -338,6 +338,317 @@
     }
   }
 
+  A2W.icons.qr = A2W.icons.qr || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6H4z"/><path d="M14 14h2"/><path d="M18 14h2"/><path d="M14 18h2"/><path d="M18 18h2"/></svg>';
+  A2W.icons.external = A2W.icons.external || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 14 20 4"/><path d="M20 14v6H4V4h6"/></svg>';
+  A2W.icons.link = A2W.icons.link || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11.2 4.73"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 1 0 7.07 7.07L12.8 19.27"/></svg>';
+  A2W.icons.kebab = A2W.icons.kebab || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>';
+  A2W.icons.pause = A2W.icons.pause || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14"/><path d="M16 5v14"/></svg>';
+  A2W.icons.play = A2W.icons.play || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 4 12 8-12 8V4z"/></svg>';
+  A2W.icons.copy = A2W.icons.copy || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  A2W.icons.delete = A2W.icons.delete || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+  A2W.icons.download = A2W.icons.download || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M4 20h16"/></svg>';
+  A2W.icons.install = A2W.icons.install || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 13 3 3 7-8"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>';
+  A2W.icons.tag = A2W.icons.tag || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10 10 20 2 12V4h8z"/><circle cx="7.5" cy="7.5" r="1"/></svg>';
+
+  function a2wActionState() {
+    A2W.actions = A2W.actions || {};
+    return A2W.actions;
+  }
+
+  function a2wExtractEntityIdFromButton(btn) {
+    if (!btn) return '';
+    const onclick = String(btn.getAttribute('onclick') || '');
+    const match = onclick.match(/'([^']+)'/);
+    return match ? match[1] : '';
+  }
+
+  function a2wCreateIconButton(label, iconSvg, className) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = className || 'a2w-icon-btn';
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('data-a2w-tooltip-label', label);
+    btn.innerHTML = iconSvg;
+    return btn;
+  }
+
+  async function a2wDuplicateCampaignFromId(campaignId) {
+    if (!campaignId) return;
+    const source = (Array.isArray(window.campaignsCache) ? window.campaignsCache : []).find((c) => c.id === campaignId);
+    if (!source) {
+      toast('Campagna non trovata');
+      return;
+    }
+    if (typeof openCampaignModal === 'function') openCampaignModal();
+    const setVal = function (id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value || '';
+    };
+    setVal('campaignEditId', '');
+    setVal('campName', (source.name || '') + ' (copia)');
+    setVal('campDesc', source.description || '');
+    setVal('campUtmSource', source.utm_source || '');
+    setVal('campUtmMedium', source.utm_medium || '');
+    setVal('campUtmCampaign', source.utm_campaign || '');
+    setVal('campUtmContent', source.utm_content || '');
+    setVal('campUtmTerm', source.utm_term || '');
+    setVal('campStart', source.start_date ? source.start_date.substring(0, 10) : '');
+    setVal('campEnd', source.end_date ? source.end_date.substring(0, 10) : '');
+    if (source.template_id) setVal('campTemplate', source.template_id);
+    const title = document.getElementById('campaignModalTitle');
+    if (title) title.textContent = 'Duplica Campagna';
+    toast('Campagna duplicata in bozza');
+  }
+
+  async function a2wDuplicateTemplateFromId(templateId) {
+    if (!templateId || typeof editTemplate !== 'function') return;
+    await editTemplate(templateId);
+    const editId = document.getElementById('templateEditId');
+    if (editId) editId.value = '';
+    const nameInput = document.getElementById('tplName');
+    if (nameInput && !/\(copia\)$/i.test(nameInput.value || '')) nameInput.value = (nameInput.value || '') + ' (copia)';
+    const title = document.getElementById('templateModalTitle');
+    if (title) title.textContent = 'Duplica Template';
+    toast('Template duplicato in bozza');
+  }
+
+  function a2wEnhanceCampaignMetaChips(card) {
+    const meta = card.querySelector('.card-meta');
+    if (!meta || meta.dataset.a2wEnhanced === '1') return;
+    const raw = String(meta.textContent || '').trim();
+    if (!raw) return;
+    const segments = raw.split('·').map((s) => s.trim()).filter(Boolean);
+    if (!segments.length) return;
+    const chips = [];
+    segments.forEach((segment) => {
+      let icon = A2W.icons.tag;
+      let label = segment;
+      const dl = segment.match(/^(\d+)\s+download$/i);
+      const ins = segment.match(/^(\d+)\s+install$/i);
+      const src = segment.match(/^src=(.+)$/i);
+      const med = segment.match(/^med=(.+)$/i);
+      if (dl) {
+        icon = A2W.icons.download;
+        label = 'download ' + dl[1];
+      } else if (ins) {
+        icon = A2W.icons.install;
+        label = 'install ' + ins[1];
+      } else if (src) {
+        icon = A2W.icons.tag;
+        label = 'src ' + src[1];
+      } else if (med) {
+        icon = A2W.icons.tag;
+        label = 'med ' + med[1];
+      }
+      chips.push('<span class="a2w-chip" data-a2w-component="chip"><span class="a2w-chip__icon">' + icon + '</span><span class="a2w-chip__label">' + label + '</span></span>');
+    });
+    meta.classList.add('a2w-chip-row');
+    meta.dataset.a2wEnhanced = '1';
+    meta.innerHTML = chips.join('');
+  }
+
+  function a2wEnsureActionMenusDocumentClose() {
+    const state = a2wActionState();
+    if (state.docBound) return;
+    state.docBound = true;
+    document.addEventListener('click', function a2wActionMenuDocClick() {
+      document.querySelectorAll('.a2w-row-kebab-menu').forEach((menu) => { menu.hidden = true; });
+      document.querySelectorAll('.a2w-row-kebab-trigger').forEach((btn) => { btn.setAttribute('aria-expanded', 'false'); });
+    }, { capture: false });
+  }
+
+  function a2wEnhanceCampaignCardActions(card) {
+    const actions = card.querySelector('.card-actions');
+    if (!actions || actions.dataset.a2wEnhanced === '1') return;
+    const buttons = [...actions.querySelectorAll('button')];
+    const editBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('editCampaign('));
+    const qrBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('showCampaignQR('));
+    const landingBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('openCampaignLandingTab('));
+    const linkBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('copyCampaignDirect('));
+    const toggleBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('toggleCampaign('));
+    const deleteBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('deleteCampaign('));
+    if (!editBtn) return;
+
+    actions.dataset.a2wEnhanced = '1';
+    actions.classList.add('a2w-row-actions');
+    actions.setAttribute('data-a2w-component', 'campaign-actions');
+
+    editBtn.className = 'btn a2w-btn-primary a2w-row-primary-btn';
+    editBtn.textContent = 'Modifica';
+
+    const iconGroup = document.createElement('div');
+    iconGroup.className = 'a2w-row-icon-group';
+    iconGroup.setAttribute('data-a2w-component', 'icon-group');
+    actions.insertBefore(iconGroup, editBtn.nextSibling);
+
+    const moveIconAction = function (sourceBtn, label, icon) {
+      if (!sourceBtn) return;
+      sourceBtn.className = 'a2w-icon-btn a2w-row-icon-btn';
+      sourceBtn.setAttribute('aria-label', label);
+      sourceBtn.setAttribute('data-a2w-tooltip-label', label);
+      sourceBtn.innerHTML = icon;
+      iconGroup.appendChild(sourceBtn);
+    };
+    moveIconAction(qrBtn, 'QR', A2W.icons.qr);
+    moveIconAction(landingBtn, 'Landing', A2W.icons.external);
+    moveIconAction(linkBtn, 'Link diretto', A2W.icons.link);
+
+    const kebabWrap = document.createElement('div');
+    kebabWrap.className = 'a2w-row-kebab-wrap';
+    kebabWrap.setAttribute('data-a2w-component', 'row-kebab');
+    const kebabBtn = a2wCreateIconButton('Altre azioni campagna', A2W.icons.kebab, 'a2w-icon-btn a2w-row-kebab-trigger');
+    kebabBtn.setAttribute('aria-expanded', 'false');
+    kebabWrap.appendChild(kebabBtn);
+    const menu = document.createElement('div');
+    menu.className = 'a2w-row-kebab-menu';
+    menu.hidden = true;
+    const campaignId = a2wExtractEntityIdFromButton(editBtn) || a2wExtractEntityIdFromButton(qrBtn);
+    const toggleLabel = toggleBtn ? String(toggleBtn.textContent || '').trim() : '';
+    const toggleIcon = /pausa/i.test(toggleLabel) ? A2W.icons.pause : A2W.icons.play;
+    const toggleText = toggleLabel || 'Pausa/Riprendi';
+    menu.innerHTML = [
+      '<button type="button" class="a2w-row-kebab-item" data-a2w-item="toggle"><span class="a2w-row-kebab-icon">' + toggleIcon + '</span><span>' + toggleText + '</span></button>',
+      '<button type="button" class="a2w-row-kebab-item" data-a2w-item="duplicate"><span class="a2w-row-kebab-icon">' + A2W.icons.copy + '</span><span>Duplica</span></button>',
+      '<button type="button" class="a2w-row-kebab-item a2w-row-kebab-item--danger" data-a2w-item="delete"><span class="a2w-row-kebab-icon">' + A2W.icons.delete + '</span><span>Elimina</span></button>'
+    ].join('');
+    kebabWrap.appendChild(menu);
+    actions.appendChild(kebabWrap);
+
+    kebabBtn.addEventListener('click', function a2wCampaignMenuToggle(e) {
+      e.stopPropagation();
+      const open = menu.hidden;
+      document.querySelectorAll('.a2w-row-kebab-menu').forEach((m) => { m.hidden = true; });
+      document.querySelectorAll('.a2w-row-kebab-trigger').forEach((b) => { b.setAttribute('aria-expanded', 'false'); });
+      menu.hidden = !open;
+      kebabBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="toggle"]')?.addEventListener('click', function a2wCampaignToggleClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      if (toggleBtn) toggleBtn.click();
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="duplicate"]')?.addEventListener('click', function a2wCampaignDupClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      a2wDuplicateCampaignFromId(campaignId);
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="delete"]')?.addEventListener('click', function a2wCampaignDeleteClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      if (deleteBtn) deleteBtn.click();
+    }, { capture: false });
+
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    if (deleteBtn) deleteBtn.style.display = 'none';
+  }
+
+  function a2wEnhanceTemplateCardActions(card) {
+    const actions = card.querySelector('.card-actions');
+    if (!actions || actions.dataset.a2wEnhanced === '1') return;
+    const buttons = [...actions.querySelectorAll('button')];
+    const editBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('editTemplate('));
+    const deleteBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('deleteTemplate('));
+    if (!editBtn) return;
+
+    actions.dataset.a2wEnhanced = '1';
+    actions.classList.add('a2w-row-actions');
+    actions.setAttribute('data-a2w-component', 'template-actions');
+    editBtn.className = 'btn a2w-btn-primary a2w-row-primary-btn';
+    editBtn.textContent = 'Modifica';
+
+    const kebabWrap = document.createElement('div');
+    kebabWrap.className = 'a2w-row-kebab-wrap';
+    kebabWrap.setAttribute('data-a2w-component', 'row-kebab');
+    const kebabBtn = a2wCreateIconButton('Altre azioni template', A2W.icons.kebab, 'a2w-icon-btn a2w-row-kebab-trigger');
+    kebabBtn.setAttribute('aria-expanded', 'false');
+    kebabWrap.appendChild(kebabBtn);
+    const menu = document.createElement('div');
+    menu.className = 'a2w-row-kebab-menu';
+    menu.hidden = true;
+    const templateId = a2wExtractEntityIdFromButton(editBtn);
+    menu.innerHTML = [
+      '<button type="button" class="a2w-row-kebab-item" data-a2w-item="duplicate"><span class="a2w-row-kebab-icon">' + A2W.icons.copy + '</span><span>Duplica</span></button>',
+      '<button type="button" class="a2w-row-kebab-item a2w-row-kebab-item--danger" data-a2w-item="delete"><span class="a2w-row-kebab-icon">' + A2W.icons.delete + '</span><span>Elimina</span></button>'
+    ].join('');
+    kebabWrap.appendChild(menu);
+    actions.appendChild(kebabWrap);
+
+    kebabBtn.addEventListener('click', function a2wTemplateMenuToggle(e) {
+      e.stopPropagation();
+      const open = menu.hidden;
+      document.querySelectorAll('.a2w-row-kebab-menu').forEach((m) => { m.hidden = true; });
+      document.querySelectorAll('.a2w-row-kebab-trigger').forEach((b) => { b.setAttribute('aria-expanded', 'false'); });
+      menu.hidden = !open;
+      kebabBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="duplicate"]')?.addEventListener('click', function a2wTemplateDupClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      a2wDuplicateTemplateFromId(templateId);
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="delete"]')?.addEventListener('click', function a2wTemplateDeleteClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      if (deleteBtn) deleteBtn.click();
+    }, { capture: false });
+
+    if (deleteBtn) deleteBtn.style.display = 'none';
+  }
+
+  function a2wEnhanceCampaignActionGrouping() {
+    document.querySelectorAll('#campaignsList .card').forEach((card) => {
+      a2wEnhanceCampaignCardActions(card);
+      a2wEnhanceCampaignMetaChips(card);
+    });
+  }
+
+  function a2wEnhanceTemplateActionGrouping() {
+    document.querySelectorAll('#templatesList .card').forEach((card) => {
+      a2wEnhanceTemplateCardActions(card);
+    });
+  }
+
+  function initA2WActionGroupingEnhancer() {
+    const state = a2wActionState();
+    if (state.hooked) return;
+    if (typeof loadCampaigns !== 'function' || typeof loadTemplates !== 'function') {
+      if (!state.waitTimer) {
+        state.waitTimer = window.setTimeout(function a2wWaitActionHook() {
+          state.waitTimer = null;
+          initA2WActionGroupingEnhancer();
+        }, 250);
+      }
+      return;
+    }
+    state.hooked = true;
+    a2wEnsureActionMenusDocumentClose();
+
+    const originalCampaigns = loadCampaigns;
+    window.loadCampaigns = async function a2wLoadCampaignsWrapped() {
+      const result = await originalCampaigns.apply(this, arguments);
+      a2wEnhanceCampaignActionGrouping();
+      a2wDispatchSidebarEvent('a2w:actions:campaigns', {});
+      return result;
+    };
+
+    const originalTemplates = loadTemplates;
+    window.loadTemplates = async function a2wLoadTemplatesWrapped() {
+      const result = await originalTemplates.apply(this, arguments);
+      a2wEnhanceTemplateActionGrouping();
+      a2wDispatchSidebarEvent('a2w:actions:templates', {});
+      return result;
+    };
+
+    a2wEnhanceCampaignActionGrouping();
+    a2wEnhanceTemplateActionGrouping();
+  }
+
+
   // UX-AUDIT[a2w]: activate ads shell chrome once per session
   function initA2wShell() {
     if (!isA2wDeploy()) return;
@@ -347,6 +658,7 @@
     root.setAttribute('data-product-line', line);
     initA2wUserMenuChrome();
     initA2WSidebarChrome();
+    initA2WActionGroupingEnhancer();
     ensureA2wLeadsLayout();
     syncA2wHeaderChrome();
     syncA2wWaiPadding();

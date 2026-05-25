@@ -518,3 +518,129 @@ html[data-shell="dark"].a2w-shell .wai-fab {
     transform: translateX(0);
   }
 }
+
+html[data-shell="dark"].a2w-shell .a2w-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-primary-btn {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-icon-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-icon-btn svg,
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-trigger svg {
+  width: 15px;
+  height: 15px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-wrap {
+  position: relative;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  border: 1px solid var(--a2w-border-default);
+  border-radius: 10px;
+  background: #0f172a;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  z-index: var(--a2w-z-dropdown);
+  display: grid;
+  gap: 4px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-item {
+  width: 100%;
+  min-height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--a2w-text-primary);
+  font-size: 12px;
+  text-align: left;
+  padding: 6px 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-item--danger {
+  color: #f87171;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--a2w-border-default);
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--a2w-text-secondary);
+  font-size: 11px;
+  line-height: 1;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-chip__icon {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-chip__icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-chip__label {
+  white-space: nowrap;
+}
+
