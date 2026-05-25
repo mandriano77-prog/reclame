@@ -1709,6 +1709,24 @@ router.delete('/templates/:id/images/:imageType', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Public PNG for Google/Samsung Wallet (strip, thumbnail, background from template.style.images)
+router.get('/templates/:id/wallet-image/:imageType', async (req, res) => {
+  try {
+    const template = await getTemplate(req.params.id);
+    if (!template) return res.status(404).json({ error: 'Template non trovato' });
+    const imageType = req.params.imageType;
+    if (!['logo', 'strip', 'thumbnail', 'background'].includes(imageType)) {
+      return res.status(400).json({ error: 'imageType deve essere: logo, strip, thumbnail, background' });
+    }
+    const b64 = template.style?.images?.[imageType];
+    if (!b64) return res.status(404).json({ error: 'Immagine non trovata' });
+    const buf = Buffer.from(b64, 'base64');
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(buf);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.delete('/templates/:id', async (req, res) => {
   try {
     const existing = await getTemplate(req.params.id);

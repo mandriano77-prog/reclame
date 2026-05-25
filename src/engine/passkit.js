@@ -6,10 +6,10 @@ const archiver = require('archiver');
 const { Transform } = require('stream');
 const {
   isHrPassBrand,
-  buildHrBackFields,
   resolveMemberProfile,
   resolveEmployeeIdForBarcode
 } = require('./pass-hr-back');
+const { buildEmployeePass, toApplePass } = require('./employee-pass');
 
 /**
  * Generate SVG path for a letter using geometric shapes (no font dependency).
@@ -532,15 +532,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   const orderedBackFields = [];
   const useHrBack = isHrPassBrand(brand);
 
-  if (useHrBack) {
-    orderedBackFields.push(...buildHrBackFields({
-      brand,
-      template,
-      instance,
-      member,
-      brandConfig
-    }));
-  } else if (brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
+  if (!useHrBack && brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
     orderedBackFields.push({
       key: 'announcement_full',
       label: brandConfig.pushAnnouncement.title || 'NOVITÀ E PROMOZIONI',
@@ -602,14 +594,37 @@ function generatePassJson(template, instance, brand, options = {}) {
 
   // ── Pass structure ────────────────────────────────────────────
   const structureKey = template.pass_type || 'storeCard';
-  const passStructure = {};
-  if (headerFields.length > 0) passStructure.headerFields = headerFields;
-  if (primaryFields.length > 0) passStructure.primaryFields = primaryFields;
-  if (secondaryFields.length > 0) passStructure.secondaryFields = secondaryFields;
-  if (auxiliaryFields.length > 0) passStructure.auxiliaryFields = auxiliaryFields;
-  if (orderedBackFields.length > 0) passStructure.backFields = orderedBackFields;
+  let passStructure = {};
+  let barcodePayload = buildIdentifyingQrBarcode(instance, member);
+  let passForegroundColor = foregroundColor;
+  let passBackgroundColor = backgroundColor;
+  let passLabelColor = labelColor;
+  let passLogoText = brand.name;
 
-  const barcodePayload = buildIdentifyingQrBarcode(instance, member);
+  if (useHrBack) {
+    const apiBase = `${String(baseUrl).replace(/\/+$/, '')}/api/v1`;
+    const employeePass = buildEmployeePass({
+      brand,
+      template,
+      instance,
+      member,
+      brandConfig,
+      apiBase
+    });
+    const apple = toApplePass(employeePass);
+    passStructure = apple.passStructure;
+    passForegroundColor = apple.foregroundColor;
+    passBackgroundColor = apple.backgroundColor;
+    passLabelColor = apple.labelColor;
+    passLogoText = apple.logoText;
+    barcodePayload = apple.barcode;
+  } else {
+    if (headerFields.length > 0) passStructure.headerFields = headerFields;
+    if (primaryFields.length > 0) passStructure.primaryFields = primaryFields;
+    if (secondaryFields.length > 0) passStructure.secondaryFields = secondaryFields;
+    if (auxiliaryFields.length > 0) passStructure.auxiliaryFields = auxiliaryFields;
+    if (orderedBackFields.length > 0) passStructure.backFields = orderedBackFields;
+  }
 
   const passJson = {
     formatVersion: 1,
@@ -618,9 +633,10 @@ function generatePassJson(template, instance, brand, options = {}) {
     teamIdentifier,
     organizationName: brand.name,
     description: template.name,
-    foregroundColor,
-    backgroundColor,
-    labelColor,
+    logoText: passLogoText,
+    foregroundColor: passForegroundColor,
+    backgroundColor: passBackgroundColor,
+    labelColor: passLabelColor,
     authenticationToken: instance.auth_token,
     webServiceURL: `${baseUrl}/api`,
     [structureKey]: passStructure,

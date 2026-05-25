@@ -109,6 +109,12 @@ function resolveApiBase() {
 }
 const API_BASE = resolveApiBase();
 
+const {
+  buildEmployeePass,
+  toGooglePass,
+  isHrEmployeePass
+} = require('./employee-pass');
+
 function walletPublicBrandAssetUri(brand, asset) {
   if (!API_BASE || !brand?.slug) return null;
   return `${API_BASE}/brands/by-slug/${encodeURIComponent(brand.slug)}/${asset}`;
@@ -316,6 +322,22 @@ function buildPassClass(brand, template) {
 
   classObj.hexBackgroundColor = rgbToHex(template.style?.backgroundColor || '#0D0B1A');
 
+  if (isHrEmployeePass(brand)) {
+    const employeePass = buildEmployeePass({
+      brand,
+      template,
+      instance: { field_values: {} },
+      member: null,
+      brandConfig: brand.config,
+      apiBase: API_BASE
+    });
+    const { classPatch } = toGooglePass(employeePass, { passKind });
+    Object.assign(classObj, classPatch);
+    if (passKind !== 'loyalty' && API_BASE) {
+      classObj.callbackOptions = { url: `${API_BASE}/google-wallet/callback` };
+    }
+  }
+
   logWalletDebug('buildPassClass', {
     classId,
     passKind,
@@ -362,6 +384,45 @@ function buildPassObject(brand, template, instance, member) {
   const passKind = getPassKind();
   const classId = buildClassId(brand, template);
   const objectId = buildObjectId(instance.serial_number);
+
+  if (isHrEmployeePass(brand)) {
+    const employeePass = buildEmployeePass({
+      brand,
+      template,
+      instance,
+      member,
+      brandConfig: brand.config,
+      apiBase: API_BASE
+    });
+    const { objectPatch } = toGooglePass(employeePass, { passKind });
+    const obj = passKind === 'loyalty'
+      ? {
+        id: objectId,
+        classId,
+        state: 'ACTIVE',
+        accountId: instance.serial_number,
+        textModulesData: [],
+        linksModuleData: { uris: [] }
+      }
+      : {
+        id: objectId,
+        classId,
+        state: 'ACTIVE',
+        textModulesData: [],
+        linksModuleData: { uris: [] }
+      };
+    Object.assign(obj, objectPatch);
+    logWalletDebug('buildPassObject', {
+      passKind,
+      objectId,
+      classId,
+      hr: true,
+      state: obj.state,
+      textModulesCount: obj.textModulesData?.length || 0,
+      linksCount: obj.linksModuleData?.uris?.length || 0
+    });
+    return obj;
+  }
 
   const firstName = member?.first_name || instance.customer_data?.name || 'Guest';
   const lastName = member?.last_name || '';

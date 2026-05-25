@@ -140,9 +140,62 @@ function rgbToHex(color) {
   return `#${r}${g}${b}`;
 }
 
-function buildLoyaltyCardResponse(brand, template, instance, refId, cardState = 'ACTIVE') {
+function buildLoyaltyCardResponse(brand, template, instance, refId, cardState = 'ACTIVE', member = null) {
   const api = publicApiBase();
   const now = Date.now();
+
+  const { buildEmployeePass, toSamsungPass, isHrEmployeePass } = require('./employee-pass');
+  if (isHrEmployeePass(brand)) {
+    const employeePass = buildEmployeePass({
+      brand,
+      template,
+      instance,
+      member,
+      brandConfig: brand.config,
+      apiBase: api
+    });
+    const samsung = toSamsungPass(employeePass);
+
+    let logoImage = samsung.logoImage
+      || 'https://gpp.walletsvc.samsung.com/mcs/images/contents/wallet_intro_logo.png';
+
+    const attrs = {
+      title: samsung.title,
+      providerName: samsung.providerName,
+      noticeDesc: samsung.noticeDesc,
+      logoImage,
+      'logoImage.darkUrl': logoImage,
+      bgColor: samsung.bgColor,
+      'barcode.value': String(samsung.barcode.value || refId).slice(0, 64),
+      'barcode.serialType': 'QRCODE',
+      'barcode.ptFormat': 'QRCODESERIAL',
+      'barcode.ptSubFormat': 'QR_CODE'
+    };
+    if (samsung.cardSubTitle) attrs.amount = samsung.cardSubTitle.slice(0, 32);
+    if (samsung.bannerImage) attrs.bannerImage = samsung.bannerImage;
+
+    samsung.links.slice(0, 5).forEach((link, i) => {
+      attrs[`link${i}.name`] = String(link.name || '').slice(0, 64);
+      attrs[`link${i}.url`] = link.url;
+    });
+
+    return {
+      card: {
+        type: 'loyalty',
+        subType: LOYALTY_SUBTYPE,
+        data: [
+          {
+            refId,
+            createdAt: now,
+            updatedAt: now,
+            state: cardState,
+            language: 'it',
+            attributes: attrs
+          }
+        ]
+      }
+    };
+  }
 
   const fv = instance.field_values && typeof instance.field_values === 'object' ? instance.field_values : {};
   const points =
