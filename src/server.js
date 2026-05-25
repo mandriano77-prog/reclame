@@ -175,6 +175,10 @@ app.get('/activate/:token', (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'activate', 'index.html'));
 });
+app.get('/privacy-policy', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'privacy-policy', 'index.html'));
+});
 
 // Health check + wallet debug
 const BUILD_VERSION = '3.0.0-' + Date.now();
@@ -305,7 +309,7 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
 // Short URL: /:slug serves the landing page for that brand
 app.get('/:slug', (req, res, next) => {
   const slug = req.params.slug;
-  if (slug.includes('.') || ['api', 'dashboard', 'landing', 'debug', 'health', 'privacy', 'play', 'save', 'game', 'join', 'activate'].includes(slug)) {
+  if (slug.includes('.') || ['api', 'dashboard', 'landing', 'debug', 'health', 'privacy', 'privacy-policy', 'play', 'save', 'game', 'join', 'activate'].includes(slug)) {
     return next();
   }
   res.sendFile(path.join(__dirname, 'landing', 'index.html'));

@@ -1,6 +1,4 @@
-/**
- * HR pass distribution: activation tokens, public join, confirm + pass issue.
- */
+const PRIVACY_POLICY_VERSION = '1.0';
 const { signActivationToken, verifyActivationToken } = require('./activation-auth');
 const { sendActivationEmail, sendActivationReminderEmail } = require('./mailer');
 const { employeesToFieldValues } = require('./member-import');
@@ -136,7 +134,10 @@ async function saveActivationConsents(passId, consents, meta) {
   }
 }
 
-async function confirmMemberActivation(db, token, { consents = {}, template_id, ip, userAgent }) {
+async function confirmMemberActivation(db, token, { consents = {}, template_id, ip, userAgent, privacy_accepted }) {
+  if (!privacy_accepted) {
+    throw new Error('Privacy policy acceptance required');
+  }
   const member = await getMemberForActivationToken(db, token);
   if (!member) throw new Error('Link di attivazione non valido o scaduto');
 
@@ -146,7 +147,7 @@ async function confirmMemberActivation(db, token, { consents = {}, template_id, 
   await saveActivationConsents(pass.id, consents, {
     ip_address: ip,
     user_agent: userAgent,
-    privacy_policy_version: 'filodiretto-v1'
+    privacy_policy_version: PRIVACY_POLICY_VERSION
   });
 
   await db.pool.query(
@@ -154,9 +155,12 @@ async function confirmMemberActivation(db, token, { consents = {}, template_id, 
       activation_status = 'activated',
       activated_at = NOW(),
       activation_token = NULL,
+      privacy_policy_version_accepted = $2,
+      privacy_policy_accepted_at = NOW(),
+      privacy_policy_accepted_ip = $3,
       updated_at = NOW()
      WHERE id = $1`,
-    [member.id]
+    [member.id, PRIVACY_POLICY_VERSION, ip || null]
   );
 
   await db.logEvent({

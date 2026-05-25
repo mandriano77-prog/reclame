@@ -1274,6 +1274,9 @@ async function ensureMembersHrSchema() {
   await addColumn('activated_at', 'TIMESTAMPTZ');
   await addColumn('activation_source', 'VARCHAR(32)');
   await addColumn('activation_reminder_count', 'INTEGER DEFAULT 0');
+  await addColumn('privacy_policy_version_accepted', 'VARCHAR(32)');
+  await addColumn('privacy_policy_accepted_at', 'TIMESTAMPTZ');
+  await addColumn('privacy_policy_accepted_ip', 'VARCHAR(64)');
 
   if (have.has('name') && have.has('first_name')) {
     await pool.query(`

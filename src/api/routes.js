@@ -1103,6 +1103,7 @@ function hrActivationDb() {
     getBrand,
     getTemplate,
     listTemplates,
+    getPassInstance,
     updateMemberRecord,
     updatePassInstance,
     createPassInstance,
@@ -1160,6 +1161,7 @@ router.get('/activate/:token', async (req, res) => {
       },
       templates: hrTemplates.map((t) => ({ id: t.id, name: t.name })),
       consent_types: ['birthday', 'welfare_geo', 'gamification', 'climate_survey', 'partner_offers'],
+      privacy_policy_version: '1.0',
       already_activated: member.activation_status === 'activated'
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1167,10 +1169,14 @@ router.get('/activate/:token', async (req, res) => {
 
 router.post('/activate/:token', async (req, res) => {
   try {
-    const { consents, template_id } = req.body || {};
+    const { consents, template_id, privacy_accepted } = req.body || {};
+    if (!privacy_accepted) {
+      return res.status(400).json({ error: 'Privacy policy acceptance required' });
+    }
     const result = await confirmMemberActivation(hrActivationDb(), req.params.token, {
       consents: consents || {},
       template_id,
+      privacy_accepted: !!privacy_accepted,
       ip: clientIp(req),
       userAgent: req.headers['user-agent'] || ''
     });

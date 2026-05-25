@@ -28,7 +28,21 @@
     .meta { color: #64748b; font-size: 14px; margin-bottom: 20px; }
     h2 { font-size: 15px; margin: 20px 0 10px; }
     .consent { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-size: 14px; color: #334155; }
-    .consent input { margin-top: 3px; }
+    .consent input { margin-top: 3px; flex-shrink: 0; }
+    .privacy-required {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 16px 0 0;
+      background: #f8fafc;
+    }
+    .privacy-required label { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #0f172a; cursor: pointer; }
+    .privacy-required .hint { font-size: 12px; color: #64748b; margin-top: 8px; margin-left: 26px; }
+    .privacy-divider {
+      border: none;
+      border-top: 1px solid #e2e8f0;
+      margin: 20px 0 4px;
+    }
     button.primary {
       width: 100%;
       padding: 14px;
@@ -39,9 +53,9 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 8px;
+      margin-top: 16px;
     }
-    button.primary:disabled { opacity: 0.6; }
+    button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
     a.dl {
       display: block;
       text-align: center;
@@ -76,10 +90,17 @@
         <label for="template">Template pass</label>
         <select id="template"></select>
       </div>
+      <div class="privacy-required">
+        <label for="privacy-accepted">
+          <input type="checkbox" id="privacy-accepted" name="privacy-accepted">
+          <span>Ho letto e accetto l'<a href="/privacy-policy" target="_blank" rel="noopener noreferrer">informativa privacy</a></span>
+        </label>
+        <p class="hint">* Obbligatorio per attivare il pass</p>
+      </div>
+      <hr class="privacy-divider">
       <h2>Preferenze privacy (opzionali)</h2>
       <div id="consents"></div>
-      <p style="font-size:12px;color:#64748b;margin-top:12px;">Proseguendo accetti l'informativa privacy del programma HR.</p>
-      <button type="button" class="primary" id="confirmBtn">Conferma e genera pass</button>
+      <button type="button" class="primary" id="submit-activation" disabled>Conferma e genera pass</button>
     </div>
   </div>
   <script>
@@ -94,6 +115,13 @@
     const API = '/api/v1';
 
     let state = null;
+
+    const privacyBox = document.getElementById('privacy-accepted');
+    const submitBtn = document.getElementById('submit-activation');
+
+    privacyBox.addEventListener('change', () => {
+      submitBtn.disabled = !privacyBox.checked;
+    });
 
     async function load() {
       const res = await fetch(`${API}/activate/${encodeURIComponent(token)}`);
@@ -141,9 +169,9 @@
       a.href = downloadPath;
     }
 
-    document.getElementById('confirmBtn').addEventListener('click', async () => {
-      const btn = document.getElementById('confirmBtn');
-      btn.disabled = true;
+    submitBtn.addEventListener('click', async () => {
+      if (!privacyBox.checked) return;
+      submitBtn.disabled = true;
       const consents = {};
       document.querySelectorAll('[data-consent]').forEach((el) => {
         consents[el.getAttribute('data-consent')] = el.checked;
@@ -153,14 +181,18 @@
         const res = await fetch(`${API}/activate/${encodeURIComponent(token)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ consents, template_id })
+          body: JSON.stringify({
+            consents,
+            template_id,
+            privacy_accepted: privacyBox.checked
+          })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Errore attivazione');
         showDone(data.download_url);
       } catch (e) {
         alert(e.message);
-        btn.disabled = false;
+        submitBtn.disabled = !privacyBox.checked;
       }
     });
 
