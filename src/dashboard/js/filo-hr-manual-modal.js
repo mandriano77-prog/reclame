@@ -74,12 +74,17 @@
     }
   }
 
+  function resolveApiBase() {
+    if (typeof global.API === 'string' && global.API.trim()) return global.API.trim();
+    return '/api/v1';
+  }
+
   function deps() {
     return {
       isFiloShell: typeof global.isFiloShell === 'function' ? global.isFiloShell : function () { return false; },
       isHrBrandContext: typeof global.isHrBrandContext === 'function' ? global.isHrBrandContext : function () { return false; },
       brandId: resolveBrandId(),
-      API: global.API,
+      API: resolveApiBase(),
       getAuthHeaders: global.getAuthHeaders,
       getDashboardFetchHeaders: global.getDashboardFetchHeaders,
       fetchCachedJson: global.fetchCachedJson,
