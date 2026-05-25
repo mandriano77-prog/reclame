@@ -3465,6 +3465,99 @@ router.get('/brands/:brand_id/employees', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.post('/brands/:brand_id/employees', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    if (!requireWriteAccess(req, res)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand || !isHrBrand(brand, req)) {
+      return res.status(400).json({ error: 'Aggiunta dipendenti disponibile solo per brand HR' });
+    }
+
+    const {
+      employees: employeesBody,
+      create_passes = false,
+      template_id,
+      send_activation = false,
+      update_existing = false
+    } = req.body || {};
+
+    let list = [];
+    if (Array.isArray(employeesBody) && employeesBody.length) {
+      list = employeesBody;
+    } else if (req.body && (req.body.employee_id || req.body.matricola)) {
+      list = [req.body];
+    }
+    if (!list.length) {
+      return res.status(400).json({ error: 'Fornisci almeno un dipendente' });
+    }
+
+    const {
+      normalizeManualEmployee,
+      validateImportRow,
+      rowDisplayName
+    } = require('../engine/member-import');
+
+    const seen = new Set();
+    const employees = [];
+    const errors = [];
+
+    for (let i = 0; i < list.length; i++) {
+      const emp = normalizeManualEmployee(list[i]);
+      const existing = await findMemberByBrandKey(brand_id, { employee_id: emp.employee_id });
+      const v = validateImportRow(emp, {
+        seenInFile: seen,
+        existingEmployeeId: !update_existing && !!existing
+      });
+      if (!v.valid) {
+        errors.push({ index: i + 1, name: rowDisplayName(emp), reason: v.reason });
+        continue;
+      }
+      employees.push(emp);
+    }
+
+    if (!employees.length) {
+      return res.status(400).json({ error: 'Nessun dipendente valido', errors });
+    }
+
+    if (create_passes) {
+      if (!template_id) {
+        return res.status(400).json({ error: 'template_id richiesto per creare i pass' });
+      }
+      const template = await getTemplate(template_id);
+      if (!template || String(template.brand_id) !== String(brand_id)) {
+        return res.status(400).json({ error: 'Template non valido per questo brand' });
+      }
+    }
+
+    const summary = await importEmployeesBatch(brand_id, employees, {
+      template_id,
+      create_passes: !!create_passes,
+      update_existing: !!update_existing,
+      skip_invalid: true
+    });
+
+    let activation_sent = 0;
+    if (send_activation && summary.created_member_ids?.length) {
+      const { distributeActivationEmails } = require('../engine/hr-activation');
+      const act = await distributeActivationEmails(hrActivationDb(), brand_id, summary.created_member_ids);
+      activation_sent = act.sent || 0;
+    }
+
+    const imported = (summary.created || 0) + (summary.updated || 0);
+    res.json({
+      success: true,
+      imported,
+      created: summary.created,
+      updated: summary.updated,
+      passes_created: summary.passes_created,
+      activation_sent,
+      errors: [...errors, ...(summary.errors || [])]
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.post('/brands/:brand_id/employees/import/preview', async (req, res) => {
   try {
     const { brand_id } = req.params;

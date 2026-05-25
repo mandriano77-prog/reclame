@@ -373,6 +373,31 @@ function rejectedRowsToCsv(rejected) {
   return [header, ...lines].join('\n');
 }
 
+/** Normalizza payload da form dashboard (inserimento manuale). */
+function normalizeManualEmployee(raw) {
+  const src = raw || {};
+  let first_name = String(src.first_name || src.nome || '').trim() || null;
+  let last_name = String(src.last_name || src.cognome || '').trim() || null;
+  if (!first_name && !last_name && src.full_name) {
+    const split = splitFullName(String(src.full_name).trim());
+    first_name = split.first_name;
+    last_name = split.last_name;
+  }
+  const employee_id = String(src.employee_id || src.matricola || '').trim() || null;
+  return {
+    first_name,
+    last_name,
+    email: String(src.email || '').trim().toLowerCase() || null,
+    employee_id,
+    department: String(src.department || src.reparto || '').trim() || null,
+    office_location: String(src.office_location || src.sede || '').trim() || null,
+    hire_date: parseHireDate(src.hire_date || src.data_assunzione),
+    manager_name: String(src.manager_name || '').trim() || null,
+    manager_email: String(src.manager_email || '').trim() || null,
+    phone: String(src.phone || src.telefono || '').trim() || null
+  };
+}
+
 function employeesToFieldValues(emp) {
   const fv = {};
   if (emp.first_name) fv.nome = emp.first_name;
@@ -409,5 +434,6 @@ module.exports = {
   newImportBatchId,
   rejectedRowsToCsv,
   employeesToFieldValues,
-  rowDisplayName
+  rowDisplayName,
+  normalizeManualEmployee
 };

@@ -2153,6 +2153,7 @@
                     <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." style="color:var(--text2);font-size:13px;">Elenco delle persone collegate ai pass di questo brand.</p>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                         <input type="text" id="leadsSearch" placeholder="Cerca nome, email..." oninput="filterLeads()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px;">
+                        <button type="button" class="btn sec" id="leadsAddBtn" onclick="openEmployeeManualModal()" style="display:none;white-space:nowrap;">+ Aggiungi</button>
                         <button type="button" class="btn sec" id="leadsImportBtn" onclick="openEmployeeImportModal()" style="display:none;white-space:nowrap;">✨ Importa da file</button>
                         <button type="button" class="btn sec" id="leadsNoMatricolaBtn" onclick="filterLeadsNoMatricola()" style="display:none;white-space:nowrap;">⚠ Senza matricola</button>
                         <button type="button" class="btn sec" id="leadsDistributeBtn" onclick="distributeActivationAll()" style="display:none;white-space:nowrap;">✉ Invia attivazione</button>
@@ -2273,6 +2274,74 @@
                         <div id="importFooterMap" class="import-wizard__footer-inner" style="display:none;">
                             <button type="button" class="btn import-wizard__btn-back" onclick="importBackToUpload()">← Altro file</button>
                             <button type="button" class="btn import-wizard__cta" id="importCommitBtn" onclick="runEmployeeImportCommit()" disabled>Importa <strong id="importCommitCount">0</strong> dipendenti</button>
+                        </div>
+                    </footer>
+                </div>
+            </div>
+
+            <div id="employeeManualModal" class="import-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="employeeManualTitle">
+                <div class="card import-modal-card" style="max-width:640px;width:calc(100% - 32px);">
+                    <header class="import-wizard__header" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">
+                        <div class="import-wizard__title-row">
+                            <div class="import-wizard__title-block">
+                                <h2 id="employeeManualTitle" class="import-wizard__title">Aggiungi dipendente</h2>
+                                <p class="import-wizard__subtitle">Inserisci uno o più nuovi assunti. Puoi aggiungerli alla lista e salvare tutti insieme.</p>
+                            </div>
+                            <button type="button" class="import-wizard__close" onclick="closeEmployeeManualModal()" aria-label="Chiudi">×</button>
+                        </div>
+                    </header>
+                    <div class="import-wizard__body">
+                        <p class="import-wizard__matricola-help"><strong>Matricola obbligatoria.</strong> Email consigliata per invio link di attivazione pass.</p>
+                        <div class="form-row">
+                            <div class="form-group"><label class="form-label">Matricola *</label><input type="text" id="manualEmployeeId" placeholder="es. 4721" autocomplete="off" oninput="renderManualEmployeeQueue()"></div>
+                            <div class="form-group"><label class="form-label">Email</label><input type="email" id="manualEmail" placeholder="nome.cognome@azienda.it"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label class="form-label">Nome</label><input type="text" id="manualFirstName" placeholder="Mario"></div>
+                            <div class="form-group"><label class="form-label">Cognome</label><input type="text" id="manualLastName" placeholder="Rossi"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label class="form-label">Reparto</label><input type="text" id="manualDepartment" placeholder="Engineering"></div>
+                            <div class="form-group"><label class="form-label">Sede</label><input type="text" id="manualOffice" placeholder="Milano"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label class="form-label">Data assunzione</label><input type="date" id="manualHireDate"></div>
+                            <div class="form-group"><label class="form-label">Email manager</label><input type="email" id="manualManagerEmail" placeholder="manager@azienda.it"></div>
+                        </div>
+                        <div class="import-wizard__options" style="margin-top:8px;">
+                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                                <input type="checkbox" id="manualCreatePasses" checked onchange="toggleManualPassOptions()"> Crea pass Wallet
+                            </label>
+                            <div class="form-group" id="manualTemplateWrap" style="margin-top:8px;">
+                                <label class="form-label" for="manualTemplateId">Template pass</label>
+                                <select id="manualTemplateId" class="import-wizard__select"></select>
+                            </div>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:8px;">
+                                <input type="checkbox" id="manualSendActivation"> Invia email di attivazione
+                            </label>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 12px;">
+                            <button type="button" class="btn sec" onclick="manualEmployeeAddToQueue()">+ Aggiungi alla lista</button>
+                            <button type="button" class="btn sec" onclick="clearManualEmployeeForm()">Pulisci campi</button>
+                        </div>
+                        <div id="manualEmployeeQueueWrap" style="display:none;">
+                            <div class="sec-title" style="font-size:13px;margin-bottom:8px;">In coda (<span id="manualQueueCount">0</span>)</div>
+                            <div style="max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:8px;">
+                                <table class="table" id="manualEmployeeQueueTable" style="margin:0;font-size:12px;">
+                                    <thead><tr><th>Matricola</th><th>Nome</th><th>Email</th><th></th></tr></thead>
+                                    <tbody id="manualEmployeeQueueBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <p id="manualEmployeeStatus" class="import-wizard__status" role="status"></p>
+                    </div>
+                    <footer class="import-wizard__footer">
+                        <div class="import-wizard__footer-inner" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;width:100%;">
+                            <button type="button" class="btn import-wizard__btn-back" onclick="closeEmployeeManualModal()">Annulla</button>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" class="btn sec" id="manualSaveAddBtn" onclick="saveManualEmployees(true)" disabled>Salva e aggiungi altro</button>
+                                <button type="button" class="btn import-wizard__cta" id="manualSaveCloseBtn" onclick="saveManualEmployees(false)" disabled>Salva <strong id="manualSaveCount">0</strong> dipendenti</button>
+                            </div>
                         </div>
                     </footer>
                 </div>
@@ -6869,10 +6938,188 @@ function updateLeadsImportButton() {
     const hr = isHrBrandContext();
     const btn = document.getElementById('leadsImportBtn');
     if (btn) btn.style.display = hr ? '' : 'none';
+    const addBtn = document.getElementById('leadsAddBtn');
+    if (addBtn) addBtn.style.display = hr ? '' : 'none';
     const distBtn = document.getElementById('leadsDistributeBtn');
     if (distBtn) distBtn.style.display = hr ? '' : 'none';
     const panel = document.getElementById('hrActivationPanel');
     if (panel) panel.style.display = hr ? '' : 'none';
+}
+
+let manualEmployeeQueue = [];
+
+function openEmployeeManualModal() {
+    if (!brandId) return toast('Seleziona un brand');
+    manualEmployeeQueue = [];
+    clearManualEmployeeForm();
+    renderManualEmployeeQueue();
+    document.getElementById('manualEmployeeStatus').textContent = '';
+    document.getElementById('employeeManualModal').style.display = 'flex';
+    populateEmployeeTemplateSelect('manualTemplateId');
+    toggleManualPassOptions();
+}
+
+function closeEmployeeManualModal() {
+    document.getElementById('employeeManualModal').style.display = 'none';
+    manualEmployeeQueue = [];
+}
+
+function clearManualEmployeeForm() {
+    ['manualEmployeeId', 'manualEmail', 'manualFirstName', 'manualLastName', 'manualDepartment', 'manualOffice', 'manualHireDate', 'manualManagerEmail'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+function toggleManualPassOptions() {
+    const on = document.getElementById('manualCreatePasses')?.checked;
+    const wrap = document.getElementById('manualTemplateWrap');
+    if (wrap) wrap.style.display = on ? '' : 'none';
+}
+
+function readManualEmployeeForm() {
+    return {
+        employee_id: (document.getElementById('manualEmployeeId')?.value || '').trim(),
+        first_name: (document.getElementById('manualFirstName')?.value || '').trim(),
+        last_name: (document.getElementById('manualLastName')?.value || '').trim(),
+        email: (document.getElementById('manualEmail')?.value || '').trim().toLowerCase(),
+        department: (document.getElementById('manualDepartment')?.value || '').trim(),
+        office_location: (document.getElementById('manualOffice')?.value || '').trim(),
+        hire_date: document.getElementById('manualHireDate')?.value || '',
+        manager_email: (document.getElementById('manualManagerEmail')?.value || '').trim()
+    };
+}
+
+function validateManualEmployeeClient(emp) {
+    if (!emp.employee_id) return 'Matricola obbligatoria';
+    const dup = manualEmployeeQueue.some((q) => String(q.employee_id).toLowerCase() === String(emp.employee_id).toLowerCase());
+    if (dup) return `Matricola #${emp.employee_id} già in lista`;
+    if (emp.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emp.email)) return 'Email non valida';
+    return null;
+}
+
+function manualEmployeeAddToQueue() {
+    const emp = readManualEmployeeForm();
+    const err = validateManualEmployeeClient(emp);
+    if (err) return toast(err);
+    manualEmployeeQueue.push(emp);
+    renderManualEmployeeQueue();
+    clearManualEmployeeForm();
+    document.getElementById('manualEmployeeId')?.focus();
+    toast('Aggiunto alla lista');
+}
+
+function removeManualQueueItem(index) {
+    manualEmployeeQueue.splice(index, 1);
+    renderManualEmployeeQueue();
+}
+
+function renderManualEmployeeQueue() {
+    const n = manualEmployeeQueue.length;
+    const hasForm = !!(document.getElementById('manualEmployeeId')?.value || '').trim();
+    const canSave = n > 0 || hasForm;
+    const wrap = document.getElementById('manualEmployeeQueueWrap');
+    const tbody = document.getElementById('manualEmployeeQueueBody');
+    const saveClose = document.getElementById('manualSaveCloseBtn');
+    const saveAdd = document.getElementById('manualSaveAddBtn');
+    const countEl = document.getElementById('manualSaveCount');
+    const queueCount = document.getElementById('manualQueueCount');
+    if (queueCount) queueCount.textContent = String(n);
+    if (countEl) countEl.textContent = String(n || (hasForm ? 1 : 0));
+    if (saveClose) saveClose.disabled = !canSave;
+    if (saveAdd) saveAdd.disabled = !canSave;
+    if (wrap) wrap.style.display = n ? '' : 'none';
+    if (!tbody) return;
+    tbody.innerHTML = manualEmployeeQueue.map((e, i) => {
+        const name = [e.first_name, e.last_name].filter(Boolean).join(' ') || '—';
+        return `<tr>
+            <td>${esc(e.employee_id)}</td>
+            <td>${esc(name)}</td>
+            <td>${e.email ? esc(e.email) : '—'}</td>
+            <td><button type="button" class="btn small sec" onclick="removeManualQueueItem(${i})">Rimuovi</button></td>
+        </tr>`;
+    }).join('');
+}
+
+async function populateEmployeeTemplateSelect(selectId) {
+    const sel = document.getElementById(selectId);
+    if (!sel || !brandId) return;
+    sel.innerHTML = '<option value="">— Seleziona template —</option>';
+    try {
+        const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: getAuthHeaders() });
+        const hrTpl = (templates || []).filter((t) => t.pass_type === 'employee_pass');
+        const list = hrTpl.length ? hrTpl : (templates || []);
+        list.forEach((t) => {
+            const o = document.createElement('option');
+            o.value = t.id;
+            o.textContent = t.name || t.id;
+            sel.appendChild(o);
+        });
+        if (list.length === 1) sel.value = list[0].id;
+    } catch (_) {}
+}
+
+async function saveManualEmployees(keepOpen) {
+    if (!brandId) return;
+    let employees = [...manualEmployeeQueue];
+    if (!employees.length) {
+        const single = readManualEmployeeForm();
+        const err = validateManualEmployeeClient(single);
+        if (err && !single.employee_id) return toast('Compila la matricola o aggiungi alla lista');
+        if (!err) employees = [single];
+        else if (single.employee_id) return toast(err);
+        else return toast('Aggiungi almeno un dipendente alla lista');
+    }
+    const createPasses = !!document.getElementById('manualCreatePasses')?.checked;
+    const templateId = document.getElementById('manualTemplateId')?.value;
+    const sendActivation = !!document.getElementById('manualSendActivation')?.checked;
+    if (createPasses && !templateId) return toast('Seleziona un template pass');
+    if (sendActivation && !employees.some((e) => e.email)) {
+        return toast('Almeno un dipendente deve avere email per l\'invito attivazione');
+    }
+
+    const statusEl = document.getElementById('manualEmployeeStatus');
+    const saveClose = document.getElementById('manualSaveCloseBtn');
+    const saveAdd = document.getElementById('manualSaveAddBtn');
+    if (statusEl) statusEl.textContent = 'Salvataggio…';
+    if (saveClose) saveClose.disabled = true;
+    if (saveAdd) saveAdd.disabled = true;
+
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/employees`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({
+                employees,
+                create_passes: createPasses,
+                template_id: templateId || undefined,
+                send_activation: sendActivation
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || (data.errors && data.errors[0]?.reason) || 'Salvataggio fallito');
+        const errN = (data.errors || []).length;
+        let msg = `Salvati: ${data.imported || 0}`;
+        if (data.passes_created) msg += ` · Pass: ${data.passes_created}`;
+        if (data.activation_sent) msg += ` · Email inviate: ${data.activation_sent}`;
+        if (errN) msg += ` · ${errN} errori`;
+        toast(msg);
+        if (statusEl) statusEl.textContent = '';
+        manualEmployeeQueue = [];
+        clearManualEmployeeForm();
+        renderManualEmployeeQueue();
+        await loadLeads();
+        if (keepOpen) {
+            document.getElementById('manualEmployeeId')?.focus();
+        } else {
+            closeEmployeeManualModal();
+        }
+    } catch (e) {
+        if (statusEl) statusEl.textContent = e.message;
+        toast(e.message);
+    } finally {
+        renderManualEmployeeQueue();
+    }
 }
 
 function setLeadsTableHead(hr) {
@@ -7058,7 +7305,7 @@ function renderLeadsTable(leads) {
                 : 'I contatti raccolti da landing e pass compariranno qui.',
             icon: 'users',
             ctaLabel: leadsHrMode ? 'Importa da file' : '',
-            ctaOnclick: leadsHrMode ? 'openEmployeeImportModal()' : ''
+            ctaOnclick: leadsHrMode ? 'openEmployeeManualModal()' : ''
         }) + '</td></tr>';
         return;
     }
@@ -7318,19 +7565,7 @@ function closeEmployeeImportModal() {
 }
 
 async function populateImportTemplates() {
-    const sel = document.getElementById('importTemplateId');
-    if (!sel || !brandId) return;
-    sel.innerHTML = '<option value="">— Seleziona template —</option>';
-    try {
-        const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: getAuthHeaders() });
-        (templates || []).forEach((t) => {
-            const o = document.createElement('option');
-            o.value = t.id;
-            o.textContent = t.name || t.id;
-            sel.appendChild(o);
-        });
-        if (templates && templates.length === 1) sel.value = templates[0].id;
-    } catch (_) {}
+    await populateEmployeeTemplateSelect('importTemplateId');
 }
 
 async function onImportFileSelected(ev) {

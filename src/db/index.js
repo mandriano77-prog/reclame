@@ -1454,7 +1454,7 @@ async function importEmployeesBatch(brandId, employees, options = {}) {
     skip_invalid = true
   } = options;
 
-  const summary = { created: 0, updated: 0, skipped: 0, passes_created: 0, errors: [] };
+  const summary = { created: 0, updated: 0, skipped: 0, passes_created: 0, errors: [], created_member_ids: [] };
 
   for (let i = 0; i < employees.length; i++) {
     const emp = employees[i];
@@ -1509,6 +1509,7 @@ async function importEmployeesBatch(brandId, employees, options = {}) {
           manager_email: emp.manager_email
         });
         summary.created++;
+        summary.created_member_ids.push(member.id);
       }
 
       if (create_passes && template_id && !member.pass_id) {
