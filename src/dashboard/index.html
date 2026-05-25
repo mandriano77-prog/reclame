@@ -3676,7 +3676,12 @@ function refreshActiveSection() {
 }
 
 function cacheKey(url) {
-    return `${brandId || 'no-brand'}:${url}`;
+    let bid = brandId || 'no-brand';
+    try {
+        const q = new URL(url, window.location.origin).searchParams.get('brand_id');
+        if (q) bid = q;
+    } catch (_) {}
+    return `${bid}:${url}`;
 }
 
 async function fetchCachedJson(url, options = {}, ttlMs = BRAND_CACHE_TTL_MS) {
@@ -7011,20 +7016,32 @@ function toggleManualPassOptions() {
 
 async function populateEmployeeTemplateSelect(selectId) {
     const sel = document.getElementById(selectId);
-    if (!sel || !brandId) return;
+    if (!sel) return;
+    if (!ensureBrandIdFromContext()) return;
     sel.innerHTML = '<option value="">— Seleziona template —</option>';
     try {
-        const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: getAuthHeaders() });
-        const hrTpl = (templates || []).filter((t) => t.pass_type === 'employee_pass');
-        const list = hrTpl.length ? hrTpl : (templates || []);
-        list.forEach((t) => {
+        const res = await fetch(`${API}/templates?brand_id=${encodeURIComponent(brandId)}`, {
+            headers: getDashboardFetchHeaders()
+        });
+        const templates = await res.json();
+        if (!res.ok) throw new Error(templates.error || 'Errore caricamento template');
+        const list = Array.isArray(templates) ? templates : [];
+        const hrTpl = list.filter((t) => t.pass_type === 'employee_pass');
+        const options = hrTpl.length ? hrTpl : list;
+        if (!options.length) {
+            toast('Nessun template pass per questo brand. Creane uno nella sezione Pass.');
+            return;
+        }
+        options.forEach((t) => {
             const o = document.createElement('option');
             o.value = t.id;
             o.textContent = t.name || t.id;
             sel.appendChild(o);
         });
-        if (list.length === 1) sel.value = list[0].id;
-    } catch (_) {}
+        if (options.length === 1) sel.value = options[0].id;
+    } catch (e) {
+        toast(e.message || 'Errore caricamento template');
+    }
 }
 
 function setLeadsTableHead(hr) {

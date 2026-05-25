@@ -81,6 +81,7 @@
       brandId: resolveBrandId(),
       API: global.API,
       getAuthHeaders: global.getAuthHeaders,
+      getDashboardFetchHeaders: global.getDashboardFetchHeaders,
       fetchCachedJson: global.fetchCachedJson,
       toast: global.toast,
       esc: global.esc,
@@ -562,14 +563,28 @@
   }
 
   async function populateTemplates() {
+    if (typeof global.populateEmployeeTemplateSelect === 'function') {
+      await global.populateEmployeeTemplateSelect('manualTemplateId');
+      return;
+    }
     var sel = el('manualTemplateId');
     var d = deps();
     if (!sel || !d.brandId) return;
     sel.innerHTML = '<option value="">— Seleziona template —</option>';
     try {
-      var templates = await d.fetchCachedJson(d.API + '/templates?brand_id=' + d.brandId, { headers: Object.assign({}, d.getAuthHeaders()) });
-      var hrTpl = (templates || []).filter(function (t) { return t.pass_type === 'employee_pass'; });
-      var list = hrTpl.length ? hrTpl : (templates || []);
+      var headers = typeof d.getDashboardFetchHeaders === 'function'
+        ? d.getDashboardFetchHeaders()
+        : Object.assign({}, d.getAuthHeaders());
+      var res = await fetch(d.API + '/templates?brand_id=' + encodeURIComponent(d.brandId), { headers: headers });
+      var templates = await res.json();
+      if (!res.ok) throw new Error((templates && templates.error) || 'Errore caricamento template');
+      if (!Array.isArray(templates)) templates = [];
+      var hrTpl = templates.filter(function (t) { return t.pass_type === 'employee_pass'; });
+      var list = hrTpl.length ? hrTpl : templates;
+      if (!list.length) {
+        d.toast('Nessun template pass per questo brand. Creane uno nella sezione Pass.');
+        return;
+      }
       list.forEach(function (t) {
         var o = document.createElement('option');
         o.value = t.id;
@@ -577,7 +592,9 @@
         sel.appendChild(o);
       });
       if (list.length === 1) sel.value = list[0].id;
-    } catch (_) {}
+    } catch (err) {
+      d.toast(err.message || 'Errore caricamento template');
+    }
   }
 
   async function saveQueue() {
