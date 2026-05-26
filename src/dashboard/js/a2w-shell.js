@@ -290,11 +290,43 @@
     a2wHideTooltip();
   }
 
-  function initA2WSidebarChrome() {
+  function a2wRefreshSidebarChrome() {
     a2wEnsureSidebarWorkspaceSwitcher();
     a2wEnsureSidebarIcons();
+  }
+
+  function initA2WSidebarSyncHooks() {
+    const state = a2wSidebarState();
+    if (state.syncHooksBound) return;
+    state.syncHooksBound = true;
+
+    const wrapMenuCopy = () => {
+      if (typeof applyProductMenuCopy !== 'function') return false;
+      if (applyProductMenuCopy.__a2wSidebarWrapped === '1') return true;
+      const original = applyProductMenuCopy;
+      const wrapped = function a2wApplyProductMenuCopyWrapped() {
+        const result = original.apply(this, arguments);
+        a2wRefreshSidebarChrome();
+        return result;
+      };
+      wrapped.__a2wSidebarWrapped = '1';
+      window.applyProductMenuCopy = wrapped;
+      return true;
+    };
+
+    if (!wrapMenuCopy()) {
+      // Some deploys initialize i18n copy after shell boot.
+      window.setTimeout(() => {
+        if (wrapMenuCopy()) a2wRefreshSidebarChrome();
+      }, 200);
+    }
+  }
+
+  function initA2WSidebarChrome() {
+    a2wRefreshSidebarChrome();
     a2wEnsureSidebarToggleButton();
     a2wApplySidebarCollapsedState(a2wReadSidebarCollapsedPref());
+    initA2WSidebarSyncHooks();
     const state = a2wSidebarState();
     if (!state.bound) {
       state.bound = true;
