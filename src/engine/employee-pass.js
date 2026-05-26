@@ -168,15 +168,16 @@ function resolveEmployeePassColors(template, brandConfig) {
   };
 }
 
-function makeHrLinkField(key, label, url) {
+function makeHrLinkField(key, label, url, linkText) {
   const safeLabel = escapeHtml(label);
   const safeUrl = escapeHtml(url);
   const displayHost = url.replace(/^https?:\/\//i, '');
+  const renderedText = String(linkText || '').trim() || safeLabel || escapeHtml(displayHost);
   return {
     key,
     label: String(label || '').toUpperCase().slice(0, 64),
     value: url,
-    attributedValue: `<a href="${safeUrl}">${safeLabel || escapeHtml(displayHost)}</a>`
+    attributedValue: `<a href="${safeUrl}">${renderedText}</a>`
   };
 }
 
@@ -197,69 +198,35 @@ function resolveHrBackSource(template, brand) {
 }
 
 function buildBackSections({ brand, template, instance, member, brandConfig = {}, portalUrl = null }) {
-  const profile = resolveMemberProfile(member, instance);
   const sections = [];
   const hrBack = resolveHrBackSource(template, brand);
 
-  const dynamicLink = resolveVariableLink(instance, template, brandConfig);
-  if (dynamicLink?.url) {
+  if (hrBack.hr_email) {
     sections.push({
       kind: 'link',
-      key: 'link_dynamic',
-      label: dynamicLink.label,
-      url: dynamicLink.url
+      key: 'hr_email',
+      label: 'PEOPLE OPERATIONS',
+      url: `mailto:${hrBack.hr_email}`,
+      linkText: hrBack.hr_email
     });
   }
-
-  if (profile.full_name) {
-    sections.push({ kind: 'text', key: 'name', label: 'DIPENDENTE', body: profile.full_name });
-  }
-  if (profile.employee_id) {
-    sections.push({ kind: 'text', key: 'matricola', label: 'MATRICOLA', body: `#${profile.employee_id}` });
-  }
-  if (profile.department) {
-    sections.push({ kind: 'text', key: 'reparto', label: 'REPARTO', body: profile.department });
-  }
-  if (profile.office_location) {
-    sections.push({ kind: 'text', key: 'sede', label: 'SEDE', body: profile.office_location });
-  }
-
-  const activatedAt = instance?.activated_at || instance?.created_at;
-  if (activatedAt) {
+  if (hrBack.dpo_email) {
     sections.push({
-      kind: 'text',
-      key: 'active',
-      label: 'ATTIVO DA',
-      body: new Date(activatedAt).toLocaleDateString('it-IT', { year: 'numeric', month: 'long', day: 'numeric' })
+      kind: 'link',
+      key: 'dpo',
+      label: 'PRIVACY / DPO',
+      url: `mailto:${hrBack.dpo_email}`,
+      linkText: hrBack.dpo_email
     });
   }
-
-  if (profile.manager_name) {
-    const mgr = profile.manager_email
-      ? `${profile.manager_name} · ${profile.manager_email}`
-      : profile.manager_name;
-    sections.push({ kind: 'text', key: 'manager', label: 'MANAGER DIRETTO', body: mgr });
-  }
-
-  if (hrBack.hr_email) sections.push({ kind: 'text', key: 'hr_email', label: 'PEOPLE OPERATIONS', body: hrBack.hr_email });
-  if (hrBack.hr_phone) sections.push({ kind: 'text', key: 'hr_phone', label: 'TELEFONO HR', body: hrBack.hr_phone });
-  if (hrBack.dpo_email) sections.push({ kind: 'text', key: 'dpo', label: 'PRIVACY / DPO', body: hrBack.dpo_email });
-  if (hrBack.emergency_phone) sections.push({ kind: 'text', key: 'emergency', label: 'EMERGENZE', body: hrBack.emergency_phone });
-
-  hrBack.back_resources.slice(0, 5).forEach((r, i) => {
-    if (r?.label && r?.url) sections.push({ kind: 'link', key: `resource_${i}`, label: r.label, url: r.url });
-  });
-
-  hrBack.back_documents.slice(0, 5).forEach((d, i) => {
-    if (d?.label && d?.url) sections.push({ kind: 'link', key: `doc_${i}`, label: d.label, url: d.url, doc: true });
-  });
 
   if (portalUrl) {
     sections.push({
       kind: 'link',
       key: 'portal_profile',
       label: 'PROFILO PERSONALE',
-      url: portalUrl
+      url: portalUrl,
+      linkText: 'Apri profilo'
     });
   }
 
@@ -361,7 +328,7 @@ function sectionsToAppleBackFields(sections) {
           attributedValue: `<a href="${safeUrl}">Apri documento</a>`
         };
       }
-      return makeHrLinkField(s.key, s.label, s.url);
+      return makeHrLinkField(s.key, s.label, s.url, s.linkText);
     }
     return { key: s.key, label: s.label, value: s.body };
   });
