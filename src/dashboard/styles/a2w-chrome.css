@@ -91,6 +91,10 @@ html[data-shell="dark"].a2w-shell .a2w-breadcrumb-brand-wrap {
   gap: var(--space-3);
 }
 
+html[data-shell="dark"].a2w-shell .a2w-breadcrumb-brand-wrap.a2w-breadcrumb-brand-wrap--text-only {
+  gap: 0;
+}
+
 html[data-shell="dark"].a2w-shell .a2w-breadcrumb-logo {
   width: 48px;
   height: 48px;
@@ -109,6 +113,11 @@ html[data-shell="dark"].a2w-shell .a2w-breadcrumb-logo--fallback {
   font-weight: 700;
   color: var(--a2w-accent);
   background: var(--a2w-accent-subtle);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-breadcrumb-brand-wrap--text-only .a2w-breadcrumb-logo,
+html[data-shell="dark"].a2w-shell .a2w-breadcrumb-brand-wrap--text-only .a2w-breadcrumb-logo--fallback {
+  display: none !important;
 }
 
 html[data-shell="dark"].a2w-shell #breadcrumbBrand {
