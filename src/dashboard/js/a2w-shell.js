@@ -194,33 +194,38 @@
 
     document.querySelectorAll('.sidebar .nav-item').forEach((item) => {
       const sectionId = item.dataset.sectionId || (item.id === 'navItemWelcome' ? 'welcome' : '');
-      const iconKey = iconMap[sectionId];
+      const defaultText = String(item.getAttribute('data-menu-default') || '').toLowerCase();
+      const currentText = String(item.textContent || '').toLowerCase();
+      const iconKey = iconMap[sectionId]
+        || (/contatti/.test(defaultText) || /contatti/.test(currentText) ? 'contacts' : '')
+        || (/audience/.test(defaultText) || /audience/.test(currentText) ? 'audience' : '');
       const iconSvg = iconKey ? A2W.icons[iconKey] : '';
-      if (!item.querySelector('.a2w-nav-icon')) {
-        if (iconSvg) {
-          const iconSlot = document.createElement('span');
-          iconSlot.className = 'a2w-nav-icon';
-          iconSlot.setAttribute('aria-hidden', 'true');
-          iconSlot.innerHTML = iconSvg;
-          item.insertBefore(iconSlot, item.firstChild);
-        }
+
+      const textNodes = [...item.childNodes]
+        .filter((n) => n.nodeType === Node.TEXT_NODE)
+        .map((n) => String(n.textContent || '').trim())
+        .filter(Boolean);
+      const existingLabel = String(item.querySelector('.a2w-nav-label')?.textContent || '').trim();
+      const resolvedLabel = existingLabel || textNodes.join(' ') || String(item.textContent || '').trim();
+
+      const preservedChildren = [...item.children].filter((el) => !el.classList.contains('a2w-nav-icon') && !el.classList.contains('a2w-nav-label'));
+      item.textContent = '';
+
+      if (iconSvg) {
+        const icon = document.createElement('span');
+        icon.className = 'a2w-nav-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.innerHTML = iconSvg;
+        item.appendChild(icon);
       }
-      if (!item.querySelector('.a2w-nav-label')) {
-        const text = String(item.textContent || '').trim();
-        item.textContent = '';
-        if (iconSvg) {
-          const icon = document.createElement('span');
-          icon.className = 'a2w-nav-icon';
-          icon.setAttribute('aria-hidden', 'true');
-          icon.innerHTML = iconSvg;
-          item.appendChild(icon);
-        }
-        const label = document.createElement('span');
-        label.className = 'a2w-nav-label';
-        label.textContent = text;
-        item.appendChild(label);
-      }
-      const labelText = String(item.querySelector('.a2w-nav-label')?.textContent || '').trim();
+
+      const label = document.createElement('span');
+      label.className = 'a2w-nav-label';
+      label.textContent = resolvedLabel;
+      item.appendChild(label);
+      preservedChildren.forEach((child) => item.appendChild(child));
+
+      const labelText = String(label.textContent || '').trim();
       if (labelText) item.setAttribute('data-a2w-tooltip-label', labelText);
     });
   }
@@ -984,7 +989,7 @@
     role.classList.add('a2w-admin-badge');
   }
 
-  // UX-AUDIT[a2w]: breadcrumb brand block with 48px logo + fallback initials
+  // UX-AUDIT[a2w]: breadcrumb brand text-only (no low-contrast logo in header)
   function syncA2wHeaderChrome() {
     if (!document.documentElement.classList.contains('a2w-shell')) return;
     const brandSpan = document.getElementById('breadcrumbBrand');
@@ -997,42 +1002,8 @@
       brandSpan.parentNode.insertBefore(wrap, brandSpan);
       wrap.appendChild(brandSpan);
     }
-
-    let logoSlot = document.getElementById('a2wBreadcrumbLogo');
-    let fallback = document.getElementById('a2wBreadcrumbLogoFallback');
-    const srcLogo = document.getElementById('headerBrandLogo');
-    const brandName = (brandSpan.textContent || '').trim();
-
-    if (!logoSlot) {
-      logoSlot = document.createElement('img');
-      logoSlot.id = 'a2wBreadcrumbLogo';
-      logoSlot.className = 'a2w-breadcrumb-logo';
-      logoSlot.alt = '';
-      wrap.insertBefore(logoSlot, brandSpan);
-    }
-    if (!fallback) {
-      fallback = document.createElement('span');
-      fallback.id = 'a2wBreadcrumbLogoFallback';
-      fallback.className = 'a2w-breadcrumb-logo a2w-breadcrumb-logo--fallback';
-      fallback.setAttribute('aria-hidden', 'true');
-      wrap.insertBefore(fallback, brandSpan);
-    }
-
-    if (srcLogo && srcLogo.src && srcLogo.style.display !== 'none') {
-      logoSlot.src = srcLogo.src;
-      logoSlot.style.display = '';
-      fallback.style.display = 'none';
-    } else if (brandName) {
-      logoSlot.style.display = 'none';
-      const parts = brandName.split(/\s+/).filter(Boolean);
-      fallback.textContent = parts.length >= 2
-        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-        : brandName.slice(0, 2).toUpperCase();
-      fallback.style.display = 'inline-flex';
-    } else {
-      logoSlot.style.display = 'none';
-      fallback.style.display = 'none';
-    }
+    wrap.classList.add('a2w-breadcrumb-brand-wrap--text-only');
+    wrap.querySelectorAll('#a2wBreadcrumbLogo, #a2wBreadcrumbLogoFallback').forEach((el) => el.remove());
     a2wEnsureSidebarWorkspaceSwitcher();
   }
 

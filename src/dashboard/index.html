@@ -3456,6 +3456,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof enhancePageHeaders === 'function') enhancePageHeaders();
     initUserMenu();
     initFiloNavA11y();
+    applyLegacyCampaignsUiMask();
     syncNavAriaCurrent(getActiveSectionId());
     syncSectionDocumentTitle(getActiveSectionId());
     syncBreadcrumb(getActiveSectionId());
@@ -3603,11 +3604,61 @@ function updateNavState() {
     document.body.classList.toggle('role-viewer', isViewer);
     document.body.classList.toggle('role-manager', role === 'manager');
     document.body.classList.toggle('role-admin', isAdmin);
+    applyLegacyCampaignsUiMask();
     syncWaiUi();
 }
 
+function isLegacyCampaignsUiEnabled() {
+    return !isHrDashboard();
+}
+
+function getDefaultBrandSection() {
+    return isLegacyCampaignsUiEnabled() ? 'campaigns' : 'passes';
+}
+
+function applyLegacyCampaignsUiMask() {
+    const hidden = !isLegacyCampaignsUiEnabled();
+    const campaignNav = document.querySelector('.nav-item[data-section-id="campaigns"]');
+    if (campaignNav) campaignNav.style.display = hidden ? 'none' : '';
+
+    const campaignSection = document.getElementById('campaigns');
+    if (campaignSection) campaignSection.style.display = hidden ? 'none' : '';
+
+    const campaignModal = document.getElementById('campaignModal');
+    if (campaignModal && hidden) campaignModal.classList.remove('active');
+
+    const passFilter = document.getElementById('passFilterCampaign');
+    if (passFilter) {
+        const wrap = passFilter.closest('div');
+        if (wrap) wrap.style.display = hidden ? 'none' : '';
+        if (hidden) passFilter.value = '';
+    }
+
+    const passHint = document.getElementById('passFilterSessionHint');
+    if (passHint) {
+        passHint.textContent = hidden
+            ? 'Ricerca e pagina sono ricordati per questo brand finché il tab del browser è aperto.'
+            : 'Campagna, ricerca e pagina sono ricordati per questo brand finché il tab del browser è aperto.';
+    }
+
+    ['pushCampaignTarget', 'schedCampaignTarget', 'mediaUploadCampaignId', 'audCampaign'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const group = el.closest('.form-group') || el.parentElement;
+        if (group) group.style.display = hidden ? 'none' : '';
+        if (hidden && 'value' in el) el.value = '';
+    });
+
+    const campTable = document.getElementById('campaignAnalyticsTable');
+    if (campTable) {
+        const panel = campTable.closest('.card') || campTable.parentElement;
+        if (panel) panel.style.display = hidden ? 'none' : '';
+    }
+}
+
 function nav(id) {
-    if (id === 'welcome' && brandId) id = 'campaigns';
+    if (id === 'campaigns' && !isLegacyCampaignsUiEnabled()) id = getDefaultBrandSection();
+    if (id === 'welcome' && brandId) id = getDefaultBrandSection();
     if (!brandId && !SECTIONS_NO_BRAND.has(id)) {
         toast('Seleziona un brand dall\'elenco in alto');
         return;
@@ -3669,7 +3720,7 @@ function getActiveSectionId() {
 
 function refreshActiveSection() {
     let activeId = getActiveSectionId();
-    if (brandId && activeId === 'welcome') activeId = 'campaigns';
+    if (brandId && activeId === 'welcome') activeId = getDefaultBrandSection();
     nav(activeId);
 }
 
@@ -3749,7 +3800,7 @@ async function loadBrands() {
         applyBrandTheme();
         await refreshOverview();
         let sid = getActiveSectionId();
-        if (sid === 'welcome') sid = 'campaigns';
+        if (sid === 'welcome') sid = getDefaultBrandSection();
         nav(sid);
     } else {
         currentBrandName = '';
@@ -3788,7 +3839,7 @@ function changeBrand() {
     passHasNextPage = false;
     refreshOverview().then(() => {
         let sid = getActiveSectionId();
-        if (sid === 'welcome') sid = 'campaigns';
+        if (sid === 'welcome') sid = getDefaultBrandSection();
         nav(sid);
     });
 }
@@ -4719,7 +4770,9 @@ async function loadPasses(resetPage = false) {
     if (resetPage) passPageIndex = 0;
 
     syncPassCampaignDropdownPreference();
-    const campaignFilter = document.getElementById('passFilterCampaign')?.value || '';
+    const campaignFilter = isLegacyCampaignsUiEnabled()
+        ? (document.getElementById('passFilterCampaign')?.value || '')
+        : '';
     const effectiveLimit = PASSES_PAGE_SIZE + 1;
     const offset = passPageIndex * PASSES_PAGE_SIZE;
     let url = `${API}/passes?brand_id=${brandId}&limit=${effectiveLimit}&offset=${offset}&include_total=1`;
@@ -4743,7 +4796,9 @@ async function loadPasses(resetPage = false) {
     const passes = rawPasses.length > PASSES_PAGE_SIZE ? rawPasses.slice(0, PASSES_PAGE_SIZE) : rawPasses;
     const q = (passSearchQuery || '').trim().toLowerCase();
     const filteredPasses = q ? passes.filter(p => {
-        const camp = campaignsCache.find(c => c.id === p.campaign_id);
+        const camp = isLegacyCampaignsUiEnabled()
+            ? campaignsCache.find(c => c.id === p.campaign_id)
+            : null;
         const haystack = [
             p.id, p.serial_number, p.device_id, p.status, p.device_source,
             p.referrer_url, p.user_agent, camp?.name
@@ -5771,6 +5826,11 @@ function switchPushTab(tab) {
 // --- Campaign selects ---
 async function loadPushCampaignSelect() {
     const sel = document.getElementById('pushCampaignTarget');
+    if (!sel) return;
+    if (!isLegacyCampaignsUiEnabled()) {
+        sel.innerHTML = '<option value="">Tutti i pass</option>';
+        return;
+    }
     sel.innerHTML = '<option value="">Tutti i pass (tutte le campagne)</option>';
     if (!brandId) return;
     if (!campaignsCache.length) {
@@ -5821,6 +5881,10 @@ async function loadPushGamSelect() {
 async function loadSchedCampaignSelect() {
     const sel = document.getElementById('schedCampaignTarget');
     if (!sel) return;
+    if (!isLegacyCampaignsUiEnabled()) {
+        sel.innerHTML = '<option value="">Tutti i pass</option>';
+        return;
+    }
     sel.innerHTML = '<option value="">Tutti i pass (tutte le campagne)</option>';
     if (!brandId) return;
     if (!campaignsCache.length) {
@@ -5843,7 +5907,9 @@ async function loadPushAudienceSelect() {
         const sel = document.getElementById(id);
         if (!sel) return;
         const cur = sel.value;
-        sel.innerHTML = '<option value="">— Nessuna (usa campagna o tutti) —</option>';
+        sel.innerHTML = isLegacyCampaignsUiEnabled()
+            ? '<option value="">— Nessuna (usa campagna o tutti) —</option>'
+            : '<option value="">— Nessuna (usa tutti) —</option>';
         audiencesCache.forEach(a => {
             const o = document.createElement('option');
             o.value = a.id;
@@ -5898,7 +5964,9 @@ function pushClearStrip() {
 async function sendImmediatePush() {
     const title = document.getElementById('pushTitle').value;
     const message = document.getElementById('pushMessage').value;
-    const campaignId = document.getElementById('pushCampaignTarget').value || null;
+    const campaignId = isLegacyCampaignsUiEnabled()
+        ? (document.getElementById('pushCampaignTarget')?.value || null)
+        : null;
     const audienceId = document.getElementById('pushAudienceTarget')?.value || null;
     const channel = document.getElementById('pushChannel').value || 'apple';
     const updatePass = document.getElementById('pushUpdatePass').checked;
@@ -5908,7 +5976,7 @@ async function sendImmediatePush() {
 
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel };
     if (audienceId) body.audience_id = audienceId;
-    else if (campaignId) body.campaign_id = campaignId;
+    else if (campaignId && isLegacyCampaignsUiEnabled()) body.campaign_id = campaignId;
     const iwId = document.getElementById('pushInstantWin').value;
     if (iwId) body.instant_win_id = iwId;
     const gamId = document.getElementById('pushGamification').value;
@@ -5970,7 +6038,9 @@ function toggleSchedOptions() {
 async function createScheduledPush() {
     const title = document.getElementById('schedTitle').value;
     const message = document.getElementById('schedMessage').value;
-    const campaignId = document.getElementById('schedCampaignTarget').value || null;
+    const campaignId = isLegacyCampaignsUiEnabled()
+        ? (document.getElementById('schedCampaignTarget')?.value || null)
+        : null;
     const audienceId = document.getElementById('schedAudienceTarget')?.value || null;
     const updatePass = document.getElementById('schedUpdatePass').checked;
     const channel = document.getElementById('schedChannel').value || 'apple';
@@ -5982,7 +6052,7 @@ async function createScheduledPush() {
 
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel, schedule_type: schedType, schedule_time: time };
     if (audienceId) body.audience_id = audienceId;
-    else if (campaignId) body.campaign_id = campaignId;
+    else if (campaignId && isLegacyCampaignsUiEnabled()) body.campaign_id = campaignId;
     if (schedType === 'once') {
         body.date = document.getElementById('schedDate').value;
         if (!body.date) return alert('Seleziona una data');
@@ -8077,9 +8147,12 @@ async function loadAnalytics() {
     if (typeof a2wLoadAnalytics === 'function' && typeof isA2wDeploy === 'function' && isA2wDeploy()) {
         return a2wLoadAnalytics();
     }
+    const campaignsEnabled = isLegacyCampaignsUiEnabled();
     const [analytics, campaigns, passes] = await Promise.all([
         fetchCachedJson(`${API}/analytics/${brandId}`, { headers: { ...getAuthHeaders() } }),
-        fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } }),
+        campaignsEnabled
+            ? fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } })
+            : Promise.resolve([]),
         fetchCachedJson(`${API}/passes?brand_id=${brandId}&limit=600`, { headers: { ...getAuthHeaders() } })
     ]);
 
@@ -8116,9 +8189,14 @@ async function loadAnalytics() {
     syncAnalyticsRangeControls();
     renderAnalyticsTrendChart(allPasses);
     renderAnalyticsWalletSplit(allPasses);
-    renderAnalyticsTopCampaigns(campaigns);
+    renderAnalyticsTopCampaigns(campaignsEnabled ? campaigns : []);
 
     const tbody = document.querySelector('#campaignAnalyticsTable tbody');
+    if (!campaignsEnabled) {
+        const tableWrap = document.getElementById('campaignAnalyticsTable')?.closest('.card');
+        if (tableWrap) tableWrap.style.display = 'none';
+        return;
+    }
     if (!campaigns.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nessuna campagna</td></tr>'; return; }
     tbody.innerHTML = campaigns.map(c => {
         const conv = c.total_downloads > 0 ? ((c.total_installs / c.total_downloads) * 100).toFixed(1) : '0';

@@ -77,6 +77,7 @@ const { computeInitialScheduledRun } = require('../engine/scheduler');
 const { generateLandingCopy, generateCreativeCopy } = require('../engine/ai-copy');
 const { planScheduledPush } = require('../engine/push-assistant');
 const { askWai, EXECUTABLE_INTENTS, validateWaiResponse } = require('../engine/wai');
+const { resolveBaseUrl } = require('../engine/base-url');
 const sharp = require('sharp');
 const jwt = require('jsonwebtoken');
 const { execFile } = require('child_process');
@@ -394,6 +395,8 @@ router.get('/debug/push-diagnostics', async (req, res) => {
        WHERE pi.id IS NULL`
     );
 
+    const debugBaseUrl = resolveBaseUrl(req);
+
     res.json({
       status: 'ok',
       build_version: '3.0.0-' + Date.now(),
@@ -404,8 +407,8 @@ router.get('/debug/push-diagnostics', async (req, res) => {
         APNS_ENV: process.env.APNS_ENV || 'production (default)',
         NODE_ENV: process.env.NODE_ENV || 'NOT SET'
       },
-      webServiceURL_in_pass: `https://${process.env.CUSTOM_DOMAIN || 'localhost:3000'}/api`,
-      apple_will_call: `https://${process.env.CUSTOM_DOMAIN || 'localhost:3000'}/api/v1/devices/{did}/registrations/{ptid}/{sn}`,
+      webServiceURL_in_pass: `${debugBaseUrl}/api`,
+      apple_will_call: `${debugBaseUrl}/api/v1/devices/{did}/registrations/{ptid}/{sn}`,
       certs: certsExist,
       counts: {
         registered_devices: parseInt(deviceCount.rows[0].count),
@@ -545,9 +548,7 @@ router.post('/signup', async (req, res) => {
     const portalHref = await resolvePortalHref(passInstance.id, brand.id);
 
     // Generate .pkpass
-    const baseUrl = process.env.CUSTOM_DOMAIN
-      ? `https://${process.env.CUSTOM_DOMAIN}`
-      : `${req.protocol}://${req.get('host')}`;
+    const baseUrl = resolveBaseUrl(req);
 
     const pkpassBuffer = await createPkpass(template, passInstance, brand, {
       baseUrl,
@@ -715,9 +716,7 @@ router.get('/passes/:id/download', async (req, res) => {
     const template = await getTemplate(passInstance.template_id);
     if (!brand || !template) return res.status(404).json({ error: 'Dati incompleti' });
 
-    const baseUrl = process.env.CUSTOM_DOMAIN
-      ? `https://${process.env.CUSTOM_DOMAIN}`
-      : `${req.protocol}://${req.get('host')}`;
+    const baseUrl = resolveBaseUrl(req);
 
     const pkpassBuffer = await createPkpass(template, passInstance, brand, {
       baseUrl,
@@ -831,9 +830,7 @@ router.get('/passes/:passTypeId/:serialNumber', async (req, res) => {
     const template = await getTemplate(pass.template_id);
     if (!brand || !template) return res.status(404).send();
 
-    const baseUrl = process.env.CUSTOM_DOMAIN
-      ? `https://${process.env.CUSTOM_DOMAIN}`
-      : `${req.protocol}://${req.get('host')}`;
+    const baseUrl = resolveBaseUrl(req);
 
     const pkpassBuffer = await createPkpass(template, pass, brand, {
       baseUrl,
@@ -1994,9 +1991,7 @@ router.post('/passes/:id/regenerate', async (req, res) => {
     const brand = await getBrand(pass.brand_id);
     const template = await getTemplate(pass.template_id);
 
-    const baseUrl = process.env.CUSTOM_DOMAIN
-      ? `https://${process.env.CUSTOM_DOMAIN}`
-      : `${req.protocol}://${req.get('host')}`;
+    const baseUrl = resolveBaseUrl(req);
 
     const pkpassBuffer = await createPkpass(template, pass, brand, {
       baseUrl,
@@ -2992,7 +2987,7 @@ router.get('/ad-tag/:campaign_id', async (req, res) => {
   try {
     const campaign = await getCampaign(req.params.campaign_id);
     if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
-    const baseUrl = process.env.CUSTOM_DOMAIN ? `https://${process.env.CUSTOM_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    const baseUrl = resolveBaseUrl(req);
     const w = parseInt(req.query.w) || 300;
     const h = parseInt(req.query.h) || 250;
 
@@ -3029,7 +3024,7 @@ router.post('/banners/preview', async (req, res) => {
   try {
     const { brandName, headline, subheadline, ctaText, clickUrl, logoUrl, backgroundUrl, bgColor, fgColor, accentColor, format, template } = req.body;
     const brand_id = req.query.brand_id || req.body.brand_id;
-    const baseUrl = process.env.CUSTOM_DOMAIN ? `https://${process.env.CUSTOM_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    const baseUrl = resolveBaseUrl(req);
 
     const html = generateBanner({
       brandName, headline, subheadline, ctaText,
@@ -3052,7 +3047,7 @@ router.post('/banners/generate', async (req, res) => {
     const brand_id = req.query.brand_id || req.body.brand_id;
     if (!brand_id) return res.status(400).json({ error: 'brand_id required' });
 
-    const baseUrl = process.env.CUSTOM_DOMAIN ? `https://${process.env.CUSTOM_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    const baseUrl = resolveBaseUrl(req);
     const pixelUrl = campaign_id ? `${baseUrl}/api/v1/pixel/${campaign_id}` : '';
     const clickTarget = campaign_id ? `${baseUrl}/api/v1/click/${campaign_id}` : (clickUrl || '#');
 

@@ -20,6 +20,7 @@ const { getPassInstance, getTemplate, touchPass, logEvent } = require('../db');
 const { verifyPortalToken, buildPortalUrl } = require('../engine/portal-auth');
 const { readPassPortalToken, savePassPortalToken } = require('../engine/portal-pass-link');
 const { createPkpass } = require('../engine/passkit');
+const { resolveBaseUrl } = require('../engine/base-url');
 
 const router = express.Router();
 
@@ -248,9 +249,7 @@ router.get('/me/pass', async (req, res) => {
     const row = await getPassForPortal(req.portal.pass_id);
     if (!row) return res.status(404).json({ error: 'Pass non trovato' });
 
-    const baseUrl = process.env.CUSTOM_DOMAIN
-      ? `https://${process.env.CUSTOM_DOMAIN}`
-      : `${req.protocol}://${req.get('host')}`;
+    const baseUrl = resolveBaseUrl(req);
 
     res.json({
       pass_id: row.id,
@@ -283,9 +282,7 @@ async function buildPkpassForPortal(req, pkpassOptions = {}) {
         : row.brand_config
   };
 
-  const baseUrl = process.env.CUSTOM_DOMAIN
-    ? `https://${process.env.CUSTOM_DOMAIN}`
-    : `${req.protocol}://${req.get('host')}`;
+  const baseUrl = resolveBaseUrl(req);
 
   return createPkpass(template, pass, brand, {
     baseUrl,
