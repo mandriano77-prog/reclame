@@ -1,0 +1,154 @@
+/* Instant Win — A2W shell only */
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-legacy-chrome,
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-legacy-new-btn,
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-table-toolbar {
+  display: none;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section #a2wIwPageHeader[hidden] {
+  display: none !important;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section #a2wIwStatsHost {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+@media (min-width: 640px) {
+  html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section #a2wIwStatsHost {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section #a2wIwStatsHost {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section #iwStats {
+  display: none;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-empty-host {
+  margin: var(--space-6) 0;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-table-block--hidden {
+  display: none;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section #iwTable {
+  width: 100%;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section #iwTable thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--a2w-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--a2w-border-default);
+  padding: 10px 12px;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section #iwTable tbody td {
+  padding: 14px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--a2w-border-subtle, var(--a2w-border-default));
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-game-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-game-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--bg-canvas);
+  border: 1px solid var(--a2w-border-default);
+  color: var(--a2w-text-secondary);
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-game-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-game-label {
+  font-size: 13px;
+  color: var(--a2w-text-primary);
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-prob-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-plays {
+  min-width: 120px;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-plays__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--a2w-text-primary);
+  margin-bottom: 6px;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-plays__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-canvas);
+  border: 1px solid var(--a2w-border-default);
+  overflow: hidden;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-plays__bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--a2w-accent, #6366f1), #34d399);
+  transition: width 0.2s ease;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-iw-edit-btn {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-badge--ended {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+html[data-shell="dark"].a2w-shell #instant-win.a2w-iw-section .a2w-badge--draft {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--a2w-text-tertiary);
+  border: 1px solid var(--a2w-border-default);
+}

@@ -1,0 +1,185 @@
+/**
+ * Ads2Wallet — Gamification page (dark shell only).
+ */
+
+html[data-shell="dark"].a2w-shell #gamification.a2w-gamification-section .a2w-gam-legacy-chrome {
+  display: none;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gamification-section {
+  padding-bottom: var(--space-6, 24px);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-kpis-host {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-kpi-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  border-radius: 50%;
+  border: 1px solid var(--a2w-border-default);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--a2w-text-tertiary);
+  cursor: help;
+  vertical-align: middle;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-legacy-chrome[hidden] {
+  display: none !important;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-section-head .sec-title {
+  margin-bottom: 16px;
+}
+
+html[data-shell="dark"].a2w-shell #a2wGamToolbarHost {
+  margin-bottom: 12px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-search {
+  min-width: 200px;
+  max-width: 280px;
+  padding: 8px 12px;
+  border-radius: var(--a2w-radius-control, 8px);
+  border: 1px solid var(--a2w-border-default);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--a2w-text-primary);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-filter-select {
+  padding: 8px 10px;
+  border-radius: var(--a2w-radius-control, 8px);
+  border: 1px solid var(--a2w-border-default);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--a2w-text-primary);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-table tbody td.a2w-gam-table-empty-cell {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-filter-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--a2w-text-secondary);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-filter-empty p {
+  margin: 0 0 12px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-skeleton-row td {
+  padding: 14px 12px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-skeleton-row .a2w-skeleton-line {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: a2w-skeleton-shimmer 1.2s linear infinite;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-type-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-type-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--a2w-accent);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-prize-threshold {
+  color: var(--a2w-text-tertiary);
+  font-size: 11px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-prize--gold {
+  color: #f5c842;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-prize--silver {
+  color: #c0c0c0;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-prize--bronze {
+  color: #cd7f32;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-row-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-leaderboard-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-leaderboard-modal[hidden] {
+  display: none !important;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-leaderboard-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-leaderboard-modal__panel {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--card, #1a1628);
+  border: 1px solid var(--a2w-border-default);
+  border-radius: 16px;
+  padding: 20px 24px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-leaderboard-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-gam-lb-empty {
+  color: var(--a2w-text-secondary);
+  text-align: center;
+  padding: 24px;
+}
+
+@media (max-width: 768px) {
+  html[data-shell="dark"].a2w-shell .a2w-gam-kpis-host {
+    grid-template-columns: 1fr;
+  }
+}

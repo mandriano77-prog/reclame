@@ -34,6 +34,8 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-ui-components.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-analytics.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-push.css">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-instant-win.css">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-gamification.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
     <link rel="stylesheet" href="/dashboard/css/layout.css">
@@ -2168,24 +2170,31 @@
 
             <!-- INSTANT WIN -->
             <div id="instant-win" class="section">
-                <h1 class="sec-title page-title">Instant Win</h1>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne Instant Win per coinvolgere i tuoi utenti con premi immediati: scratch card, spin the wheel, slot machine.</p>
+                <div class="a2w-iw-legacy-chrome">
+                    <h1 class="sec-title page-title">Instant Win</h1>
+                    <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne Instant Win per coinvolgere i tuoi utenti con premi immediati: scratch card, spin the wheel, slot machine.</p>
+                </div>
+                <div id="a2wIwPageHeader" hidden></div>
 
                 <div class="stats-grid" id="iwStats">
                     <div class="stat-card"><div class="stat-value" id="iwStatCampaigns">0</div><div class="stat-label">Campagne attive</div></div>
                     <div class="stat-card"><div class="stat-value" id="iwStatPlays">0</div><div class="stat-label">Giocate totali</div></div>
                     <div class="stat-card"><div class="stat-value" id="iwStatWins">0</div><div class="stat-label">Vincite</div></div>
-                    <div class="stat-card"><div class="stat-value" id="iwStatRate">0%</div><div class="stat-label">Win Rate</div></div>
+                    <div class="stat-card"><div class="stat-value" id="iwStatRate">—</div><div class="stat-label">Win Rate</div></div>
                 </div>
 
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Instant Win</div>
-                    <button class="btn" onclick="openIwModal()">+ Nuova Campagna</button>
+                <div id="a2wIwEmptyHost" class="a2w-iw-empty-host" hidden></div>
+
+                <div class="a2w-iw-table-block" id="a2wIwTableBlock">
+                <div class="a2w-iw-table-toolbar" id="a2wIwTableToolbar">
+                    <div class="sec-title a2w-iw-table-title" style="font-size:18px;margin-bottom:0;">Campagne Instant Win</div>
+                    <button type="button" class="btn a2w-iw-legacy-new-btn" onclick="openIwModal()">+ Nuova Campagna</button>
                 </div>
                 <table class="table" id="iwTable">
                     <thead><tr><th>Nome</th><th>Tipo</th><th>Premio</th><th>Probabilità</th><th>Giocate</th><th>Vincite</th><th>Stato</th><th>Azioni</th></tr></thead>
                     <tbody></tbody>
                 </table>
+                </div>
 
                 <!-- IW Modal -->
                 <div id="iwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
@@ -2223,8 +2232,11 @@
 
             <!-- GAMIFICATION -->
             <div id="gamification" class="section">
-                <h1 class="sec-title page-title">Gamification</h1>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne di gioco skill-based: Quiz, Memory Match, Puzzle. Premi a fasce in base al tempo di completamento.</p>
+                <div class="a2w-gam-legacy-chrome">
+                    <h1 class="sec-title page-title">Gamification</h1>
+                    <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne di gioco skill-based: Quiz, Memory Match, Puzzle. Premi a fasce in base al tempo di completamento.</p>
+                </div>
+                <div id="a2wGamPageHeader" hidden></div>
 
                 <div class="stats-grid" id="gamStats">
                     <div class="stat-card"><div class="stat-value" id="gamStatCampaigns">0</div><div class="stat-label">Campagne attive</div></div>
@@ -2232,9 +2244,10 @@
                     <div class="stat-card"><div class="stat-value" id="gamStatGold">0</div><div class="stat-label">Premi Oro</div></div>
                 </div>
 
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Gamification</div>
-                    <button class="btn" onclick="openGamModal()">+ Nuova Campagna</button>
+                <div id="a2wGamToolbarHost"></div>
+
+                <div class="a2w-gam-section-head">
+                    <div class="sec-title" style="font-size:18px;margin-bottom:16px;">Campagne Gamification</div>
                 </div>
                 <table class="table" id="gamTable">
                     <thead><tr><th>Nome</th><th>Tipo</th><th>Oro</th><th>Argento</th><th>Bronzo</th><th>Giocate</th><th>Stato</th><th>Azioni</th></tr></thead>
@@ -2288,45 +2301,33 @@
 
             <!-- LEADS DATABASE -->
             <div id="leads" class="section">
-                <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Contatti">Contatti</h1>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-                    <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." style="color:var(--text2);font-size:13px;">Elenco delle persone collegate ai pass di questo brand.</p>
-                    <div class="leads-toolbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <input type="text" id="leadsSearch" class="leads-toolbar__search" placeholder="Cerca nome, email..." oninput="filterLeads()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px;">
-                        <button type="button" class="btn sec" id="leadsAddBtn" onclick="openEmployeeManualModal()" style="display:none;white-space:nowrap;">+ Aggiungi</button>
-                        <button type="button" class="btn sec" id="leadsImportBtn" onclick="openEmployeeImportModal()" style="display:none;white-space:nowrap;">✨ Importa da file</button>
-                        <button type="button" class="btn sec" id="leadsNoMatricolaBtn" onclick="filterLeadsNoMatricola()" style="display:none;white-space:nowrap;">⚠ Senza matricola</button>
-                        <button type="button" class="btn sec" id="leadsDistributeBtn" onclick="distributeActivationAll()" style="display:none;white-space:nowrap;">✉ Invia attivazione</button>
-                        <button type="button" class="btn leads-export-btn" onclick="exportLeadsCSV()" style="white-space:nowrap;"><svg class="leads-export-btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>Export CSV</span></button>
+                <div class="contacts-page-header">
+                  <div>
+                    <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Contatti">Contatti</h1>
+                    <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." class="contacts-page-blurb">Elenco delle persone collegate ai pass di questo brand.</p>
+                  </div>
+                  <div class="contacts-page-menu" id="contactsPageMenu" hidden>
+                    <button type="button" class="btn sec small contacts-page-menu__trigger" id="contactsPageMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu pagina Contatti">⋮</button>
+                    <div class="contacts-page-menu__panel" id="contactsPageMenuPanel" hidden role="menu">
+                      <button type="button" role="menuitem" class="contacts-page-menu__item" id="contactsShowTourBtn">Mostra tour</button>
                     </div>
+                  </div>
                 </div>
-                <div id="hrActivationPanel" class="card" style="display:none;margin-bottom:16px;padding:16px 20px;">
-                    <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Distribuzione pass (ibrida)</div>
-                    <div class="stats-grid" id="activationStats" style="margin-bottom:12px;"></div>
-                    <div class="form-row" style="align-items:flex-end;gap:12px;flex-wrap:wrap;">
-                        <div class="form-group" style="flex:1;min-width:200px;">
-                            <label class="form-label">Join pubblico / QR</label>
-                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
-                                <input type="checkbox" id="hrPublicQrEnabled" onchange="saveHrDistributionSettings()"> Abilita pagina <code>/join/{slug}</code>
-                            </label>
-                        </div>
-                        <div class="form-group" style="flex:1;min-width:160px;">
-                            <label class="form-label">Slug join (opz.)</label>
-                            <input type="text" id="hrPublicQrSlug" placeholder="es. acme-hr" onblur="saveHrDistributionSettings()">
-                        </div>
-                        <div class="form-group" style="flex:2;min-width:220px;">
-                            <label class="form-label">Domini email ammessi (virgola)</label>
-                            <input type="text" id="hrAllowedDomains" placeholder="acme.it, acme.com" onblur="saveHrDistributionSettings()">
-                        </div>
+                <div class="contacts-top-grid">
+                  <div id="contactsCardA" class="card contacts-card">
+                    <div class="contacts-card__heading">
+                      <h2 id="contactsCardATitle" class="contacts-card__title">Anagrafica dipendenti</h2>
+                      <div id="contactsCardAHelp" class="contacts-card__help"></div>
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
-                        <input type="text" id="hrJoinUrl" readonly style="flex:1;min-width:200px;padding:8px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">
-                        <button type="button" class="btn small sec" onclick="copyHrJoinUrl()">Copia link join</button>
-                    </div>
+                    <div id="contactsToolbarHost" class="contacts-toolbar"></div>
+                    <div id="leadsStats"></div>
+                  </div>
+                  <div id="contactsCardBHost" class="card contacts-card contacts-card--distribution" hidden data-coach-step="distribution"></div>
+                  <div id="contactsCardCHost" class="card contacts-card contacts-card--join" hidden data-coach-step="join"></div>
                 </div>
-                <div class="stats-grid" id="leadsStats"></div>
                 <div id="leadsEmptyHost" class="leads-empty-host" hidden role="status"></div>
                 <table class="table" id="leadsTable">
+                    <caption class="sr-only">Elenco contatti</caption>
                     <thead id="leadsTableHead"><tr>
                         <th>Nome</th><th>Cognome</th><th>Email</th><th>Telefono</th>
                         <th>Device ID</th><th>Pass ID</th><th>Data registrazione</th>
@@ -3031,6 +3032,8 @@
 <script src="/dashboard/js/components/ui/danger-action-button.js"></script>
 <script src="/dashboard/js/components/ui/action-menu.js"></script>
 <script src="/dashboard/js/components/ui/index.js"></script>
+<script src="/dashboard/js/a2w-gamification-page.js"></script>
+<script src="/dashboard/js/a2w-instant-win-page.js"></script>
 <script src="/dashboard/js/a2w-shell.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
 
