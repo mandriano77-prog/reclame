@@ -2192,6 +2192,7 @@
                 </div>
                 <div id="leadsEmptyHost" class="leads-empty-host" hidden role="status"></div>
                 <table class="table" id="leadsTable">
+                    <caption class="sr-only">Elenco contatti</caption>
                     <thead id="leadsTableHead"><tr>
                         <th>Nome</th><th>Cognome</th><th>Email</th><th>Telefono</th>
                         <th>Device ID</th><th>Pass ID</th><th>Data registrazione</th>
@@ -7037,7 +7038,16 @@ let leadsHrMode = false;
 let importPreviewState = null;
 let leadsActiveKpiFilter = null;
 let leadsToolbarInitialized = false;
+let leadsToolbarMode = '';
 let hrDistributionMode = 'hybrid';
+let leadsSearchDebounceTimer = null;
+let leadsPage = 1;
+let leadsPerPage = 10;
+let leadsFilters = {
+    hasEmail: false,
+    hasPhone: false,
+    withDevice: false
+};
 
 function isHrBrandContext() {
     if (getDashboardProductLine() === 'hr') return true;
@@ -7086,6 +7096,93 @@ function isLeadPassInstalled(lead) {
     return !!(lead.device_id || lead.google_wallet_saved || lead.samsung_wallet_saved);
 }
 
+function isA2wLeadsRedesignActive() {
+    return !leadsHrMode
+        && document.documentElement.getAttribute('data-shell') === 'dark'
+        && document.documentElement.classList.contains('a2w-shell');
+}
+
+function resetLeadsFilters() {
+    leadsFilters = { hasEmail: false, hasPhone: false, withDevice: false };
+}
+
+function closeA2wLeadsFilterPopover() {
+    const panel = document.getElementById('a2wLeadsFiltersPanel');
+    const trigger = document.getElementById('a2wLeadsFiltersBtn');
+    if (!panel || panel.hidden) return;
+    panel.hidden = true;
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+}
+
+function syncA2wLeadsExportButtonState() {
+    const btn = document.getElementById('leadsExportBtn');
+    if (!btn) return;
+    const filtered = getFilteredLeadsByUiState();
+    const disabled = !filtered.length;
+    btn.disabled = disabled;
+    btn.classList.toggle('is-disabled', disabled);
+    btn.title = disabled ? 'Nessun contatto da esportare' : 'Esporta contatti in CSV';
+}
+
+function ensureA2wLeadsHeaderChrome() {
+    if (!isA2wLeadsRedesignActive()) return;
+    const section = document.getElementById('leads');
+    const header = section?.querySelector('.contacts-page-header');
+    if (!section || !header) return;
+    section.classList.add('a2w-contacts-page');
+
+    const menu = document.getElementById('contactsPageMenu');
+    if (menu) menu.hidden = true;
+
+    const title = header.querySelector('h1.page-title');
+    if (title && !title.querySelector('.a2w-contacts-help-trigger')) {
+        const helpBtn = document.createElement('button');
+        helpBtn.type = 'button';
+        helpBtn.className = 'a2w-contacts-help-trigger';
+        helpBtn.id = 'a2wContactsHelpBtn';
+        helpBtn.setAttribute('aria-label', 'Informazioni su Contatti');
+        helpBtn.setAttribute('aria-describedby', 'a2wContactsHelpTooltip');
+        helpBtn.textContent = '?';
+
+        const helpTip = document.createElement('span');
+        helpTip.className = 'a2w-contacts-help-tooltip';
+        helpTip.id = 'a2wContactsHelpTooltip';
+        helpTip.setAttribute('role', 'tooltip');
+        helpTip.textContent = 'I contatti vengono raccolti automaticamente da landing page, pass emessi e form di iscrizione.';
+
+        const wrap = document.createElement('span');
+        wrap.className = 'a2w-contacts-help-wrap';
+        wrap.appendChild(helpBtn);
+        wrap.appendChild(helpTip);
+        title.appendChild(wrap);
+    }
+
+    let actions = document.getElementById('a2wContactsHeaderActions');
+    if (!actions) {
+        actions = document.createElement('div');
+        actions.className = 'a2w-contacts-header-actions';
+        actions.id = 'a2wContactsHeaderActions';
+        actions.innerHTML = `
+          <button type="button" class="btn sec a2w-contacts-header-btn" id="a2wContactsImportBtn" aria-label="Importa contatti da CSV">⬆ Importa CSV</button>
+          <button type="button" class="btn a2w-contacts-header-btn" id="a2wContactsAddBtn" aria-label="Aggiungi contatto">＋ Aggiungi contatto</button>
+        `;
+        header.appendChild(actions);
+    }
+
+    const importBtn = document.getElementById('a2wContactsImportBtn');
+    if (importBtn && importBtn.dataset.bound !== '1') {
+        importBtn.dataset.bound = '1';
+        importBtn.addEventListener('click', openEmployeeImportModal);
+    }
+    const addBtn = document.getElementById('a2wContactsAddBtn');
+    if (addBtn && addBtn.dataset.bound !== '1') {
+        addBtn.dataset.bound = '1';
+        addBtn.addEventListener('click', function () {
+            window.location.href = '/landing/new';
+        });
+    }
+}
+
 function getLeadsKpiMetrics(leads) {
     const rows = Array.isArray(leads) ? leads : [];
     return {
@@ -7124,9 +7221,20 @@ function applyLeadsKpiFilter(leads, activeFilter) {
 
 function getFilteredLeadsByUiState() {
     const q = (document.getElementById('leadsSearch')?.value || '').toLowerCase().trim();
-    const base = applyLeadsKpiFilter(allLeads, leadsActiveKpiFilter);
+    let base = applyLeadsKpiFilter(allLeads, leadsActiveKpiFilter);
+    if (isA2wLeadsRedesignActive()) {
+        if (leadsFilters.hasEmail) {
+            base = base.filter((l) => !!(l.player_email && String(l.player_email).trim()));
+        }
+        if (leadsFilters.hasPhone) {
+            base = base.filter((l) => !!(l.player_phone && String(l.player_phone).trim()));
+        }
+        if (leadsFilters.withDevice) {
+            base = base.filter((l) => !!(l.device_id && String(l.device_id).trim()));
+        }
+    }
     if (!q) return base;
-    return base.filter(l =>
+    return base.filter((l) =>
         (l.player_first_name || '').toLowerCase().includes(q) ||
         (l.player_last_name || '').toLowerCase().includes(q) ||
         (l.player_email || '').toLowerCase().includes(q) ||
@@ -7139,7 +7247,97 @@ function getFilteredLeadsByUiState() {
 
 function renderLeadsToolbar() {
     const host = document.getElementById('contactsToolbarHost');
-    if (!host || leadsToolbarInitialized) return;
+    if (!host) return;
+    const modeKey = leadsHrMode ? 'hr' : (isA2wLeadsRedesignActive() ? 'a2w' : 'legacy');
+    if (leadsToolbarInitialized && leadsToolbarMode === modeKey) return;
+    if (leadsToolbarMode !== modeKey) {
+        host.innerHTML = '';
+        leadsToolbarInitialized = false;
+    }
+    if (isA2wLeadsRedesignActive()) {
+        host.classList.add('a2w-contacts-toolbar');
+        host.innerHTML = `
+          <div class="a2w-contacts-search-wrap">
+            <label for="leadsSearch" class="sr-only">Cerca contatti</label>
+            <span class="a2w-contacts-search-icon" aria-hidden="true">⌕</span>
+            <input
+              type="text"
+              id="leadsSearch"
+              class="a2w-contacts-search-input"
+              placeholder="Cerca per nome, email, telefono…"
+              autocomplete="off"
+            >
+          </div>
+          <div class="a2w-contacts-toolbar-actions" role="group" aria-label="Azioni contatti">
+            <div class="a2w-contacts-filter-wrap">
+              <button type="button" class="btn sec a2w-contacts-toolbar-btn" id="a2wLeadsFiltersBtn" aria-expanded="false" aria-controls="a2wLeadsFiltersPanel" aria-label="Apri filtri contatti">Filtri</button>
+              <div class="a2w-contacts-filter-popover" id="a2wLeadsFiltersPanel" hidden>
+                <label><input type="checkbox" id="a2wFilterHasEmail"> Solo con email</label>
+                <label><input type="checkbox" id="a2wFilterHasPhone"> Solo con telefono</label>
+                <label><input type="checkbox" id="a2wFilterWithDevice"> Solo con device</label>
+                <button type="button" class="a2w-contacts-filter-reset" id="a2wLeadsResetFiltersBtn">Resetta filtri</button>
+              </div>
+            </div>
+            <button type="button" class="btn sec a2w-contacts-toolbar-btn" id="leadsExportBtn" aria-label="Esporta contatti in CSV">⬇ Export CSV</button>
+          </div>
+        `;
+        const searchInput = host.querySelector('#leadsSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                if (leadsSearchDebounceTimer) clearTimeout(leadsSearchDebounceTimer);
+                leadsSearchDebounceTimer = setTimeout(filterLeads, 300);
+            });
+        }
+        const exportBtn = host.querySelector('#leadsExportBtn');
+        if (exportBtn) exportBtn.addEventListener('click', exportLeadsCSV);
+
+        const filtersBtn = document.getElementById('a2wLeadsFiltersBtn');
+        const filtersPanel = document.getElementById('a2wLeadsFiltersPanel');
+        if (filtersBtn && filtersPanel) {
+            filtersBtn.addEventListener('click', function () {
+                const open = filtersPanel.hidden;
+                filtersPanel.hidden = !open;
+                filtersBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+            document.addEventListener('click', function (event) {
+                if (filtersPanel.hidden) return;
+                if (!filtersPanel.contains(event.target) && event.target !== filtersBtn) {
+                    closeA2wLeadsFilterPopover();
+                }
+            }, { capture: false });
+        }
+        [
+            ['a2wFilterHasEmail', 'hasEmail'],
+            ['a2wFilterHasPhone', 'hasPhone'],
+            ['a2wFilterWithDevice', 'withDevice']
+        ].forEach(function (entry) {
+            const el = document.getElementById(entry[0]);
+            if (!el) return;
+            el.addEventListener('change', function () {
+                leadsFilters[entry[1]] = !!el.checked;
+                leadsPage = 1;
+                filterLeads();
+            });
+        });
+        const resetBtn = document.getElementById('a2wLeadsResetFiltersBtn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                resetLeadsFilters();
+                ['a2wFilterHasEmail', 'a2wFilterHasPhone', 'a2wFilterWithDevice'].forEach(function (id) {
+                    const node = document.getElementById(id);
+                    if (node) node.checked = false;
+                });
+                const q = document.getElementById('leadsSearch');
+                if (q) q.value = '';
+                leadsPage = 1;
+                closeA2wLeadsFilterPopover();
+                filterLeads();
+            });
+        }
+        leadsToolbarInitialized = true;
+        leadsToolbarMode = modeKey;
+        return;
+    }
     if (!window.ContactsToolbar || typeof window.ContactsToolbar.render !== 'function') return;
     window.ContactsToolbar.render({
         host,
@@ -7151,6 +7349,7 @@ function renderLeadsToolbar() {
         onExport: exportLeadsCSV
     });
     leadsToolbarInitialized = true;
+    leadsToolbarMode = modeKey;
 }
 
 function renderLeadsKpiStrip() {
@@ -7175,6 +7374,59 @@ function renderLeadsKpiStrip() {
 function renderLegacyLeadsStats(data, mc) {
     const host = document.getElementById('leadsStats');
     if (!host) return;
+    if (isA2wLeadsRedesignActive()) {
+        const rows = Array.isArray(allLeads) ? allLeads : [];
+        const inLast7Days = (lead) => {
+            if (!lead?.registered_at) return false;
+            const ts = new Date(lead.registered_at).getTime();
+            if (!Number.isFinite(ts)) return false;
+            return (Date.now() - ts) <= 7 * 24 * 60 * 60 * 1000;
+        };
+        const kpis = [
+            {
+                key: 'total',
+                label: 'Contatti totali',
+                value: rows.length,
+                delta: rows.filter(inLast7Days).length,
+                icon: '👥',
+                primary: true
+            },
+            {
+                key: 'device',
+                label: 'Con device registrato',
+                value: rows.filter((l) => !!(l.device_id && String(l.device_id).trim())).length,
+                delta: rows.filter((l) => !!(l.device_id && String(l.device_id).trim()) && inLast7Days(l)).length,
+                icon: '📱'
+            },
+            {
+                key: 'phone',
+                label: 'Con telefono',
+                value: rows.filter((l) => !!(l.player_phone && String(l.player_phone).trim())).length,
+                delta: rows.filter((l) => !!(l.player_phone && String(l.player_phone).trim()) && inLast7Days(l)).length,
+                icon: '☎'
+            },
+            {
+                key: 'email',
+                label: 'Con email',
+                value: rows.filter((l) => !!(l.player_email && String(l.player_email).trim())).length,
+                delta: rows.filter((l) => !!(l.player_email && String(l.player_email).trim()) && inLast7Days(l)).length,
+                icon: '✉'
+            }
+        ];
+        host.classList.remove('stats-grid');
+        host.classList.add('a2w-contacts-kpis');
+        host.innerHTML = kpis.map((kpi) => `
+          <article class="a2w-contacts-kpi-card${kpi.primary ? ' is-primary' : ''}" data-kpi="${kpi.key}">
+            <div class="a2w-contacts-kpi-icon" aria-hidden="true">${kpi.icon}</div>
+            <div class="a2w-contacts-kpi-main">
+              <p class="a2w-contacts-kpi-label">${esc(kpi.label)}</p>
+              <p class="a2w-contacts-kpi-value">${kpi.value}</p>
+            </div>
+            <p class="a2w-contacts-kpi-delta">+${kpi.delta} ultimi 7 gg</p>
+          </article>
+        `).join('');
+        return;
+    }
     const statDevice = data.with_device || 0;
     const statThird = data.with_phone || 0;
     host.classList.add('stats-grid');
@@ -7261,6 +7513,10 @@ function setLeadsTableHead(hr) {
             <th>Nome</th><th>Cognome</th><th>Matricola</th><th>Reparto</th><th>Sede</th>
             <th>Email</th><th>Attivazione</th><th>Pass</th><th>Wallet</th><th>Azioni</th>
         </tr>`;
+    } else if (isA2wLeadsRedesignActive()) {
+        thead.innerHTML = `<tr>
+            <th>Nome</th><th>Email</th><th>Telefono</th><th>Device</th><th>Pass attivi</th><th>Data iscrizione</th><th>Azioni</th>
+        </tr>`;
     } else {
         thead.innerHTML = `<tr>
             <th>Nome</th><th>Cognome</th><th>Email</th><th>Telefono</th>
@@ -7275,6 +7531,9 @@ async function loadLeads() {
     leadsHrMode = isHrBrandContext();
     hrDistributionMode = getDistributionModeFromStorage();
     if (!leadsHrMode) leadsActiveKpiFilter = null;
+    if (!leadsHrMode) leadsPage = 1;
+    if (!leadsHrMode && !isA2wLeadsRedesignActive()) resetLeadsFilters();
+    ensureA2wLeadsHeaderChrome();
     renderLeadsToolbar();
     renderDistributionMode();
     updateLeadsImportButton();
@@ -7285,7 +7544,30 @@ async function loadLeads() {
     if (searchEl) {
         searchEl.placeholder = leadsHrMode
             ? 'Cerca nome, matricola, email…'
-            : 'Cerca nome, email...';
+            : 'Cerca per nome, email, telefono…';
+    }
+    if (isA2wLeadsRedesignActive()) {
+        const table = document.getElementById('leadsTable');
+        const tbody = table?.querySelector('tbody');
+        const emptyHost = document.getElementById('leadsEmptyHost');
+        if (emptyHost) {
+            emptyHost.innerHTML = '';
+            emptyHost.hidden = true;
+        }
+        if (table && tbody) {
+            table.hidden = false;
+            tbody.innerHTML = Array.from({ length: 6 }).map(() => `
+              <tr class="a2w-contacts-skeleton-row">
+                <td><span class="a2w-skeleton-line"></span></td>
+                <td><span class="a2w-skeleton-line"></span></td>
+                <td><span class="a2w-skeleton-line"></span></td>
+                <td><span class="a2w-skeleton-line"></span></td>
+                <td><span class="a2w-skeleton-line"></span></td>
+                <td><span class="a2w-skeleton-line"></span></td>
+                <td><span class="a2w-skeleton-line"></span></td>
+              </tr>
+            `).join('');
+        }
     }
     try {
         const res = await fetch(`${API}/brands/${brandId}/leads`, { headers: getDashboardFetchHeaders() });
@@ -7305,6 +7587,7 @@ async function loadLeads() {
 
         updateLeadsNoMatricolaBadge();
         renderLeadsTable(getFilteredLeadsByUiState());
+        syncA2wLeadsExportButtonState();
         if (leadsHrMode) loadActivationStats();
     } catch(e) {
         console.error('loadLeads error:', e);
@@ -7317,8 +7600,20 @@ async function loadLeads() {
         }
         const table = document.getElementById('leadsTable');
         table.hidden = false;
-        table.querySelector('tbody').innerHTML =
-            `<tr><td colspan="${cols}" style="color:var(--text2);text-align:center;">${esc(e.message || mc.leads_load_error)}</td></tr>`;
+        if (isA2wLeadsRedesignActive()) {
+            table.querySelector('tbody').innerHTML = `
+              <tr>
+                <td colspan="${cols}">
+                  <div class="a2w-contacts-error-banner" role="alert">
+                    <span>${esc(e.message || mc.leads_load_error)}</span>
+                    <button type="button" class="btn sec small" onclick="loadLeads()">Riprova</button>
+                  </div>
+                </td>
+              </tr>`;
+        } else {
+            table.querySelector('tbody').innerHTML =
+                `<tr><td colspan="${cols}" style="color:var(--text2);text-align:center;">${esc(e.message || mc.leads_load_error)}</td></tr>`;
+        }
     }
 }
 
@@ -7402,7 +7697,39 @@ function renderLeadsTable(leads) {
     const tbody = table.querySelector('tbody');
     const emptyHost = document.getElementById('leadsEmptyHost');
     const cols = leadsHrMode ? 10 : 7;
-    if (!leads.length) {
+    const isA2w = isA2wLeadsRedesignActive();
+    const totalRows = Array.isArray(allLeads) ? allLeads.length : 0;
+    const filteredRows = Array.isArray(leads) ? leads : [];
+
+    if (isA2w && !leadsHrMode && totalRows === 0) {
+        if (emptyHost) {
+            emptyHost.hidden = false;
+            emptyHost.innerHTML = `
+              <div class="a2w-contacts-empty" data-a2w-component="contacts-empty-state">
+                <div class="a2w-contacts-empty__icon" aria-hidden="true">👥</div>
+                <h2 class="a2w-contacts-empty__title">Nessun contatto registrato</h2>
+                <p class="a2w-contacts-empty__desc">I contatti raccolti da landing e pass compariranno qui. Inizia configurando un punto di raccolta.</p>
+                <div class="a2w-contacts-empty__actions">
+                  <button type="button" class="btn" onclick="window.location.href='/landing/new'">Crea una landing</button>
+                  <button type="button" class="btn sec" onclick="nav('templates')">Configura un pass</button>
+                  <button type="button" class="a2w-contacts-empty__link" onclick="openEmployeeImportModal()">Importa da CSV</button>
+                </div>
+              </div>
+            `;
+        }
+        table.hidden = true;
+        tbody.innerHTML = '';
+        const toolbarHost = document.getElementById('contactsToolbarHost');
+        const statsHost = document.getElementById('leadsStats');
+        if (toolbarHost) toolbarHost.hidden = true;
+        if (statsHost) statsHost.hidden = true;
+        const pager = document.getElementById('a2wLeadsPagination');
+        if (pager) pager.hidden = true;
+        syncA2wLeadsExportButtonState();
+        return;
+    }
+
+    if (!filteredRows.length) {
         const emptyHtml = renderEmptyState({
             title: mc.leads_empty,
             description: leadsHrMode
@@ -7413,18 +7740,40 @@ function renderLeadsTable(leads) {
             ctaOnclick: leadsHrMode ? 'openEmployeeManualModal()' : ''
         });
         if (emptyHost) {
-            emptyHost.innerHTML = emptyHtml;
+            emptyHost.innerHTML = isA2w && !leadsHrMode && totalRows > 0
+                ? `
+                  <div class="a2w-contacts-filter-empty" role="status">
+                    <p>Nessun contatto corrisponde ai filtri.</p>
+                    <button type="button" class="a2w-contacts-empty__link" onclick="resetA2wLeadsFiltersAndSearch()">Resetta filtri</button>
+                  </div>
+                `
+                : emptyHtml;
             emptyHost.hidden = false;
         } else {
             tbody.innerHTML = '<tr><td colspan="' + cols + '">' + emptyHtml + '</td></tr>';
         }
-        table.hidden = !!emptyHost;
+        table.hidden = !!emptyHost || (isA2w && !leadsHrMode && totalRows > 0);
         tbody.innerHTML = '';
+        if (isA2w && !leadsHrMode) {
+            const toolbarHost = document.getElementById('contactsToolbarHost');
+            const statsHost = document.getElementById('leadsStats');
+            if (toolbarHost) toolbarHost.hidden = false;
+            if (statsHost) statsHost.hidden = false;
+            const pager = document.getElementById('a2wLeadsPagination');
+            if (pager) pager.hidden = true;
+            syncA2wLeadsExportButtonState();
+        }
         return;
     }
     if (emptyHost) {
         emptyHost.innerHTML = '';
         emptyHost.hidden = true;
+    }
+    if (isA2w && !leadsHrMode) {
+        const toolbarHost = document.getElementById('contactsToolbarHost');
+        const statsHost = document.getElementById('leadsStats');
+        if (toolbarHost) toolbarHost.hidden = false;
+        if (statsHost) statsHost.hidden = false;
     }
     table.hidden = false;
     if (leadsHrMode) {
@@ -7454,7 +7803,124 @@ function renderLeadsTable(leads) {
         }).join('');
         return;
     }
-    tbody.innerHTML = leads.map(l => `<tr>
+    if (isA2w) {
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / leadsPerPage));
+        leadsPage = Math.max(1, Math.min(leadsPage, totalPages));
+        const start = (leadsPage - 1) * leadsPerPage;
+        const pageRows = filteredRows.slice(start, start + leadsPerPage);
+        tbody.innerHTML = pageRows.map((l) => {
+            const fullName = [l.player_first_name, l.player_last_name].filter(Boolean).join(' ').trim() || '—';
+            const email = l.player_email ? `<a href="mailto:${esc(l.player_email)}" class="a2w-contacts-mail-link">${esc(l.player_email)}</a>` : '—';
+            const phone = esc(l.player_phone || '—');
+            const device = l.device_id ? esc(String(l.device_id).slice(0, 12)) + '…' : '—';
+            const passActive = l.pass_id ? '1' : '0';
+            const regDate = l.registered_at ? new Date(l.registered_at).toLocaleDateString('it-IT') : '—';
+            return `<tr>
+              <td>${esc(fullName)}</td>
+              <td>${email}</td>
+              <td>${phone}</td>
+              <td>${device}</td>
+              <td>${passActive}</td>
+              <td>${regDate}</td>
+              <td>
+                <div class="a2w-leads-row-actions" data-member-id="${esc(l.id)}">
+                  <button type="button" class="a2w-leads-kebab-btn" data-a2w-menu-trigger="1" aria-label="Apri azioni contatto">⋮</button>
+                  <div class="a2w-leads-row-menu" hidden>
+                    <button type="button" data-a2w-action="detail">Vedi dettaglio</button>
+                    <button type="button" data-a2w-action="segment">Aggiungi a segmento</button>
+                    <button type="button" data-a2w-action="delete" class="is-danger">Elimina</button>
+                  </div>
+                </div>
+              </td>
+            </tr>`;
+        }).join('');
+
+        let pager = document.getElementById('a2wLeadsPagination');
+        if (!pager) {
+            pager = document.createElement('div');
+            pager.id = 'a2wLeadsPagination';
+            pager.className = 'a2w-leads-pagination';
+            table.insertAdjacentElement('afterend', pager);
+        }
+        pager.hidden = false;
+        pager.innerHTML = `
+          <div class="a2w-leads-pagination__left">
+            <label for="a2wLeadsPerPage">Righe pagina</label>
+            <select id="a2wLeadsPerPage">
+              <option value="10"${leadsPerPage === 10 ? ' selected' : ''}>10</option>
+              <option value="25"${leadsPerPage === 25 ? ' selected' : ''}>25</option>
+              <option value="50"${leadsPerPage === 50 ? ' selected' : ''}>50</option>
+            </select>
+          </div>
+          <div class="a2w-leads-pagination__right">
+            <span>Pagina ${leadsPage} di ${totalPages}</span>
+            <button type="button" class="btn sec small" id="a2wLeadsPrevBtn" ${leadsPage <= 1 ? 'disabled' : ''}>Precedente</button>
+            <button type="button" class="btn sec small" id="a2wLeadsNextBtn" ${leadsPage >= totalPages ? 'disabled' : ''}>Successiva</button>
+          </div>
+        `;
+        const prevBtn = document.getElementById('a2wLeadsPrevBtn');
+        const nextBtn = document.getElementById('a2wLeadsNextBtn');
+        const perPage = document.getElementById('a2wLeadsPerPage');
+        if (prevBtn) prevBtn.onclick = function () {
+            if (leadsPage > 1) {
+                leadsPage -= 1;
+                renderLeadsTable(getFilteredLeadsByUiState());
+            }
+        };
+        if (nextBtn) nextBtn.onclick = function () {
+            if (leadsPage < totalPages) {
+                leadsPage += 1;
+                renderLeadsTable(getFilteredLeadsByUiState());
+            }
+        };
+        if (perPage) perPage.onchange = function () {
+            leadsPerPage = Number(perPage.value) || 10;
+            leadsPage = 1;
+            renderLeadsTable(getFilteredLeadsByUiState());
+        };
+
+        tbody.querySelectorAll('[data-a2w-menu-trigger="1"]').forEach((btn) => {
+            btn.addEventListener('click', function (event) {
+                event.stopPropagation();
+                const actions = btn.closest('.a2w-leads-row-actions');
+                const menu = actions?.querySelector('.a2w-leads-row-menu');
+                if (!menu) return;
+                const isOpen = !menu.hidden;
+                table.querySelectorAll('.a2w-leads-row-menu').forEach((node) => {
+                    node.hidden = true;
+                });
+                menu.hidden = isOpen;
+            });
+        });
+        tbody.querySelectorAll('.a2w-leads-row-menu button').forEach((btn) => {
+            btn.addEventListener('click', function () {
+                const action = btn.dataset.a2wAction;
+                const memberId = btn.closest('.a2w-leads-row-actions')?.dataset.memberId;
+                if (!memberId) return;
+                if (action === 'delete') {
+                    deleteMemberContact(memberId);
+                    return;
+                }
+                if (action === 'segment') {
+                    nav('audiences');
+                    toast('Aggiungi il contatto a un segmento da Audience');
+                    return;
+                }
+                toast('Dettaglio contatto in arrivo');
+            });
+        });
+        if (!document.body.dataset.a2wLeadsMenusBound) {
+            document.body.dataset.a2wLeadsMenusBound = '1';
+            document.addEventListener('click', function () {
+                document.querySelectorAll('#leads .a2w-leads-row-menu').forEach((node) => {
+                    node.hidden = true;
+                });
+            }, { capture: false });
+        }
+        syncA2wLeadsExportButtonState();
+        return;
+    }
+    tbody.innerHTML = filteredRows.map((l) => `<tr>
         <td>${esc(l.player_first_name || '-')}</td>
         <td>${esc(l.player_last_name || '-')}</td>
         <td><a href="mailto:${esc(l.player_email)}" style="color:var(--accent);">${esc(l.player_email)}</a></td>
@@ -7536,26 +8002,54 @@ async function deleteMemberContact(memberId) {
 
 function filterLeads() {
     window.leadsFilterNoMatricola = false;
+    leadsPage = 1;
     renderLeadsTable(getFilteredLeadsByUiState());
+    syncA2wLeadsExportButtonState();
+}
+
+function resetA2wLeadsFiltersAndSearch() {
+    if (!isA2wLeadsRedesignActive()) return;
+    resetLeadsFilters();
+    ['a2wFilterHasEmail', 'a2wFilterHasPhone', 'a2wFilterWithDevice'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+    });
+    const search = document.getElementById('leadsSearch');
+    if (search) search.value = '';
+    closeA2wLeadsFilterPopover();
+    leadsPage = 1;
+    renderLeadsTable(getFilteredLeadsByUiState());
+    syncA2wLeadsExportButtonState();
 }
 
 function exportLeadsCSV() {
     const mc = getMergedProductMenuCopy(getDashboardProductLine());
-    if (!allLeads.length) return toast(mc.leads_export_empty);
+    const rowsSource = isA2wLeadsRedesignActive() ? getFilteredLeadsByUiState() : allLeads;
+    if (!rowsSource.length) return toast(mc.leads_export_empty);
     let header;
     let rows;
     if (leadsHrMode) {
         header = 'Nome,Cognome,Matricola,Reparto,Sede,Email,Attivazione,Pass ID,Wallet,Creato';
-        rows = allLeads.map(l => [
+        rows = rowsSource.map((l) => [
             l.player_first_name || '', l.player_last_name || '', l.employee_id || '',
             l.department || '', l.office_location || '', l.player_email || '',
             activationStatusLabel(l.activation_status),
             l.pass_id || '', walletStatusLabel(l),
             l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
         ]);
+    } else if (isA2wLeadsRedesignActive()) {
+        header = 'Nome,Email,Telefono,Device,Pass attivi,Data iscrizione';
+        rows = rowsSource.map((l) => [
+            [l.player_first_name, l.player_last_name].filter(Boolean).join(' ').trim(),
+            l.player_email || '',
+            l.player_phone || '',
+            l.device_id || '',
+            l.pass_id ? '1' : '0',
+            l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
+        ]);
     } else {
         header = 'Nome,Cognome,Email,Telefono,Device ID,Pass ID,Data registrazione';
-        rows = allLeads.map(l => [
+        rows = rowsSource.map((l) => [
             l.player_first_name || '', l.player_last_name || '', l.player_email || '',
             l.player_phone || '', l.device_id || '', l.pass_id || '',
             l.registered_at ? new Date(l.registered_at).toISOString().split('T')[0] : ''
