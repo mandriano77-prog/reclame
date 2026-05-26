@@ -783,12 +783,15 @@
   }
 
   function a2wCloseAllDropdownMenus() {
-    document.querySelectorAll('.a2w-row-kebab-menu, .a2w-media-kebab-menu, #leads .a2w-leads-row-menu').forEach((menu) => {
+    document.querySelectorAll('.a2w-row-kebab-menu, .a2w-media-kebab-menu, #leads .a2w-leads-row-menu, .a2w-ui-action-menu__panel').forEach((menu) => {
       menu.hidden = true;
     });
-    document.querySelectorAll('.a2w-row-kebab-trigger, .a2w-media-kebab-btn').forEach((btn) => {
+    document.querySelectorAll('.a2w-row-kebab-trigger, .a2w-media-kebab-btn, .a2w-ui-action-menu__trigger').forEach((btn) => {
       btn.setAttribute('aria-expanded', 'false');
     });
+    if (A2W.UI && A2W.UI.actionMenuContext && typeof A2W.UI.actionMenuContext.closeAll === 'function') {
+      A2W.UI.actionMenuContext.closeAll();
+    }
   }
 
   function a2wEnsureDropdownDismiss() {

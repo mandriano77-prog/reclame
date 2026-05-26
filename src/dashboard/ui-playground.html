@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it" data-shell="dark" class="a2w-shell">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>A2W UI Playground</title>
+  <link rel="stylesheet" href="/dashboard/styles/a2w-tokens.css" />
+  <link rel="stylesheet" href="/dashboard/styles/a2w-chrome.css" />
+  <link rel="stylesheet" href="/dashboard/styles/a2w-ui-components.css" />
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #0b1220; color: rgba(255,255,255,.9); }
+  </style>
+</head>
+<body>
+  <main class="content" style="max-width:960px;margin:0 auto;padding:24px;">
+    <p style="font-size:12px;color:rgba(255,255,255,.5);margin:0 0 24px;">A2W UI kit playground — <a href="/dashboard/" style="color:#3FE0C8;">Dashboard</a></p>
+    <div id="playgroundRoot"></div>
+  </main>
+  <script src="/dashboard/js/components/ui/utils.js"></script>
+  <script src="/dashboard/js/components/ui/action-menu-context.js"></script>
+  <script src="/dashboard/js/components/ui/page-header.js"></script>
+  <script src="/dashboard/js/components/ui/empty-state.js"></script>
+  <script src="/dashboard/js/components/ui/error-state.js"></script>
+  <script src="/dashboard/js/components/ui/toolbar.js"></script>
+  <script src="/dashboard/js/components/ui/stat-card.js"></script>
+  <script src="/dashboard/js/components/ui/confirm-dialog.js"></script>
+  <script src="/dashboard/js/components/ui/danger-action-button.js"></script>
+  <script src="/dashboard/js/components/ui/action-menu.js"></script>
+  <script src="/dashboard/js/a2w-shell.js"></script>
+  <script src="/dashboard/js/components/ui/index.js"></script>
+  <script>
+    (function () {
+      const UI = window.A2W.UI;
+      const root = document.getElementById('playgroundRoot');
+
+      const primaryBtn = document.createElement('button');
+      primaryBtn.type = 'button';
+      primaryBtn.className = 'btn a2w-btn-primary';
+      primaryBtn.textContent = 'Nuova campagna';
+
+      root.appendChild(UI.createPageHeader({
+        breadcrumb: [{ label: 'Brand demo' }, { label: 'Campagne' }],
+        title: 'Campagne',
+        description: 'Gestisci landing, UTM e pass collegati.',
+        actions: primaryBtn
+      }));
+
+      const stats = document.createElement('div');
+      stats.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0;';
+      stats.appendChild(UI.createStatCard({ label: 'Download', value: 43, tone: 'primary', delta: { value: '+12%', direction: 'up' } }));
+      stats.appendChild(UI.createStatCard({ label: 'Install', value: 13, delta: { value: '0%', direction: 'neutral' } }));
+      root.appendChild(stats);
+
+      const search = document.createElement('input');
+      search.placeholder = 'Cerca campagna…';
+      search.className = 'a2w-ui-toolbar__search';
+      search.style.cssText = 'min-width:220px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.2);color:inherit;';
+      root.appendChild(UI.createToolbar({
+        left: search,
+        right: UI.createActionMenu({
+          label: 'Azioni pagina',
+          items: [
+            { label: 'Duplica', onClick: function () { alert('Duplica'); } },
+            { label: 'Elimina', destructive: true, onClick: function () { alert('Elimina'); } }
+          ]
+        })
+      }));
+
+      root.appendChild(UI.createEmptyState({
+        title: 'Nessuna campagna',
+        description: 'Crea la prima campagna per iniziare.',
+        primaryAction: { label: 'Nuova campagna', onClick: function () { alert('CTA'); } }
+      }));
+
+      root.appendChild(UI.createErrorState({
+        title: 'Impossibile caricare',
+        message: 'Riprova tra qualche secondo.',
+        errorCode: 'ERR_CAMPAIGNS_503',
+        onRetry: function () { alert('Retry'); }
+      }));
+
+      root.appendChild(UI.createDangerActionButton({
+        label: 'Elimina brand',
+        dialog: {
+          title: 'Elimina brand',
+          description: 'Questa azione è irreversibile.',
+          impactedItems: ['12 campagne', '340 contatti', '1 template pass'],
+          requireTyping: true,
+          confirmText: 'Brand Demo',
+          onConfirm: function () { alert('Eliminato'); }
+        }
+      }));
+    })();
+  </script>
+</body>
+</html>

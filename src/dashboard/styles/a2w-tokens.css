@@ -4,7 +4,21 @@
  * UX-AUDIT[a2w]: tenant-specific tokens; does not alter :root or light shell.
  */
 html[data-shell="dark"].a2w-shell {
-  --a2w-accent: #34D399;
+  /* Design system — HSL tokens (accent = acqua 158 100% 60%) */
+  --a2w-accent-hsl: 158 100% 60%;
+  --a2w-accent: hsl(var(--a2w-accent-hsl));
+  --a2w-accent-soft: hsl(var(--a2w-accent-hsl) / 0.1);
+  --a2w-destructive-hsl: 0 84% 60%;
+  --a2w-destructive: hsl(var(--a2w-destructive-hsl));
+  --a2w-destructive-soft: hsl(var(--a2w-destructive-hsl) / 0.08);
+  --a2w-type-h1-size: 24px;
+  --a2w-type-h1-weight: 600;
+  --a2w-type-h2-size: 18px;
+  --a2w-type-h2-weight: 600;
+  --a2w-type-body-size: 14px;
+  --a2w-type-body-weight: 400;
+  --a2w-type-micro-size: 12px;
+  --a2w-type-micro-weight: 500;
   --a2w-accent-hover: #10B981;
   --a2w-accent-subtle: rgba(52, 211, 153, 0.14);
   --a2w-action-primary: #3FE0C8;
