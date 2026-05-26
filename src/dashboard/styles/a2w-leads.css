@@ -349,6 +349,10 @@ html[data-shell="dark"].a2w-shell #leads .a2w-leads-row-menu {
   z-index: var(--a2w-z-dropdown);
 }
 
+html[data-shell="dark"].a2w-shell #leads .a2w-leads-row-menu[hidden] {
+  display: none !important;
+}
+
 html[data-shell="dark"].a2w-shell #leads .a2w-leads-row-menu button {
   text-align: left;
   border: 0;
