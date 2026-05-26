@@ -7958,6 +7958,7 @@ function renderLeadsTable(leads) {
               <td>${passActive}</td>
               <td>${regDate}</td>
               <td>
+                <div class="a2w-leads-row-actions" data-member-id="${esc(l.id)}">
                 <div class="a2w-leads-row-actions" data-member-id="${esc(l.id)}" data-a2w-dropdown-root>
                   <button type="button" class="a2w-leads-kebab-btn" data-a2w-menu-trigger="1" aria-label="Apri azioni contatto">⋮</button>
                   <div class="a2w-leads-row-menu" hidden>
@@ -8020,6 +8021,11 @@ function renderLeadsTable(leads) {
                 const actions = btn.closest('.a2w-leads-row-actions');
                 const menu = actions?.querySelector('.a2w-leads-row-menu');
                 if (!menu) return;
+                const isOpen = !menu.hidden;
+                table.querySelectorAll('.a2w-leads-row-menu').forEach((node) => {
+                    node.hidden = true;
+                });
+                menu.hidden = isOpen;
                 const wasHidden = menu.hidden;
                 if (typeof A2W !== 'undefined' && typeof A2W.closeDropdownMenus === 'function') {
                     A2W.closeDropdownMenus();
@@ -8049,6 +8055,14 @@ function renderLeadsTable(leads) {
                 toast('Dettaglio contatto in arrivo');
             });
         });
+        if (!document.body.dataset.a2wLeadsMenusBound) {
+            document.body.dataset.a2wLeadsMenusBound = '1';
+            document.addEventListener('click', function () {
+                document.querySelectorAll('#leads .a2w-leads-row-menu').forEach((node) => {
+                    node.hidden = true;
+                });
+            }, { capture: false });
+        }
         syncA2wLeadsExportButtonState();
         return;
     }
