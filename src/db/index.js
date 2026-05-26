@@ -484,7 +484,7 @@ async function getDb() {
   }
   try {
     await pool.query(SCHEMA);
-    console.log('Ã¢ÂÂ Database schema initialized (PostgreSQL Ã¢ÂÂ Ads2Wallet)');
+    console.log('[ok] Database schema initialized (PostgreSQL - Ads2Wallet)');
 
     // Migrations
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS campaign_id TEXT`).catch(()=>{});
@@ -871,6 +871,7 @@ async function getDb() {
 
     // Seed admin
     await seedAdminUser();
+    return { pool };
 
   } catch (error) {
     console.error('Database initialization error:', error);
