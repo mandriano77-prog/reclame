@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-analytics.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-push.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-brand-identity.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-contacts-refactor.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
     <link rel="stylesheet" href="/dashboard/css/layout.css">
@@ -1643,47 +1644,177 @@
 
             <!-- BRAND IDENTITY -->
             <div id="brand-identity" class="section">
-                <h1 class="sec-title page-title">Identità Brand</h1>
-                <p style="font-size:12px;color:var(--text2);margin-bottom:20px;">Profilo del brand: settore e home page. I colori del pass sono fissi (tema piattaforma).</p>
+                <div class="a2w-bi-page" data-a2w-component="brand-identity-page">
+                    <header class="a2w-bi-header">
+                        <div class="a2w-bi-header__copy">
+                            <p class="a2w-bi-breadcrumb"><span id="a2wBiBreadcrumbBrand">Brand</span> <span aria-hidden="true">›</span> <span>Identità Brand</span></p>
+                            <h1 class="sec-title page-title a2w-bi-title">Identità Brand</h1>
+                            <p class="a2w-bi-subtitle">Definisci nome, logo, colori e dati pubblici del brand. Queste informazioni alimentano pass, landing e comunicazioni.</p>
+                        </div>
+                        <div class="a2w-bi-header__actions">
+                            <span id="a2wBiSaveStateBadge" class="a2w-bi-state-badge">Salvato</span>
+                            <button type="button" id="a2wBiSaveBtn" class="btn" onclick="saveBrandIdentity()" disabled>Salva modifiche</button>
+                        </div>
+                    </header>
 
-                <div class="card">
-                    <div class="sec-title" style="font-size:16px;">Informazioni</div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Nome brand</label><input type="text" id="biName"></div>
-                        <div class="form-group"><label class="form-label">Slug (URL)</label><input type="text" id="biSlug"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Settore</label>
-                            <select id="biSettore">
-                                <option value="">— Seleziona —</option>
-                                <option value="ristorazione">Ristorazione</option>
-                                <option value="retail">Retail</option>
-                                <option value="beauty">Beauty / Wellness</option>
-                                <option value="sport">Sport / Fitness</option>
-                                <option value="eventi">Eventi</option>
-                                <option value="hospitality">Hospitality</option>
-                                <option value="automotive">Automotive</option>
-                                <option value="tech">Tech</option>
-                                <option value="altro">Altro</option>
-                            </select>
+                    <div class="a2w-bi-layout">
+                        <div class="a2w-bi-main">
+                            <section class="card a2w-bi-section">
+                                <div class="a2w-bi-section__head">
+                                    <h2>Informazioni base</h2>
+                                    <p>Definisci nome, slug e lingua principale del brand.</p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="biName">Nome brand</label>
+                                    <input type="text" id="biName" maxlength="60" placeholder="Es. Motor K">
+                                    <p class="a2w-bi-field-error" id="biNameError" role="alert"></p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="biSlug">Slug</label>
+                                    <div class="a2w-bi-slug-row">
+                                        <input type="text" id="biSlug" maxlength="64" placeholder="motor-k" autocomplete="off">
+                                        <span id="biSlugStatus" class="a2w-bi-slug-status" aria-live="polite">…</span>
+                                    </div>
+                                    <div class="a2w-bi-url-preview">
+                                        <span id="biSlugPreviewUrl">wallet.ads2wallet.com/</span>
+                                        <button type="button" class="btn sec small" id="biCopySlugUrlBtn" aria-label="Copia URL pubblico">Copia</button>
+                                    </div>
+                                    <p class="a2w-bi-field-error" id="biSlugError" role="alert"></p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="biTagline">Tagline</label>
+                                    <input type="text" id="biTagline" maxlength="80" placeholder="Frase breve mostrata sotto al nome nei pass">
+                                    <p class="a2w-bi-field-help">Frase breve mostrata sotto al nome nei pass.</p>
+                                    <p class="a2w-bi-field-error" id="biTaglineError" role="alert"></p>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="biSettore">Settore</label>
+                                        <select id="biSettore">
+                                            <option value="">— Seleziona —</option>
+                                            <option value="ristorazione">Ristorazione</option>
+                                            <option value="retail">Retail</option>
+                                            <option value="beauty">Beauty / Wellness</option>
+                                            <option value="sport">Sport / Fitness</option>
+                                            <option value="eventi">Eventi</option>
+                                            <option value="hospitality">Hospitality</option>
+                                            <option value="automotive">Automotive</option>
+                                            <option value="tech">Tech</option>
+                                            <option value="altro">Altro</option>
+                                        </select>
+                                        <p class="a2w-bi-field-help">Usato per analytics e template suggeriti.</p>
+                                        <p class="a2w-bi-field-error" id="biSettoreError" role="alert"></p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="biLang">Lingua principale</label>
+                                        <select id="biLang">
+                                            <option value="it">Italiano</option>
+                                            <option value="en">English</option>
+                                            <option value="es">Español</option>
+                                            <option value="fr">Français</option>
+                                            <option value="de">Deutsch</option>
+                                        </select>
+                                        <p class="a2w-bi-field-error" id="biLangError" role="alert"></p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="card a2w-bi-section">
+                                <div class="a2w-bi-section__head">
+                                    <h2>Logo e immagini chiave</h2>
+                                    <p>Gestisci gli asset principali direttamente da questa pagina.</p>
+                                </div>
+                                <div class="a2w-bi-assets-grid" id="a2wBiAssetsGrid"></div>
+                            </section>
+
+                            <section class="card a2w-bi-section">
+                                <div class="a2w-bi-section__head">
+                                    <h2>Contatti pubblici</h2>
+                                    <p>Informazioni mostrate su pass, landing e canali di supporto.</p>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="biHomepage">Home page</label>
+                                        <input type="url" id="biHomepage" placeholder="https://www.brand.com">
+                                        <p class="a2w-bi-field-error" id="biHomepageError" role="alert"></p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="biSupportEmail">Email di supporto</label>
+                                        <input type="email" id="biSupportEmail" placeholder="support@brand.com">
+                                        <p class="a2w-bi-field-error" id="biSupportEmailError" role="alert"></p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="biSupportPhone">Telefono di supporto</label>
+                                    <input type="text" id="biSupportPhone" placeholder="+39 02 1234 5678">
+                                    <p class="a2w-bi-field-error" id="biSupportPhoneError" role="alert"></p>
+                                </div>
+                            </section>
+
+                            <section class="card a2w-bi-section">
+                                <button type="button" class="a2w-bi-accordion-trigger" id="a2wBiSocialToggle" aria-expanded="false" aria-controls="a2wBiSocialBody">
+                                    Social (opzionale)
+                                </button>
+                                <div id="a2wBiSocialBody" class="a2w-bi-accordion-body" hidden>
+                                    <div class="form-row">
+                                        <div class="form-group"><label class="form-label" for="biSocialInstagram">Instagram</label><input type="url" id="biSocialInstagram" placeholder="https://instagram.com/brand"><p class="a2w-bi-field-error" id="biSocialInstagramError" role="alert"></p></div>
+                                        <div class="form-group"><label class="form-label" for="biSocialFacebook">Facebook</label><input type="url" id="biSocialFacebook" placeholder="https://facebook.com/brand"><p class="a2w-bi-field-error" id="biSocialFacebookError" role="alert"></p></div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group"><label class="form-label" for="biSocialLinkedin">LinkedIn</label><input type="url" id="biSocialLinkedin" placeholder="https://linkedin.com/company/brand"><p class="a2w-bi-field-error" id="biSocialLinkedinError" role="alert"></p></div>
+                                        <div class="form-group"><label class="form-label" for="biSocialTiktok">TikTok</label><input type="url" id="biSocialTiktok" placeholder="https://www.tiktok.com/@brand"><p class="a2w-bi-field-error" id="biSocialTiktokError" role="alert"></p></div>
+                                    </div>
+                                    <div class="form-group"><label class="form-label" for="biSocialX">X</label><input type="url" id="biSocialX" placeholder="https://x.com/brand"><p class="a2w-bi-field-error" id="biSocialXError" role="alert"></p></div>
+                                </div>
+                            </section>
+
+                            <section class="a2w-bi-danger-zone" aria-labelledby="brandDangerTitle">
+                                <h2 id="brandDangerTitle">Elimina brand</h2>
+                                <p>Elimina definitivamente il brand e tutti i dati collegati (pass emessi, campagne, contatti, immagini). L'operazione è irreversibile.</p>
+                                <button type="button" class="btn danger" onclick="deleteBrandAction()">Elimina brand</button>
+                            </section>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Home page</label>
-                            <input type="url" id="biHomepage" placeholder="es. https://www.brand.com">
-                        </div>
+
+                        <aside class="a2w-bi-preview-column">
+                            <button type="button" class="a2w-bi-preview-mobile-toggle" id="a2wBiPreviewMobileToggle" aria-expanded="false" aria-controls="a2wBiPreviewCard">Anteprima brand</button>
+                            <div class="card a2w-bi-preview-card" id="a2wBiPreviewCard">
+                                <div class="a2w-bi-preview-tabs">
+                                    <button type="button" class="is-active" data-target="apple">Apple Wallet</button>
+                                    <button type="button" data-target="google">Google Wallet</button>
+                                </div>
+                                <div class="a2w-bi-pass-preview" id="a2wBiPassPreview">
+                                    <div class="a2w-bi-pass-preview__strip" id="a2wBiPassStrip"></div>
+                                    <div class="a2w-bi-pass-preview__body">
+                                        <img id="a2wBiPassLogo" alt="Logo brand">
+                                        <div>
+                                            <p id="a2wBiPassName">Brand</p>
+                                            <p id="a2wBiPassTagline">Tagline</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="a2w-bi-preview-meta">
+                                    <p><strong>Slug</strong> <span id="a2wBiPreviewSlug">—</span></p>
+                                    <p><strong>URL</strong> <span id="a2wBiPreviewUrl">wallet.ads2wallet.com/</span></p>
+                                </div>
+                                <div class="a2w-bi-preview-qr" id="a2wBiPreviewQr" aria-label="Anteprima QR URL brand"></div>
+                            </div>
+                        </aside>
                     </div>
                 </div>
 
-                <div style="display:flex;gap:10px;margin-top:24px;">
-                    <button class="btn" onclick="saveBrandIdentity()">Salva identità</button>
+                <div id="a2wDeleteBrandDialog" class="a2w-bi-delete-dialog" hidden>
+                    <div class="a2w-bi-delete-dialog__backdrop"></div>
+                    <div class="a2w-bi-delete-dialog__panel" role="dialog" aria-modal="true" aria-labelledby="a2wDeleteBrandDialogTitle">
+                        <h3 id="a2wDeleteBrandDialogTitle">Conferma eliminazione brand</h3>
+                        <p>Verranno eliminati: <strong id="a2wDeleteBrandCounts">—</strong>. L'operazione è irreversibile.</p>
+                        <label class="form-label" for="a2wDeleteBrandConfirmInput">Digita <span id="a2wDeleteBrandNameToken"></span> per confermare</label>
+                        <input type="text" id="a2wDeleteBrandConfirmInput" autocomplete="off">
+                        <div class="a2w-bi-delete-dialog__actions">
+                            <button type="button" class="btn sec" id="a2wDeleteBrandCancelBtn">Annulla</button>
+                            <button type="button" class="btn danger" id="a2wDeleteBrandConfirmBtn" disabled>Elimina definitivamente</button>
+                        </div>
+                    </div>
                 </div>
-                <section class="danger-zone" aria-labelledby="brandDangerTitle">
-                    <h2 id="brandDangerTitle" class="danger-zone__title">Zona pericolosa</h2>
-                    <p class="danger-zone__desc">Elimina il brand e tutti i dati collegati (pass, campagne, contatti). L'operazione è irreversibile.</p>
-                    <button type="button" class="btn danger" onclick="deleteBrandAction()">Elimina brand</button>
-                </section>
-                <!-- Landing link removed -->
             </div>
 
             <!-- MEDIA LIBRARY -->
@@ -4289,17 +4420,6 @@ function adjustAlpha(hex, alpha) {
     return `rgba(${r},${g},${b},${alpha})`;
 }
 
-
-async function deleteBrandAction() {
-    if (!brandId) return alert('Seleziona una brand');
-    if (!await appConfirm({ title: 'Elimina brand', message: 'Eliminare il brand e tutti i dati collegati? Non si può annullare.', confirmLabel: 'Elimina brand', tone: 'danger' })) return;
-    const res = await fetch(`${API}/brands/${brandId}`, { method: 'DELETE', headers: getAuthHeaders() });
-    if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        return toast('Errore: ' + (e.error || 'eliminazione fallita'));
-    }
-    toast('Brand eliminata'); brandId = null; await loadBrands();
-}
 
 // ==================== OVERVIEW ====================
 async function refreshOverview() {
@@ -9573,48 +9693,798 @@ const BRAND_PASS_FIXED_COLORS = {
     labelColor: '#A78BFA'
 };
 
-async function loadBrandIdentity() {
-    if (!brandId) {
-        ['biName','biSlug','biSettore','biHomepage'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+const A2W_BRAND_IDENTITY_ASSET_SPECS = {
+    logo: { label: 'Logo brand', hint: 'Consigliato 512x512 PNG/SVG', mediaType: 'logo' },
+    strip: { label: 'Strip campagna default', hint: 'Consigliato 1125x432 px', mediaType: 'strip' },
+    thumbnail: { label: 'Thumbnail', hint: 'Consigliato 90x90 px', mediaType: 'thumbnail' },
+    background: { label: 'Background pass', hint: 'Consigliato 360x440 px', mediaType: 'background' }
+};
+
+const brandIdentityState = {
+    initialized: false,
+    guardsBound: false,
+    dirty: false,
+    saving: false,
+    lastSavedAt: null,
+    baseline: '',
+    slugEdited: false,
+    slugCheckTimer: null,
+    slugAvailable: null,
+    slugChecking: false,
+    previewTab: 'apple',
+    mediaByType: { logo: [], strip: [], thumbnail: [], background: [] },
+    selectedAssets: { logo: null, strip: null, thumbnail: null, background: null }
+};
+
+function isA2wBrandIdentityV2Enabled() {
+    if (document.documentElement.getAttribute('data-shell') !== 'dark') return false;
+    if (!document.documentElement.classList.contains('a2w-shell')) return false;
+    if (typeof getDashboardProductLine === 'function') return getDashboardProductLine() === 'ads';
+    return true;
+}
+
+function a2wBiSlugify(value) {
+    return String(value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 64);
+}
+
+function a2wBiField(id) {
+    return document.getElementById(id);
+}
+
+function a2wBiGetSlugPreviewUrl(slug) {
+    const safe = String(slug || '').trim();
+    return `wallet.ads2wallet.com/${safe}`;
+}
+
+function a2wBiSerializeState(data, selectedAssets) {
+    const payload = {
+        name: data.name || '',
+        slug: data.slug || '',
+        tagline: data.tagline || '',
+        settore: data.settore || '',
+        lang: data.lang || 'it',
+        homepage: data.homepage || '',
+        supportEmail: data.supportEmail || '',
+        supportPhone: data.supportPhone || '',
+        socialInstagram: data.socialInstagram || '',
+        socialFacebook: data.socialFacebook || '',
+        socialLinkedin: data.socialLinkedin || '',
+        socialTiktok: data.socialTiktok || '',
+        socialX: data.socialX || '',
+        assets: {
+            logo: selectedAssets.logo?.id || '',
+            strip: selectedAssets.strip?.id || '',
+            thumbnail: selectedAssets.thumbnail?.id || '',
+            background: selectedAssets.background?.id || ''
+        }
+    };
+    return JSON.stringify(payload);
+}
+
+function a2wBiSetFieldError(fieldId, message) {
+    const node = document.getElementById(fieldId + 'Error');
+    if (!node) return;
+    node.textContent = message || '';
+}
+
+function a2wBiClearErrors() {
+    [
+        'biName', 'biSlug', 'biTagline', 'biSettore', 'biLang', 'biHomepage',
+        'biSupportEmail', 'biSupportPhone',
+        'biSocialInstagram', 'biSocialFacebook', 'biSocialLinkedin', 'biSocialTiktok', 'biSocialX'
+    ].forEach((id) => a2wBiSetFieldError(id, ''));
+}
+
+function a2wBiCollectFormData() {
+    return {
+        name: (a2wBiField('biName')?.value || '').trim(),
+        slug: a2wBiSlugify((a2wBiField('biSlug')?.value || '').trim()),
+        tagline: (a2wBiField('biTagline')?.value || '').trim(),
+        settore: (a2wBiField('biSettore')?.value || '').trim(),
+        lang: (a2wBiField('biLang')?.value || 'it').trim(),
+        homepage: (a2wBiField('biHomepage')?.value || '').trim(),
+        supportEmail: (a2wBiField('biSupportEmail')?.value || '').trim(),
+        supportPhone: (a2wBiField('biSupportPhone')?.value || '').trim(),
+        socialInstagram: (a2wBiField('biSocialInstagram')?.value || '').trim(),
+        socialFacebook: (a2wBiField('biSocialFacebook')?.value || '').trim(),
+        socialLinkedin: (a2wBiField('biSocialLinkedin')?.value || '').trim(),
+        socialTiktok: (a2wBiField('biSocialTiktok')?.value || '').trim(),
+        socialX: (a2wBiField('biSocialX')?.value || '').trim()
+    };
+}
+
+function a2wBiValidate(data) {
+    const errors = {};
+    if (!data.name) errors.biName = 'Nome brand obbligatorio';
+    else if (data.name.length > 60) errors.biName = 'Massimo 60 caratteri';
+
+    if (!data.slug) errors.biSlug = 'Slug obbligatorio';
+    else if (!/^[a-z0-9-]+$/.test(data.slug)) errors.biSlug = 'Usa solo minuscole, numeri e trattini';
+
+    if (data.tagline && data.tagline.length > 80) errors.biTagline = 'Massimo 80 caratteri';
+    if (data.homepage && !/^https:\/\//i.test(data.homepage)) errors.biHomepage = 'Inserisci un URL https:// valido';
+    if (data.supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.supportEmail)) errors.biSupportEmail = 'Email non valida';
+    if (data.supportPhone && !/^\+?[0-9\s\-()]{7,20}$/.test(data.supportPhone)) errors.biSupportPhone = 'Telefono non valido';
+
+    const socialRules = [
+        ['biSocialInstagram', data.socialInstagram, /instagram\.com/i],
+        ['biSocialFacebook', data.socialFacebook, /facebook\.com/i],
+        ['biSocialLinkedin', data.socialLinkedin, /linkedin\.com/i],
+        ['biSocialTiktok', data.socialTiktok, /tiktok\.com/i],
+        ['biSocialX', data.socialX, /(x\.com|twitter\.com)/i]
+    ];
+    socialRules.forEach(([fieldId, value, pattern]) => {
+        if (!value) return;
+        try {
+            const url = new URL(value);
+            if (!/^https?:$/.test(url.protocol) || !pattern.test(url.hostname)) {
+                errors[fieldId] = 'URL non coerente con il social selezionato';
+            }
+        } catch (_) {
+            errors[fieldId] = 'URL non valido';
+        }
+    });
+    return errors;
+}
+
+function a2wBiUpdateSaveStateBadge(stateLabel, modeClass) {
+    const badge = a2wBiField('a2wBiSaveStateBadge');
+    if (!badge) return;
+    badge.textContent = stateLabel;
+    badge.classList.remove('is-dirty', 'is-saving');
+    if (modeClass) badge.classList.add(modeClass);
+}
+
+function a2wBiUpdateSaveButton(errorCount) {
+    const btn = a2wBiField('a2wBiSaveBtn');
+    if (!btn) return;
+    if (brandIdentityState.saving) {
+        btn.disabled = true;
+        btn.textContent = 'Salvataggio…';
+        a2wBiUpdateSaveStateBadge('Salvataggio…', 'is-saving');
         return;
     }
-    const res = await fetch(`${API}/brands/${brandId}`);
+    if (errorCount > 0) {
+        btn.disabled = true;
+        btn.textContent = `${errorCount} campi da correggere`;
+        a2wBiUpdateSaveStateBadge('Modifiche non salvate', 'is-dirty');
+        return;
+    }
+    btn.disabled = !brandIdentityState.dirty;
+    btn.textContent = 'Salva modifiche';
+    if (brandIdentityState.dirty) a2wBiUpdateSaveStateBadge('Modifiche non salvate', 'is-dirty');
+    else if (brandIdentityState.lastSavedAt) {
+        const mins = Math.max(0, Math.floor((Date.now() - brandIdentityState.lastSavedAt) / 60000));
+        a2wBiUpdateSaveStateBadge(mins <= 1 ? 'Salvato ora' : `Salvato ${mins} min fa`, '');
+    } else a2wBiUpdateSaveStateBadge('Salvato', '');
+}
+
+function a2wBiSyncDirtyState() {
+    if (!isA2wBrandIdentityV2Enabled()) return;
+    const current = a2wBiSerializeState(a2wBiCollectFormData(), brandIdentityState.selectedAssets);
+    brandIdentityState.dirty = current !== brandIdentityState.baseline;
+    const errors = a2wBiValidate(a2wBiCollectFormData());
+    a2wBiUpdateSaveButton(Object.keys(errors).length);
+}
+
+function a2wBiUpdateSlugPreview() {
+    const slug = a2wBiCollectFormData().slug;
+    const text = a2wBiGetSlugPreviewUrl(slug);
+    const inline = a2wBiField('biSlugPreviewUrl');
+    if (inline) inline.textContent = text;
+    const preview = a2wBiField('a2wBiPreviewUrl');
+    if (preview) preview.textContent = text;
+    const previewSlug = a2wBiField('a2wBiPreviewSlug');
+    if (previewSlug) previewSlug.textContent = slug || '—';
+}
+
+async function a2wBiCheckSlugAvailabilityNow() {
+    if (!isA2wBrandIdentityV2Enabled()) return;
+    const slug = a2wBiCollectFormData().slug;
+    const status = a2wBiField('biSlugStatus');
+    if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+        brandIdentityState.slugAvailable = null;
+        if (status) status.textContent = '!';
+        return;
+    }
+    brandIdentityState.slugChecking = true;
+    if (status) status.textContent = '…';
+    try {
+        const res = await fetch(`${API}/brands/by-slug/${encodeURIComponent(slug)}`, { headers: getAuthHeaders() });
+        if (!res.ok) {
+            brandIdentityState.slugAvailable = true;
+            if (status) status.textContent = '✓';
+            return;
+        }
+        const data = await res.json().catch(() => ({}));
+        brandIdentityState.slugAvailable = String(data.id || '') === String(brandId || '');
+        if (status) status.textContent = brandIdentityState.slugAvailable ? '✓' : '✕';
+    } catch (_) {
+        brandIdentityState.slugAvailable = null;
+        if (status) status.textContent = '?';
+    } finally {
+        brandIdentityState.slugChecking = false;
+    }
+}
+
+function a2wBiScheduleSlugAvailabilityCheck() {
+    if (brandIdentityState.slugCheckTimer) clearTimeout(brandIdentityState.slugCheckTimer);
+    brandIdentityState.slugCheckTimer = setTimeout(a2wBiCheckSlugAvailabilityNow, 320);
+}
+
+function a2wBiMediaImageUrl(item) {
+    if (!item?.id) return '';
+    return `/api/v1/media/${item.id}/image?t=${Date.now()}`;
+}
+
+async function a2wBiLoadMediaByType() {
+    if (!brandId) {
+        brandIdentityState.mediaByType = { logo: [], strip: [], thumbnail: [], background: [] };
+        return;
+    }
+    const res = await fetch(`${API}/media?brand_id=${brandId}`, { headers: getAuthHeaders() });
+    const items = await res.json().catch(() => []);
+    const list = Array.isArray(items) ? items : [];
+    brandIdentityState.mediaByType = {
+        logo: list.filter((x) => x.type === 'logo'),
+        strip: list.filter((x) => x.type === 'strip'),
+        thumbnail: list.filter((x) => x.type === 'thumbnail'),
+        background: list.filter((x) => x.type === 'background')
+    };
+}
+
+function a2wBiApplySelectedAssetsFromConfig(config) {
+    const saved = config?.brand_identity_assets || {};
+    ['logo', 'strip', 'thumbnail', 'background'].forEach((type) => {
+        const byId = String(saved[type] || '');
+        const pool = brandIdentityState.mediaByType[type] || [];
+        brandIdentityState.selectedAssets[type] = pool.find((x) => String(x.id) === byId) || pool[0] || null;
+    });
+}
+
+function a2wBiBindAssetCardActions(type) {
+    const uploadInput = a2wBiField(`a2wBiAssetUploadInput_${type}`);
+    const browseBtn = a2wBiField(`a2wBiAssetBrowseBtn_${type}`);
+    const pickBtn = a2wBiField(`a2wBiAssetPickBtn_${type}`);
+    const removeBtn = a2wBiField(`a2wBiAssetRemoveBtn_${type}`);
+    const libraryBtn = a2wBiField(`a2wBiAssetLibraryBtn_${type}`);
+    if (browseBtn && uploadInput) browseBtn.onclick = () => uploadInput.click();
+    if (uploadInput) {
+        uploadInput.onchange = async () => {
+            const file = uploadInput.files && uploadInput.files[0];
+            if (!file) return;
+            await a2wBiUploadAsset(type, file);
+            uploadInput.value = '';
+        };
+    }
+    if (pickBtn) {
+        pickBtn.onclick = () => {
+            openMediaPicker((mediaId) => {
+                const pool = brandIdentityState.mediaByType[type] || [];
+                brandIdentityState.selectedAssets[type] = pool.find((x) => String(x.id) === String(mediaId)) || null;
+                a2wBiRenderAssetsGrid();
+                a2wBiUpdatePreviewCard();
+                a2wBiSyncDirtyState();
+            }, A2W_BRAND_IDENTITY_ASSET_SPECS[type].mediaType);
+        };
+    }
+    if (removeBtn) {
+        removeBtn.onclick = () => {
+            brandIdentityState.selectedAssets[type] = null;
+            a2wBiRenderAssetsGrid();
+            a2wBiUpdatePreviewCard();
+            a2wBiSyncDirtyState();
+        };
+    }
+    if (libraryBtn) libraryBtn.onclick = () => nav('media-library');
+}
+
+async function a2wBiUploadAsset(type, file) {
+    if (!brandId) return toast('Seleziona un brand');
+    try {
+        const base64 = typeof normalizeMediaForUpload === 'function'
+            ? await normalizeMediaForUpload(file, type)
+            : await fileToBase64(file);
+        const res = await fetch(`${API}/media`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({
+                brand_id: brandId,
+                type,
+                title: `${A2W_BRAND_IDENTITY_ASSET_SPECS[type].label} (${new Date().toISOString().slice(0, 10)})`,
+                image_base64: base64
+            })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Upload fallito');
+        }
+        await a2wBiLoadMediaByType();
+        brandIdentityState.selectedAssets[type] = (brandIdentityState.mediaByType[type] || [])[0] || null;
+        a2wBiRenderAssetsGrid();
+        a2wBiUpdatePreviewCard();
+        a2wBiSyncDirtyState();
+        toast('Asset caricato');
+    } catch (e) {
+        toast('Errore upload: ' + (e.message || 'sconosciuto'));
+    }
+}
+
+function a2wBiRenderAssetsGrid() {
+    const host = a2wBiField('a2wBiAssetsGrid');
+    if (!host) return;
+    host.innerHTML = ['logo', 'strip', 'thumbnail', 'background'].map((type) => {
+        const spec = A2W_BRAND_IDENTITY_ASSET_SPECS[type];
+        const item = brandIdentityState.selectedAssets[type];
+        const preview = item
+            ? `<img src="${a2wBiMediaImageUrl(item)}" alt="${esc(spec.label)}">`
+            : `<span class="a2w-bi-asset-placeholder">Nessun asset selezionato</span>`;
+        return `
+          <article class="a2w-bi-asset-card" data-a2w-asset-type="${type}">
+            <h3 class="a2w-bi-asset-title">${esc(spec.label)}</h3>
+            <p class="a2w-bi-asset-spec">${esc(spec.hint)}</p>
+            <div class="a2w-bi-asset-preview">${preview}</div>
+            <div class="a2w-bi-asset-actions">
+              <button type="button" class="btn sec small" id="a2wBiAssetBrowseBtn_${type}">Sfoglia file</button>
+              <button type="button" class="btn sec small" id="a2wBiAssetPickBtn_${type}">Da libreria</button>
+              <button type="button" class="btn sec small" id="a2wBiAssetLibraryBtn_${type}">Apri Media Library</button>
+              <button type="button" class="btn sec small" id="a2wBiAssetRemoveBtn_${type}">Rimuovi</button>
+            </div>
+            <input type="file" id="a2wBiAssetUploadInput_${type}" accept="image/*,.pdf" hidden>
+          </article>
+        `;
+    }).join('');
+    ['logo', 'strip', 'thumbnail', 'background'].forEach(a2wBiBindAssetCardActions);
+}
+
+function a2wBiUpdatePreviewCard() {
+    if (!isA2wBrandIdentityV2Enabled()) return;
+    const data = a2wBiCollectFormData();
+    const logo = brandIdentityState.selectedAssets.logo;
+    const strip = brandIdentityState.selectedAssets.strip;
+    const passLogo = a2wBiField('a2wBiPassLogo');
+    const passName = a2wBiField('a2wBiPassName');
+    const passTagline = a2wBiField('a2wBiPassTagline');
+    const passStrip = a2wBiField('a2wBiPassStrip');
+    if (passName) passName.textContent = data.name || 'Brand';
+    if (passTagline) passTagline.textContent = data.tagline || 'Tagline';
+    if (passLogo) {
+        if (logo?.id) {
+            passLogo.src = a2wBiMediaImageUrl(logo);
+            passLogo.style.display = 'block';
+        } else {
+            passLogo.removeAttribute('src');
+            passLogo.style.display = 'none';
+        }
+    }
+    if (passStrip) {
+        passStrip.style.backgroundImage = strip?.id ? `url("${a2wBiMediaImageUrl(strip)}")` : '';
+        passStrip.style.backgroundSize = 'cover';
+    }
+    a2wBiUpdateSlugPreview();
+    const slug = data.slug || '';
+    const qrHost = a2wBiField('a2wBiPreviewQr');
+    if (qrHost && typeof QRCode !== 'undefined') {
+        qrHost.innerHTML = '';
+        const url = 'https://' + a2wBiGetSlugPreviewUrl(slug);
+        new QRCode(qrHost, {
+            text: url,
+            width: 96,
+            height: 96,
+            colorDark: '#000000',
+            colorLight: '#FFFFFF',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    }
+}
+
+async function a2wBiBuildDeleteCounts() {
+    if (!brandId) return { passes: 0, contatti: 0, campagne: 0 };
+    const [passes, leads, campaigns] = await Promise.all([
+        fetch(`${API}/passes?brand_id=${encodeURIComponent(brandId)}`, { headers: getAuthHeaders() }).then((r) => r.json()).catch(() => []),
+        fetch(`${API}/brands/${brandId}/leads`, { headers: getDashboardFetchHeaders() }).then((r) => r.json()).catch(() => ({ leads: [] })),
+        fetch(`${API}/campaigns?brand_id=${encodeURIComponent(brandId)}`, { headers: getAuthHeaders() }).then((r) => r.json()).catch(() => [])
+    ]);
+    return {
+        passes: Array.isArray(passes) ? passes.length : 0,
+        contatti: Array.isArray(leads?.leads) ? leads.leads.length : 0,
+        campagne: Array.isArray(campaigns) ? campaigns.length : 0
+    };
+}
+
+function a2wBiToggleDeleteDialog(open) {
+    const dialog = a2wBiField('a2wDeleteBrandDialog');
+    if (!dialog) return;
+    dialog.hidden = !open;
+    if (open) {
+        const input = a2wBiField('a2wDeleteBrandConfirmInput');
+        if (input) input.focus();
+        document.body.classList.add('a2w-bi-modal-open');
+    } else {
+        document.body.classList.remove('a2w-bi-modal-open');
+    }
+}
+
+async function a2wBiOpenDeleteDialog() {
+    const data = a2wBiCollectFormData();
+    const counts = await a2wBiBuildDeleteCounts();
+    const token = data.name || 'Brand';
+    const tokenNode = a2wBiField('a2wDeleteBrandNameToken');
+    const countsNode = a2wBiField('a2wDeleteBrandCounts');
+    const input = a2wBiField('a2wDeleteBrandConfirmInput');
+    const confirmBtn = a2wBiField('a2wDeleteBrandConfirmBtn');
+    if (tokenNode) tokenNode.textContent = `"${token}"`;
+    if (countsNode) countsNode.textContent = `${counts.passes} pass, ${counts.contatti} contatti, ${counts.campagne} campagne`;
+    if (input) input.value = '';
+    if (confirmBtn) confirmBtn.disabled = true;
+    a2wBiToggleDeleteDialog(true);
+}
+
+function a2wBiBindGuards() {
+    if (brandIdentityState.guardsBound) return;
+    brandIdentityState.guardsBound = true;
+
+    const originalNav = window.nav;
+    if (typeof originalNav === 'function' && !window.__a2wBrandIdentityNavWrapped) {
+        window.__a2wBrandIdentityNavWrapped = true;
+        window.nav = async function a2wBrandIdentitySafeNav(id) {
+            const leavingBrandIdentity = getActiveSectionId() === 'brand-identity' && id !== 'brand-identity';
+            if (isA2wBrandIdentityV2Enabled() && brandIdentityState.dirty && leavingBrandIdentity) {
+                const confirmLeave = typeof appConfirm === 'function'
+                    ? await appConfirm({
+                        title: 'Modifiche non salvate',
+                        message: 'Hai modifiche non salvate. Vuoi uscire dalla pagina?',
+                        confirmLabel: 'Esci senza salvare',
+                        tone: 'danger'
+                    })
+                    : window.confirm('Hai modifiche non salvate. Vuoi uscire dalla pagina?');
+                if (!confirmLeave) return;
+            }
+            return originalNav.apply(this, arguments);
+        };
+        nav = window.nav;
+    }
+
+    window.addEventListener('beforeunload', (event) => {
+        if (!isA2wBrandIdentityV2Enabled() || !brandIdentityState.dirty) return;
+        event.preventDefault();
+        event.returnValue = '';
+    });
+}
+
+function a2wBiEnsureUiBound() {
+    if (!isA2wBrandIdentityV2Enabled()) return;
+    if (brandIdentityState.initialized) return;
+    brandIdentityState.initialized = true;
+    a2wBiBindGuards();
+
+    const socialToggle = a2wBiField('a2wBiSocialToggle');
+    const socialBody = a2wBiField('a2wBiSocialBody');
+    if (socialToggle && socialBody) {
+        socialToggle.addEventListener('click', () => {
+            const open = socialBody.hidden;
+            socialBody.hidden = !open;
+            socialToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+
+    const previewMobileToggle = a2wBiField('a2wBiPreviewMobileToggle');
+    const previewCard = a2wBiField('a2wBiPreviewCard');
+    if (previewMobileToggle && previewCard) {
+        const syncPreviewVisibility = () => {
+            const mobile = window.matchMedia('(max-width: 1023px)').matches;
+            if (!mobile) {
+                previewCard.hidden = false;
+                previewMobileToggle.setAttribute('aria-expanded', 'true');
+            } else if (previewMobileToggle.getAttribute('aria-expanded') !== 'true') {
+                previewCard.hidden = true;
+            }
+        };
+        syncPreviewVisibility();
+        window.addEventListener('resize', syncPreviewVisibility, { passive: true });
+        previewMobileToggle.addEventListener('click', () => {
+            const open = previewCard.hidden;
+            previewCard.hidden = !open;
+            previewMobileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+
+    const copyBtn = a2wBiField('biCopySlugUrlBtn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+            const text = a2wBiGetSlugPreviewUrl(a2wBiCollectFormData().slug);
+            try {
+                await navigator.clipboard.writeText(text);
+                toast('URL copiato');
+            } catch (_) {
+                toast(text);
+            }
+        });
+    }
+
+    const previewTabs = document.querySelectorAll('#brand-identity .a2w-bi-preview-tabs button');
+    previewTabs.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.target || 'apple';
+            brandIdentityState.previewTab = target;
+            previewTabs.forEach((node) => node.classList.toggle('is-active', node === btn));
+            const preview = a2wBiField('a2wBiPassPreview');
+            if (preview) preview.dataset.wallet = target;
+        });
+    });
+
+    const formIds = [
+        'biName', 'biSlug', 'biTagline', 'biSettore', 'biLang', 'biHomepage', 'biSupportEmail', 'biSupportPhone',
+        'biSocialInstagram', 'biSocialFacebook', 'biSocialLinkedin', 'biSocialTiktok', 'biSocialX'
+    ];
+    formIds.forEach((id) => {
+        const field = a2wBiField(id);
+        if (!field) return;
+        field.addEventListener('input', () => {
+            if (id === 'biName' && !brandIdentityState.slugEdited) {
+                const slugField = a2wBiField('biSlug');
+                if (slugField) slugField.value = a2wBiSlugify(field.value);
+            }
+            if (id === 'biSlug') {
+                brandIdentityState.slugEdited = true;
+                field.value = a2wBiSlugify(field.value);
+                a2wBiScheduleSlugAvailabilityCheck();
+            }
+            a2wBiUpdateSlugPreview();
+            a2wBiUpdatePreviewCard();
+            a2wBiSyncDirtyState();
+        });
+        field.addEventListener('change', () => {
+            if (id === 'biSlug') a2wBiScheduleSlugAvailabilityCheck();
+            a2wBiSyncDirtyState();
+        });
+    });
+
+    const cancelBtn = a2wBiField('a2wDeleteBrandCancelBtn');
+    const confirmBtn = a2wBiField('a2wDeleteBrandConfirmBtn');
+    const confirmInput = a2wBiField('a2wDeleteBrandConfirmInput');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => a2wBiToggleDeleteDialog(false));
+    if (confirmInput && confirmBtn) {
+        confirmInput.addEventListener('input', () => {
+            const target = a2wBiCollectFormData().name || '';
+            confirmBtn.disabled = confirmInput.value !== target;
+        });
+    }
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+            if (!brandId) return;
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Eliminazione…';
+            try {
+                const res = await fetch(`${API}/brands/${brandId}`, { method: 'DELETE', headers: getAuthHeaders() });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || 'eliminazione fallita');
+                }
+                a2wBiToggleDeleteDialog(false);
+                toast('Brand eliminata');
+                brandId = null;
+                await loadBrands();
+            } catch (e) {
+                toast('Errore: ' + (e.message || 'eliminazione fallita'));
+            } finally {
+                confirmBtn.textContent = 'Elimina definitivamente';
+            }
+        });
+    }
+
+    const deleteDialog = a2wBiField('a2wDeleteBrandDialog');
+    if (deleteDialog) {
+        deleteDialog.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                a2wBiToggleDeleteDialog(false);
+            }
+            if (event.key !== 'Tab') return;
+            const focusables = deleteDialog.querySelectorAll('button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
+            if (!focusables.length) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
+    }
+}
+
+async function loadBrandIdentity() {
+    const pageRoot = document.querySelector('#brand-identity .a2w-bi-page');
+    const a2wEnabled = isA2wBrandIdentityV2Enabled();
+    if (pageRoot) pageRoot.classList.toggle('a2w-bi-legacy-shell', !a2wEnabled);
+    if (a2wEnabled) {
+        a2wBiEnsureUiBound();
+    } else {
+        const saveBtn = a2wBiField('a2wBiSaveBtn');
+        if (saveBtn) saveBtn.disabled = false;
+        const stateBadge = a2wBiField('a2wBiSaveStateBadge');
+        if (stateBadge) stateBadge.textContent = '';
+    }
+    if (!brandId) {
+        ['biName','biSlug','biTagline','biSettore','biLang','biHomepage','biSupportEmail','biSupportPhone','biSocialInstagram','biSocialFacebook','biSocialLinkedin','biSocialTiktok','biSocialX']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        brandIdentityState.selectedAssets = { logo: null, strip: null, thumbnail: null, background: null };
+        a2wBiRenderAssetsGrid();
+        a2wBiUpdatePreviewCard();
+        brandIdentityState.baseline = a2wBiSerializeState(a2wBiCollectFormData(), brandIdentityState.selectedAssets);
+        brandIdentityState.dirty = false;
+        a2wBiUpdateSaveButton(0);
+        return;
+    }
+    const res = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
     const brand = await res.json();
     const c = brand.config || {};
     document.getElementById('biName').value = brand.name || '';
     document.getElementById('biSlug').value = brand.slug || '';
     document.getElementById('biSettore').value = c.settore || '';
+    const biLang = document.getElementById('biLang');
+    if (biLang) biLang.value = c.language || 'it';
+    const biTagline = document.getElementById('biTagline');
+    if (biTagline) biTagline.value = c.tagline || '';
     document.getElementById('biHomepage').value = c.homepage || '';
+    const support = c.support || {};
+    if (document.getElementById('biSupportEmail')) document.getElementById('biSupportEmail').value = support.email || '';
+    if (document.getElementById('biSupportPhone')) document.getElementById('biSupportPhone').value = support.phone || '';
+    const social = c.social || {};
+    if (document.getElementById('biSocialInstagram')) document.getElementById('biSocialInstagram').value = social.instagram || '';
+    if (document.getElementById('biSocialFacebook')) document.getElementById('biSocialFacebook').value = social.facebook || '';
+    if (document.getElementById('biSocialLinkedin')) document.getElementById('biSocialLinkedin').value = social.linkedin || '';
+    if (document.getElementById('biSocialTiktok')) document.getElementById('biSocialTiktok').value = social.tiktok || '';
+    if (document.getElementById('biSocialX')) document.getElementById('biSocialX').value = social.x || '';
+    const breadcrumbBrand = document.getElementById('a2wBiBreadcrumbBrand');
+    if (breadcrumbBrand) breadcrumbBrand.textContent = brand.name || 'Brand';
+
+    if (a2wEnabled) {
+        brandIdentityState.slugEdited = !!brand.slug;
+        brandIdentityState.lastSavedAt = c.brand_identity_last_saved_at ? new Date(c.brand_identity_last_saved_at).getTime() : Date.now();
+        await a2wBiLoadMediaByType();
+        a2wBiApplySelectedAssetsFromConfig(c);
+        a2wBiRenderAssetsGrid();
+        a2wBiUpdatePreviewCard();
+        a2wBiClearErrors();
+        brandIdentityState.baseline = a2wBiSerializeState(a2wBiCollectFormData(), brandIdentityState.selectedAssets);
+        brandIdentityState.dirty = false;
+        a2wBiScheduleSlugAvailabilityCheck();
+        a2wBiUpdateSaveButton(0);
+    }
 }
 
 async function saveBrandIdentity() {
-    const name = document.getElementById('biName').value.trim();
+    const data = a2wBiCollectFormData();
+    const name = data.name;
     if (!name) { toast('Inserisci il nome del brand'); return; }
-    const config = {
-        settore: document.getElementById('biSettore').value,
-        homepage: document.getElementById('biHomepage').value.trim(),
-    };
-    const slug = document.getElementById('biSlug').value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    if (!brandId) {
-        // CREATE new brand
-        const productLine = getLockedProductLine() || getUnscopedDashboardProductLine();
-        const res = await fetch(`${API}/brands`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, slug, config: { ...BRAND_PASS_FIXED_COLORS, ...config, product_line: productLine } }) });
-        const newBrand = await res.json();
-        if (newBrand.id) {
+    if (isA2wBrandIdentityV2Enabled()) {
+        a2wBiClearErrors();
+        const errors = a2wBiValidate(data);
+        Object.entries(errors).forEach(([field, message]) => a2wBiSetFieldError(field, message));
+        const errorCount = Object.keys(errors).length;
+        if (errorCount > 0) {
+            a2wBiUpdateSaveButton(errorCount);
+            return;
+        }
+        if (brandIdentityState.slugAvailable === false) {
+            a2wBiSetFieldError('biSlug', 'Slug già in uso');
+            a2wBiUpdateSaveButton(1);
+            return;
+        }
+        brandIdentityState.saving = true;
+        a2wBiUpdateSaveButton(0);
+    }
+    try {
+        const config = {
+            settore: data.settore,
+            homepage: data.homepage,
+            tagline: data.tagline,
+            language: data.lang,
+            support: {
+                email: data.supportEmail,
+                phone: data.supportPhone
+            },
+            social: {
+                instagram: data.socialInstagram,
+                facebook: data.socialFacebook,
+                linkedin: data.socialLinkedin,
+                tiktok: data.socialTiktok,
+                x: data.socialX
+            }
+        };
+        const slug = data.slug || a2wBiSlugify(name);
+        const assets = {
+            logo: brandIdentityState.selectedAssets.logo?.id || null,
+            strip: brandIdentityState.selectedAssets.strip?.id || null,
+            thumbnail: brandIdentityState.selectedAssets.thumbnail?.id || null,
+            background: brandIdentityState.selectedAssets.background?.id || null
+        };
+        if (!brandId) {
+            // CREATE new brand
+            const productLine = getLockedProductLine() || getUnscopedDashboardProductLine();
+            const res = await fetch(`${API}/brands`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    name,
+                    slug,
+                    config: { ...BRAND_PASS_FIXED_COLORS, ...config, brand_identity_assets: assets, brand_identity_last_saved_at: new Date().toISOString(), product_line: productLine }
+                })
+            });
+            const newBrand = await res.json().catch(() => ({}));
+            if (!res.ok || !newBrand.id) {
+                if (isA2wBrandIdentityV2Enabled()) {
+                    a2wBiSetFieldError('biSlug', 'Slug non disponibile o dati non validi');
+                    a2wBiUpdateSaveButton(1);
+                }
+                toast('Errore creazione brand');
+                return;
+            }
             brandId = newBrand.id;
             syncBrandUrl();
             toast('Brand creato!');
             await loadBrands();
-        } else { toast('Errore creazione brand'); return; }
-    } else {
-        // UPDATE existing brand
-        const existing = await fetch(`${API}/brands/${brandId}`).then(r => r.json());
-        const mergedConfig = { ...(existing.config || {}), ...config };
-        await fetch(`${API}/brands/${brandId}`, { method: 'PUT', headers: {'Content-Type':'application/json', ...getAuthHeaders()}, body: JSON.stringify({ name, slug, config: mergedConfig }) });
-        toast('Identità brand salvata!');
+        } else {
+            // UPDATE existing brand
+            const existing = await fetch(`${API}/brands/${brandId}`).then(r => r.json());
+            const mergedConfig = {
+                ...(existing.config || {}),
+                ...config,
+                brand_identity_assets: assets,
+                brand_identity_last_saved_at: new Date().toISOString()
+            };
+            const saveRes = await fetch(`${API}/brands/${brandId}`, {
+                method: 'PUT',
+                headers: {'Content-Type':'application/json', ...getAuthHeaders()},
+                body: JSON.stringify({ name, slug, config: mergedConfig })
+            });
+            if (!saveRes.ok) {
+                const err = await saveRes.json().catch(() => ({}));
+                if (isA2wBrandIdentityV2Enabled() && /slug|duplicate|unique/i.test(err.error || '')) {
+                    a2wBiSetFieldError('biSlug', 'Slug già in uso');
+                    a2wBiUpdateSaveButton(1);
+                }
+                throw new Error(err.error || 'Errore salvataggio identità');
+            }
+            toast('Identità brand salvata!');
+        }
+        if (isA2wBrandIdentityV2Enabled()) {
+            brandIdentityState.lastSavedAt = Date.now();
+        }
+        applyBrandTheme();
+        await loadBrandIdentity();
+    } catch (e) {
+        toast(e.message || 'Errore salvataggio identità');
+    } finally {
+        if (isA2wBrandIdentityV2Enabled()) {
+            brandIdentityState.saving = false;
+            a2wBiSyncDirtyState();
+        }
     }
-    applyBrandTheme();
-    loadBrandIdentity();
+}
+
+async function deleteBrandAction() {
+    if (!brandId) return alert('Seleziona una brand');
+    if (!isA2wBrandIdentityV2Enabled()) {
+        if (!await appConfirm({ title: 'Elimina brand', message: 'Eliminare il brand e tutti i dati collegati? Non si può annullare.', confirmLabel: 'Elimina brand', tone: 'danger' })) return;
+        const res = await fetch(`${API}/brands/${brandId}`, { method: 'DELETE', headers: getAuthHeaders() });
+        if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            return toast('Errore: ' + (e.error || 'eliminazione fallita'));
+        }
+        toast('Brand eliminata'); brandId = null; await loadBrands();
+        return;
+    }
+    await a2wBiOpenDeleteDialog();
 }
 
 // ==================== MEDIA LIBRARY ====================
