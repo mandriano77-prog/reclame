@@ -569,6 +569,11 @@ html[data-shell="dark"].a2w-shell .a2w-row-kebab-menu {
   gap: 4px;
 }
 
+html[data-shell="dark"].a2w-shell .a2w-row-kebab-menu[hidden],
+html[data-shell="dark"].a2w-shell .a2w-media-kebab-menu[hidden] {
+  display: none !important;
+}
+
 html[data-shell="dark"].a2w-shell .a2w-row-kebab-item {
   width: 100%;
   min-height: 32px;

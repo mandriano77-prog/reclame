@@ -1753,13 +1753,6 @@
                             <option value="background">Background</option>
                         </select>
                     </div>
-                    <div class="form-group" id="mediaUploadCampaignGroup">
-                        <label class="form-label">Campagna (opzionale, per strip)</label>
-                        <select id="mediaUploadCampaignId" title="Scegli tra le campagne create nella tab Campagne">
-                            <option value="">— Nessuna campagna —</option>
-                        </select>
-                        <p style="font-size:11px;color:var(--text2);margin:6px 0 0;">L’elenco è quello della tab <strong>Campagne</strong> (nessun testo libero). Crea prima la campagna, poi assegnala qui.</p>
-                    </div>
                     <div class="form-group">
                         <label class="form-label">Nome (opzionale)</label>
                         <input type="text" id="mediaUploadName" placeholder="es. Strip natalizia 2026">
@@ -1888,11 +1881,11 @@
                                     <div class="form-group"><label class="form-label">Header Label</label><input type="text" id="wzHeaderLabel" placeholder="es. PUNTI" oninput="wzUpdatePreview()"></div>
                                     <div class="form-group"><label class="form-label">Header Value</label><input type="text" id="wzHeaderValue" placeholder="es. 0" oninput="wzUpdatePreview()"></div>
                                 </div>
-                                <div class="form-row">
+                                <div class="form-row" style="display:none;">
                                     <div class="form-group"><label class="form-label">Info Secondaria Label</label><input type="text" id="wzSecLabel" placeholder="es. LIVELLO" oninput="wzUpdatePreview()"></div>
                                     <div class="form-group"><label class="form-label">Info Secondaria Value</label><input type="text" id="wzSecValue" placeholder="es. Silver" oninput="wzUpdatePreview()"></div>
                                 </div>
-                                <div class="form-row">
+                                <div class="form-row" style="display:none;">
                                     <div class="form-group"><label class="form-label">Dettaglio Label</label><input type="text" id="wzAuxLabel" placeholder="es. OFFERTA" oninput="wzUpdatePreview()"></div>
                                     <div class="form-group"><label class="form-label">Dettaglio Value</label><input type="text" id="wzAuxValue" placeholder="es. Sconto 10%" oninput="wzUpdatePreview()"></div>
                                 </div>
@@ -2618,11 +2611,11 @@
                     <div class="form-group"><label class="form-label">Header Label</label><input type="text" id="tplHeaderLabel" placeholder="es. INFO" oninput="updatePassPreview()"></div>
                     <div class="form-group"><label class="form-label">Header Valore</label><input type="text" id="tplHeaderValue" placeholder="es. Scopri di più" oninput="updatePassPreview()"></div>
                 </div>
-                <div class="form-row">
+                <div class="form-row" style="display:none;">
                     <div class="form-group"><label class="form-label">Secondary Label</label><input type="text" id="tplSecLabel" placeholder="es. VALIDO FINO AL" oninput="updatePassPreview()"></div>
                     <div class="form-group"><label class="form-label">Secondary Valore</label><input type="text" id="tplSecValue" placeholder="es. 30/06/2026" oninput="updatePassPreview()"></div>
                 </div>
-                <div class="form-row">
+                <div class="form-row" style="display:none;">
                     <div class="form-group"><label class="form-label">Auxiliary Label</label><input type="text" id="tplAuxLabel" placeholder="es. PROMO" oninput="updatePassPreview()"></div>
                     <div class="form-group"><label class="form-label">Auxiliary Valore</label><input type="text" id="tplAuxValue" placeholder="es. -20% su tutto" oninput="updatePassPreview()"></div>
                 </div>
@@ -2706,21 +2699,9 @@
                         </div>
                     </details>
 
-                    <details class="hr-fieldset" open>
-                        <summary>3 — Risorse aziendali (max 5)</summary>
-                        <div id="hrResourcesRows"></div>
-                        <button type="button" class="btn small sec" onclick="hrAddResourceRow()">+ Aggiungi risorsa</button>
-                    </details>
-
-                    <details class="hr-fieldset" open>
-                        <summary>4 — Documenti (max 5)</summary>
-                        <div id="hrDocumentsRows"></div>
-                        <button type="button" class="btn small sec" onclick="hrAddDocumentRow()">+ Aggiungi documento</button>
-                    </details>
-
                     <details class="hr-fieldset">
-                        <summary>5 — Profilo personale (auto)</summary>
-                        <p class="form-hint">Sezione che includerà link al portale dipendente quando attivato (privacy, consensi, dati). In implementazione.</p>
+                        <summary>3 — Profilo personale (auto)</summary>
+                        <p class="form-hint">Il link profilo viene generato automaticamente per ogni dipendente nel pass emesso.</p>
                     </details>
                 </div>
 
@@ -9038,8 +9019,6 @@ function onMediaUploadTypeChange() {
     const type = document.getElementById('mediaUploadType')?.value || 'strip';
     const hint = document.getElementById('mediaUploadSpecHint');
     if (hint) hint.textContent = getMediaSpecHint(type);
-    const campGroup = document.getElementById('mediaUploadCampaignGroup');
-    if (campGroup) campGroup.style.display = type === 'strip' ? '' : 'none';
 }
 
 let mediaCropState = {
@@ -9285,19 +9264,6 @@ async function mpUpload() {
   reader.readAsDataURL(file);
 }
 
-function populateMediaUploadCampaignSelect(selectedId = '') {
-    const sel = document.getElementById('mediaUploadCampaignId');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">— Nessuna campagna —</option>';
-    (campaignsCache || []).forEach(c => {
-        const o = document.createElement('option');
-        o.value = c.id;
-        o.textContent = c.name;
-        sel.appendChild(o);
-    });
-    if (selectedId) sel.value = selectedId;
-}
-
 async function openMediaUpload(selectedCampaignId = '') {
     mediaUploadEditedBase64 = null;
     const fileInput = document.getElementById('mediaUploadFile');
@@ -9305,13 +9271,6 @@ async function openMediaUpload(selectedCampaignId = '') {
         fileInput.value = '';
         fileInput.onchange = () => { mediaUploadEditedBase64 = null; };
     }
-    if (brandId) {
-        try {
-            brandDataCache.delete(cacheKey(`${API}/campaigns?brand_id=${brandId}`));
-            campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
-        } catch (_) {}
-    }
-    populateMediaUploadCampaignSelect(selectedCampaignId);
     onMediaUploadTypeChange();
     document.getElementById('mediaUploadModal').classList.add('active');
 }
@@ -9324,7 +9283,6 @@ async function doMediaUpload() {
     const file = fileInput?.files?.[0];
     if (!file) return toast('Seleziona un file');
     const type = typeSelect?.value || 'generic';
-    const campaignId = document.getElementById('mediaUploadCampaignId')?.value || null;
     const autoFit = !!document.getElementById('mediaUploadAutoFit')?.checked;
     try {
         let base64;
@@ -9342,18 +9300,15 @@ async function doMediaUpload() {
         }
         const titleInput = document.getElementById('mediaUploadName');
         const rawTitle = titleInput?.value?.trim() || file.name;
-        const selectedCampaign = (campaignsCache || []).find(c => c.id === campaignId);
-        const title = selectedCampaign ? `[${selectedCampaign.name}] ${rawTitle}` : rawTitle;
+        const title = rawTitle;
         await fetch(`${API}/media`, {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ brand_id: bid, campaign_id: campaignId, type, title, image_base64: base64 })
+            body: JSON.stringify({ brand_id: bid, type, title, image_base64: base64 })
         });
         toast('Media caricato!');
         fileInput.value = '';
         if (titleInput) titleInput.value = '';
-        const campaignSel = document.getElementById('mediaUploadCampaignId');
-        if (campaignSel) campaignSel.value = '';
         mediaUploadEditedBase64 = null;
         closeModal('mediaUploadModal');
         loadMediaLibrary();

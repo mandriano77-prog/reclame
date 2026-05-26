@@ -447,13 +447,25 @@
     meta.innerHTML = chips.join('');
   }
 
-  function a2wEnsureActionMenusDocumentClose() {
+  function a2wCloseAllDropdownMenus() {
+    document.querySelectorAll('.a2w-row-kebab-menu, .a2w-media-kebab-menu, #leads .a2w-leads-row-menu').forEach((menu) => {
+      menu.hidden = true;
+    });
+    document.querySelectorAll('.a2w-row-kebab-trigger, .a2w-media-kebab-btn').forEach((btn) => {
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function a2wEnsureDropdownDismiss() {
     const state = a2wActionState();
-    if (state.docBound) return;
-    state.docBound = true;
-    document.addEventListener('click', function a2wActionMenuDocClick() {
-      document.querySelectorAll('.a2w-row-kebab-menu').forEach((menu) => { menu.hidden = true; });
-      document.querySelectorAll('.a2w-row-kebab-trigger').forEach((btn) => { btn.setAttribute('aria-expanded', 'false'); });
+    if (state.dropdownDismissBound) return;
+    state.dropdownDismissBound = true;
+    document.addEventListener('click', function a2wDropdownDismissClick(e) {
+      if (e.target.closest('[data-a2w-dropdown-root]')) return;
+      a2wCloseAllDropdownMenus();
+    }, true);
+    document.addEventListener('keydown', function a2wDropdownDismissKey(e) {
+      if (e.key === 'Escape') a2wCloseAllDropdownMenus();
     }, { capture: false });
   }
 
@@ -496,6 +508,7 @@
     const kebabWrap = document.createElement('div');
     kebabWrap.className = 'a2w-row-kebab-wrap';
     kebabWrap.setAttribute('data-a2w-component', 'row-kebab');
+    kebabWrap.setAttribute('data-a2w-dropdown-root', '');
     const kebabBtn = a2wCreateIconButton('Altre azioni campagna', A2W.icons.kebab, 'a2w-icon-btn a2w-row-kebab-trigger');
     kebabBtn.setAttribute('aria-expanded', 'false');
     kebabWrap.appendChild(kebabBtn);
@@ -516,11 +529,12 @@
 
     kebabBtn.addEventListener('click', function a2wCampaignMenuToggle(e) {
       e.stopPropagation();
-      const open = menu.hidden;
-      document.querySelectorAll('.a2w-row-kebab-menu').forEach((m) => { m.hidden = true; });
-      document.querySelectorAll('.a2w-row-kebab-trigger').forEach((b) => { b.setAttribute('aria-expanded', 'false'); });
-      menu.hidden = !open;
-      kebabBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      const wasHidden = menu.hidden;
+      a2wCloseAllDropdownMenus();
+      if (wasHidden) {
+        menu.hidden = false;
+        kebabBtn.setAttribute('aria-expanded', 'true');
+      }
     }, { capture: false });
 
     menu.querySelector('[data-a2w-item="toggle"]')?.addEventListener('click', function a2wCampaignToggleClick() {
@@ -562,6 +576,7 @@
     const kebabWrap = document.createElement('div');
     kebabWrap.className = 'a2w-row-kebab-wrap';
     kebabWrap.setAttribute('data-a2w-component', 'row-kebab');
+    kebabWrap.setAttribute('data-a2w-dropdown-root', '');
     const kebabBtn = a2wCreateIconButton('Altre azioni template', A2W.icons.kebab, 'a2w-icon-btn a2w-row-kebab-trigger');
     kebabBtn.setAttribute('aria-expanded', 'false');
     kebabWrap.appendChild(kebabBtn);
@@ -578,11 +593,12 @@
 
     kebabBtn.addEventListener('click', function a2wTemplateMenuToggle(e) {
       e.stopPropagation();
-      const open = menu.hidden;
-      document.querySelectorAll('.a2w-row-kebab-menu').forEach((m) => { m.hidden = true; });
-      document.querySelectorAll('.a2w-row-kebab-trigger').forEach((b) => { b.setAttribute('aria-expanded', 'false'); });
-      menu.hidden = !open;
-      kebabBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      const wasHidden = menu.hidden;
+      a2wCloseAllDropdownMenus();
+      if (wasHidden) {
+        menu.hidden = false;
+        kebabBtn.setAttribute('aria-expanded', 'true');
+      }
     }, { capture: false });
 
     menu.querySelector('[data-a2w-item="duplicate"]')?.addEventListener('click', function a2wTemplateDupClick() {
@@ -626,7 +642,7 @@
       return;
     }
     state.hooked = true;
-    a2wEnsureActionMenusDocumentClose();
+    a2wEnsureDropdownDismiss();
 
     const originalCampaigns = loadCampaigns;
     window.loadCampaigns = async function a2wLoadCampaignsWrapped() {
@@ -648,6 +664,15 @@
     a2wEnhanceTemplateActionGrouping();
   }
 
+  function initA2wNavDropdownClose() {
+    if (typeof nav !== 'function' || window.__a2wNavMenuCloseHooked) return;
+    window.__a2wNavMenuCloseHooked = true;
+    const originalNav = nav;
+    window.nav = function a2wNavCloseDropdowns() {
+      a2wCloseAllDropdownMenus();
+      return originalNav.apply(this, arguments);
+    };
+  }
 
   // UX-AUDIT[a2w]: activate ads shell chrome once per session
   function initA2wShell() {
@@ -658,6 +683,8 @@
     root.setAttribute('data-product-line', line);
     initA2wUserMenuChrome();
     initA2WSidebarChrome();
+    a2wEnsureDropdownDismiss();
+    initA2wNavDropdownClose();
     initA2WActionGroupingEnhancer();
     ensureA2wLeadsLayout();
     syncA2wHeaderChrome();
@@ -1114,6 +1141,7 @@
   }
 
   A2W.ensureA2wLeadsLayout = ensureA2wLeadsLayout;
+  A2W.closeDropdownMenus = a2wCloseAllDropdownMenus;
   A2W.initA2wShell = initA2wShell;
   A2W.initA2WSidebarChrome = initA2WSidebarChrome;
   A2W.syncA2wHeaderChrome = syncA2wHeaderChrome;
