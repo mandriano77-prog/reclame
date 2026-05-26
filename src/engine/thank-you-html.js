@@ -263,9 +263,16 @@ function renderSaveThankYouPage({
 </html>`;
 }
 
-function resolvePortalHref(_passId, _brandId) {
-  // TODO: attivare URL portale dipendente quando /portal/?t=TOKEN sarà in produzione HR
-  return '#';
+async function resolvePortalHref(passId, _brandId) {
+  if (!passId) return '#';
+  try {
+    const { resolvePortalLinkForPass } = require('./portal-pass-link');
+    const link = await resolvePortalLinkForPass(passId);
+    return link?.portal_url || '#';
+  } catch (err) {
+    console.warn('[portal] thank-you link unavailable:', err.message);
+    return '#';
+  }
 }
 
 module.exports = {

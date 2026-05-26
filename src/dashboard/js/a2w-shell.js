@@ -6,6 +6,9 @@
   'use strict';
 
   const A2W = window.A2W = window.A2W || {};
+  const A2W_SIDEBAR_COLLAPSED_KEY = 'a2w:sidebar:collapsed';
+  const A2W_SIDEBAR_MOBILE_BREAKPOINT = '(max-width: 1023px)';
+  const A2W_ICON_STROKE = 'currentColor';
 
   function isA2wDeploy() {
     if (typeof isFiloShell === 'function' && isFiloShell()) return false;
@@ -26,6 +29,989 @@
   if (!isA2wDeploy()) return;
   console.debug('[A2W] shell loaded — FiloDiretto safe mode: ON');
 
+  A2W.icons = A2W.icons || {
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.8 12 3l9 7.8"/><path d="M5 9.8V21h14V9.8"/></svg>',
+    brand: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M4 10h16"/><path d="M8 14h3"/></svg>',
+    media: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5.5-5.5L7 19"/></svg>',
+    templates: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 9h16"/><path d="M8 13h3"/><path d="M8 17h8"/></svg>',
+    pass: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>',
+    campaigns: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 12h8"/><path d="M8 9h8"/><path d="M8 15h4"/></svg>',
+    push: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>',
+    instantWin: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="M2 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="M12 18v4"/><path d="m16.24 16.24 2.83 2.83"/><path d="M18 12h4"/><path d="m16.24 7.76 2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>',
+    gamification: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-6 6 6 6 0 0 1-6-6Z"/><path d="M8 20h8"/><path d="M12 14v6"/><path d="M6 6H4a2 2 0 0 0 0 4h2"/><path d="M18 6h2a2 2 0 0 1 0 4h-2"/></svg>',
+    contacts: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>',
+    audience: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    analytics: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 14 3-3 3 2 4-5"/></svg>',
+    logs: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="3.5"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>',
+    collapse: '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>'
+  };
+
+  function a2wReadSidebarCollapsedPref() {
+    try {
+      return localStorage.getItem(A2W_SIDEBAR_COLLAPSED_KEY) === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function a2wWriteSidebarCollapsedPref(collapsed) {
+    try {
+      localStorage.setItem(A2W_SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch (_) {}
+  }
+
+  function a2wIsSidebarMobileMode() {
+    try {
+      return window.matchMedia(A2W_SIDEBAR_MOBILE_BREAKPOINT).matches;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function a2wSidebarState() {
+    A2W.sidebar = A2W.sidebar || {};
+    return A2W.sidebar;
+  }
+
+  function a2wDispatchSidebarEvent(eventName, detail) {
+    document.dispatchEvent(new CustomEvent(eventName, { detail: detail || {} }));
+  }
+
+  function a2wGetActiveBrandLabel() {
+    const select = document.getElementById('brandSelector');
+    if (!select) return '';
+    const option = select.options[select.selectedIndex];
+    if (!option) return '';
+    return String(option.textContent || '').trim();
+  }
+
+  function a2wGetBrandInitials(label) {
+    if (!label) return 'A2';
+    const parts = label.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return label.slice(0, 2).toUpperCase();
+  }
+
+  function a2wEnsureSidebarWorkspaceSwitcher() {
+    const sidebar = document.querySelector('.layout .sidebar');
+    const picker = document.querySelector('.a2w-brand-picker');
+    if (!sidebar || !picker) return;
+
+    let shell = document.getElementById('a2wSidebarWorkspace');
+    if (!shell) {
+      shell = document.createElement('div');
+      shell.id = 'a2wSidebarWorkspace';
+      shell.className = 'a2w-sidebar-workspace';
+      shell.setAttribute('data-a2w-component', 'workspace-switcher');
+      shell.innerHTML = [
+        '<span class="a2w-sidebar-workspace__label">Workspace</span>',
+        '<div class="a2w-sidebar-workspace__row">',
+        '  <button type="button" id="a2wWorkspaceBrandTile" class="a2w-workspace-brand-tile" aria-label="Brand attivo" title=""></button>',
+        '</div>'
+      ].join('');
+      const anchor = sidebar.querySelector('.logo');
+      if (anchor && anchor.nextSibling) sidebar.insertBefore(shell, anchor.nextSibling);
+      else sidebar.appendChild(shell);
+    }
+
+    const row = shell.querySelector('.a2w-sidebar-workspace__row');
+    if (row && picker.parentNode !== row) row.appendChild(picker);
+
+    const tile = document.getElementById('a2wWorkspaceBrandTile');
+    const brandName = a2wGetActiveBrandLabel() || (document.getElementById('breadcrumbBrand')?.textContent || '').trim();
+    if (tile) {
+      tile.textContent = a2wGetBrandInitials(brandName);
+      tile.title = brandName || 'Seleziona brand';
+      tile.setAttribute('data-a2w-tooltip-label', brandName || 'Seleziona brand');
+      tile.onclick = function () {
+        const select = document.getElementById('brandSelector');
+        if (select) select.focus();
+      };
+    }
+  }
+
+  function a2wEnsureSidebarToggleButton() {
+    const footer = document.querySelector('.layout .sidebar .sidebar-footer');
+    if (!footer || document.getElementById('a2wSidebarToggleBtn')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'a2wSidebarToggleBtn';
+    btn.className = 'a2w-sidebar-toggle-btn';
+    btn.setAttribute('data-a2w-component', 'sidebar-toggle');
+    btn.setAttribute('aria-label', 'Comprimi sidebar');
+    btn.setAttribute('data-a2w-tooltip-label', 'Comprimi sidebar');
+    btn.innerHTML = A2W.icons.collapse + '<span class="a2w-sidebar-toggle-btn__label">Comprimi</span>';
+    btn.addEventListener('click', a2wHandleSidebarToggleClick, { capture: false });
+    footer.appendChild(btn);
+  }
+
+  function a2wApplySidebarCollapsedState(requestedCollapsed) {
+    const root = document.documentElement;
+    const mobile = a2wIsSidebarMobileMode();
+    const collapsed = !mobile && !!requestedCollapsed;
+    root.classList.toggle('a2w-sidebar-collapsed', collapsed);
+    const btn = document.getElementById('a2wSidebarToggleBtn');
+    if (btn) {
+      const tooltipLabel = collapsed ? 'Espandi sidebar' : 'Comprimi sidebar';
+      btn.setAttribute('aria-label', tooltipLabel);
+      btn.setAttribute('data-a2w-tooltip-label', tooltipLabel);
+      const label = btn.querySelector('.a2w-sidebar-toggle-btn__label');
+      if (label) label.textContent = collapsed ? 'Espandi' : 'Comprimi';
+    }
+    a2wDispatchSidebarEvent('a2w:sidebar:state', { collapsed: collapsed, mobile: mobile });
+  }
+
+  function a2wHandleSidebarToggleClick() {
+    const current = document.documentElement.classList.contains('a2w-sidebar-collapsed');
+    const next = !current;
+    a2wWriteSidebarCollapsedPref(next);
+    a2wApplySidebarCollapsedState(next);
+    a2wDispatchSidebarEvent('a2w:sidebar:toggle', { collapsed: next });
+  }
+
+  function a2wHandleSidebarViewportChange() {
+    a2wApplySidebarCollapsedState(a2wReadSidebarCollapsedPref());
+  }
+
+  function a2wEnsureSidebarIcons() {
+    const iconMap = {
+      welcome: 'home',
+      'brand-identity': 'brand',
+      'media-library': 'media',
+      templates: 'templates',
+      passes: 'pass',
+      campaigns: 'campaigns',
+      push: 'push',
+      'instant-win': 'instantWin',
+      gamification: 'gamification',
+      leads: 'contacts',
+      audiences: 'audience',
+      analytics: 'analytics',
+      'activity-log': 'logs',
+      users: 'users'
+    };
+
+    document.querySelectorAll('.sidebar .nav-item').forEach((item) => {
+      const sectionId = item.dataset.sectionId || (item.id === 'navItemWelcome' ? 'welcome' : '');
+      const defaultText = String(item.getAttribute('data-menu-default') || '').toLowerCase();
+      const currentText = String(item.textContent || '').toLowerCase();
+      const iconKey = iconMap[sectionId]
+        || (/contatti/.test(defaultText) || /contatti/.test(currentText) ? 'contacts' : '')
+        || (/audience/.test(defaultText) || /audience/.test(currentText) ? 'audience' : '');
+      const iconSvg = iconKey ? A2W.icons[iconKey] : '';
+
+      const textNodes = [...item.childNodes]
+        .filter((n) => n.nodeType === Node.TEXT_NODE)
+        .map((n) => String(n.textContent || '').trim())
+        .filter(Boolean);
+      const existingLabel = String(item.querySelector('.a2w-nav-label')?.textContent || '').trim();
+      const resolvedLabel = existingLabel || textNodes.join(' ') || String(item.textContent || '').trim();
+
+      const preservedChildren = [...item.children].filter((el) => !el.classList.contains('a2w-nav-icon') && !el.classList.contains('a2w-nav-label'));
+      item.textContent = '';
+
+      if (iconSvg) {
+        const icon = document.createElement('span');
+        icon.className = 'a2w-nav-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.innerHTML = iconSvg;
+        item.appendChild(icon);
+      }
+
+      const label = document.createElement('span');
+      label.className = 'a2w-nav-label';
+      label.textContent = resolvedLabel;
+      item.appendChild(label);
+      preservedChildren.forEach((child) => item.appendChild(child));
+
+      const labelText = String(label.textContent || '').trim();
+      if (labelText) item.setAttribute('data-a2w-tooltip-label', labelText);
+    });
+  }
+
+  function a2wEnsureTooltipNode() {
+    const state = a2wSidebarState();
+    if (state.tooltipNode) return state.tooltipNode;
+    const node = document.createElement('div');
+    node.id = 'a2wSidebarTooltip';
+    node.className = 'a2w-tooltip';
+    node.setAttribute('data-a2w-component', 'tooltip');
+    node.setAttribute('role', 'tooltip');
+    node.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(node);
+    state.tooltipNode = node;
+    return node;
+  }
+
+  function a2wHideTooltip() {
+    const node = a2wSidebarState().tooltipNode || document.getElementById('a2wSidebarTooltip');
+    if (!node) return;
+    node.textContent = '';
+    node.setAttribute('data-visible', 'false');
+    node.setAttribute('aria-hidden', 'true');
+  }
+
+  function a2wShowTooltip(target) {
+    if (!target || !document.documentElement.classList.contains('a2w-sidebar-collapsed')) return;
+    const label = target.getAttribute('data-a2w-tooltip-label');
+    if (!label) return;
+    const node = a2wEnsureTooltipNode();
+    node.textContent = label;
+    node.setAttribute('data-visible', 'true');
+    node.setAttribute('aria-hidden', 'false');
+    const rect = target.getBoundingClientRect();
+    node.style.left = `${Math.round(rect.right + 10)}px`;
+    node.style.top = `${Math.round(rect.top + (rect.height / 2) - 16)}px`;
+    a2wDispatchSidebarEvent('a2w:tooltip:show', { label: label });
+  }
+
+  function a2wHandleTooltipMouseIn(event) {
+    const target = event.target.closest('.sidebar .nav-item, #a2wWorkspaceBrandTile, #a2wSidebarToggleBtn');
+    if (!target) return;
+    a2wShowTooltip(target);
+  }
+
+  function a2wHandleTooltipMouseOut(event) {
+    const target = event.target.closest('.sidebar .nav-item, #a2wWorkspaceBrandTile, #a2wSidebarToggleBtn');
+    if (!target) return;
+    a2wHideTooltip();
+  }
+
+  function a2wHandleTooltipFocusIn(event) {
+    const target = event.target.closest('.sidebar .nav-item, #a2wWorkspaceBrandTile, #a2wSidebarToggleBtn');
+    if (!target) return;
+    a2wShowTooltip(target);
+  }
+
+  function a2wHandleTooltipFocusOut(event) {
+    const target = event.target.closest('.sidebar .nav-item, #a2wWorkspaceBrandTile, #a2wSidebarToggleBtn');
+    if (!target) return;
+    a2wHideTooltip();
+  }
+
+  function a2wRefreshSidebarChrome() {
+    a2wEnsureSidebarWorkspaceSwitcher();
+    a2wEnsureSidebarIcons();
+  }
+
+  function initA2WSidebarSyncHooks() {
+    const state = a2wSidebarState();
+    if (state.syncHooksBound) return;
+    state.syncHooksBound = true;
+
+    const wrapMenuCopy = () => {
+      if (typeof applyProductMenuCopy !== 'function') return false;
+      if (applyProductMenuCopy.__a2wSidebarWrapped === '1') return true;
+      const original = applyProductMenuCopy;
+      const wrapped = function a2wApplyProductMenuCopyWrapped() {
+        const result = original.apply(this, arguments);
+        a2wRefreshSidebarChrome();
+        return result;
+      };
+      wrapped.__a2wSidebarWrapped = '1';
+      window.applyProductMenuCopy = wrapped;
+      return true;
+    };
+
+    if (!wrapMenuCopy()) {
+      // Some deploys initialize i18n copy after shell boot.
+      window.setTimeout(() => {
+        if (wrapMenuCopy()) a2wRefreshSidebarChrome();
+      }, 200);
+    }
+  }
+
+  function initA2WSidebarChrome() {
+    a2wRefreshSidebarChrome();
+    a2wEnsureSidebarToggleButton();
+    a2wApplySidebarCollapsedState(a2wReadSidebarCollapsedPref());
+    initA2WSidebarSyncHooks();
+    const state = a2wSidebarState();
+    if (!state.bound) {
+      state.bound = true;
+      document.addEventListener('mouseover', a2wHandleTooltipMouseIn, { capture: false });
+      document.addEventListener('mouseout', a2wHandleTooltipMouseOut, { capture: false });
+      document.addEventListener('focusin', a2wHandleTooltipFocusIn, { capture: false });
+      document.addEventListener('focusout', a2wHandleTooltipFocusOut, { capture: false });
+      window.addEventListener('resize', a2wHandleSidebarViewportChange, { passive: true });
+    }
+  }
+
+  function a2wMediaState() {
+    A2W.media = A2W.media || {};
+    return A2W.media;
+  }
+
+  function a2wMediaSpecsMap() {
+    return {
+      logo: 'PNG trasparente, max 320x100 px. Un logo chiaro migliora leggibilita nel pass.',
+      strip: 'PNG/JPG 750x246 px. Usa immagini promozionali con testo minimo e focus visuale.',
+      thumbnail: 'PNG/JPG 90x90 px. Usato nel fronte Event Ticket come miniatura.',
+      background: 'PNG/JPG 360x440 px. Sfondo intero su Event Ticket, preferire contrasto alto.'
+    };
+  }
+
+  function a2wMediaSection() {
+    return document.getElementById('media-library');
+  }
+
+  function a2wMediaFindCardByHostId(hostId) {
+    const host = document.getElementById(hostId);
+    return host ? host.closest('.card') : null;
+  }
+
+  function a2wEnsureMediaPageMenu(section) {
+    if (!section) return;
+    const head = section.querySelector(':scope > div');
+    if (!head) return;
+    const actions = head.querySelector('div');
+    if (!actions) return;
+    actions.classList.add('a2w-media-page-actions');
+
+    const uploadBtn = actions.querySelector('button[onclick*="openMediaUpload"]');
+    const deleteBtn = actions.querySelector('button[onclick*="deleteAllMedia"]');
+    if (uploadBtn) uploadBtn.classList.add('a2w-media-upload-btn');
+
+    let menuWrap = actions.querySelector('.a2w-media-page-menu');
+    if (!menuWrap) {
+      menuWrap = document.createElement('div');
+      menuWrap.className = 'a2w-media-page-menu';
+      menuWrap.setAttribute('data-a2w-component', 'media-page-menu');
+      menuWrap.setAttribute('data-a2w-dropdown-root', '');
+      menuWrap.innerHTML = [
+        '<button type="button" class="a2w-icon-btn a2w-media-kebab-btn" aria-label="Azioni media library" data-a2w-tooltip-label="Azioni pagina">⋯</button>',
+        '<div class="a2w-media-kebab-menu" hidden>',
+        '  <button type="button" class="a2w-media-kebab-item a2w-media-kebab-item--danger">Svuota tutto</button>',
+        '</div>'
+      ].join('');
+      actions.appendChild(menuWrap);
+    }
+    menuWrap.setAttribute('data-a2w-dropdown-root', '');
+
+    if (deleteBtn) deleteBtn.style.display = 'none';
+
+    const trigger = menuWrap.querySelector('.a2w-media-kebab-btn');
+    const panel = menuWrap.querySelector('.a2w-media-kebab-menu');
+    const clearItem = menuWrap.querySelector('.a2w-media-kebab-item--danger');
+    if (!trigger || !panel || !clearItem) return;
+
+    if (!trigger.dataset.a2wBound) {
+      trigger.dataset.a2wBound = '1';
+      trigger.addEventListener('click', function a2wMediaMenuToggle(e) {
+        e.stopPropagation();
+        const wasHidden = panel.hidden;
+        a2wCloseAllDropdownMenus();
+        if (wasHidden) {
+          panel.hidden = false;
+          trigger.setAttribute('aria-expanded', 'true');
+        }
+      }, { capture: false });
+    }
+
+    if (!clearItem.dataset.a2wBound) {
+      clearItem.dataset.a2wBound = '1';
+      clearItem.addEventListener('click', function a2wMediaClearAll() {
+        panel.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+        if (typeof deleteAllMedia === 'function') deleteAllMedia();
+      }, { capture: false });
+    }
+
+    a2wEnsureDropdownDismiss();
+  }
+
+  function a2wEnsureMediaSpecButton(card, bucketKey) {
+    if (!card) return;
+    const title = card.querySelector('.sec-title');
+    if (!title || card.querySelector('.a2w-media-spec-btn')) return;
+    const head = document.createElement('div');
+    head.className = 'a2w-media-bucket-head';
+    title.parentNode.insertBefore(head, title);
+    head.appendChild(title);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'a2w-icon-btn a2w-media-spec-btn';
+    btn.setAttribute('data-a2w-component', 'media-spec-tooltip');
+    btn.setAttribute('aria-label', 'Specifiche ' + bucketKey);
+    btn.setAttribute('data-a2w-tooltip-label', 'Specifiche');
+    const tip = a2wMediaSpecsMap()[bucketKey] || '';
+    btn.title = tip;
+    btn.textContent = 'ⓘ';
+    head.appendChild(btn);
+  }
+
+  function a2wMediaDropzoneMarkup(bucketKey) {
+    return [
+      '<div class="a2w-media-dropzone" data-a2w-component="dropzone" data-a2w-media-type="' + bucketKey + '" tabindex="0" role="button">',
+      '  <div class="a2w-media-dropzone__title">Trascina o clicca per caricare</div>',
+      '  <div class="a2w-media-dropzone__hint">' + bucketKey.toUpperCase() + '</div>',
+      '</div>'
+    ].join('');
+  }
+
+  async function a2wUploadDroppedMedia(file, bucketKey) {
+    if (!file || !window.brandId) return;
+    try {
+      const b64 = await fileToBase64(file);
+      const campaignId = bucketKey === 'strip'
+        ? (document.getElementById('mediaFilterCampaignId')?.value || null)
+        : null;
+      await fetch(`${API}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand_id: brandId,
+          campaign_id: campaignId,
+          type: bucketKey,
+          title: file.name,
+          image_base64: b64
+        })
+      });
+      toast('Media caricato');
+      if (typeof loadMediaLibrary === 'function') loadMediaLibrary();
+      a2wDispatchSidebarEvent('a2w:media:drop', { type: bucketKey });
+    } catch (err) {
+      toast('Errore upload: ' + err.message);
+    }
+  }
+
+  function a2wBindDropzone(dropzone) {
+    if (!dropzone || dropzone.dataset.a2wBound) return;
+    dropzone.dataset.a2wBound = '1';
+    const bucketKey = dropzone.getAttribute('data-a2w-media-type');
+
+    dropzone.addEventListener('click', function a2wDropzoneClick() {
+      if (typeof openMediaUpload === 'function') {
+        openMediaUpload(bucketKey === 'strip' ? (document.getElementById('mediaFilterCampaignId')?.value || '') : '');
+      }
+    }, { capture: false });
+
+    dropzone.addEventListener('dragover', function a2wDropzoneDragOver(e) {
+      e.preventDefault();
+      dropzone.classList.add('a2w-media-dropzone--dragover');
+    }, { capture: false });
+
+    dropzone.addEventListener('dragleave', function a2wDropzoneDragLeave() {
+      dropzone.classList.remove('a2w-media-dropzone--dragover');
+    }, { capture: false });
+
+    dropzone.addEventListener('drop', function a2wDropzoneDrop(e) {
+      e.preventDefault();
+      dropzone.classList.remove('a2w-media-dropzone--dragover');
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      a2wUploadDroppedMedia(file, bucketKey);
+    }, { capture: false });
+  }
+
+  function a2wEnsureMediaDropzones(section) {
+    if (!section) return;
+    const buckets = [
+      { key: 'logo', hostId: 'mediaLogoBox', cardId: 'a2wMediaLogoCard' },
+      { key: 'strip', hostId: 'mediaStripGrid', cardId: 'a2wMediaStripCard' },
+      { key: 'thumbnail', hostId: 'mediaThumbnailGrid', cardId: 'a2wMediaThumbCard' },
+      { key: 'background', hostId: 'mediaBackgroundGrid', cardId: 'a2wMediaBackgroundCard' }
+    ];
+
+    buckets.forEach((bucket) => {
+      const card = a2wMediaFindCardByHostId(bucket.hostId);
+      if (!card) return;
+      card.id = bucket.cardId;
+      card.classList.add('a2w-media-bucket');
+      card.setAttribute('data-a2w-bucket', bucket.key);
+      a2wEnsureMediaSpecButton(card, bucket.key);
+
+      const host = document.getElementById(bucket.hostId);
+      if (!host) return;
+      let dropzone = card.querySelector('.a2w-media-dropzone');
+      if (!dropzone) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = a2wMediaDropzoneMarkup(bucket.key);
+        dropzone = wrap.firstChild;
+        host.parentNode.insertBefore(dropzone, host);
+      }
+      a2wBindDropzone(dropzone);
+    });
+  }
+
+  function a2wMediaSkeletonMarkup(kind) {
+    const count = kind === 'logo' ? 1 : 3;
+    let out = '';
+    for (let i = 0; i < count; i++) {
+      out += [
+        '<div class="a2w-skeleton a2w-skeleton-card">',
+        '  <div class="a2w-skeleton a2w-skeleton-media"></div>',
+        '  <div class="a2w-skeleton a2w-skeleton-line"></div>',
+        '</div>'
+      ].join('');
+    }
+    return '<div class="a2w-skeleton-grid">' + out + '</div>';
+  }
+
+  function a2wReplaceLoadingWithSkeleton(hostId, kind) {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    const txt = String(host.textContent || '').trim().toLowerCase();
+    if (!txt.includes('caricamento')) return;
+    host.innerHTML = a2wMediaSkeletonMarkup(kind);
+  }
+
+  function a2wEnhanceStripBadges() {
+    const grid = document.getElementById('mediaStripGrid');
+    if (!grid) return;
+    grid.querySelectorAll('.media-card').forEach((card) => {
+      card.classList.add('a2w-media-item');
+      const rows = card.querySelectorAll('div');
+      const label = rows[1];
+      if (!label) return;
+      const raw = String(label.textContent || '').trim();
+      label.classList.add('a2w-media-campaign-badge');
+      if (!raw || /nessuna campagna/i.test(raw)) {
+        label.textContent = 'Non assegnata';
+        label.classList.add('a2w-badge-muted');
+        label.classList.remove('a2w-badge-info');
+      } else {
+        label.textContent = 'Campagna: ' + raw;
+        label.classList.add('a2w-badge-info');
+        label.classList.remove('a2w-badge-muted');
+      }
+    });
+  }
+
+  function a2wEnhanceMediaCards() {
+    ['mediaLogoBox', 'mediaStripGrid', 'mediaThumbnailGrid', 'mediaBackgroundGrid'].forEach((id) => {
+      const host = document.getElementById(id);
+      if (!host) return;
+      host.classList.add('a2w-media-host');
+      host.querySelectorAll('.media-card').forEach((card) => {
+        card.classList.add('a2w-media-item');
+        if (card.querySelector('.a2w-media-item-actions')) return;
+        const actions = document.createElement('div');
+        actions.className = 'a2w-media-item-actions';
+        actions.innerHTML = [
+          '<button type="button" class="a2w-media-item-action" data-a2w-action="rename">Rinomina</button>',
+          '<button type="button" class="a2w-media-item-action" data-a2w-action="replace">Sostituisci</button>',
+          '<button type="button" class="a2w-media-item-action a2w-media-item-action--danger" data-a2w-action="delete">Elimina</button>'
+        ].join('');
+        card.appendChild(actions);
+      });
+    });
+  }
+
+  function a2wBindMediaItemActions(section) {
+    if (!section || section.dataset.a2wMediaActionsBound === '1') return;
+    section.dataset.a2wMediaActionsBound = '1';
+    section.addEventListener('click', function a2wMediaCardActionClick(e) {
+      const btn = e.target.closest('.a2w-media-item-action');
+      if (!btn) return;
+      const card = btn.closest('.media-card');
+      if (!card) return;
+      const deleteBtn = card.querySelector('button[onclick*="deleteMediaItem"]');
+      const action = btn.getAttribute('data-a2w-action');
+      if (action === 'delete' && deleteBtn) {
+        deleteBtn.click();
+        return;
+      }
+      if (action === 'replace') {
+        if (typeof openMediaUpload === 'function') openMediaUpload(document.getElementById('mediaFilterCampaignId')?.value || '');
+        return;
+      }
+      toast('Rinomina media: in arrivo');
+    }, { capture: false });
+  }
+
+  function a2wNormalizeStripFilters() {
+    const search = document.getElementById('mediaStripSearch');
+    const select = document.getElementById('mediaFilterCampaignId');
+    const check = document.getElementById('mediaOnlySelectedCampaign');
+    if (search) search.classList.add('a2w-media-strip-search');
+    if (select) select.classList.add('a2w-media-strip-select');
+    if (check) check.closest('label')?.classList.add('a2w-media-strip-check');
+  }
+
+  function a2wEnhanceMediaLibraryDom() {
+    const section = a2wMediaSection();
+    if (!section) return;
+    section.setAttribute('data-a2w-component', 'media-library');
+    a2wEnsureMediaPageMenu(section);
+    const specsCard = [...section.querySelectorAll('.card')].find((card) =>
+      /Specifiche tecniche consigliate/i.test(card.textContent || '')
+    );
+    if (specsCard) specsCard.style.display = 'none';
+    a2wEnsureMediaDropzones(section);
+    a2wReplaceLoadingWithSkeleton('mediaLogoBox', 'logo');
+    a2wReplaceLoadingWithSkeleton('mediaStripGrid', 'strip');
+    a2wReplaceLoadingWithSkeleton('mediaThumbnailGrid', 'thumb');
+    a2wReplaceLoadingWithSkeleton('mediaBackgroundGrid', 'bg');
+    a2wEnhanceMediaCards();
+    a2wEnhanceStripBadges();
+    a2wNormalizeStripFilters();
+    a2wBindMediaItemActions(section);
+  }
+
+  function initA2WMediaLibraryEnhancer() {
+    const state = a2wMediaState();
+    if (state.hooked) return;
+    if (typeof loadMediaLibrary !== 'function') {
+      if (!state.waitTimer) {
+        state.waitTimer = window.setTimeout(function a2wWaitMediaHook() {
+          state.waitTimer = null;
+          initA2WMediaLibraryEnhancer();
+        }, 250);
+      }
+      return;
+    }
+    state.hooked = true;
+    const original = loadMediaLibrary;
+    window.loadMediaLibrary = async function a2wLoadMediaLibraryWrapped() {
+      const result = await original.apply(this, arguments);
+      a2wEnhanceMediaLibraryDom();
+      a2wDispatchSidebarEvent('a2w:media:render', {});
+      return result;
+    };
+    a2wEnhanceMediaLibraryDom();
+  }
+
+  A2W.icons.qr = A2W.icons.qr || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6H4z"/><path d="M14 14h2"/><path d="M18 14h2"/><path d="M14 18h2"/><path d="M18 18h2"/></svg>';
+  A2W.icons.external = A2W.icons.external || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 14 20 4"/><path d="M20 14v6H4V4h6"/></svg>';
+  A2W.icons.link = A2W.icons.link || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11.2 4.73"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 1 0 7.07 7.07L12.8 19.27"/></svg>';
+  A2W.icons.kebab = A2W.icons.kebab || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>';
+  A2W.icons.pause = A2W.icons.pause || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14"/><path d="M16 5v14"/></svg>';
+  A2W.icons.play = A2W.icons.play || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 4 12 8-12 8V4z"/></svg>';
+  A2W.icons.copy = A2W.icons.copy || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  A2W.icons.delete = A2W.icons.delete || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+  A2W.icons.download = A2W.icons.download || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M4 20h16"/></svg>';
+  A2W.icons.install = A2W.icons.install || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 13 3 3 7-8"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>';
+  A2W.icons.tag = A2W.icons.tag || '<svg viewBox="0 0 24 24" fill="none" stroke="' + A2W_ICON_STROKE + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10 10 20 2 12V4h8z"/><circle cx="7.5" cy="7.5" r="1"/></svg>';
+
+  function a2wActionState() {
+    A2W.actions = A2W.actions || {};
+    return A2W.actions;
+  }
+
+  function a2wExtractEntityIdFromButton(btn) {
+    if (!btn) return '';
+    const onclick = String(btn.getAttribute('onclick') || '');
+    const match = onclick.match(/'([^']+)'/);
+    return match ? match[1] : '';
+  }
+
+  function a2wCreateIconButton(label, iconSvg, className) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = className || 'a2w-icon-btn';
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('data-a2w-tooltip-label', label);
+    btn.innerHTML = iconSvg;
+    return btn;
+  }
+
+  async function a2wDuplicateCampaignFromId(campaignId) {
+    if (!campaignId) return;
+    const source = (Array.isArray(window.campaignsCache) ? window.campaignsCache : []).find((c) => c.id === campaignId);
+    if (!source) {
+      toast('Campagna non trovata');
+      return;
+    }
+    if (typeof openCampaignModal === 'function') openCampaignModal();
+    const setVal = function (id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value || '';
+    };
+    setVal('campaignEditId', '');
+    setVal('campName', (source.name || '') + ' (copia)');
+    setVal('campDesc', source.description || '');
+    setVal('campUtmSource', source.utm_source || '');
+    setVal('campUtmMedium', source.utm_medium || '');
+    setVal('campUtmCampaign', source.utm_campaign || '');
+    setVal('campUtmContent', source.utm_content || '');
+    setVal('campUtmTerm', source.utm_term || '');
+    setVal('campStart', source.start_date ? source.start_date.substring(0, 10) : '');
+    setVal('campEnd', source.end_date ? source.end_date.substring(0, 10) : '');
+    if (source.template_id) setVal('campTemplate', source.template_id);
+    const title = document.getElementById('campaignModalTitle');
+    if (title) title.textContent = 'Duplica Campagna';
+    toast('Campagna duplicata in bozza');
+  }
+
+  async function a2wDuplicateTemplateFromId(templateId) {
+    if (!templateId || typeof editTemplate !== 'function') return;
+    await editTemplate(templateId);
+    const editId = document.getElementById('templateEditId');
+    if (editId) editId.value = '';
+    const nameInput = document.getElementById('tplName');
+    if (nameInput && !/\(copia\)$/i.test(nameInput.value || '')) nameInput.value = (nameInput.value || '') + ' (copia)';
+    const title = document.getElementById('templateModalTitle');
+    if (title) title.textContent = 'Duplica Template';
+    toast('Template duplicato in bozza');
+  }
+
+  function a2wEnhanceCampaignMetaChips(card) {
+    const meta = card.querySelector('.card-meta');
+    if (!meta || meta.dataset.a2wEnhanced === '1') return;
+    const raw = String(meta.textContent || '').trim();
+    if (!raw) return;
+    const segments = raw.split('·').map((s) => s.trim()).filter(Boolean);
+    if (!segments.length) return;
+    const chips = [];
+    segments.forEach((segment) => {
+      let icon = A2W.icons.tag;
+      let label = segment;
+      const dl = segment.match(/^(\d+)\s+download$/i);
+      const ins = segment.match(/^(\d+)\s+install$/i);
+      const src = segment.match(/^src=(.+)$/i);
+      const med = segment.match(/^med=(.+)$/i);
+      if (dl) {
+        icon = A2W.icons.download;
+        label = 'download ' + dl[1];
+      } else if (ins) {
+        icon = A2W.icons.install;
+        label = 'install ' + ins[1];
+      } else if (src) {
+        icon = A2W.icons.tag;
+        label = 'src ' + src[1];
+      } else if (med) {
+        icon = A2W.icons.tag;
+        label = 'med ' + med[1];
+      }
+      chips.push('<span class="a2w-chip" data-a2w-component="chip"><span class="a2w-chip__icon">' + icon + '</span><span class="a2w-chip__label">' + label + '</span></span>');
+    });
+    meta.classList.add('a2w-chip-row');
+    meta.dataset.a2wEnhanced = '1';
+    meta.innerHTML = chips.join('');
+  }
+
+  function a2wCloseAllDropdownMenus() {
+    document.querySelectorAll('.a2w-row-kebab-menu, .a2w-media-kebab-menu, #leads .a2w-leads-row-menu, .a2w-ui-action-menu__panel').forEach((menu) => {
+      menu.hidden = true;
+    });
+    document.querySelectorAll('.a2w-row-kebab-trigger, .a2w-media-kebab-btn, .a2w-ui-action-menu__trigger').forEach((btn) => {
+      btn.setAttribute('aria-expanded', 'false');
+    });
+    if (A2W.UI && A2W.UI.actionMenuContext && typeof A2W.UI.actionMenuContext.closeAll === 'function') {
+      A2W.UI.actionMenuContext.closeAll();
+    }
+  }
+
+  function a2wEnsureDropdownDismiss() {
+    const state = a2wActionState();
+    if (state.dropdownDismissBound) return;
+    state.dropdownDismissBound = true;
+    document.addEventListener('click', function a2wDropdownDismissClick(e) {
+      if (e.target.closest('[data-a2w-dropdown-root]')) return;
+      a2wCloseAllDropdownMenus();
+    }, true);
+    document.addEventListener('keydown', function a2wDropdownDismissKey(e) {
+      if (e.key === 'Escape') a2wCloseAllDropdownMenus();
+    }, { capture: false });
+  }
+
+  function a2wEnhanceCampaignCardActions(card) {
+    const actions = card.querySelector('.card-actions');
+    if (!actions || actions.dataset.a2wEnhanced === '1') return;
+    const buttons = [...actions.querySelectorAll('button')];
+    const editBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('editCampaign('));
+    const qrBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('showCampaignQR('));
+    const landingBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('openCampaignLandingTab('));
+    const linkBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('copyCampaignDirect('));
+    const toggleBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('toggleCampaign('));
+    const deleteBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('deleteCampaign('));
+    if (!editBtn) return;
+
+    actions.dataset.a2wEnhanced = '1';
+    actions.classList.add('a2w-row-actions');
+    actions.setAttribute('data-a2w-component', 'campaign-actions');
+
+    editBtn.className = 'btn a2w-btn-primary a2w-row-primary-btn';
+    editBtn.textContent = 'Modifica';
+
+    const iconGroup = document.createElement('div');
+    iconGroup.className = 'a2w-row-icon-group';
+    iconGroup.setAttribute('data-a2w-component', 'icon-group');
+    actions.insertBefore(iconGroup, editBtn.nextSibling);
+
+    const moveIconAction = function (sourceBtn, label, icon) {
+      if (!sourceBtn) return;
+      sourceBtn.className = 'a2w-icon-btn a2w-row-icon-btn';
+      sourceBtn.setAttribute('aria-label', label);
+      sourceBtn.setAttribute('data-a2w-tooltip-label', label);
+      sourceBtn.innerHTML = icon;
+      iconGroup.appendChild(sourceBtn);
+    };
+    moveIconAction(qrBtn, 'QR', A2W.icons.qr);
+    moveIconAction(landingBtn, 'Landing', A2W.icons.external);
+    moveIconAction(linkBtn, 'Link diretto', A2W.icons.link);
+
+    const kebabWrap = document.createElement('div');
+    kebabWrap.className = 'a2w-row-kebab-wrap';
+    kebabWrap.setAttribute('data-a2w-component', 'row-kebab');
+    kebabWrap.setAttribute('data-a2w-dropdown-root', '');
+    const kebabBtn = a2wCreateIconButton('Altre azioni campagna', A2W.icons.kebab, 'a2w-icon-btn a2w-row-kebab-trigger');
+    kebabBtn.setAttribute('aria-expanded', 'false');
+    kebabWrap.appendChild(kebabBtn);
+    const menu = document.createElement('div');
+    menu.className = 'a2w-row-kebab-menu';
+    menu.hidden = true;
+    const campaignId = a2wExtractEntityIdFromButton(editBtn) || a2wExtractEntityIdFromButton(qrBtn);
+    const toggleLabel = toggleBtn ? String(toggleBtn.textContent || '').trim() : '';
+    const toggleIcon = /pausa/i.test(toggleLabel) ? A2W.icons.pause : A2W.icons.play;
+    const toggleText = toggleLabel || 'Pausa/Riprendi';
+    menu.innerHTML = [
+      '<button type="button" class="a2w-row-kebab-item" data-a2w-item="toggle"><span class="a2w-row-kebab-icon">' + toggleIcon + '</span><span>' + toggleText + '</span></button>',
+      '<button type="button" class="a2w-row-kebab-item" data-a2w-item="duplicate"><span class="a2w-row-kebab-icon">' + A2W.icons.copy + '</span><span>Duplica</span></button>',
+      '<button type="button" class="a2w-row-kebab-item a2w-row-kebab-item--danger" data-a2w-item="delete"><span class="a2w-row-kebab-icon">' + A2W.icons.delete + '</span><span>Elimina</span></button>'
+    ].join('');
+    kebabWrap.appendChild(menu);
+    actions.appendChild(kebabWrap);
+
+    kebabBtn.addEventListener('click', function a2wCampaignMenuToggle(e) {
+      e.stopPropagation();
+      const wasHidden = menu.hidden;
+      a2wCloseAllDropdownMenus();
+      if (wasHidden) {
+        menu.hidden = false;
+        kebabBtn.setAttribute('aria-expanded', 'true');
+      }
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="toggle"]')?.addEventListener('click', function a2wCampaignToggleClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      if (toggleBtn) toggleBtn.click();
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="duplicate"]')?.addEventListener('click', function a2wCampaignDupClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      a2wDuplicateCampaignFromId(campaignId);
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="delete"]')?.addEventListener('click', function a2wCampaignDeleteClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      if (deleteBtn) deleteBtn.click();
+    }, { capture: false });
+
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    if (deleteBtn) deleteBtn.style.display = 'none';
+  }
+
+  function a2wEnhanceTemplateCardActions(card) {
+    const actions = card.querySelector('.card-actions');
+    if (!actions || actions.dataset.a2wEnhanced === '1') return;
+    const buttons = [...actions.querySelectorAll('button')];
+    const editBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('editTemplate('));
+    const deleteBtn = buttons.find((b) => String(b.getAttribute('onclick') || '').includes('deleteTemplate('));
+    if (!editBtn) return;
+
+    actions.dataset.a2wEnhanced = '1';
+    actions.classList.add('a2w-row-actions');
+    actions.setAttribute('data-a2w-component', 'template-actions');
+    editBtn.className = 'btn a2w-btn-primary a2w-row-primary-btn';
+    editBtn.textContent = 'Modifica';
+
+    const kebabWrap = document.createElement('div');
+    kebabWrap.className = 'a2w-row-kebab-wrap';
+    kebabWrap.setAttribute('data-a2w-component', 'row-kebab');
+    kebabWrap.setAttribute('data-a2w-dropdown-root', '');
+    const kebabBtn = a2wCreateIconButton('Altre azioni template', A2W.icons.kebab, 'a2w-icon-btn a2w-row-kebab-trigger');
+    kebabBtn.setAttribute('aria-expanded', 'false');
+    kebabWrap.appendChild(kebabBtn);
+    const menu = document.createElement('div');
+    menu.className = 'a2w-row-kebab-menu';
+    menu.hidden = true;
+    const templateId = a2wExtractEntityIdFromButton(editBtn);
+    menu.innerHTML = [
+      '<button type="button" class="a2w-row-kebab-item" data-a2w-item="duplicate"><span class="a2w-row-kebab-icon">' + A2W.icons.copy + '</span><span>Duplica</span></button>',
+      '<button type="button" class="a2w-row-kebab-item a2w-row-kebab-item--danger" data-a2w-item="delete"><span class="a2w-row-kebab-icon">' + A2W.icons.delete + '</span><span>Elimina</span></button>'
+    ].join('');
+    kebabWrap.appendChild(menu);
+    actions.appendChild(kebabWrap);
+
+    kebabBtn.addEventListener('click', function a2wTemplateMenuToggle(e) {
+      e.stopPropagation();
+      const wasHidden = menu.hidden;
+      a2wCloseAllDropdownMenus();
+      if (wasHidden) {
+        menu.hidden = false;
+        kebabBtn.setAttribute('aria-expanded', 'true');
+      }
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="duplicate"]')?.addEventListener('click', function a2wTemplateDupClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      a2wDuplicateTemplateFromId(templateId);
+    }, { capture: false });
+
+    menu.querySelector('[data-a2w-item="delete"]')?.addEventListener('click', function a2wTemplateDeleteClick() {
+      menu.hidden = true;
+      kebabBtn.setAttribute('aria-expanded', 'false');
+      if (deleteBtn) deleteBtn.click();
+    }, { capture: false });
+
+    if (deleteBtn) deleteBtn.style.display = 'none';
+  }
+
+  function a2wEnhanceCampaignActionGrouping() {
+    document.querySelectorAll('#campaignsList .card').forEach((card) => {
+      a2wEnhanceCampaignCardActions(card);
+      a2wEnhanceCampaignMetaChips(card);
+    });
+  }
+
+  function a2wEnhanceTemplateActionGrouping() {
+    document.querySelectorAll('#templatesList .card').forEach((card) => {
+      a2wEnhanceTemplateCardActions(card);
+    });
+  }
+
+  function initA2WActionGroupingEnhancer() {
+    const state = a2wActionState();
+    if (state.hooked) return;
+    if (typeof loadCampaigns !== 'function' || typeof loadTemplates !== 'function') {
+      if (!state.waitTimer) {
+        state.waitTimer = window.setTimeout(function a2wWaitActionHook() {
+          state.waitTimer = null;
+          initA2WActionGroupingEnhancer();
+        }, 250);
+      }
+      return;
+    }
+    state.hooked = true;
+    a2wEnsureDropdownDismiss();
+
+    const originalCampaigns = loadCampaigns;
+    window.loadCampaigns = async function a2wLoadCampaignsWrapped() {
+      const result = await originalCampaigns.apply(this, arguments);
+      a2wEnhanceCampaignActionGrouping();
+      a2wDispatchSidebarEvent('a2w:actions:campaigns', {});
+      return result;
+    };
+
+    const originalTemplates = loadTemplates;
+    window.loadTemplates = async function a2wLoadTemplatesWrapped() {
+      const result = await originalTemplates.apply(this, arguments);
+      a2wEnhanceTemplateActionGrouping();
+      a2wDispatchSidebarEvent('a2w:actions:templates', {});
+      return result;
+    };
+
+    a2wEnhanceCampaignActionGrouping();
+    a2wEnhanceTemplateActionGrouping();
+  }
+
+  function initA2wNavDropdownClose() {
+    if (typeof nav !== 'function' || window.__a2wNavMenuCloseHooked) return;
+    window.__a2wNavMenuCloseHooked = true;
+    const originalNav = nav;
+    window.nav = function a2wNavCloseDropdowns() {
+      a2wCloseAllDropdownMenus();
+      return originalNav.apply(this, arguments);
+    };
+  }
+
   // UX-AUDIT[a2w]: activate ads shell chrome once per session
   function initA2wShell() {
     if (!isA2wDeploy()) return;
@@ -34,9 +1020,15 @@
     const line = typeof getDashboardProductLine === 'function' ? getDashboardProductLine() : 'ads';
     root.setAttribute('data-product-line', line);
     initA2wUserMenuChrome();
+    initA2WSidebarChrome();
+    a2wEnsureDropdownDismiss();
+    initA2wNavDropdownClose();
+    initA2WMediaLibraryEnhancer();
+    initA2WActionGroupingEnhancer();
     ensureA2wLeadsLayout();
     syncA2wHeaderChrome();
     syncA2wWaiPadding();
+    a2wDispatchSidebarEvent('a2w:shell:ready', { line: line });
   }
 
   function ensureA2wLeadsLayout() {
@@ -56,7 +1048,7 @@
     role.classList.add('a2w-admin-badge');
   }
 
-  // UX-AUDIT[a2w]: breadcrumb brand block with 48px logo + fallback initials
+  // UX-AUDIT[a2w]: breadcrumb brand text-only (no low-contrast logo in header)
   function syncA2wHeaderChrome() {
     if (!document.documentElement.classList.contains('a2w-shell')) return;
     const brandSpan = document.getElementById('breadcrumbBrand');
@@ -69,42 +1061,9 @@
       brandSpan.parentNode.insertBefore(wrap, brandSpan);
       wrap.appendChild(brandSpan);
     }
-
-    let logoSlot = document.getElementById('a2wBreadcrumbLogo');
-    let fallback = document.getElementById('a2wBreadcrumbLogoFallback');
-    const srcLogo = document.getElementById('headerBrandLogo');
-    const brandName = (brandSpan.textContent || '').trim();
-
-    if (!logoSlot) {
-      logoSlot = document.createElement('img');
-      logoSlot.id = 'a2wBreadcrumbLogo';
-      logoSlot.className = 'a2w-breadcrumb-logo';
-      logoSlot.alt = '';
-      wrap.insertBefore(logoSlot, brandSpan);
-    }
-    if (!fallback) {
-      fallback = document.createElement('span');
-      fallback.id = 'a2wBreadcrumbLogoFallback';
-      fallback.className = 'a2w-breadcrumb-logo a2w-breadcrumb-logo--fallback';
-      fallback.setAttribute('aria-hidden', 'true');
-      wrap.insertBefore(fallback, brandSpan);
-    }
-
-    if (srcLogo && srcLogo.src && srcLogo.style.display !== 'none') {
-      logoSlot.src = srcLogo.src;
-      logoSlot.style.display = '';
-      fallback.style.display = 'none';
-    } else if (brandName) {
-      logoSlot.style.display = 'none';
-      const parts = brandName.split(/\s+/).filter(Boolean);
-      fallback.textContent = parts.length >= 2
-        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-        : brandName.slice(0, 2).toUpperCase();
-      fallback.style.display = 'inline-flex';
-    } else {
-      logoSlot.style.display = 'none';
-      fallback.style.display = 'none';
-    }
+    wrap.classList.add('a2w-breadcrumb-brand-wrap--text-only');
+    wrap.querySelectorAll('#a2wBreadcrumbLogo, #a2wBreadcrumbLogoFallback').forEach((el) => el.remove());
+    a2wEnsureSidebarWorkspaceSwitcher();
   }
 
   function syncA2wWaiPadding() {
@@ -521,7 +1480,9 @@
   }
 
   A2W.ensureA2wLeadsLayout = ensureA2wLeadsLayout;
+  A2W.closeDropdownMenus = a2wCloseAllDropdownMenus;
   A2W.initA2wShell = initA2wShell;
+  A2W.initA2WSidebarChrome = initA2WSidebarChrome;
   A2W.syncA2wHeaderChrome = syncA2wHeaderChrome;
   A2W.syncA2wWaiPadding = syncA2wWaiPadding;
   A2W.isA2wDeploy = isA2wDeploy;

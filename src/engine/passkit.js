@@ -46,9 +46,10 @@ async function compositeThumbnailOnStrip(stripBuffer, thumbBuffer, width, height
   const meta = await sharp(thumbSized).metadata();
   const thumbW = meta.width || maxW;
   const thumbH = meta.height || maxH;
-  const rightInset = Math.max(20, Math.round(width * 0.055));
+  // Keep a visible slice of strip on the right side.
+  const rightInset = Math.max(30, Math.round(width * 0.085));
   const left = Math.max(pad, width - thumbW - rightInset);
-  const top = Math.max(2, Math.round((height - thumbH) / 2) - Math.round(height * 0.07));
+  const top = Math.max(2, Math.round((height - thumbH) / 2) - Math.round(height * 0.12));
   return sharp(stripBuffer)
     .composite([{ input: thumbSized, left, top }])
     .png()
@@ -657,7 +658,8 @@ function generatePassJson(template, instance, brand, options = {}) {
       instance,
       member,
       brandConfig,
-      apiBase
+      apiBase,
+      portalUrl
     });
     const apple = toApplePass(employeePass);
     passStructure = apple.passStructure;
@@ -926,7 +928,7 @@ async function createPkpass(template, instance, brand, options = {}) {
     certPath = path.join(__dirname, '../../certs/signerCert.pem'),
     keyPath = path.join(__dirname, '../../certs/signerKey.pem'),
     wwdrPath = path.join(__dirname, '../../certs/wwdr.pem'),
-    issuePortalLink = !hrBrand,
+    issuePortalLink = true,
     rotatePortalLink = false,
     portalUrl: portalUrlOption = undefined,
     member: memberOption = undefined
