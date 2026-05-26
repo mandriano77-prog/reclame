@@ -18,6 +18,7 @@ const debugSignRoutes = require('./api/debug-sign');
 const { startScheduler } = require('./engine/scheduler');
 const { runStripPromoCheck } = require('./engine/strip-promo');
 const { isAnthropicConfigured, isFalConfigured } = require('./engine/env-ai');
+const { resolveBaseUrlFromEnv } = require('./engine/base-url');
 
 // Load certificates: prefer FILE-BASED certs (from repo), fallback to env vars
 function loadCerts() {
@@ -76,11 +77,7 @@ app.get('/debug/wallet-check', async (req, res) => {
     const recentEvents = await pool.query("SELECT event_type, metadata, created_at FROM events WHERE event_type IN ('pass_installed','pass_removed','pass_created') ORDER BY created_at DESC LIMIT 20");
     const devices = await pool.query('SELECT device_library_id, push_token, serial_number FROM device_registrations LIMIT 10');
     // Check what baseUrl would be used for new passes
-    const effectiveBaseUrl = process.env.CUSTOM_DOMAIN
-      ? `https://${process.env.CUSTOM_DOMAIN}`
-      : (process.env.RAILWAY_PUBLIC_DOMAIN
-        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : 'https://localhost:3000');
+    const effectiveBaseUrl = resolveBaseUrlFromEnv({ localhostPort: 3000 });
 
     // Check auth tokens in recent passes
     const recentPasses = await pool.query('SELECT id, serial_number, auth_token, created_at FROM pass_instances ORDER BY created_at DESC LIMIT 5');
@@ -327,12 +324,7 @@ getDb().then(db => {
     console.log('  AI:     fal.ai ' + (isFalConfigured() ? 'configurata' : 'NON configurata nel processo Node'));
 
     // Start push notification scheduler (absolute URLs in scheduled jobs)
-    const baseUrl =
-      process.env.CUSTOM_DOMAIN
-        ? `https://${process.env.CUSTOM_DOMAIN}`
-        : process.env.RAILWAY_PUBLIC_DOMAIN
-          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-          : `http://localhost:${PORT}`;
+    const baseUrl = resolveBaseUrlFromEnv({ localhostPort: PORT });
     startScheduler(baseUrl);
 
     // Strip Promo cron — check every hour
