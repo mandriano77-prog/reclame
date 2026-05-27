@@ -155,6 +155,16 @@ async function executeScheduledPush(schedule, baseUrl) {
 
   // If update_pass, update brand config and regenerate passes
   if (update_pass) {
+    const { syncWalletLogoFromBrandIdentity } = require('./brand-wallet-logo');
+    const hrDeploy = String(process.env.DASHBOARD_PRODUCT_LINE || '').toLowerCase() === 'hr';
+    try {
+      await syncWalletLogoFromBrandIdentity(brand_id, brand, {
+        syncTemplates: hrDeploy || brand?.config?.product_line === 'hr'
+      });
+    } catch (syncErr) {
+      console.warn('[Scheduler] wallet logo sync skipped:', syncErr.message);
+    }
+
     const updatedConfig = {
       ...(brand.config || {}),
       pushAnnouncement: {

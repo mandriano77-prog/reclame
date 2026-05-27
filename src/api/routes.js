@@ -2207,9 +2207,18 @@ router.post('/push/send', async (req, res) => {
 
     // Update pass content if requested
     if (update_pass !== false) {
-      const brand = await getBrand(brand_id);
+      let brand = await getBrand(brand_id);
+      const { syncWalletLogoFromBrandIdentity } = require('../engine/brand-wallet-logo');
+      try {
+        await syncWalletLogoFromBrandIdentity(brand_id, brand, {
+          syncTemplates: isHrBrand(brand, req)
+        });
+        brand = await getBrand(brand_id);
+      } catch (syncErr) {
+        console.warn('[PUSH] wallet logo sync skipped:', syncErr.message);
+      }
 
-      // Update brand.config.pushAnnouncement ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ this is what passkit.js reads
+      // Update brand.config.pushAnnouncement — this is what passkit.js reads
       // to build the announcement field with changeMessage on the pass
       const config = brand.config || {};
       config.pushAnnouncement = { title, message, ts: Date.now() };
@@ -4952,7 +4961,16 @@ async function performImmediatePushForWai(payload) {
   }
 
   if (update_pass !== false) {
-    const brand = await getBrand(brand_id);
+    let brand = await getBrand(brand_id);
+    const { syncWalletLogoFromBrandIdentity } = require('../engine/brand-wallet-logo');
+    try {
+      await syncWalletLogoFromBrandIdentity(brand_id, brand, {
+        syncTemplates: isHrBrand(brand, { headers: {} })
+      });
+      brand = await getBrand(brand_id);
+    } catch (syncErr) {
+      console.warn('[WAI push] wallet logo sync skipped:', syncErr.message);
+    }
     const config = { ...(brand?.config || {}) };
     config.pushAnnouncement = { title, message, ts: Date.now() };
     await updateBrand(brand_id, { config });

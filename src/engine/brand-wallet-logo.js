@@ -26,6 +26,41 @@ async function resolveBrandLogoRawBuffer(brand) {
   return null;
 }
 
+/** Canonical wallet logo source for pass logo.png + notification icon.png */
+async function resolveWalletLogoRawBuffer(brand, template) {
+  const cfg = brand?.config || {};
+  const mediaId = cfg.brand_identity_assets?.logo;
+  if (mediaId) {
+    const media = await getMedia(mediaId);
+    if (media?.image_base64) {
+      return {
+        buffer: Buffer.from(media.image_base64, 'base64'),
+        source: 'brand_identity_media'
+      };
+    }
+  }
+  const tplLogo = template?.style?.images?.logo;
+  if (tplLogo) {
+    return {
+      buffer: Buffer.from(tplLogo, 'base64'),
+      source: 'template_logo'
+    };
+  }
+  return resolveBrandLogoRawBuffer(brand);
+}
+
+async function deriveNotificationIconFromPassLogo(logoBuffers) {
+  if (!logoBuffers?.logo) return null;
+  const transparent = { r: 0, g: 0, b: 0, alpha: 0 };
+  const logoHi = logoBuffers.logo2x || logoBuffers.logo;
+  const [icon, icon2x, icon3x] = await Promise.all([
+    sharp(logoBuffers.logo).resize(29, 29, { fit: 'contain', background: transparent }).png().toBuffer(),
+    sharp(logoHi).resize(58, 58, { fit: 'contain', background: transparent }).png().toBuffer(),
+    sharp(logoHi).resize(87, 87, { fit: 'contain', background: transparent }).png().toBuffer()
+  ]);
+  return { icon, icon2x, icon3x };
+}
+
 async function applyBrandLogoBase64(brandId, logoBase64, { brand, syncTemplates = false } = {}) {
   const imgBuffer = Buffer.from(logoBase64, 'base64');
   const logo1x = await sharp(imgBuffer).resize(160, 50, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
@@ -85,6 +120,8 @@ async function inspectPkpassIcon(pkpassBuffer) {
 
 module.exports = {
   resolveBrandLogoRawBuffer,
+  resolveWalletLogoRawBuffer,
+  deriveNotificationIconFromPassLogo,
   applyBrandLogoBase64,
   syncWalletLogoFromBrandIdentity,
   inspectPkpassIcon
