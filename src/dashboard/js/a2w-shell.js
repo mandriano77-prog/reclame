@@ -293,6 +293,7 @@
   function a2wRefreshSidebarChrome() {
     a2wEnsureSidebarWorkspaceSwitcher();
     a2wEnsureSidebarIcons();
+    initA2wNavGroupAccessibility();
   }
 
   function initA2WSidebarSyncHooks() {
@@ -322,10 +323,36 @@
     }
   }
 
+  function a2wSyncNavGroupA11y(details) {
+    if (!details) return;
+    const summary = details.querySelector('summary.nav-group-label');
+    if (!summary) return;
+    const label = String(summary.textContent || '').trim() || 'sezione';
+    const open = details.open;
+    summary.setAttribute('aria-expanded', open ? 'true' : 'false');
+    summary.setAttribute('aria-label', (open ? 'Comprimi' : 'Espandi') + ' sezione ' + label);
+  }
+
+  function initA2wNavGroupAccessibility() {
+    document.querySelectorAll('.sidebar .nav-group').forEach((details) => {
+      a2wSyncNavGroupA11y(details);
+      if (details.dataset.a2wNavA11yBound === '1') return;
+      details.dataset.a2wNavA11yBound = '1';
+      details.addEventListener('toggle', function () {
+        a2wSyncNavGroupA11y(details);
+      });
+    });
+    const toggleBtn = document.getElementById('a2wSidebarToggleBtn');
+    if (toggleBtn && !toggleBtn.getAttribute('aria-label')) {
+      toggleBtn.setAttribute('aria-label', 'Comprimi o espandi menu laterale');
+    }
+  }
+
   function initA2WSidebarChrome() {
     a2wRefreshSidebarChrome();
     a2wEnsureSidebarToggleButton();
     a2wApplySidebarCollapsedState(a2wReadSidebarCollapsedPref());
+    initA2wNavGroupAccessibility();
     initA2WSidebarSyncHooks();
     const state = a2wSidebarState();
     if (!state.bound) {

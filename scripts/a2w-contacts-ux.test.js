@@ -8,7 +8,8 @@ const {
   toggleKpiFilter,
   kpiFilterToCheckboxState,
   shouldShowKpiDelta,
-  kpiDeltaClassName
+  kpiDeltaClassName,
+  shouldHideKpiStripWhenEmpty
 } = require('../src/dashboard/js/components/contacts/a2w-contacts-ux.cjs');
 
 test('parseLeadsFilterParam reads valid ?filter= values', () => {
@@ -54,4 +55,9 @@ test('KPI delta visibility and tone classes', () => {
   assert.equal(shouldShowKpiDelta(3), true);
   assert.equal(kpiDeltaClassName(2), 'is-positive');
   assert.equal(kpiDeltaClassName(0), '');
+});
+
+test('shouldHideKpiStripWhenEmpty hides zero-state KPI strip', () => {
+  assert.equal(shouldHideKpiStripWhenEmpty(0), true);
+  assert.equal(shouldHideKpiStripWhenEmpty(1), false);
 });

@@ -93,10 +93,19 @@ html[data-shell="dark"].a2w-shell #leads .contacts-page-header {
   gap: var(--space-4);
 }
 
+html[data-shell="dark"].a2w-shell #leads .contacts-page-header h1.page-title {
+  font-size: var(--a2w-type-h1-size, 1.875rem);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0 0 4px;
+}
+
 html[data-shell="dark"].a2w-shell #leads .contacts-page-blurb {
   color: var(--a2w-text-secondary);
-  font-size: var(--text-sm);
-  margin-top: 4px;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.45;
+  margin: 0;
+  max-width: 52ch;
 }
 
 html[data-shell="dark"].a2w-shell #leads .contacts-top-grid {
@@ -153,8 +162,6 @@ html[data-shell="dark"].a2w-shell #leads .a2w-leads-kebab-btn:focus-visible,
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-reset:focus-visible,
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__link:focus-visible,
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-option:focus-within {
-html[data-shell="dark"].a2w-shell #leads .a2w-leads-kebab-btn:focus-visible,
-html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__link:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--a2w-action-primary);
 }
@@ -414,8 +421,6 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-main {
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-label {
-  margin: 0;
-html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-label {
   margin: 0 0 2px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -456,9 +461,6 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-delta.is-positive {
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-delta.is-negative {
   color: #fca5a5;
-  color: var(--a2w-text-tertiary);
-  font-size: 11px;
-  white-space: nowrap;
 }
 
 html[data-shell="dark"].a2w-shell #leads #leadsTable tbody tr:hover {
@@ -697,4 +699,78 @@ html[data-shell="dark"].a2w-shell #leads .a2w-skeleton-line {
   html[data-shell="dark"].a2w-shell #leads #contactsToolbarHost.a2w-contacts-toolbar {
     align-items: stretch;
   }
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-onboarding {
+  list-style: none;
+  margin: 0 auto 20px;
+  padding: 0;
+  max-width: 420px;
+  text-align: left;
+  display: grid;
+  gap: 10px;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-onboarding li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--a2w-text-secondary);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-onboarding__step {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(63, 224, 200, 0.15);
+  color: var(--a2w-action-primary);
+  flex-shrink: 0;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-more-actions {
+  margin-top: 4px;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-more-actions summary {
+  cursor: pointer;
+  color: var(--a2w-text-secondary);
+  font-size: 12px;
+  list-style: none;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-more-actions summary::-webkit-details-marker {
+  display: none;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-more-actions__panel {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-add-contact-modal {
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-add-contact-modal__dialog {
+  width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-add-contact-modal input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: auto;
+  flex-shrink: 0;
 }

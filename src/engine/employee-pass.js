@@ -115,6 +115,23 @@ function colorToRgbString(color) {
   return `rgb(${c.r}, ${c.g}, ${c.b})`;
 }
 
+function buildAnnouncementAuxField(brandConfig) {
+  const ann = brandConfig?.pushAnnouncement;
+  if (!ann || !ann.message) return null;
+  const title = String(ann.title || 'NOVITA').trim().toUpperCase().slice(0, 30) || 'NOVITA';
+  const ts = Number(ann.ts || Date.now());
+  // Make value unique per push while keeping visible text stable.
+  const marker = '\u200B'.repeat((ts % 10) + 1);
+  const value = String(ann.message || '').trim().slice(0, 30);
+  if (!value) return null;
+  return {
+    key: 'announcement',
+    label: title,
+    value: value + marker,
+    changeMessage: '%@'
+  };
+}
+
 function rgbToHex(color) {
   if (!color) return HR_BG_DEFAULT;
   if (String(color).startsWith('#')) return String(color);
@@ -256,7 +273,6 @@ function walletImageUrls({ apiBase, brand, template }) {
 function buildEmployeePass({ brand, template, instance, member, brandConfig, apiBase, portalUrl = null }) {
   const cfg = brandConfig || brand?.config || {};
   const profile = resolveMemberProfile(member, instance);
-  const tplFields = template?.fields || {};
   const colors = resolveEmployeePassColors(template, cfg);
   const images = walletImageUrls({ apiBase, brand, template });
   const tplImages = template?.style?.images || {};
@@ -279,6 +295,8 @@ function buildEmployeePass({ brand, template, instance, member, brandConfig, api
   if (profile.office_location) {
     auxiliary.push({ key: 'sede', label: 'SEDE', value: profile.office_location });
   }
+  const annField = buildAnnouncementAuxField(cfg);
+  if (annField) auxiliary.push(annField);
 
   const backSections = buildBackSections({
     brand,

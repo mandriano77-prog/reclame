@@ -11,7 +11,7 @@ const {
   createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesForTemplate, listPasses, countPasses, deletePass,
   getMemberForPass, listEmployeesForBrand, getEmployeeFieldOptionsForBrand,
   isEmployeeMatricolaAvailable, importEmployeesBatch,
-  findMemberByBrandKey, updateMemberRecord, deleteMemberRecord,
+  findMemberByBrandKey, createMemberRecord, updateMemberRecord, deleteMemberRecord,
   logEnrollmentAttempt,
   createImportError, listImportErrors,
   updatePassDynamicLinks,
@@ -3953,7 +3953,60 @@ router.get('/brands/:brand_id/leads', async (req, res) => {
       ORDER BY p.registered_at DESC
     `, [brand_id]);
 
-    const leads = result.rows;
+    const iwLeads = result.rows;
+    const memberRows = await pool.query(`
+      SELECT
+        m.id AS member_id,
+        m.first_name,
+        m.last_name,
+        m.email,
+        m.phone,
+        m.created_at,
+        pi.id AS pass_id,
+        pi.serial_number,
+        pi.field_values,
+        dr.device_library_id AS device_id
+      FROM members m
+      LEFT JOIN pass_instances pi ON pi.id = COALESCE(
+        NULLIF(TRIM(m.pass_id), ''),
+        (SELECT pi2.id FROM pass_instances pi2 WHERE pi2.member_id = m.id LIMIT 1)
+      )
+      LEFT JOIN device_registrations dr ON dr.serial_number = pi.serial_number
+      WHERE m.brand_id = $1
+        AND (m.employee_id IS NULL OR TRIM(m.employee_id) = '')
+      ORDER BY m.created_at DESC
+    `, [brand_id]);
+
+    const seenSerials = new Set(iwLeads.map((l) => l.serial_number).filter(Boolean));
+    const seenMemberIds = new Set();
+    const manualLeads = [];
+    for (const row of memberRows.rows) {
+      if (seenMemberIds.has(row.member_id)) continue;
+      seenMemberIds.add(row.member_id);
+      const serial = row.serial_number || `member:${row.member_id}`;
+      if (row.serial_number && seenSerials.has(row.serial_number)) continue;
+      seenSerials.add(serial);
+      const fv = row.field_values && typeof row.field_values === 'object' ? row.field_values : {};
+      manualLeads.push({
+        id: row.member_id,
+        member_id: row.member_id,
+        serial_number: serial,
+        player_first_name: row.first_name,
+        player_last_name: row.last_name,
+        player_email: row.email,
+        player_phone: row.phone || fv.phone || fv.telefono || fv.Phone || null,
+        registered_at: row.created_at,
+        pass_id: row.pass_id,
+        device_id: row.device_id,
+        source: 'manual'
+      });
+    }
+
+    const leads = [...iwLeads, ...manualLeads].sort((a, b) => {
+      const ta = a.registered_at ? new Date(a.registered_at).getTime() : 0;
+      const tb = b.registered_at ? new Date(b.registered_at).getTime() : 0;
+      return tb - ta;
+    });
     const withDevice = leads.filter(l => l.device_id).length;
     const withPhone = leads.filter(l => l.player_phone).length;
     const withEmail = leads.filter(l => l.player_email).length;
@@ -3967,6 +4020,100 @@ router.get('/brands/:brand_id/leads', async (req, res) => {
     });
   } catch (err) {
     console.error('[GET /brands/:brand_id/leads]', req.params.brand_id, err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/brands/:brand_id/leads', async (req, res) => {
+  try {
+    const { brand_id } = req.params;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const brand = await getBrand(brand_id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    if (isHrBrand(brand, req)) {
+      return res.status(400).json({ error: 'Per i brand HR usa Importa CSV o Aggiungi dipendente.' });
+    }
+
+    const body = req.body || {};
+    const firstName = String(body.firstName || body.first_name || '').trim();
+    const lastName = String(body.lastName || body.last_name || '').trim();
+    const email = body.email != null ? String(body.email).trim() : '';
+    const phone = body.phone != null ? String(body.phone).trim() : '';
+    const consent = body.consent === true || body.consent === 'true' || body.consent === 1;
+    const source = String(body.source || 'manual').trim() || 'manual';
+    const createPass = body.create_pass === true || body.createPass === true;
+    const templateId = body.template_id || body.templateId || null;
+
+    if (!consent) return res.status(400).json({ error: 'Consenso privacy richiesto' });
+    if (!email && !phone) return res.status(400).json({ error: 'Inserisci almeno email o telefono' });
+
+    if (email) {
+      const dup = await findMemberByBrandKey(brand_id, { email });
+      if (dup && (!dup.employee_id || !String(dup.employee_id).trim())) {
+        return res.status(409).json({ error: 'Esiste già un contatto con questa email' });
+      }
+    }
+
+    const member = await createMemberRecord({
+      brand_id,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      email: email || null,
+      phone: phone || null,
+      lead_source: source
+    });
+
+    let passInstance = null;
+    if (createPass && templateId) {
+      const field_values = {
+        email,
+        phone,
+        telefono: phone,
+        firstName,
+        lastName,
+        first_name: firstName,
+        last_name: lastName,
+        nome: firstName,
+        cognome: lastName
+      };
+      passInstance = await createPassInstance({
+        brand_id,
+        template_id: templateId,
+        field_values
+      });
+      await updateMemberRecord(member.id, { pass_id: passInstance.id });
+      await updatePassInstance(passInstance.id, { member_id: member.id });
+      await logEvent({
+        pass_id: passInstance.id,
+        brand_id,
+        event_type: 'pass_created',
+        metadata: { source: 'contacts_manual' }
+      });
+    }
+
+    await logEvent({
+      brand_id,
+      event_type: 'contact_created',
+      metadata: { member_id: member.id, source }
+    });
+
+    const lead = {
+      id: member.id,
+      member_id: member.id,
+      serial_number: passInstance?.serial_number || `member:${member.id}`,
+      player_first_name: member.first_name,
+      player_last_name: member.last_name,
+      player_email: member.email,
+      player_phone: member.phone,
+      registered_at: member.created_at,
+      pass_id: passInstance?.id || member.pass_id,
+      device_id: null,
+      source
+    };
+
+    res.status(201).json({ lead, member, pass: passInstance });
+  } catch (err) {
+    console.error('[POST /brands/:brand_id/leads]', req.params.brand_id, err.message);
     res.status(500).json({ error: err.message });
   }
 });
