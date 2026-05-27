@@ -1889,13 +1889,6 @@
                             <option value="background">Background</option>
                         </select>
                     </div>
-                    <div class="form-group" id="mediaUploadCampaignGroup">
-                        <label class="form-label">Campagna (opzionale, per strip)</label>
-                        <select id="mediaUploadCampaignId" title="Scegli tra le campagne create nella tab Campagne">
-                            <option value="">— Nessuna campagna —</option>
-                        </select>
-                        <p style="font-size:11px;color:var(--text2);margin:6px 0 0;">L’elenco è quello della tab <strong>Campagne</strong> (nessun testo libero). Crea prima la campagna, poi assegnala qui.</p>
-                    </div>
                     <div class="form-group">
                         <label class="form-label">Nome (opzionale)</label>
                         <input type="text" id="mediaUploadName" placeholder="es. Strip natalizia 2026">
@@ -2024,11 +2017,11 @@
                                     <div class="form-group"><label class="form-label">Header Label</label><input type="text" id="wzHeaderLabel" placeholder="es. PUNTI" oninput="wzUpdatePreview()"></div>
                                     <div class="form-group"><label class="form-label">Header Value</label><input type="text" id="wzHeaderValue" placeholder="es. 0" oninput="wzUpdatePreview()"></div>
                                 </div>
-                                <div class="form-row">
+                                <div class="form-row" style="display:none;">
                                     <div class="form-group"><label class="form-label">Info Secondaria Label</label><input type="text" id="wzSecLabel" placeholder="es. LIVELLO" oninput="wzUpdatePreview()"></div>
                                     <div class="form-group"><label class="form-label">Info Secondaria Value</label><input type="text" id="wzSecValue" placeholder="es. Silver" oninput="wzUpdatePreview()"></div>
                                 </div>
-                                <div class="form-row">
+                                <div class="form-row" style="display:none;">
                                     <div class="form-group"><label class="form-label">Dettaglio Label</label><input type="text" id="wzAuxLabel" placeholder="es. OFFERTA" oninput="wzUpdatePreview()"></div>
                                     <div class="form-group"><label class="form-label">Dettaglio Value</label><input type="text" id="wzAuxValue" placeholder="es. Sconto 10%" oninput="wzUpdatePreview()"></div>
                                 </div>
@@ -2742,11 +2735,11 @@
                     <div class="form-group"><label class="form-label">Header Label</label><input type="text" id="tplHeaderLabel" placeholder="es. INFO" oninput="updatePassPreview()"></div>
                     <div class="form-group"><label class="form-label">Header Valore</label><input type="text" id="tplHeaderValue" placeholder="es. Scopri di più" oninput="updatePassPreview()"></div>
                 </div>
-                <div class="form-row">
+                <div class="form-row" style="display:none;">
                     <div class="form-group"><label class="form-label">Secondary Label</label><input type="text" id="tplSecLabel" placeholder="es. VALIDO FINO AL" oninput="updatePassPreview()"></div>
                     <div class="form-group"><label class="form-label">Secondary Valore</label><input type="text" id="tplSecValue" placeholder="es. 30/06/2026" oninput="updatePassPreview()"></div>
                 </div>
-                <div class="form-row">
+                <div class="form-row" style="display:none;">
                     <div class="form-group"><label class="form-label">Auxiliary Label</label><input type="text" id="tplAuxLabel" placeholder="es. PROMO" oninput="updatePassPreview()"></div>
                     <div class="form-group"><label class="form-label">Auxiliary Valore</label><input type="text" id="tplAuxValue" placeholder="es. -20% su tutto" oninput="updatePassPreview()"></div>
                 </div>
@@ -2830,21 +2823,9 @@
                         </div>
                     </details>
 
-                    <details class="hr-fieldset" open>
-                        <summary>3 — Risorse aziendali (max 5)</summary>
-                        <div id="hrResourcesRows"></div>
-                        <button type="button" class="btn small sec" onclick="hrAddResourceRow()">+ Aggiungi risorsa</button>
-                    </details>
-
-                    <details class="hr-fieldset" open>
-                        <summary>4 — Documenti (max 5)</summary>
-                        <div id="hrDocumentsRows"></div>
-                        <button type="button" class="btn small sec" onclick="hrAddDocumentRow()">+ Aggiungi documento</button>
-                    </details>
-
                     <details class="hr-fieldset">
-                        <summary>5 — Profilo personale (auto)</summary>
-                        <p class="form-hint">Sezione che includerà link al portale dipendente quando attivato (privacy, consensi, dati). In implementazione.</p>
+                        <summary>3 — Profilo personale (auto)</summary>
+                        <p class="form-hint">Il link profilo viene generato automaticamente per ogni dipendente nel pass emesso.</p>
                     </details>
                 </div>
 
@@ -3044,6 +3025,7 @@
 <script src="/dashboard/js/components/ui/danger-action-button.js"></script>
 <script src="/dashboard/js/components/ui/action-menu.js"></script>
 <script src="/dashboard/js/components/ui/index.js"></script>
+<script src="/dashboard/js/components/contacts/a2w-contacts-ux.js"></script>
 <script src="/dashboard/js/a2w-shell.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
 
@@ -5441,8 +5423,8 @@ function hrTemplateBackPayloadFromForm() {
         hr_phone: document.getElementById('hrBrandPhone')?.value.trim() || null,
         dpo_email: document.getElementById('hrBrandDpo')?.value.trim() || null,
         emergency_phone: document.getElementById('hrBrandEmergency')?.value.trim() || null,
-        back_resources: hrCollectLinkRows('hrResourcesRows'),
-        back_documents: hrCollectLinkRows('hrDocumentsRows')
+        back_resources: [],
+        back_documents: []
     };
 }
 
@@ -5461,12 +5443,6 @@ async function loadHrTemplateBackFields(t) {
     set('hrBrandPhone', pick('hr_phone'));
     set('hrBrandDpo', pick('dpo_email'));
     set('hrBrandEmergency', pick('emergency_phone'));
-    const resources = (Array.isArray(t?.back_resources) && t.back_resources.length)
-        ? t.back_resources : (brand.back_resources || []);
-    const documents = (Array.isArray(t?.back_documents) && t.back_documents.length)
-        ? t.back_documents : (brand.back_documents || []);
-    hrRenderLinkRows('hrResourcesRows', resources);
-    hrRenderLinkRows('hrDocumentsRows', documents);
     updatePassPreview();
 }
 
@@ -5580,8 +5556,8 @@ async function saveTemplate() {
         style: { ...existingStyle, description: document.getElementById('tplDescription').value },
         fields: {
             headerFields: [{ key: 'header_info', label: document.getElementById('tplHeaderLabel').value, value: document.getElementById('tplHeaderValue').value }],
-            secondaryFields: [{ key: 'info', label: document.getElementById('tplSecLabel').value, value: document.getElementById('tplSecValue').value, type: 'secondary' }],
-            auxiliaryFields: [{ key: 'aux_info', label: document.getElementById('tplAuxLabel').value, value: document.getElementById('tplAuxValue').value, type: 'auxiliary' }]
+            secondaryFields: [],
+            auxiliaryFields: []
         }
     };
 
@@ -5661,16 +5637,8 @@ function updatePassPreview() {
             document.getElementById('hrFixedLinkLabel')?.value.trim(),
             document.getElementById('hrFixedLinkUrl')?.value.trim()
         );
-        addBackText('DIPENDENTE', 'Mario Rossi (da anagrafica import)');
-        addBackText('MATRICOLA', '#4721');
-        addBackText('REPARTO', 'Engineering');
-        addBackText('SEDE', 'Milano');
         addBackText('PEOPLE OPERATIONS', document.getElementById('hrBrandEmail')?.value.trim());
-        addBackText('TELEFONO HR', document.getElementById('hrBrandPhone')?.value.trim());
         addBackText('PRIVACY / DPO', document.getElementById('hrBrandDpo')?.value.trim());
-        addBackText('EMERGENZE', document.getElementById('hrBrandEmergency')?.value.trim());
-        hrCollectLinkRows('hrResourcesRows').forEach(r => addBackLink(r.label, r.url));
-        hrCollectLinkRows('hrDocumentsRows').forEach(r => addBackLink(r.label, r.url));
         addBackLink('PROFILO PERSONALE', `${window.location.origin}/portal/?t=TOKEN_AUTOMATICO`);
         document.getElementById('ppBackContent').innerHTML = backHtml || '<div class="pp-back-empty">Configura il retro HR</div>';
         return;
@@ -5678,10 +5646,10 @@ function updatePassPreview() {
 
     const headerLabel = document.getElementById('tplHeaderLabel').value;
     const headerValue = document.getElementById('tplHeaderValue').value;
-    const secLabel = document.getElementById('tplSecLabel').value;
-    const secValue = document.getElementById('tplSecValue').value;
-    const auxLabel = document.getElementById('tplAuxLabel').value;
-    const auxValue = document.getElementById('tplAuxValue').value;
+    const secLabel = '';
+    const secValue = '';
+    const auxLabel = '';
+    const auxValue = '';
 
     // Front
     document.getElementById('ppLogo').textContent = brandName;
@@ -7405,11 +7373,27 @@ function renderLeadsToolbar() {
           </div>
           <div class="a2w-contacts-toolbar-actions" role="group" aria-label="Azioni contatti">
             <div class="a2w-contacts-filter-wrap">
-              <button type="button" class="btn sec a2w-contacts-toolbar-btn" id="a2wLeadsFiltersBtn" aria-expanded="false" aria-controls="a2wLeadsFiltersPanel" aria-label="Apri filtri contatti">Filtri</button>
-              <div class="a2w-contacts-filter-popover" id="a2wLeadsFiltersPanel" hidden>
-                <label><input type="checkbox" id="a2wFilterHasEmail"> Solo con email</label>
-                <label><input type="checkbox" id="a2wFilterHasPhone"> Solo con telefono</label>
-                <label><input type="checkbox" id="a2wFilterWithDevice"> Solo con device</label>
+              <button type="button" class="btn sec a2w-contacts-toolbar-btn" id="a2wLeadsFiltersBtn" aria-expanded="false" aria-controls="a2wLeadsFiltersPanel" aria-haspopup="dialog" aria-label="Apri filtri contatti">Filtri</button>
+              <div class="a2w-contacts-filter-popover" id="a2wLeadsFiltersPanel" role="dialog" aria-modal="false" aria-labelledby="a2wLeadsFiltersTitle" hidden>
+                <header class="a2w-contacts-filter-popover__head">
+                  <p class="a2w-contacts-filter-popover__title" id="a2wLeadsFiltersTitle">Filtra contatti</p>
+                  <p class="a2w-contacts-filter-popover__hint">I filtri sono cumulativi</p>
+                </header>
+                <div class="a2w-contacts-filter-options">
+                  <label class="a2w-contacts-filter-option">
+                    <input type="checkbox" class="a2w-checkbox" id="a2wFilterHasEmail">
+                    <span class="a2w-contacts-filter-option__label">Ha email</span>
+                  </label>
+                  <label class="a2w-contacts-filter-option">
+                    <input type="checkbox" class="a2w-checkbox" id="a2wFilterHasPhone">
+                    <span class="a2w-contacts-filter-option__label">Ha telefono</span>
+                  </label>
+                  <label class="a2w-contacts-filter-option">
+                    <input type="checkbox" class="a2w-checkbox" id="a2wFilterWithDevice">
+                    <span class="a2w-contacts-filter-option__label">Ha device registrato</span>
+                  </label>
+                </div>
+                <hr class="a2w-contacts-filter-divider" aria-hidden="true">
                 <button type="button" class="a2w-contacts-filter-reset" id="a2wLeadsResetFiltersBtn">Resetta filtri</button>
               </div>
             </div>
@@ -7959,7 +7943,6 @@ function renderLeadsTable(leads) {
               <td>${regDate}</td>
               <td>
                 <div class="a2w-leads-row-actions" data-member-id="${esc(l.id)}">
-                <div class="a2w-leads-row-actions" data-member-id="${esc(l.id)}" data-a2w-dropdown-root>
                   <button type="button" class="a2w-leads-kebab-btn" data-a2w-menu-trigger="1" aria-label="Apri azioni contatto">⋮</button>
                   <div class="a2w-leads-row-menu" hidden>
                     <button type="button" data-a2w-action="detail">Vedi dettaglio</button>
@@ -8026,20 +8009,10 @@ function renderLeadsTable(leads) {
                     node.hidden = true;
                 });
                 menu.hidden = isOpen;
-                const wasHidden = menu.hidden;
-                if (typeof A2W !== 'undefined' && typeof A2W.closeDropdownMenus === 'function') {
-                    A2W.closeDropdownMenus();
-                } else {
-                    table.querySelectorAll('.a2w-leads-row-menu').forEach((node) => { node.hidden = true; });
-                }
-                if (wasHidden) menu.hidden = false;
             });
         });
         tbody.querySelectorAll('.a2w-leads-row-menu button').forEach((btn) => {
             btn.addEventListener('click', function () {
-                if (typeof A2W !== 'undefined' && typeof A2W.closeDropdownMenus === 'function') {
-                    A2W.closeDropdownMenus();
-                }
                 const action = btn.dataset.a2wAction;
                 const memberId = btn.closest('.a2w-leads-row-actions')?.dataset.memberId;
                 if (!memberId) return;
@@ -9192,10 +9165,10 @@ function wzBuildPreview() {
     const type = isHrDashboard() ? EMPLOYEE_PASS_TYPE : document.getElementById('wzType').value;
     const hLabel = document.getElementById('wzHeaderLabel').value;
     const hValue = document.getElementById('wzHeaderValue').value;
-    const sLabel = document.getElementById('wzSecLabel').value;
-    const sValue = document.getElementById('wzSecValue').value;
-    const aLabel = document.getElementById('wzAuxLabel').value;
-    const aValue = document.getElementById('wzAuxValue').value;
+    const sLabel = '';
+    const sValue = '';
+    const aLabel = '';
+    const aValue = '';
 
     // Front
     const wzPpLogo = document.getElementById('wzPpLogo');
@@ -9460,10 +9433,6 @@ async function wzAiGenerate() {
         // Fill pass fields with sensible defaults based on settore
         if (!document.getElementById('wzHeaderLabel').value) document.getElementById('wzHeaderLabel').value = 'STATO';
         if (!document.getElementById('wzHeaderValue').value) document.getElementById('wzHeaderValue').value = 'Attivo';
-        if (!document.getElementById('wzSecLabel').value) document.getElementById('wzSecLabel').value = 'OFFERTA';
-        if (!document.getElementById('wzSecValue').value) document.getElementById('wzSecValue').value = copy.claim ? copy.claim.substring(0, 30) : 'Scopri le novità';
-        if (!document.getElementById('wzAuxLabel').value) document.getElementById('wzAuxLabel').value = 'INFO';
-        if (!document.getElementById('wzAuxValue').value) document.getElementById('wzAuxValue').value = 'Aggiornamenti via Wallet';
         toast('Contenuti AI generati!');
     } catch(e) { toast('Errore AI: ' + e.message); }
     btn.disabled = false; btn.textContent = 'Genera tutto con AI';
@@ -9490,10 +9459,6 @@ async function wzAiCopy(section) {
         if (section === 'front') {
             document.getElementById('wzHeaderLabel').value = 'STATO';
             document.getElementById('wzHeaderValue').value = 'Attivo';
-            document.getElementById('wzSecLabel').value = 'OFFERTA';
-            document.getElementById('wzSecValue').value = copy.claim ? copy.claim.substring(0, 30) : 'Scopri le novità';
-            document.getElementById('wzAuxLabel').value = 'INFO';
-            document.getElementById('wzAuxValue').value = copy.subheadline ? copy.subheadline.substring(0, 30) : 'Aggiornamenti via Wallet';
             toast('Campi fronte generati!');
         } else if (section === 'back') {
             document.getElementById('wzRegolamento').value = `Questo pass è personale e non trasferibile. Il brand ${brand.name} si riserva di modificare le condizioni in qualsiasi momento. Per cancellare, rimuovi il pass dal Wallet.`;
@@ -9532,8 +9497,8 @@ async function wzPublish() {
         style: { ...existingStyle, description: '' },
         fields: {
             headerFields: [{ key: 'header_info', label: document.getElementById('wzHeaderLabel').value, value: document.getElementById('wzHeaderValue').value }],
-            secondaryFields: [{ key: 'info', label: document.getElementById('wzSecLabel').value, value: document.getElementById('wzSecValue').value }],
-            auxiliaryFields: [{ key: 'aux_info', label: document.getElementById('wzAuxLabel').value, value: document.getElementById('wzAuxValue').value }],
+            secondaryFields: [],
+            auxiliaryFields: [],
             links,
             regolamento: document.getElementById('wzRegolamento').value,
             contatti: document.getElementById('wzContatti').value
@@ -10712,8 +10677,6 @@ function onMediaUploadTypeChange() {
     const type = document.getElementById('mediaUploadType')?.value || 'strip';
     const hint = document.getElementById('mediaUploadSpecHint');
     if (hint) hint.textContent = getMediaSpecHint(type);
-    const campGroup = document.getElementById('mediaUploadCampaignGroup');
-    if (campGroup) campGroup.style.display = type === 'strip' ? '' : 'none';
 }
 
 let mediaCropState = {
@@ -10959,19 +10922,6 @@ async function mpUpload() {
   reader.readAsDataURL(file);
 }
 
-function populateMediaUploadCampaignSelect(selectedId = '') {
-    const sel = document.getElementById('mediaUploadCampaignId');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">— Nessuna campagna —</option>';
-    (campaignsCache || []).forEach(c => {
-        const o = document.createElement('option');
-        o.value = c.id;
-        o.textContent = c.name;
-        sel.appendChild(o);
-    });
-    if (selectedId) sel.value = selectedId;
-}
-
 async function openMediaUpload(selectedCampaignId = '') {
     mediaUploadEditedBase64 = null;
     const fileInput = document.getElementById('mediaUploadFile');
@@ -10979,13 +10929,6 @@ async function openMediaUpload(selectedCampaignId = '') {
         fileInput.value = '';
         fileInput.onchange = () => { mediaUploadEditedBase64 = null; };
     }
-    if (brandId) {
-        try {
-            brandDataCache.delete(cacheKey(`${API}/campaigns?brand_id=${brandId}`));
-            campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
-        } catch (_) {}
-    }
-    populateMediaUploadCampaignSelect(selectedCampaignId);
     onMediaUploadTypeChange();
     document.getElementById('mediaUploadModal').classList.add('active');
 }
@@ -10998,7 +10941,6 @@ async function doMediaUpload() {
     const file = fileInput?.files?.[0];
     if (!file) return toast('Seleziona un file');
     const type = typeSelect?.value || 'generic';
-    const campaignId = document.getElementById('mediaUploadCampaignId')?.value || null;
     const autoFit = !!document.getElementById('mediaUploadAutoFit')?.checked;
     try {
         let base64;
@@ -11016,18 +10958,15 @@ async function doMediaUpload() {
         }
         const titleInput = document.getElementById('mediaUploadName');
         const rawTitle = titleInput?.value?.trim() || file.name;
-        const selectedCampaign = (campaignsCache || []).find(c => c.id === campaignId);
-        const title = selectedCampaign ? `[${selectedCampaign.name}] ${rawTitle}` : rawTitle;
+        const title = rawTitle;
         await fetch(`${API}/media`, {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ brand_id: bid, campaign_id: campaignId, type, title, image_base64: base64 })
+            body: JSON.stringify({ brand_id: bid, type, title, image_base64: base64 })
         });
         toast('Media caricato!');
         fileInput.value = '';
         if (titleInput) titleInput.value = '';
-        const campaignSel = document.getElementById('mediaUploadCampaignId');
-        if (campaignSel) campaignSel.value = '';
         mediaUploadEditedBase64 = null;
         closeModal('mediaUploadModal');
         loadMediaLibrary();

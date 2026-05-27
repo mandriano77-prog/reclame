@@ -141,14 +141,30 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-help-trigger {
   font-size: 11px;
   font-weight: 700;
   cursor: help;
+  padding: 0;
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-help-trigger:focus-visible,
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-search-input:focus-visible,
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-toolbar-btn:focus-visible,
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-header-btn:focus-visible,
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card:focus-visible,
+html[data-shell="dark"].a2w-shell #leads .a2w-leads-kebab-btn:focus-visible,
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-reset:focus-visible,
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__link:focus-visible,
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-option:focus-within {
 html[data-shell="dark"].a2w-shell #leads .a2w-leads-kebab-btn:focus-visible,
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__link:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--a2w-action-primary);
+}
+
+html[data-shell="dark"].a2w-shell #leads.a2w-contacts-page--wai {
+  padding-bottom: calc(var(--a2w-fab-clearance, 96px) + 12px);
+}
+
+html[data-shell="dark"].a2w-shell #leads.a2w-contacts-page--wai-min {
+  padding-bottom: calc(var(--a2w-fab-clearance, 96px) - 28px);
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-help-tooltip {
@@ -231,6 +247,100 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-popover {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
+  width: min(240px, calc(100vw - 32px));
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--a2w-border-default);
+  background: #0f172a;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: var(--a2w-z-popover, 8900);
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.45);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-popover[hidden] {
+  display: none !important;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-popover__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--a2w-text-primary);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-popover__hint {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--a2w-text-secondary);
+  cursor: pointer;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-popover input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--a2w-text-secondary);
+  transition: background 120ms ease;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--a2w-action-primary);
+  appearance: none;
+  border: 1px solid var(--a2w-border-default);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-checkbox:checked {
+  background: var(--a2w-action-primary);
+  border-color: var(--a2w-action-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%230b1220' d='M6.2 11.4 3.4 8.6l1-1 1.8 1.8 4-4 1 1z'/%3E%3C/svg%3E");
+  background-size: 14px 14px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-option__label {
+  flex: 1;
+  user-select: none;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-divider {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--a2w-border-default);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-reset {
+  margin-top: 2px;
   width: 190px;
   border-radius: 10px;
   border: 1px solid var(--a2w-border-default);
@@ -257,6 +367,9 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-reset {
   color: var(--a2w-action-primary);
   cursor: pointer;
   text-align: left;
+  padding: 6px 4px;
+  font-size: 12px;
+  border-radius: 6px;
   padding: 0;
   font-size: 12px;
 }
@@ -272,10 +385,20 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.02);
   padding: 14px;
+  min-height: 92px;
   display: grid;
   grid-template-columns: 32px 1fr auto;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-selected {
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-primary {
@@ -283,12 +406,25 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-primary {
   background: rgba(63, 224, 200, 0.08);
 }
 
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-label {
+  margin: 0;
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-label {
   margin: 0 0 2px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--a2w-text-secondary);
   font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-value {
@@ -297,6 +433,10 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-value {
   line-height: 1;
   font-weight: 600;
   color: var(--a2w-text-primary);
+  display: block;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-selected .a2w-contacts-kpi-value {
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-primary .a2w-contacts-kpi-value {
@@ -305,6 +445,17 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-primary .a2w-
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-delta {
   margin: 0;
+  font-size: 11px;
+  white-space: nowrap;
+  align-self: end;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-delta.is-positive {
+  color: #6ee7b7;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-delta.is-negative {
+  color: #fca5a5;
   color: var(--a2w-text-tertiary);
   font-size: 11px;
   white-space: nowrap;
@@ -421,6 +572,34 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__title {
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__desc {
   margin: 0 auto 16px;
   max-width: 520px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__icon-svg {
+  color: var(--a2w-action-primary);
+  opacity: 0.9;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__or {
+  margin: 18px auto 14px;
+  max-width: 420px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__or::before,
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--a2w-border-default);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__actions--secondary {
+  margin-top: 0;
   color: var(--a2w-text-secondary);
 }
 
@@ -448,6 +627,12 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-empty {
   gap: 10px;
   align-items: center;
   justify-content: center;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-leads-pagination__right .btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--a2w-action-primary);
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-error-banner {
@@ -485,6 +670,11 @@ html[data-shell="dark"].a2w-shell #leads .a2w-skeleton-line {
 @media (max-width: 1023px) {
   html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-popover {
+    right: auto;
+    left: 0;
   }
 }
 

@@ -9,7 +9,7 @@
     "dev:watch": "node --env-file=.env --watch src/server.js",
     "db:init": "node src/db/init.js",
     "portal:backfill": "node --env-file=.env scripts/backfill-portal-pass-link.js",
-    "test:ui": "node --test scripts/a2w-ui-components.test.js"
+    "test:ui": "node --test scripts/a2w-ui-components.test.js scripts/a2w-contacts-ux.test.js"
   },
   "engines": {
     "node": ">=20"

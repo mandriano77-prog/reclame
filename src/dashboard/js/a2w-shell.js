@@ -1070,6 +1070,18 @@
     const btn = document.getElementById('waiBtn');
     const visible = btn && btn.style.display !== 'none' && getComputedStyle(btn).display !== 'none';
     document.documentElement.classList.toggle('a2w-wai-visible', !!visible);
+    const leads = document.getElementById('leads');
+    if (leads) {
+      leads.classList.toggle('a2w-contacts-page--wai', !!visible);
+      var minimized = false;
+      try {
+        minimized = localStorage.getItem('a2w_wai_fab_minimized') === '1';
+      } catch (_) {}
+      leads.classList.toggle('a2w-contacts-page--wai-min', !!visible && minimized);
+      if (visible && btn && minimized && !btn.classList.contains('wai-fab--collapsed')) {
+        btn.classList.add('wai-fab--collapsed');
+      }
+    }
   }
 
   // UX-AUDIT[a2w]: inject Analytics layout (DOM only on ads shell)

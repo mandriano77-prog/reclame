@@ -39,6 +39,7 @@ html[data-shell="dark"].a2w-shell {
   --a2w-sidebar-collapsed-w: 64px;
   --a2w-dur-sidebar: 150ms;
   --a2w-z-toast: 9000;
+  --a2w-z-popover: 8900;
   --a2w-z-dropdown: 9200;
   --a2w-z-modal: 9500;
   --a2w-z-tooltip: 9700;
