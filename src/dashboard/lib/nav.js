@@ -36,8 +36,8 @@
             id: 'engagement',
             label: 'Engagement',
             items: [
-                { id: 'instant-win', label: 'Instant Win' },
-                { id: 'gamification', label: 'Gamification' }
+                { id: 'instant-win', label: 'Reward' },
+                { id: 'gamification', label: 'Challenge' }
             ]
         },
         {

@@ -1238,8 +1238,8 @@
 
         <details class="nav-group" open data-nav-group="engagement">
             <summary class="nav-group-label">Engagement</summary>
-            <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win">Instant Win</div>
-            <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification">Gamification</div>
+            <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win">Reward</div>
+            <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification">Challenge</div>
         </details>
 
         <details class="nav-group" open data-nav-group="database">
@@ -1480,7 +1480,7 @@
                         </div>
                         <div id="pushStripBlock" class="form-group" style="margin-top:8px;">
                             <label class="form-label">Strip per questa push (opzionale)</label>
-                            <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Solo per questo invio — non modifica la strip permanente del brand. Priorità su Instant Win / Gamification se selezioni entrambi.</p>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Solo per questo invio — non modifica la strip permanente del brand. Priorità su Reward / Challenge se selezioni entrambi.</p>
                             <div id="pushStripPreview" class="dropzone" role="button" tabindex="0" title="Scegli una strip temporanea per questa push" onclick="pushPickStripFromMedia()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pushPickStripFromMedia();}">
                                 <span class="dropzone__placeholder">Trascina o clicca per scegliere una strip temporanea</span>
                             </div>
@@ -1518,16 +1518,16 @@
                             </div>
                         </div>
                         <div class="form-group" style="margin-top:8px;">
-                            <label class="form-label">Collega Instant Win (opzionale)</label>
+                            <label class="form-label">Collega Reward (opzionale)</label>
                             <select id="pushInstantWin">
-                                <option value="">— Nessuna campagna Instant Win —</option>
+                                <option value="">— Nessuna campagna Reward —</option>
                             </select>
                             <p style="font-size:11px;color:var(--text2);margin-top:4px;">Se selezionata, il link al gioco verrà inserito nel Link 1 del retro di ogni pass.</p>
                         </div>
                         <div class="form-group" style="margin-top:8px;">
-                            <label class="form-label">Collega Gamification (opzionale)</label>
+                            <label class="form-label">Collega Challenge (opzionale)</label>
                             <select id="pushGamification">
-                                <option value="">— Nessuna campagna Gamification —</option>
+                                <option value="">— Nessuna campagna Challenge —</option>
                             </select>
                             <p style="font-size:11px;color:var(--text2);margin-top:4px;">Quiz, Memory o Puzzle — il link al gioco verrà inserito nel Link 1 del retro di ogni pass.</p>
                         </div>
@@ -2027,7 +2027,7 @@
                                 <div style="margin-bottom:12px;">
                                     <div class="sec-title" style="font-size:16px;margin-bottom:0;">Retro Pass</div>
                                 </div>
-                                <p class="form-hint" style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Ordine sul pass: Link 1 (vuoto = push / Instant Win / Gamification) → regolamento → link 2 e 3 → contatti.</p>
+                                <p class="form-hint" style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Ordine sul pass: Link 1 (vuoto = push / Reward / Challenge) → regolamento → link 2 e 3 → contatti.</p>
                                 <div class="form-row">
                                     <div class="form-group"><label class="form-label">Link 1 — Testo (opz.)</label><input type="text" id="wzLink1Label" placeholder="es. Scopri l'offerta" oninput="wzUpdatePreview()"></div>
                                     <div class="form-group"><label class="form-label">Link 1 — URL (opz.)</label><input type="text" id="wzLink1Url" placeholder="https://..." oninput="wzUpdatePreview()"></div>
@@ -2170,22 +2170,22 @@
 
             <!-- INSTANT WIN -->
             <div id="instant-win" class="section">
-                <h1 class="sec-title page-title">Instant Win</h1>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne Instant Win per coinvolgere i tuoi utenti con premi immediati: scratch card, spin the wheel, slot machine.</p>
+                <h1 class="sec-title page-title">Reward</h1>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne Reward per premiare i tuoi dipendenti con riconoscimenti immediati: bonus, voucher welfare, gift card e premi a sorpresa.</p>
 
                 <div class="stats-grid" id="iwStats">
                     <div class="stat-card"><div class="stat-value" id="iwStatCampaigns">0</div><div class="stat-label">Campagne attive</div></div>
-                    <div class="stat-card"><div class="stat-value" id="iwStatPlays">0</div><div class="stat-label">Giocate totali</div></div>
-                    <div class="stat-card"><div class="stat-value" id="iwStatWins">0</div><div class="stat-label">Vincite</div></div>
-                    <div class="stat-card"><div class="stat-value" id="iwStatRate">0%</div><div class="stat-label">Win Rate</div></div>
+                    <div class="stat-card"><div class="stat-value" id="iwStatPlays">0</div><div class="stat-label">Premi assegnati</div></div>
+                    <div class="stat-card"><div class="stat-value" id="iwStatWins">0</div><div class="stat-label">Premi riscattati</div></div>
+                    <div class="stat-card"><div class="stat-value" id="iwStatRate">0%</div><div class="stat-label">Redemption Rate (%)</div></div>
                 </div>
 
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Instant Win</div>
+                    <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Reward</div>
                     <button class="btn" onclick="openIwModal()">+ Nuova Campagna</button>
                 </div>
                 <table class="table" id="iwTable">
-                    <thead><tr><th>Nome</th><th>Tipo</th><th>Premio</th><th>Probabilità</th><th>Giocate</th><th>Vincite</th><th>Stato</th><th>Azioni</th></tr></thead>
+                    <thead><tr><th>NOME</th><th>TIPO</th><th>PREMIO</th><th>PROBABILITÀ</th><th>ASSEGNATI</th><th>RISCATTATI</th><th>STATO</th><th>AZIONI</th></tr></thead>
                     <tbody></tbody>
                 </table>
 
@@ -2225,21 +2225,22 @@
 
             <!-- GAMIFICATION -->
             <div id="gamification" class="section">
-                <h1 class="sec-title page-title">Gamification</h1>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne di gioco skill-based: Quiz, Memory Match, Puzzle. Premi a fasce in base al tempo di completamento.</p>
+                <h1 class="sec-title page-title">Challenge</h1>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea sfide skill-based per i tuoi team: Quiz formativi, Memory Match, Puzzle e leaderboard a punti.</p>
 
                 <div class="stats-grid" id="gamStats">
-                    <div class="stat-card"><div class="stat-value" id="gamStatCampaigns">0</div><div class="stat-label">Campagne attive</div></div>
-                    <div class="stat-card"><div class="stat-value" id="gamStatPlays">0</div><div class="stat-label">Giocate totali</div></div>
-                    <div class="stat-card"><div class="stat-value" id="gamStatGold">0</div><div class="stat-label">Premi Oro</div></div>
+                    <div class="stat-card"><div class="stat-value" id="gamStatCampaigns">0</div><div class="stat-label">Challenge attive</div></div>
+                    <div class="stat-card"><div class="stat-value" id="gamStatPlays">0</div><div class="stat-label">Partecipazioni totali</div></div>
+                    <div class="stat-card"><div class="stat-value" id="gamStatCompletions">0</div><div class="stat-label">Completamenti</div></div>
+                    <div class="stat-card"><div class="stat-value" id="gamStatAwards">0</div><div class="stat-label">Premi assegnati</div></div>
                 </div>
 
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Gamification</div>
+                    <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Challenge</div>
                     <button class="btn" onclick="openGamModal()">+ Nuova Campagna</button>
                 </div>
                 <table class="table" id="gamTable">
-                    <thead><tr><th>Nome</th><th>Tipo</th><th>Oro</th><th>Argento</th><th>Bronzo</th><th>Giocate</th><th>Stato</th><th>Azioni</th></tr></thead>
+                    <thead><tr><th>NOME</th><th>TIPO</th><th>ORO</th><th>ARGENTO</th><th>BRONZO</th><th>PARTECIPANTI</th><th>STATO</th><th>AZIONI</th></tr></thead>
                     <tbody></tbody>
                 </table>
 
@@ -2247,7 +2248,7 @@
                 <div id="gamModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
                   <div style="background:var(--card);border-radius:16px;padding:28px;max-width:560px;width:95%;max-height:90vh;overflow-y:auto;border:1px solid var(--border);">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                      <h2 id="gamModalTitle" class="block-title" style="margin:0;font-size:20px;">Nuova Campagna Gamification</h3>
+                      <h2 id="gamModalTitle" class="block-title" style="margin:0;font-size:20px;">Nuova Campagna Challenge</h3>
                       <button class="btn sec" onclick="closeGamModal()" style="font-size:18px;padding:4px 12px;">✕</button>
                     </div>
                     <input type="hidden" id="gamEditId">
@@ -2595,8 +2596,8 @@
                         <div class="form-group" style="flex:1;"><label class="form-label">Creato fino</label><input type="date" id="audCreatedBefore"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group" style="flex:1;"><label class="form-label">Instant Win</label><select id="audPlayedIw"><option value="">—</option><option value="true">Sì</option><option value="false">No</option></select></div>
-                        <div class="form-group" style="flex:1;"><label class="form-label">Gamification</label><select id="audPlayedGam"><option value="">—</option><option value="true">Sì</option><option value="false">No</option></select></div>
+                        <div class="form-group" style="flex:1;"><label class="form-label">Reward</label><select id="audPlayedIw"><option value="">—</option><option value="true">Sì</option><option value="false">No</option></select></div>
+                        <div class="form-group" style="flex:1;"><label class="form-label">Challenge</label><select id="audPlayedGam"><option value="">—</option><option value="true">Sì</option><option value="false">No</option></select></div>
                     </div>
                     <div class="sec-title" style="font-size:14px;margin:12px 0 6px;">Comportamento</div>
                     <div class="form-row">
@@ -2607,7 +2608,7 @@
                                 <option value="never">Non ha mai fatto</option>
                             </select>
                         </div>
-                        <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction"><option value="">—</option><option value="opened">Aperto pass</option><option value="link_click">Click link retro</option><option value="installed">Installato</option><option value="instant_win_played">Instant Win</option><option value="gamification_played">Gamification</option></select></div>
+                        <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction"><option value="">—</option><option value="opened">Aperto pass</option><option value="link_click">Click link retro</option><option value="installed">Installato</option><option value="instant_win_played">Reward</option><option value="gamification_played">Challenge</option></select></div>
                         <div class="form-group" style="flex:1;"><label class="form-label">Target key</label><input type="text" id="audBehaviorTargetKey" placeholder="link_0"></div>
                     </div>
                     <div class="form-row">
@@ -2845,7 +2846,7 @@
 
                     <details class="hr-fieldset" open>
                         <summary>0 — Link fisso fallback (opzionale)</summary>
-                        <p class="form-hint">Lascia vuoto nella maggior parte dei casi. Push e gamification scrivono dinamicamente il link variabile sul pass dei dipendenti. Compila qui SOLO se vuoi un link sempre visibile quando non c'è altro di attivo.</p>
+                        <p class="form-hint">Lascia vuoto nella maggior parte dei casi. Push e challenge scrivono dinamicamente il link variabile sul pass dei dipendenti. Compila qui SOLO se vuoi un link sempre visibile quando non c'è altro di attivo.</p>
                         <div class="form-row">
                             <div class="form-group"><label class="form-label">Label (max 64)</label><input type="text" id="hrFixedLinkLabel" maxlength="64" placeholder="es. Crea ticket IT" oninput="updatePassPreview()"></div>
                             <div class="form-group"><label class="form-label">URL https://</label><input type="url" id="hrFixedLinkUrl" placeholder="https://..." oninput="updatePassPreview()"></div>
@@ -2880,7 +2881,7 @@
                 <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Retro — Contenuti</div>
                 <div class="form-group">
                     <label class="form-label">Link 1 — variabile</label>
-                    <p style="font-size:11px;color:var(--text2);margin:0 0 8px;line-height:1.45;">Lascia vuoto nel template: viene usato da push (link out), Instant Win o Gamification. Compila solo per un link fisso permanente.</p>
+                    <p style="font-size:11px;color:var(--text2);margin:0 0 8px;line-height:1.45;">Lascia vuoto nel template: viene usato da push (link out), Reward o Challenge. Compila solo per un link fisso permanente.</p>
                     <div class="form-row"><input type="text" id="tplLink1Label" placeholder="Label (opzionale)" oninput="updatePassPreview()"><input type="text" id="tplLink1Url" placeholder="https://... (opzionale)" oninput="updatePassPreview()"></div>
                 </div>
                 <div class="form-group"><label class="form-label">Regolamento</label><textarea id="tplRegolamento" rows="3" placeholder="Termini e condizioni dell'offerta..." oninput="updatePassPreview()" style="width:100%;"></textarea></div>
@@ -3023,7 +3024,7 @@
   </div>
   <div class="wai-panel-body">
     <textarea id="waiPrompt" class="wai-field" rows="3" placeholder="Scrivi cosa vuoi fare..."></textarea>
-    <p id="waiAudienceHint" class="wai-hint" style="display:none;">Modalità audience: segmenti possessori, aperture pass, click link, instant win. Puoi salvare il segmento come audience.</p>
+    <p id="waiAudienceHint" class="wai-hint" style="display:none;">Modalità audience: segmenti possessori, aperture pass, click link, reward/challenge. Puoi salvare il segmento come audience.</p>
     <button type="button" id="waiSendBtn" class="wai-btn-primary" onclick="askWai()">Chiedi a W.AI</button>
     <div id="waiPreview" style="display:none;"></div>
     <div id="waiRefineGroup" class="wai-refine-group">
@@ -3659,8 +3660,8 @@ const SECTION_PAGE_TITLES = (typeof window !== 'undefined' && window.FD_NAV && w
         passes: 'Pass Emessi',
         campaigns: 'Campagne',
         push: 'Push & Notifiche',
-        'instant-win': 'Instant Win',
-        gamification: 'Gamification',
+        'instant-win': 'Reward',
+        gamification: 'Challenge',
         leads: 'Contatti',
         audiences: 'Audience',
         analytics: 'Analytics',
@@ -5994,7 +5995,7 @@ async function loadPushCampaignSelect() {
 async function loadPushIwSelect() {
     const sel = document.getElementById('pushInstantWin');
     if (!sel) return;
-    sel.innerHTML = '<option value="">— Nessuna campagna Instant Win —</option>';
+    sel.innerHTML = '<option value="">— Nessuna campagna Reward —</option>';
     if (!brandId) return;
     try {
         const res = await fetch(`${API}/instant-win?brand_id=${brandId}`, { headers: getAuthHeaders() });
@@ -6013,7 +6014,7 @@ async function loadPushIwSelect() {
 async function loadPushGamSelect() {
     const sel = document.getElementById('pushGamification');
     if (!sel) return;
-    sel.innerHTML = '<option value="">— Nessuna campagna Gamification —</option>';
+    sel.innerHTML = '<option value="">— Nessuna campagna Challenge —</option>';
     if (!brandId) return;
     try {
         const res = await fetch(`${API}/gamification/campaigns/${brandId}`, { headers: getAuthHeaders() });
@@ -6784,7 +6785,7 @@ async function loadInstantWin() {
 
         const tbody = document.getElementById('iwTable').querySelector('tbody');
         if (!campaigns.length) {
-            tbody.innerHTML = '<tr><td colspan="8">' + renderEmptyState({ title: 'Nessuna campagna Instant Win', description: 'Creane una per coinvolgere i possessori del pass.', ctaLabel: 'Nuova campagna', ctaOnclick: 'openIwModal()', icon: 'ticket' }) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">' + renderEmptyState({ title: 'Nessuna campagna Reward', description: 'Creane una per riconoscere e premiare i tuoi dipendenti.', ctaLabel: 'Nuova campagna', ctaOnclick: 'openIwModal()', icon: 'ticket' }) + '</td></tr>';
             return;
         }
         const gameLabels = { scratch: '🎫 Scratch', wheel: '🎡 Ruota', slots: '🎰 Slot' };
@@ -8995,16 +8996,17 @@ async function loadGamification() {
             fetch(`${API}/gamification/stats/${brandId}`, { headers: getAuthHeaders() }),
             fetch(`${API}/gamification/campaigns/${brandId}`, { headers: getAuthHeaders() })
         ]);
-        const stats = statsRes.ok ? await statsRes.json() : { campaigns: 0, active_campaigns: 0, total_plays: 0, total_gold: 0 };
+        const stats = statsRes.ok ? await statsRes.json() : { campaigns: 0, active_campaigns: 0, total_plays: 0, total_gold: 0, total_completions: 0, total_awards: 0 };
         const campaigns = campaignsRes.ok ? await campaignsRes.json() : [];
 
         document.getElementById('gamStatCampaigns').textContent = stats.active_campaigns;
         document.getElementById('gamStatPlays').textContent = stats.total_plays;
-        document.getElementById('gamStatGold').textContent = stats.total_gold;
+        document.getElementById('gamStatCompletions').textContent = stats.total_completions ?? stats.total_plays ?? 0;
+        document.getElementById('gamStatAwards').textContent = stats.total_awards ?? stats.total_gold ?? 0;
 
         const tbody = document.getElementById('gamTable').querySelector('tbody');
         if (!campaigns.length) {
-            tbody.innerHTML = '<tr><td colspan="8">' + renderEmptyState({ title: 'Nessuna campagna gamification', description: 'Creane una per quiz, memory o puzzle.', ctaLabel: 'Nuova campagna', ctaOnclick: 'openGamModal()', icon: 'ticket' }) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">' + renderEmptyState({ title: 'Nessuna challenge attiva', description: 'Creane una per coinvolgere e formare i tuoi team.', ctaLabel: 'Nuova challenge', ctaOnclick: 'openGamModal()', icon: 'ticket' }) + '</td></tr>';
             return;
         }
         const gameLabels = { quiz: 'Quiz', memory: 'Memory Match', puzzle: 'Puzzle' };
@@ -9031,7 +9033,7 @@ async function loadGamification() {
 
 function openGamModal(editId) {
     document.getElementById('gamEditId').value = editId || '';
-    document.getElementById('gamModalTitle').textContent = editId ? 'Modifica Campagna' : 'Nuova Campagna Gamification';
+    document.getElementById('gamModalTitle').textContent = editId ? 'Modifica Campagna' : 'Nuova Campagna Challenge';
     if (!editId) {
         document.getElementById('gamName').value = '';
         document.getElementById('gamGameType').value = 'quiz';
