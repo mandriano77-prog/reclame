@@ -1,5 +1,12 @@
 # Filo Diretto UI Changelog
 
+## Fix — Media Library kebab menu (`[FD] media-library`)
+
+### Changed
+- `src/filodiretto/fd-destructive.css` — `.fd-media-page-menu__panel` z-index 250 (above sidebar/mobile sheet at 200); page header row `overflow: visible` to avoid clipping
+
+---
+
 ## Fix — Nav HR: nascondi Campagne (`[FD] nav`)
 
 ### Added

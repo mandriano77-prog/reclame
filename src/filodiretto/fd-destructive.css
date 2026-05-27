@@ -57,8 +57,13 @@ html[data-app='filodiretto'] #media-library.media-library--fd .fd-media-clear-bt
   display: none !important;
 }
 
+html[data-app='filodiretto'] #media-library > div:first-child {
+  overflow: visible;
+}
+
 html[data-app='filodiretto'] #media-library .fd-media-page-menu {
   position: relative;
+  z-index: 250;
 }
 
 html[data-app='filodiretto'] #media-library .fd-media-page-menu__trigger {
@@ -77,7 +82,8 @@ html[data-app='filodiretto'] #media-library .fd-media-page-menu__panel {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  z-index: 30;
+  left: auto;
+  z-index: 250;
   min-width: 168px;
   padding: 4px;
   border: 1px solid var(--fd-border, var(--border));
