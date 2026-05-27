@@ -16,9 +16,10 @@ async function resolveBrandLogoRawBuffer(brand) {
       };
     }
   }
-  if (cfg.logos?.logo) {
+  if (cfg.logos?.['logo@2x'] || cfg.logos?.logo) {
+    const b64 = cfg.logos['logo@2x'] || cfg.logos.logo;
     return {
-      buffer: Buffer.from(cfg.logos.logo, 'base64'),
+      buffer: Buffer.from(b64, 'base64'),
       source: 'config_logos'
     };
   }
@@ -68,8 +69,23 @@ async function syncWalletLogoFromBrandIdentity(brandId, brand, { syncTemplates =
   return true;
 }
 
+async function inspectPkpassIcon(pkpassBuffer) {
+  const AdmZip = require('adm-zip');
+  const crypto = require('crypto');
+  const zip = new AdmZip(pkpassBuffer);
+  const entry = zip.getEntry('icon.png') || zip.getEntry('icon@2x.png');
+  if (!entry) return null;
+  const buffer = entry.getData();
+  return {
+    file: entry.entryName,
+    bytes: buffer.length,
+    sha256_prefix: crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 16)
+  };
+}
+
 module.exports = {
   resolveBrandLogoRawBuffer,
   applyBrandLogoBase64,
-  syncWalletLogoFromBrandIdentity
+  syncWalletLogoFromBrandIdentity,
+  inspectPkpassIcon
 };

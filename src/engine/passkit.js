@@ -980,40 +980,60 @@ async function createPkpass(template, instance, brand, options = {}) {
   const bgColor = brandCfg.backgroundColor || template.style?.backgroundColor || '#0D0B1A';
   const fgColor = brandCfg.foregroundColor || template.style?.foregroundColor || '#FFFFFF';
 
+  // Logo/icon: Brand Identity media → config.logos (pre-rendered) → template → generated.
   let iconBuffers, logoBuffers;
   const tplImages = template.style?.images || {};
+  const cfgLogos = brandCfg.logos || {};
 
-  // Logo/icon: Brand Identity media first, then legacy config.logos.
-  // HR never falls back to template logos (often cloned Hirostar demo artwork).
-  let rawLogoSource = null;
   const resolvedLogo = await resolveBrandLogoRawBuffer(brand);
-  if (resolvedLogo) {
-    rawLogoSource = resolvedLogo.buffer;
-    console.log(`✓ Wallet logo from ${resolvedLogo.source}`);
-  } else if (!hrBrand && tplImages.logo) {
-    rawLogoSource = Buffer.from(tplImages.logo, 'base64');
-    console.log('✓ Using template-level logo (icon derived from logo)');
+  const hasPrebuiltWalletLogos = resolvedLogo?.source === 'config_logos'
+    && cfgLogos.logo
+    && cfgLogos.icon;
+
+  if (hasPrebuiltWalletLogos) {
+    logoBuffers = {
+      logo: Buffer.from(cfgLogos.logo, 'base64'),
+      logo2x: Buffer.from(cfgLogos['logo@2x'] || cfgLogos.logo, 'base64')
+    };
+    iconBuffers = {
+      icon: Buffer.from(cfgLogos.icon, 'base64'),
+      icon2x: Buffer.from(cfgLogos['icon@2x'] || cfgLogos.icon, 'base64')
+    };
+    console.log('✓ Wallet logo/icon from config.logos');
+  } else {
+    let rawLogoSource = null;
+    if (resolvedLogo) {
+      rawLogoSource = resolvedLogo.buffer;
+      console.log(`✓ Wallet logo from ${resolvedLogo.source}`);
+    } else if (tplImages.logo) {
+      rawLogoSource = Buffer.from(tplImages.logo, 'base64');
+      console.log(hrBrand ? '✓ HR: template logo (nessun logo brand configurato)' : '✓ Using template-level logo');
+    }
+
+    if (rawLogoSource) {
+      const built = await buildWalletLogoAndIconFromRaw(rawLogoSource);
+      logoBuffers = built.logoBuffers;
+      iconBuffers = built.iconBuffers;
+    }
   }
 
-  if (rawLogoSource) {
-    const built = await buildWalletLogoAndIconFromRaw(rawLogoSource);
-    logoBuffers = built.logoBuffers;
-    iconBuffers = built.iconBuffers;
-  }
-
-  // Fall back to default icon files, then generated
+  // Fall back to default icon files, then generated (HR skips Hirostar default assets)
   if (!iconBuffers?.icon) {
-    const defaultIconPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-icon.png');
-    const defaultIcon2xPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-icon@2x.png');
-    if (fs.existsSync(defaultIconPath)) {
-      iconBuffers = {
-        icon: fs.readFileSync(defaultIconPath),
-        icon2x: fs.existsSync(defaultIcon2xPath) ? fs.readFileSync(defaultIcon2xPath) : fs.readFileSync(defaultIconPath)
-      };
-      console.log('✓ Using default icon (H mark from assets)');
+    if (hrBrand) {
+      iconBuffers = await generateIcon(brand.name, bgColor, fgColor);
+      console.log('✓ HR: icon from brand initial (no wallet logo source)');
     } else {
-      const icons = await generateIcon(brand.name, bgColor, fgColor);
-      iconBuffers = icons;
+      const defaultIconPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-icon.png');
+      const defaultIcon2xPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-icon@2x.png');
+      if (fs.existsSync(defaultIconPath)) {
+        iconBuffers = {
+          icon: fs.readFileSync(defaultIconPath),
+          icon2x: fs.existsSync(defaultIcon2xPath) ? fs.readFileSync(defaultIcon2xPath) : fs.readFileSync(defaultIconPath)
+        };
+        console.log('✓ Using default icon (H mark from assets)');
+      } else {
+        iconBuffers = await generateIcon(brand.name, bgColor, fgColor);
+      }
     }
   }
   if (!logoBuffers?.logo) {

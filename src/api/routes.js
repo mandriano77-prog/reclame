@@ -469,6 +469,14 @@ router.get('/brands/by-slug/:slug', async (req, res) => {
 router.get('/brands/by-slug/:slug/logo', async (req, res) => {
   try {
     const brand = await getBrandBySlug(req.params.slug);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    const { resolveBrandLogoRawBuffer } = require('../engine/brand-wallet-logo');
+    const resolved = await resolveBrandLogoRawBuffer(brand);
+    if (resolved?.buffer) {
+      res.set('Content-Type', 'image/png');
+      res.set('Cache-Control', 'public, max-age=3600');
+      return res.send(resolved.buffer);
+    }
     const logoB64 = brand?.config?.logos?.['logo@2x'] || brand?.config?.logos?.logo;
     if (!logoB64) return res.status(404).json({ error: 'Nessun logo' });
     const buf = Buffer.from(logoB64, 'base64');
@@ -1533,6 +1541,124 @@ router.get('/brands/:id/logo', async (req, res) => {
 });
 
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Brand landing background upload ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
+
+router.get('/brands/:id/wallet-logo-debug', async (req, res) => {
+  try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    const crypto = require('crypto');
+    const { resolveBrandLogoRawBuffer } = require('../engine/brand-wallet-logo');
+    const resolved = await resolveBrandLogoRawBuffer(brand);
+    const mediaId = brand?.config?.brand_identity_assets?.logo || null;
+    let identityMedia = null;
+    if (mediaId) {
+      const media = await getMedia(mediaId);
+      if (media) {
+        identityMedia = {
+          id: media.id,
+          title: media.title || null,
+          type: media.type || null,
+          image_bytes: media.image_base64 ? Buffer.from(media.image_base64, 'base64').length : 0,
+          sha256_prefix: media.image_base64
+            ? crypto.createHash('sha256').update(Buffer.from(media.image_base64, 'base64')).digest('hex').slice(0, 16)
+            : null
+        };
+      }
+    }
+    const logoMedia = await listMedia(brand.id, 'logo');
+    const templates = await listTemplates(brand.id);
+    const templateHasLogo = templates.some((t) => !!(t.style?.images?.logo));
+    res.json({
+      brand_id: brand.id,
+      brand_name: brand.name,
+      deploy_product_line: process.env.DASHBOARD_PRODUCT_LINE || null,
+      brand_product_line: brand?.config?.product_line || null,
+      brand_identity_logo_media_id: mediaId,
+      identity_media: identityMedia,
+      resolved_wallet_source: resolved?.source || null,
+      resolved_wallet_sha256_prefix: resolved
+        ? crypto.createHash('sha256').update(resolved.buffer).digest('hex').slice(0, 16)
+        : null,
+      config_logos_present: !!(brand?.config?.logos?.logo),
+      config_icon_present: !!(brand?.config?.logos?.icon),
+      template_logo_present: templateHasLogo,
+      logo_media_count: Array.isArray(logoMedia) ? logoMedia.length : 0,
+      logo_media_titles: (logoMedia || []).map((m) => ({ id: m.id, title: m.title || m.filename || null })),
+      hint: 'Se identity_media e il logo in preview sono Hirostar, ricarica il logo corretto in Brand Identity e Salva.'
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/brands/:id/logo/sync-from-identity', async (req, res) => {
+  try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    const { syncWalletLogoFromBrandIdentity } = require('../engine/brand-wallet-logo');
+    const synced = await syncWalletLogoFromBrandIdentity(req.params.id, brand, {
+      syncTemplates: isHrBrand(brand, req)
+    });
+    if (!synced) return res.status(400).json({ error: 'Nessun logo Brand Identity da sincronizzare' });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/passes/:id/wallet-icon-debug', async (req, res) => {
+  try {
+    const passInstance = await getPassInstance(req.params.id);
+    if (!passInstance) return res.status(404).json({ error: 'Pass non trovato' });
+    if (!requireBrandId(req, res, passInstance.brand_id)) return;
+    const brand = await getBrand(passInstance.brand_id);
+    const template = await getTemplate(passInstance.template_id);
+    if (!brand || !template) return res.status(404).json({ error: 'Dati incompleti' });
+    const baseUrl = resolveBaseUrl(req);
+    const pkpassBuffer = await createPkpass(template, passInstance, brand, {
+      baseUrl,
+      passTypeIdentifier: process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj',
+      teamIdentifier: process.env.TEAM_IDENTIFIER || 'YOUR_TEAM_ID'
+    });
+    const { inspectPkpassIcon, resolveBrandLogoRawBuffer } = require('../engine/brand-wallet-logo');
+    const icon = await inspectPkpassIcon(pkpassBuffer);
+    const resolved = await resolveBrandLogoRawBuffer(brand);
+    res.json({
+      pass_id: passInstance.id,
+      serial_number: passInstance.serial_number,
+      brand_id: brand.id,
+      brand_name: brand.name,
+      resolved_wallet_source: resolved?.source || null,
+      pkpass_icon: icon,
+      pkpass_bytes: pkpassBuffer.length,
+      pass_type_identifier: process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj',
+      preview_url: '/api/v1/passes/' + passInstance.id + '/wallet-icon.png',
+      ios_cache_hint: 'Se preview_url e ok ma la notifica no: elimina il pass da Wallet, scarica di nuovo, reinvia push.'
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/passes/:id/wallet-icon.png', async (req, res) => {
+  try {
+    const passInstance = await getPassInstance(req.params.id);
+    if (!passInstance) return res.status(404).json({ error: 'Pass non trovato' });
+    if (!requireBrandId(req, res, passInstance.brand_id)) return;
+    const brand = await getBrand(passInstance.brand_id);
+    const template = await getTemplate(passInstance.template_id);
+    if (!brand || !template) return res.status(404).json({ error: 'Dati incompleti' });
+    const baseUrl = resolveBaseUrl(req);
+    const pkpassBuffer = await createPkpass(template, passInstance, brand, {
+      baseUrl,
+      passTypeIdentifier: process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj',
+      teamIdentifier: process.env.TEAM_IDENTIFIER || 'YOUR_TEAM_ID'
+    });
+    const AdmZip = require('adm-zip');
+    const zip = new AdmZip(pkpassBuffer);
+    const entry = zip.getEntry('icon@2x.png') || zip.getEntry('icon.png');
+    if (!entry) return res.status(404).json({ error: 'icon.png assente nel pass generato' });
+    res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'no-store' });
+    res.send(entry.getData());
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.post('/brands/:id/landing-bg', async (req, res) => {
   try {
     if (!requireOwnedBrandPk(req, res, req.params.id)) return;

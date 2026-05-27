@@ -1053,6 +1053,7 @@
     initA2WMediaLibraryEnhancer();
     initA2WActionGroupingEnhancer();
     ensureA2wLeadsLayout();
+    if (typeof ensureA2wLeadsHeaderChrome === 'function') ensureA2wLeadsHeaderChrome();
     syncA2wHeaderChrome();
     syncA2wWaiPadding();
     a2wDispatchSidebarEvent('a2w:shell:ready', { line: line });
