@@ -5471,6 +5471,7 @@ async function loadHrWalletIconPreview() {
     try {
         const brand = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() }).then((r) => r.json());
         const mediaId = brand?.config?.brand_identity_assets?.wallet_icon;
+        tplWalletIconMediaId = mediaId || null;
         if (!mediaId) {
             preview.style.display = 'none';
             preview.removeAttribute('src');
@@ -5573,6 +5574,9 @@ async function openTemplateModal() {
     ['tplImgLogo','tplImgStrip','tplImgThumb','tplImgBg'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
     ['tplImgLogoPreview','tplImgStripPreview','tplImgThumbPreview','tplImgBgPreview'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
     tplImageCache = {};
+    tplWalletIconMediaId = null;
+    const wiPreview = document.getElementById('tplImgWalletIconPreview');
+    if (wiPreview) { wiPreview.style.display = 'none'; wiPreview.removeAttribute('src'); }
     if (!isHrDashboard()) document.getElementById('tplType').value = 'storeCard';
     document.getElementById('templateModal').classList.add('active');
     document.body.classList.add('modal-open');
@@ -5710,18 +5714,7 @@ async function saveTemplate() {
         } catch (e) {
             console.warn('[HR] pass_header_hint sync failed:', e);
         }
-        if (tplImageCache.wallet_icon) {
-            try {
-                await fetch(`${API}/brands/${brandId}/wallet-icon`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-                    body: JSON.stringify({ icon_base64: tplImageCache.wallet_icon })
-                });
-                delete tplImageCache.wallet_icon;
-            } catch (e) {
-                console.warn('[HR] wallet icon upload failed:', e);
-            }
-        }
+        await persistHrWalletIcon({ reapplyExisting: true });
     }
     closeModal('templateModal');
     if (editId && saved.wallet_refresh) {
@@ -5950,6 +5943,51 @@ function onPassTypeChange() {
 }
 
 let tplImageCache = {}; // { logo: base64, strip: base64, ... }
+let tplWalletIconMediaId = null;
+
+async function persistHrWalletIcon({ reapplyExisting = false } = {}) {
+    if (!brandId || !isHrDashboard()) return { ok: false, skipped: true };
+    if (tplImageCache.wallet_icon) {
+        const res = await fetch(`${API}/brands/${brandId}/wallet-icon`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ icon_base64: tplImageCache.wallet_icon })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            toast(err.error || 'Errore upload icona notifiche');
+            return { ok: false };
+        }
+        delete tplImageCache.wallet_icon;
+        tplWalletIconMediaId = null;
+        toast('Icona notifiche aggiornata — rigenera i pass con una push o reinstalla');
+        return { ok: true };
+    }
+    const mediaId = tplWalletIconMediaId;
+    if (!mediaId && !reapplyExisting) return { ok: false, skipped: true };
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/wallet-icon/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(mediaId ? { media_id: mediaId } : {})
+        });
+        if (res.ok) {
+            tplWalletIconMediaId = null;
+            if (mediaId || reapplyExisting) {
+                toast('Icona notifiche sincronizzata sui pass');
+            }
+            return { ok: true };
+        }
+        if (res.status === 400) return { ok: false, skipped: true };
+        const err = await res.json().catch(() => ({}));
+        toast(err.error || 'Sync icona notifiche fallita');
+        return { ok: false };
+    } catch (e) {
+        console.warn('[HR] wallet icon sync failed:', e);
+        toast('Sync icona notifiche fallita');
+        return { ok: false };
+    }
+}
 
 function tplMediaPreviewId(imageType) {
     const ids = {
@@ -9876,17 +9914,23 @@ function wzPickFromMedia(target) {
 
 async function tplPickFromMedia(imageType) {
     if (!brandId) return toast('Seleziona un brand');
+    const pickerFilter = imageType === 'wallet_icon' ? 'all' : imageType;
     openMediaPicker(async (mediaId, imageUrl) => {
         const base64 = await fetchMediaImageBase64(mediaId);
         tplImageCache[imageType] = base64;
+        if (imageType === 'wallet_icon') tplWalletIconMediaId = mediaId;
         const preview = document.getElementById(tplMediaPreviewId(imageType));
         if (preview) {
             preview.src = 'data:image/png;base64,' + base64;
             preview.style.display = 'block';
         }
         updatePassPreview();
+        if (imageType === 'wallet_icon') {
+            await persistHrWalletIcon();
+            return;
+        }
         toast(mediaTypeLabel(imageType) + ' dalla Media Library');
-    }, imageType);
+    }, pickerFilter);
 }
 
 async function wzApplyWizardImages(tplId) {
@@ -11049,25 +11093,21 @@ async function saveBrandIdentity() {
             const iconAsset = brandIdentityState.selectedAssets?.wallet_icon;
             if (iconAsset?.id) {
                 try {
-                    const imgRes = await fetch(`${API}/media/${iconAsset.id}/image`, { headers: getAuthHeaders() });
-                    if (imgRes.ok) {
-                        const blob = await imgRes.blob();
-                        const iconB64 = await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = () => resolve(String(reader.result || '').split(',')[1] || '');
-                            reader.onerror = reject;
-                            reader.readAsDataURL(blob);
-                        });
-                        if (iconB64) {
-                            await fetch(`${API}/brands/${brandId}/wallet-icon`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-                                body: JSON.stringify({ icon_base64: iconB64 })
-                            });
-                        }
+                    const syncRes = await fetch(`${API}/brands/${brandId}/wallet-icon/sync`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                        body: JSON.stringify({ media_id: iconAsset.id })
+                    });
+                    if (!syncRes.ok) {
+                        const err = await syncRes.json().catch(() => ({}));
+                        console.warn('[Brand Identity] wallet icon sync failed:', err.error || syncRes.status);
+                        toast(err.error || 'Icona notifiche: sync fallita');
+                    } else {
+                        toast('Icona notifiche sincronizzata sui pass');
                     }
                 } catch (syncErr) {
                     console.warn('[Brand Identity] wallet icon sync failed:', syncErr);
+                    toast('Icona notifiche: sync fallita');
                 }
             }
         }

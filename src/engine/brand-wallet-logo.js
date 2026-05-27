@@ -2,7 +2,7 @@
  * Resolve wallet logo/icon sources from Brand Identity media + legacy config.logos.
  */
 const sharp = require('sharp');
-const { getMedia, listTemplates, updateBrand, updateTemplate, touchPassesForTemplate, listPasses, touchPass } = require('../db');
+const { getMedia, getBrand, listTemplates, updateBrand, updateTemplate, touchPassesForTemplate, listPasses, touchPass } = require('../db');
 
 async function resolveBrandLogoRawBuffer(brand) {
   const cfg = brand?.config || {};
@@ -169,12 +169,36 @@ async function syncWalletLogoFromBrandIdentity(brandId, brand, { syncTemplates =
   return true;
 }
 
-async function syncWalletIconFromBrandIdentity(brandId, brand, { touchPasses = true } = {}) {
-  const mediaId = brand?.config?.brand_identity_assets?.wallet_icon;
+async function syncWalletIconFromBrandIdentity(brandId, brand, { touchPasses = true, mediaId: mediaIdOverride } = {}) {
+  const mediaId = mediaIdOverride || brand?.config?.brand_identity_assets?.wallet_icon;
   if (!mediaId) return false;
   const media = await getMedia(mediaId);
   if (!media?.image_base64) return false;
-  await applyWalletIconBase64(brandId, media.image_base64, { brand, touchPasses });
+  const refreshedBrand = await getBrand(brandId);
+  const config = { ...(refreshedBrand?.config || brand?.config || {}) };
+  config.brand_identity_assets = {
+    ...(config.brand_identity_assets || {}),
+    wallet_icon: mediaId
+  };
+  await updateBrand(brandId, { config });
+  const latest = await getBrand(brandId);
+  await applyWalletIconBase64(brandId, media.image_base64, { brand: latest, touchPasses });
+  return true;
+}
+
+async function assignWalletIconMedia(brandId, mediaId, { touchPasses = true } = {}) {
+  const media = await getMedia(mediaId);
+  if (!media?.image_base64) return false;
+  const brand = await getBrand(brandId);
+  if (!brand || String(media.brand_id) !== String(brandId)) return false;
+  const config = { ...(brand.config || {}) };
+  config.brand_identity_assets = {
+    ...(config.brand_identity_assets || {}),
+    wallet_icon: mediaId
+  };
+  await updateBrand(brandId, { config });
+  const latest = await getBrand(brandId);
+  await applyWalletIconBase64(brandId, media.image_base64, { brand: latest, touchPasses });
   return true;
 }
 
@@ -203,5 +227,6 @@ module.exports = {
   applyWalletIconBase64,
   syncWalletLogoFromBrandIdentity,
   syncWalletIconFromBrandIdentity,
+  assignWalletIconMedia,
   inspectPkpassIcon
 };

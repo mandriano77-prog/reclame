@@ -1533,7 +1533,7 @@ router.put('/brands/:id', async (req, res) => {
     const synced = await syncWalletLogoFromBrandIdentity(req.params.id, brand, {
       syncTemplates: isHrBrand(brand, req)
     });
-    await syncWalletIconFromBrandIdentity(req.params.id, brand, { touchPasses: false });
+    await syncWalletIconFromBrandIdentity(req.params.id, brand, { touchPasses: true });
     if (synced) {
       const refreshed = await getBrand(req.params.id);
       return res.json(refreshed);
@@ -1610,6 +1610,26 @@ router.post('/brands/:id/wallet-icon', async (req, res) => {
     res.json({ success: true, wallet_icon_media_id: media.id });
   } catch (err) {
     console.error('Wallet icon upload error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/brands/:id/wallet-icon/sync', async (req, res) => {
+  try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    const { assignWalletIconMedia, syncWalletIconFromBrandIdentity } = require('../engine/brand-wallet-logo');
+    const mediaId = req.body?.media_id || brand?.config?.brand_identity_assets?.wallet_icon;
+    if (!mediaId) {
+      return res.status(400).json({ error: 'Nessuna icona notifiche configurata per questo brand' });
+    }
+    const synced = await assignWalletIconMedia(req.params.id, mediaId, { touchPasses: true })
+      || await syncWalletIconFromBrandIdentity(req.params.id, brand, { touchPasses: true, mediaId });
+    if (!synced) return res.status(400).json({ error: 'Impossibile sincronizzare icona notifiche' });
+    res.json({ success: true, wallet_icon_media_id: mediaId });
+  } catch (err) {
+    console.error('Wallet icon sync error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2252,7 +2272,7 @@ router.post('/push/send', async (req, res) => {
         await syncWalletLogoFromBrandIdentity(brand_id, brand, {
           syncTemplates: isHrBrand(brand, req)
         });
-        await syncWalletIconFromBrandIdentity(brand_id, brand, { touchPasses: false });
+        await syncWalletIconFromBrandIdentity(brand_id, brand, { touchPasses: true });
         brand = await getBrand(brand_id);
       } catch (syncErr) {
         console.warn('[PUSH] wallet logo sync skipped:', syncErr.message);
