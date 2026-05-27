@@ -1,0 +1,122 @@
+/**
+ * FD-05 — FiloDiretto destructive CTAs de-emphasized (outline, kebab).
+ */
+html[data-app='filodiretto'] .fd-btn-danger-outline,
+html[data-app='filodiretto'] #brand-identity .a2w-bi-asset-actions button[id*='RemoveBtn'] {
+  background: var(--surface, #fff) !important;
+  color: var(--fd-danger, #dc2626) !important;
+  border: 1px solid rgba(220, 38, 38, 0.45) !important;
+  filter: none !important;
+}
+
+html[data-app='filodiretto'] .fd-btn-danger-outline:hover:not(:disabled),
+html[data-app='filodiretto'] #brand-identity .a2w-bi-asset-actions button[id*='RemoveBtn']:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.08) !important;
+  border-color: #dc2626 !important;
+}
+
+html[data-app='filodiretto'] .fd-btn-danger-outline:focus-visible {
+  outline: 2px solid rgba(220, 38, 38, 0.35);
+  outline-offset: 2px;
+}
+
+/* In-page destructive buttons → outline (modals / danger zone keep solid) */
+html[data-app='filodiretto'] .btn.danger:not(#a2wDeleteBrandConfirmBtn),
+html[data-app='filodiretto'] .btn.small.danger {
+  background: var(--surface, #fff) !important;
+  color: var(--fd-danger, #dc2626) !important;
+  border: 1px solid rgba(220, 38, 38, 0.45) !important;
+  filter: none !important;
+}
+
+html[data-app='filodiretto'] .btn.danger:not(#a2wDeleteBrandConfirmBtn):hover:not(:disabled),
+html[data-app='filodiretto'] .btn.small.danger:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+
+html[data-app='filodiretto'] #appConfirmDialog .btn.danger {
+  background: var(--danger, #dc2626) !important;
+  color: var(--text-on-accent, #fff) !important;
+  border: none !important;
+}
+
+html[data-app='filodiretto'] #a2wDeleteBrandConfirmBtn.btn.danger {
+  background: var(--danger, #dc2626) !important;
+  color: var(--text-on-accent, #fff) !important;
+  border: none !important;
+}
+
+html[data-app='filodiretto'] .pass-action-btn--danger {
+  background: var(--surface, #fff) !important;
+  border: 1px solid rgba(220, 38, 38, 0.45) !important;
+  color: #dc2626 !important;
+}
+
+/* Media library header */
+html[data-app='filodiretto'] #media-library.media-library--fd .fd-media-clear-btn {
+  display: none !important;
+}
+
+html[data-app='filodiretto'] #media-library .fd-media-page-menu {
+  position: relative;
+}
+
+html[data-app='filodiretto'] #media-library .fd-media-page-menu__trigger {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 16px;
+  padding: 0;
+}
+
+html[data-app='filodiretto'] #media-library .fd-media-page-menu__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 168px;
+  padding: 4px;
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+html[data-app='filodiretto'] #media-library .fd-media-page-menu__panel[hidden] {
+  display: none;
+}
+
+html[data-app='filodiretto'] #media-library .fd-media-page-menu__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text1);
+}
+
+html[data-app='filodiretto'] #media-library .fd-media-page-menu__item--danger {
+  color: var(--fd-danger, #dc2626);
+}
+
+html[data-app='filodiretto'] #media-library .fd-media-page-menu__item:hover {
+  background: var(--bg3, #f3f4f6);
+}
+
+html[data-app='filodiretto'] #media-library .fd-media-page-menu__item--danger:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+html[data-app='filodiretto'] #media-library .media-card .fd-media-delete-btn {
+  margin-top: 6px;
+  font-size: 11px;
+  padding: 4px 10px;
+}

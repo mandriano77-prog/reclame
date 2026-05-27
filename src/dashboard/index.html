@@ -23,14 +23,14 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-header.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css'];
+                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-header.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-destructive.css'];
                 fdCss.forEach(function (href) {
                     var link = document.createElement('link');
                     link.rel = 'stylesheet';
                     link.href = href;
                     document.head.appendChild(link);
                 });
-                ['/filodiretto/fd-header.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js'].forEach(function (src) {
+                ['/filodiretto/fd-header.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-destructive.js'].forEach(function (src) {
                     var fdScript = document.createElement('script');
                     fdScript.src = src;
                     fdScript.defer = true;

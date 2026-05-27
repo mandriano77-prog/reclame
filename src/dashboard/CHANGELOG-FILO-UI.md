@@ -1,5 +1,20 @@
 # Filo Diretto UI Changelog
 
+## FD-05 — CTA destructive (`[FD] destructive`)
+
+### Added
+- `src/filodiretto/fd-destructive.css` — outline danger buttons; media page kebab menu
+- `src/filodiretto/fd-destructive.js` — patch `loadMediaLibrary` / `a2wBiRenderAssetsGrid`; «Svuota tutto» in ⋮
+
+### Changed
+- HR deploy injects `fd-destructive.css` / `fd-destructive.js`
+- Media Library: «Svuota tutto» nascosto in header, spostato nel menu ⋮
+- Elimina logo / Elimina card media → `fd-btn-danger-outline`
+- Identità brand: «Rimuovi» asset in outline rosso
+- Altri `.btn.danger` in pagina → outline (conferme modale e elimina brand restano piene)
+
+---
+
 ## FD-04 — Contatti / Anagrafica (`[FD] contacts`)
 
 ### Added
