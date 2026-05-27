@@ -13,6 +13,8 @@ test('Aggiungi contatto apre modale (non /landing/new)', () => {
   assert.match(indexHtml, /id="a2wAddContactModal"/);
   assert.match(indexHtml, /function openA2wAddContactModal\(/);
   assert.match(indexHtml, /function submitA2wAddContact\(/);
+  assert.match(indexHtml, /id="a2wContactsAddBtn"/);
+  assert.match(indexHtml, /a2w-btn-primary a2w-contacts-header-btn/);
   const addBtnBlock = indexHtml.match(/a2wContactsAddBtn[\s\S]{0,400}/);
   assert.ok(addBtnBlock, 'add button handler missing');
   assert.doesNotMatch(addBtnBlock[0], /landing\/new/);
