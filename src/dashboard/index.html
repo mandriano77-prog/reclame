@@ -7328,8 +7328,11 @@ function isLeadPassInstalled(lead) {
     return !!(lead.device_id || lead.google_wallet_saved || lead.samsung_wallet_saved);
 }
 
+/** Ads2Wallet Contatti redesign only — never FiloDiretto / HR dipendenti. */
 function isA2wLeadsRedesignActive() {
     if (leadsHrMode) return false;
+    if (typeof isA2wDeploy === 'function' && !isA2wDeploy()) return false;
+    if (typeof isFiloShell === 'function' && isFiloShell()) return false;
     return document.documentElement.classList.contains('a2w-shell');
 }
 
