@@ -1509,7 +1509,24 @@ router.post('/brands/:id/logo', async (req, res) => {
     config.logos['icon@3x'] = icon3x.toString('base64');
 
     await updateBrand(req.params.id, { config });
-    res.json({ success: true });
+
+    // Keep pass templates aligned with Brand Identity on HR deploys.
+    if (isHrBrand(brand, req)) {
+      const templates = await listTemplates(brand.id);
+      for (const tpl of templates) {
+        const prevStyle = tpl.style && typeof tpl.style === 'object' ? tpl.style : {};
+        const prevImages = prevStyle.images && typeof prevStyle.images === 'object' ? prevStyle.images : {};
+        const style = {
+          ...prevStyle,
+          images: { ...prevImages, logo: logo_base64 }
+        };
+        await updateTemplate(tpl.id, { style });
+        await touchPassesForTemplate(tpl.id);
+      }
+      console.log(`[Brand logo] Synced HR logo to ${templates.length} template(s) for brand ${brand.id}`);
+    }
+
+    res.json({ success: true, templates_synced: isHrBrand(brand, req) });
   } catch (err) {
     console.error('Logo upload error:', err);
     res.status(500).json({ error: err.message });
