@@ -1,5 +1,20 @@
 # Filo Diretto UI Changelog
 
+## FD-02 — Home dashboard (`[FD] home`)
+
+### Added
+- `src/filodiretto/fd-home.css` — KPI grid, onboarding checklist, activity list
+- `src/filodiretto/fd-home.js` — loads analytics, employees, push, events; `fdLoadHome()`; no-op on `a2w-shell`
+
+### Changed
+- HR deploy injects `fd-home.css` / `fd-home.js` with FD-01 assets
+- `getDefaultBrandSection()` → `welcome` on Filo HR (landing dopo login / cambio brand)
+- `nav('welcome')` non reindirizza più a Pass Emessi su Filo HR
+- Sidebar **Inizio** resta visibile con brand selezionato (Filo HR)
+- Sezione `#welcome`: legacy nascosta su Filo; home operativa con KPI e setup guidato (5 step)
+
+---
+
 ## FD-01 — Header globale (`[FD] header`)
 
 ### Added

@@ -1,0 +1,207 @@
+/**
+ * FD-02 — FiloDiretto home (KPI, onboarding, attività). Scoped to [data-app="filodiretto"].
+ */
+html[data-app='filodiretto'] #welcome.welcome--fd-home .fd-welcome-legacy {
+  display: none;
+}
+
+html[data-app='filodiretto'] .fd-home-root {
+  display: block;
+}
+
+html[data-app='filodiretto'] .fd-home-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+html[data-app='filodiretto'] .fd-home-kpi {
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--surface, #fff);
+}
+
+html[data-app='filodiretto'] .fd-home-kpi__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+
+html[data-app='filodiretto'] .fd-home-kpi__value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+html[data-app='filodiretto'] .fd-home-kpi__hint {
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 6px;
+}
+
+html[data-app='filodiretto'] .fd-home-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  html[data-app='filodiretto'] .fd-home-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+html[data-app='filodiretto'] .fd-home-card {
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: var(--surface, #fff);
+}
+
+html[data-app='filodiretto'] .fd-home-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+html[data-app='filodiretto'] .fd-onboarding-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--fd-border, var(--border));
+  background: var(--bg, #fafafa);
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item--done {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item__check {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--fd-border-strong, var(--border-strong));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: transparent;
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item--done .fd-onboarding-item__check {
+  border-color: var(--green, #22c55e);
+  background: var(--green, #22c55e);
+  color: #fff;
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item__desc {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item__action {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent, #2563eb);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+html[data-app='filodiretto'] .fd-onboarding-item__action:hover {
+  text-decoration: underline;
+}
+
+html[data-app='filodiretto'] .fd-home-progress {
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 12px;
+}
+
+html[data-app='filodiretto'] .fd-home-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+html[data-app='filodiretto'] .fd-home-activity-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--fd-border, var(--border));
+  font-size: 12px;
+}
+
+html[data-app='filodiretto'] .fd-home-activity-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+html[data-app='filodiretto'] .fd-home-activity-item time {
+  grid-column: 1 / -1;
+  color: var(--text2);
+  font-size: 11px;
+}
+
+html[data-app='filodiretto'] .fd-home-activity-item .fd-act-type {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+html[data-app='filodiretto'] .fd-home-activity-item .fd-act-meta {
+  color: var(--text2);
+  word-break: break-word;
+}
+
+html[data-app='filodiretto'] .fd-home-empty {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+html[data-app='filodiretto'] .fd-home-lead {
+  font-size: 14px;
+  color: var(--text2);
+  margin: 0 0 16px;
+  max-width: 52ch;
+}
+
+html[data-app='filodiretto'] .fd-home-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}

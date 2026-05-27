@@ -23,17 +23,19 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-header.css'];
+                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-header.css', '/filodiretto/fd-home.css'];
                 fdCss.forEach(function (href) {
                     var link = document.createElement('link');
                     link.rel = 'stylesheet';
                     link.href = href;
                     document.head.appendChild(link);
                 });
-                var fdScript = document.createElement('script');
-                fdScript.src = '/filodiretto/fd-header.js';
-                fdScript.defer = true;
-                document.head.appendChild(fdScript);
+                ['/filodiretto/fd-header.js', '/filodiretto/fd-home.js'].forEach(function (src) {
+                    var fdScript = document.createElement('script');
+                    fdScript.src = src;
+                    fdScript.defer = true;
+                    document.head.appendChild(fdScript);
+                });
             }
             var host = (window.location.hostname || '').toLowerCase();
             if (host.includes('ads2wallet')) {
@@ -1381,6 +1383,7 @@
                 <p class="page-lead">
                     Home operativa essenziale: seleziona o crea un brand per iniziare.
                 </p>
+                <div class="fd-welcome-legacy">
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
                     <button type="button" class="btn sec" onclick="document.getElementById('brandSelector').focus()">Seleziona brand</button>
                     <button type="button" class="btn sec" onclick="nav('brand-identity')">Crea / modifica brand</button>
@@ -1404,6 +1407,7 @@
                 <div class="card" style="border-color:rgba(255,107,107,.35);">
                     <h2 class="block-title block-title--sm">Alert bloccanti</h2>
                     <div style="font-size:13px;color:var(--text2);">Nessun alert bloccante al momento.</div>
+                </div>
                 </div>
             </div>
 
@@ -3834,13 +3838,14 @@ function updateNavState() {
         createUserBtn.style.display = (isAdmin && !allowlist) ? '' : 'none';
     }
 
-    // Hide Dashboard/Inizio once a brand is selected.
+    // Hide Dashboard/Inizio once a brand is selected (Filo HR keeps Inizio as operational home).
+    const filoHome = typeof isFiloOperationalHome === 'function' && isFiloOperationalHome();
     const navGroupDashboard = document.getElementById('navGroupDashboard');
-    if (navGroupDashboard) navGroupDashboard.style.display = hasBrand ? 'none' : '';
+    if (navGroupDashboard) navGroupDashboard.style.display = (hasBrand && !filoHome) ? 'none' : '';
     const dashboardLabel = document.getElementById('navLabelDashboard');
     const welcomeItem = document.getElementById('navItemWelcome');
-    if (dashboardLabel && !navGroupDashboard) dashboardLabel.style.display = hasBrand ? 'none' : '';
-    if (welcomeItem && !navGroupDashboard) welcomeItem.style.display = hasBrand ? 'none' : '';
+    if (dashboardLabel && !navGroupDashboard) dashboardLabel.style.display = (hasBrand && !filoHome) ? 'none' : '';
+    if (welcomeItem && !navGroupDashboard) welcomeItem.style.display = (hasBrand && !filoHome) ? 'none' : '';
 
     // Hide all action buttons for viewer role
     document.querySelectorAll('[data-role-min]').forEach(el => {
@@ -3862,7 +3867,12 @@ function isLegacyCampaignsUiEnabled() {
     return !isHrDashboard();
 }
 
+function isFiloOperationalHome() {
+    return typeof window.isFiloOperationalHome === 'function' && window.isFiloOperationalHome();
+}
+
 function getDefaultBrandSection() {
+    if (isFiloOperationalHome()) return 'welcome';
     return isLegacyCampaignsUiEnabled() ? 'campaigns' : 'passes';
 }
 
@@ -3908,7 +3918,7 @@ function applyLegacyCampaignsUiMask() {
 
 function nav(id) {
     if (id === 'campaigns' && !isLegacyCampaignsUiEnabled()) id = getDefaultBrandSection();
-    if (id === 'welcome' && brandId) id = getDefaultBrandSection();
+    if (id === 'welcome' && brandId && !isFiloOperationalHome()) id = getDefaultBrandSection();
     if (!brandId && !SECTIONS_NO_BRAND.has(id)) {
         toast('Seleziona un brand dall\'elenco in alto');
         return;
@@ -3930,7 +3940,9 @@ function nav(id) {
     syncSectionDocumentTitle(id);
     syncBreadcrumb(id);
     const loaders = {
-        welcome: () => {},
+        welcome: () => {
+            if (typeof fdLoadHome === 'function') fdLoadHome();
+        },
         campaigns: loadCampaigns,
         passes: loadPasses,
         templates: loadTemplates,
@@ -3970,7 +3982,7 @@ function getActiveSectionId() {
 
 function refreshActiveSection() {
     let activeId = getActiveSectionId();
-    if (brandId && activeId === 'welcome') activeId = getDefaultBrandSection();
+    if (brandId && activeId === 'welcome' && !isFiloOperationalHome()) activeId = getDefaultBrandSection();
     nav(activeId);
 }
 
@@ -4050,7 +4062,7 @@ async function loadBrands() {
         applyBrandTheme();
         await refreshOverview();
         let sid = getActiveSectionId();
-        if (sid === 'welcome') sid = getDefaultBrandSection();
+        if (sid === 'welcome' && !isFiloOperationalHome()) sid = getDefaultBrandSection();
         nav(sid);
     } else {
         currentBrandName = '';
@@ -4089,8 +4101,9 @@ function changeBrand() {
     passHasNextPage = false;
     refreshOverview().then(() => {
         let sid = getActiveSectionId();
-        if (sid === 'welcome') sid = getDefaultBrandSection();
+        if (sid === 'welcome' && !isFiloOperationalHome()) sid = getDefaultBrandSection();
         nav(sid);
+        if (isFiloOperationalHome() && typeof fdLoadHome === 'function') fdLoadHome();
     });
 }
 
@@ -4549,6 +4562,9 @@ async function refreshOverview() {
             fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } })
         ]);
         campaignsCache = campaigns;
+        if (isFiloOperationalHome() && getActiveSectionId() === 'welcome' && typeof fdLoadHome === 'function') {
+            fdLoadHome();
+        }
     } catch(e) { console.error('refreshOverview:', e); }
 }
 
