@@ -153,6 +153,8 @@ html[data-shell="dark"].a2w-shell #leads .a2w-leads-kebab-btn:focus-visible,
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-reset:focus-visible,
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__link:focus-visible,
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-option:focus-within {
+html[data-shell="dark"].a2w-shell #leads .a2w-leads-kebab-btn:focus-visible,
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__link:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--a2w-action-primary);
 }
@@ -339,6 +341,27 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-divider {
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-reset {
   margin-top: 2px;
+  width: 190px;
+  border-radius: 10px;
+  border: 1px solid var(--a2w-border-default);
+  background: #0f172a;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: var(--a2w-z-dropdown);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-popover label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--a2w-text-secondary);
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-reset {
+  margin-top: 4px;
   border: 0;
   background: transparent;
   color: var(--a2w-action-primary);
@@ -347,6 +370,8 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-filter-reset {
   padding: 6px 4px;
   font-size: 12px;
   border-radius: 6px;
+  padding: 0;
+  font-size: 12px;
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpis {
@@ -374,6 +399,9 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card {
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-selected {
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-primary {
   border-color: rgba(63, 224, 200, 0.45);
   background: rgba(63, 224, 200, 0.08);
 }
@@ -387,6 +415,8 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-main {
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-label {
   margin: 0;
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-label {
+  margin: 0 0 2px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--a2w-text-secondary);
@@ -407,6 +437,9 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-value {
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-selected .a2w-contacts-kpi-value {
+}
+
+html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-card.is-primary .a2w-contacts-kpi-value {
   color: var(--a2w-action-primary);
 }
 
@@ -423,6 +456,9 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-delta.is-positive {
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-kpi-delta.is-negative {
   color: #fca5a5;
+  color: var(--a2w-text-tertiary);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 html[data-shell="dark"].a2w-shell #leads #leadsTable tbody tr:hover {
@@ -564,6 +600,7 @@ html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__or::after {
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__actions--secondary {
   margin-top: 0;
+  color: var(--a2w-text-secondary);
 }
 
 html[data-shell="dark"].a2w-shell #leads .a2w-contacts-empty__actions {

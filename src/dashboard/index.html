@@ -35,6 +35,8 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-analytics.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-push.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-brand-identity.css">
+    <link rel="stylesheet" href="/dashboard/styles/filo-contacts-refactor.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
     <link rel="stylesheet" href="/dashboard/css/layout.css">
     <link rel="stylesheet" href="/dashboard/css/components/page-header.css">
@@ -1804,15 +1806,19 @@
                     </div>
                 </div>
 
-                <div style="display:flex;gap:10px;margin-top:24px;">
-                    <button class="btn" onclick="saveBrandIdentity()">Salva identità</button>
+                <div id="a2wDeleteBrandDialog" class="a2w-bi-delete-dialog" hidden>
+                    <div class="a2w-bi-delete-dialog__backdrop"></div>
+                    <div class="a2w-bi-delete-dialog__panel" role="dialog" aria-modal="true" aria-labelledby="a2wDeleteBrandDialogTitle">
+                        <h3 id="a2wDeleteBrandDialogTitle">Conferma eliminazione brand</h3>
+                        <p>Verranno eliminati: <strong id="a2wDeleteBrandCounts">—</strong>. L'operazione è irreversibile.</p>
+                        <label class="form-label" for="a2wDeleteBrandConfirmInput">Digita <span id="a2wDeleteBrandNameToken"></span> per confermare</label>
+                        <input type="text" id="a2wDeleteBrandConfirmInput" autocomplete="off">
+                        <div class="a2w-bi-delete-dialog__actions">
+                            <button type="button" class="btn sec" id="a2wDeleteBrandCancelBtn">Annulla</button>
+                            <button type="button" class="btn danger" id="a2wDeleteBrandConfirmBtn" disabled>Elimina definitivamente</button>
+                        </div>
+                    </div>
                 </div>
-                <section class="danger-zone" aria-labelledby="brandDangerTitle">
-                    <h2 id="brandDangerTitle" class="danger-zone__title">Zona pericolosa</h2>
-                    <p class="danger-zone__desc">Elimina il brand e tutti i dati collegati (pass, campagne, contatti). L'operazione è irreversibile.</p>
-                    <button type="button" class="btn danger" onclick="deleteBrandAction()">Elimina brand</button>
-                </section>
-                <!-- Landing link removed -->
             </div>
 
             <!-- MEDIA LIBRARY -->
@@ -2288,43 +2294,30 @@
 
             <!-- LEADS DATABASE -->
             <div id="leads" class="section">
-                <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Contatti">Contatti</h1>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-                    <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." style="color:var(--text2);font-size:13px;">Elenco delle persone collegate ai pass di questo brand.</p>
-                    <div class="leads-toolbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        <input type="text" id="leadsSearch" class="leads-toolbar__search" placeholder="Cerca nome, email..." oninput="filterLeads()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;width:200px;">
-                        <button type="button" class="btn sec" id="leadsAddBtn" onclick="openEmployeeManualModal()" style="display:none;white-space:nowrap;">+ Aggiungi</button>
-                        <button type="button" class="btn sec" id="leadsImportBtn" onclick="openEmployeeImportModal()" style="display:none;white-space:nowrap;">✨ Importa da file</button>
-                        <button type="button" class="btn sec" id="leadsNoMatricolaBtn" onclick="filterLeadsNoMatricola()" style="display:none;white-space:nowrap;">⚠ Senza matricola</button>
-                        <button type="button" class="btn sec" id="leadsDistributeBtn" onclick="distributeActivationAll()" style="display:none;white-space:nowrap;">✉ Invia attivazione</button>
-                        <button type="button" class="btn leads-export-btn" onclick="exportLeadsCSV()" style="white-space:nowrap;"><svg class="leads-export-btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>Export CSV</span></button>
+                <div class="contacts-page-header">
+                  <div>
+                    <h1 class="sec-title page-title" data-menu-key="leads_page_title" data-menu-default="Contatti">Contatti</h1>
+                    <p data-menu-key="leads_page_blurb" data-menu-default="Elenco delle persone collegate ai pass di questo brand." class="contacts-page-blurb">Elenco delle persone collegate ai pass di questo brand.</p>
+                  </div>
+                  <div class="contacts-page-menu" id="contactsPageMenu" hidden>
+                    <button type="button" class="btn sec small contacts-page-menu__trigger" id="contactsPageMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu pagina Contatti">⋮</button>
+                    <div class="contacts-page-menu__panel" id="contactsPageMenuPanel" hidden role="menu">
+                      <button type="button" role="menuitem" class="contacts-page-menu__item" id="contactsShowTourBtn">Mostra tour</button>
                     </div>
+                  </div>
                 </div>
-                <div id="hrActivationPanel" class="card" style="display:none;margin-bottom:16px;padding:16px 20px;">
-                    <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Distribuzione pass (ibrida)</div>
-                    <div class="stats-grid" id="activationStats" style="margin-bottom:12px;"></div>
-                    <div class="form-row" style="align-items:flex-end;gap:12px;flex-wrap:wrap;">
-                        <div class="form-group" style="flex:1;min-width:200px;">
-                            <label class="form-label">Join pubblico / QR</label>
-                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
-                                <input type="checkbox" id="hrPublicQrEnabled" onchange="saveHrDistributionSettings()"> Abilita pagina <code>/join/{slug}</code>
-                            </label>
-                        </div>
-                        <div class="form-group" style="flex:1;min-width:160px;">
-                            <label class="form-label">Slug join (opz.)</label>
-                            <input type="text" id="hrPublicQrSlug" placeholder="es. acme-hr" onblur="saveHrDistributionSettings()">
-                        </div>
-                        <div class="form-group" style="flex:2;min-width:220px;">
-                            <label class="form-label">Domini email ammessi (virgola)</label>
-                            <input type="text" id="hrAllowedDomains" placeholder="acme.it, acme.com" onblur="saveHrDistributionSettings()">
-                        </div>
+                <div class="contacts-top-grid">
+                  <div id="contactsCardA" class="card contacts-card">
+                    <div class="contacts-card__heading">
+                      <h2 id="contactsCardATitle" class="contacts-card__title">Anagrafica dipendenti</h2>
+                      <div id="contactsCardAHelp" class="contacts-card__help"></div>
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
-                        <input type="text" id="hrJoinUrl" readonly style="flex:1;min-width:200px;padding:8px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">
-                        <button type="button" class="btn small sec" onclick="copyHrJoinUrl()">Copia link join</button>
-                    </div>
+                    <div id="contactsToolbarHost" class="contacts-toolbar"></div>
+                    <div id="leadsStats"></div>
+                  </div>
+                  <div id="contactsCardBHost" class="card contacts-card contacts-card--distribution" hidden data-coach-step="distribution"></div>
+                  <div id="contactsCardCHost" class="card contacts-card contacts-card--join" hidden data-coach-step="join"></div>
                 </div>
-                <div class="stats-grid" id="leadsStats"></div>
                 <div id="leadsEmptyHost" class="leads-empty-host" hidden role="status"></div>
                 <table class="table" id="leadsTable">
                     <caption class="sr-only">Elenco contatti</caption>
@@ -3592,6 +3585,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof enhancePageHeaders === 'function') enhancePageHeaders();
     initUserMenu();
     initFiloNavA11y();
+    applyLegacyCampaignsUiMask();
     syncNavAriaCurrent(getActiveSectionId());
     syncSectionDocumentTitle(getActiveSectionId());
     syncBreadcrumb(getActiveSectionId());
@@ -3739,11 +3733,61 @@ function updateNavState() {
     document.body.classList.toggle('role-viewer', isViewer);
     document.body.classList.toggle('role-manager', role === 'manager');
     document.body.classList.toggle('role-admin', isAdmin);
+    applyLegacyCampaignsUiMask();
     syncWaiUi();
 }
 
+function isLegacyCampaignsUiEnabled() {
+    return !isHrDashboard();
+}
+
+function getDefaultBrandSection() {
+    return isLegacyCampaignsUiEnabled() ? 'campaigns' : 'passes';
+}
+
+function applyLegacyCampaignsUiMask() {
+    const hidden = !isLegacyCampaignsUiEnabled();
+    const campaignNav = document.querySelector('.nav-item[data-section-id="campaigns"]');
+    if (campaignNav) campaignNav.style.display = hidden ? 'none' : '';
+
+    const campaignSection = document.getElementById('campaigns');
+    if (campaignSection) campaignSection.style.display = hidden ? 'none' : '';
+
+    const campaignModal = document.getElementById('campaignModal');
+    if (campaignModal && hidden) campaignModal.classList.remove('active');
+
+    const passFilter = document.getElementById('passFilterCampaign');
+    if (passFilter) {
+        const wrap = passFilter.closest('div');
+        if (wrap) wrap.style.display = hidden ? 'none' : '';
+        if (hidden) passFilter.value = '';
+    }
+
+    const passHint = document.getElementById('passFilterSessionHint');
+    if (passHint) {
+        passHint.textContent = hidden
+            ? 'Ricerca e pagina sono ricordati per questo brand finché il tab del browser è aperto.'
+            : 'Campagna, ricerca e pagina sono ricordati per questo brand finché il tab del browser è aperto.';
+    }
+
+    ['pushCampaignTarget', 'schedCampaignTarget', 'mediaUploadCampaignId', 'audCampaign'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const group = el.closest('.form-group') || el.parentElement;
+        if (group) group.style.display = hidden ? 'none' : '';
+        if (hidden && 'value' in el) el.value = '';
+    });
+
+    const campTable = document.getElementById('campaignAnalyticsTable');
+    if (campTable) {
+        const panel = campTable.closest('.card') || campTable.parentElement;
+        if (panel) panel.style.display = hidden ? 'none' : '';
+    }
+}
+
 function nav(id) {
-    if (id === 'welcome' && brandId) id = 'campaigns';
+    if (id === 'campaigns' && !isLegacyCampaignsUiEnabled()) id = getDefaultBrandSection();
+    if (id === 'welcome' && brandId) id = getDefaultBrandSection();
     if (!brandId && !SECTIONS_NO_BRAND.has(id)) {
         toast('Seleziona un brand dall\'elenco in alto');
         return;
@@ -3805,7 +3849,7 @@ function getActiveSectionId() {
 
 function refreshActiveSection() {
     let activeId = getActiveSectionId();
-    if (brandId && activeId === 'welcome') activeId = 'campaigns';
+    if (brandId && activeId === 'welcome') activeId = getDefaultBrandSection();
     nav(activeId);
 }
 
@@ -3885,7 +3929,7 @@ async function loadBrands() {
         applyBrandTheme();
         await refreshOverview();
         let sid = getActiveSectionId();
-        if (sid === 'welcome') sid = 'campaigns';
+        if (sid === 'welcome') sid = getDefaultBrandSection();
         nav(sid);
     } else {
         currentBrandName = '';
@@ -3924,7 +3968,7 @@ function changeBrand() {
     passHasNextPage = false;
     refreshOverview().then(() => {
         let sid = getActiveSectionId();
-        if (sid === 'welcome') sid = 'campaigns';
+        if (sid === 'welcome') sid = getDefaultBrandSection();
         nav(sid);
     });
 }
@@ -4373,17 +4417,6 @@ function adjustAlpha(hex, alpha) {
     return `rgba(${r},${g},${b},${alpha})`;
 }
 
-
-async function deleteBrandAction() {
-    if (!brandId) return alert('Seleziona una brand');
-    if (!await appConfirm({ title: 'Elimina brand', message: 'Eliminare il brand e tutti i dati collegati? Non si può annullare.', confirmLabel: 'Elimina brand', tone: 'danger' })) return;
-    const res = await fetch(`${API}/brands/${brandId}`, { method: 'DELETE', headers: getAuthHeaders() });
-    if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        return toast('Errore: ' + (e.error || 'eliminazione fallita'));
-    }
-    toast('Brand eliminata'); brandId = null; await loadBrands();
-}
 
 // ==================== OVERVIEW ====================
 async function refreshOverview() {
@@ -4855,7 +4888,9 @@ async function loadPasses(resetPage = false) {
     if (resetPage) passPageIndex = 0;
 
     syncPassCampaignDropdownPreference();
-    const campaignFilter = document.getElementById('passFilterCampaign')?.value || '';
+    const campaignFilter = isLegacyCampaignsUiEnabled()
+        ? (document.getElementById('passFilterCampaign')?.value || '')
+        : '';
     const effectiveLimit = PASSES_PAGE_SIZE + 1;
     const offset = passPageIndex * PASSES_PAGE_SIZE;
     let url = `${API}/passes?brand_id=${brandId}&limit=${effectiveLimit}&offset=${offset}&include_total=1`;
@@ -4879,7 +4914,9 @@ async function loadPasses(resetPage = false) {
     const passes = rawPasses.length > PASSES_PAGE_SIZE ? rawPasses.slice(0, PASSES_PAGE_SIZE) : rawPasses;
     const q = (passSearchQuery || '').trim().toLowerCase();
     const filteredPasses = q ? passes.filter(p => {
-        const camp = campaignsCache.find(c => c.id === p.campaign_id);
+        const camp = isLegacyCampaignsUiEnabled()
+            ? campaignsCache.find(c => c.id === p.campaign_id)
+            : null;
         const haystack = [
             p.id, p.serial_number, p.device_id, p.status, p.device_source,
             p.referrer_url, p.user_agent, camp?.name
@@ -5893,6 +5930,11 @@ function switchPushTab(tab) {
 // --- Campaign selects ---
 async function loadPushCampaignSelect() {
     const sel = document.getElementById('pushCampaignTarget');
+    if (!sel) return;
+    if (!isLegacyCampaignsUiEnabled()) {
+        sel.innerHTML = '<option value="">Tutti i pass</option>';
+        return;
+    }
     sel.innerHTML = '<option value="">Tutti i pass (tutte le campagne)</option>';
     if (!brandId) return;
     if (!campaignsCache.length) {
@@ -5943,6 +5985,10 @@ async function loadPushGamSelect() {
 async function loadSchedCampaignSelect() {
     const sel = document.getElementById('schedCampaignTarget');
     if (!sel) return;
+    if (!isLegacyCampaignsUiEnabled()) {
+        sel.innerHTML = '<option value="">Tutti i pass</option>';
+        return;
+    }
     sel.innerHTML = '<option value="">Tutti i pass (tutte le campagne)</option>';
     if (!brandId) return;
     if (!campaignsCache.length) {
@@ -5965,7 +6011,9 @@ async function loadPushAudienceSelect() {
         const sel = document.getElementById(id);
         if (!sel) return;
         const cur = sel.value;
-        sel.innerHTML = '<option value="">— Nessuna (usa campagna o tutti) —</option>';
+        sel.innerHTML = isLegacyCampaignsUiEnabled()
+            ? '<option value="">— Nessuna (usa campagna o tutti) —</option>'
+            : '<option value="">— Nessuna (usa tutti) —</option>';
         audiencesCache.forEach(a => {
             const o = document.createElement('option');
             o.value = a.id;
@@ -6020,7 +6068,9 @@ function pushClearStrip() {
 async function sendImmediatePush() {
     const title = document.getElementById('pushTitle').value;
     const message = document.getElementById('pushMessage').value;
-    const campaignId = document.getElementById('pushCampaignTarget').value || null;
+    const campaignId = isLegacyCampaignsUiEnabled()
+        ? (document.getElementById('pushCampaignTarget')?.value || null)
+        : null;
     const audienceId = document.getElementById('pushAudienceTarget')?.value || null;
     const channel = document.getElementById('pushChannel').value || 'apple';
     const updatePass = document.getElementById('pushUpdatePass').checked;
@@ -6030,7 +6080,7 @@ async function sendImmediatePush() {
 
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel };
     if (audienceId) body.audience_id = audienceId;
-    else if (campaignId) body.campaign_id = campaignId;
+    else if (campaignId && isLegacyCampaignsUiEnabled()) body.campaign_id = campaignId;
     const iwId = document.getElementById('pushInstantWin').value;
     if (iwId) body.instant_win_id = iwId;
     const gamId = document.getElementById('pushGamification').value;
@@ -6092,7 +6142,9 @@ function toggleSchedOptions() {
 async function createScheduledPush() {
     const title = document.getElementById('schedTitle').value;
     const message = document.getElementById('schedMessage').value;
-    const campaignId = document.getElementById('schedCampaignTarget').value || null;
+    const campaignId = isLegacyCampaignsUiEnabled()
+        ? (document.getElementById('schedCampaignTarget')?.value || null)
+        : null;
     const audienceId = document.getElementById('schedAudienceTarget')?.value || null;
     const updatePass = document.getElementById('schedUpdatePass').checked;
     const channel = document.getElementById('schedChannel').value || 'apple';
@@ -6104,7 +6156,7 @@ async function createScheduledPush() {
 
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel, schedule_type: schedType, schedule_time: time };
     if (audienceId) body.audience_id = audienceId;
-    else if (campaignId) body.campaign_id = campaignId;
+    else if (campaignId && isLegacyCampaignsUiEnabled()) body.campaign_id = campaignId;
     if (schedType === 'once') {
         body.date = document.getElementById('schedDate').value;
         if (!body.date) return alert('Seleziona una data');
@@ -7513,8 +7565,7 @@ function updateLeadsImportButton() {
     if (addBtn) addBtn.style.display = hr ? '' : 'none';
     const distBtn = document.getElementById('leadsDistributeBtn');
     if (distBtn) distBtn.style.display = hr ? '' : 'none';
-    const panel = document.getElementById('hrActivationPanel');
-    if (panel) panel.style.display = hr ? '' : 'none';
+    if (window.ContactsPage) ContactsPage.init(hr);
 }
 
 let manualEmployeeQueue = []; // legacy shim; filoHrContatti.manualModal owns queue state on HR shell
@@ -7606,6 +7657,8 @@ async function loadLeads() {
     renderDistributionMode();
     updateLeadsImportButton();
     setLeadsTableHead(leadsHrMode);
+    const cardTitle = document.getElementById('contactsCardATitle');
+    if (cardTitle) cardTitle.textContent = leadsHrMode ? 'Anagrafica dipendenti' : 'Contatti';
     const searchEl = document.getElementById('leadsSearch');
     if (searchEl) {
         searchEl.placeholder = leadsHrMode
@@ -7644,19 +7697,11 @@ async function loadLeads() {
         const data = await res.json();
         allLeads = data.leads || [];
 
-        const statDevice = leadsHrMode
-            ? (data.with_device ?? allLeads.filter((l) => l.device_id).length)
-            : (data.with_device || 0);
-        const statThird = leadsHrMode
-            ? (data.with_employee_id ?? allLeads.filter((l) => l.employee_id).length)
-            : (data.with_phone || 0);
-
-        document.getElementById('leadsStats').innerHTML = `
-            <div class="stat-card"><div class="stat-num">${data.total_leads || 0}</div><div class="stat-label">${esc(mc.leads_stat_total)}</div></div>
-            <div class="stat-card"><div class="stat-num">${statDevice}</div><div class="stat-label">${esc(mc.leads_stat_device)}</div></div>
-            <div class="stat-card"><div class="stat-num">${statThird}</div><div class="stat-label">${esc(leadsHrMode ? 'Con matricola' : mc.leads_stat_phone)}</div></div>
-            <div class="stat-card"><div class="stat-num">${data.with_email || 0}</div><div class="stat-label">${esc(mc.leads_stat_email)}</div></div>
-        `;
+        if (leadsHrMode) {
+            renderLeadsKpiStrip();
+        } else {
+            renderLegacyLeadsStats(data, mc);
+        }
         if (typeof ensureA2wLeadsLayout === 'function') ensureA2wLeadsLayout();
 
         updateLeadsNoMatricolaBadge();
@@ -7702,51 +7747,17 @@ async function loadActivationStats() {
         const res = await fetch(`${API}/brands/${brandId}/activation/stats`, { headers: getAuthHeaders() });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        const c = data.counts || {};
-        const el = document.getElementById('activationStats');
-        if (el) {
-            el.innerHTML = `
-                <div class="stat-card"><div class="stat-num">${c.candidate || 0}</div><div class="stat-label">Da invitare</div></div>
-                <div class="stat-card"><div class="stat-num">${c.invited || 0}</div><div class="stat-label">Invitati</div></div>
-                <div class="stat-card"><div class="stat-num">${c.activated || 0}</div><div class="stat-label">Attivi</div></div>
-            `;
+        if (window.ContactsPage && typeof ContactsPage.onHrLeadsLoaded === 'function') {
+            await ContactsPage.onHrLeadsLoaded(data);
         }
-        const chk = document.getElementById('hrPublicQrEnabled');
-        const slugIn = document.getElementById('hrPublicQrSlug');
-        const domIn = document.getElementById('hrAllowedDomains');
-        const joinIn = document.getElementById('hrJoinUrl');
-        if (chk) chk.checked = !!data.public_qr_enabled;
-        if (slugIn) slugIn.value = data.public_qr_slug || '';
-        if (domIn) domIn.value = (data.allowed_email_domains || []).join(', ');
-        if (joinIn) joinIn.value = data.join_url || '';
     } catch (e) {
         console.warn('activation stats', e.message);
     }
 }
 
 async function saveHrDistributionSettings() {
-    if (!brandId) return;
-    const domainsRaw = (document.getElementById('hrAllowedDomains')?.value || '').trim();
-    const allowed_email_domains = domainsRaw
-        ? domainsRaw.split(',').map((d) => d.trim().toLowerCase()).filter(Boolean)
-        : [];
-    const body = {
-        public_qr_enabled: !!document.getElementById('hrPublicQrEnabled')?.checked,
-        public_qr_slug: (document.getElementById('hrPublicQrSlug')?.value || '').trim() || null,
-        allowed_email_domains
-    };
-    try {
-        const res = await fetch(`${API}/brands/${brandId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-            body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        await loadActivationStats();
-        toast('Impostazioni distribuzione salvate');
-    } catch (e) {
-        toast(e.message);
+    if (window.ContactsPage && typeof ContactsPage.saveDistributionSettings === 'function') {
+        return ContactsPage.saveDistributionSettings();
     }
 }
 
@@ -8054,7 +8065,10 @@ function updateLeadsNoMatricolaBadge() {
 
 function filterLeadsNoMatricola() {
     window.leadsFilterNoMatricola = true;
-    document.getElementById('leadsSearch').value = '';
+    const search = document.getElementById('leadsSearch');
+    if (search) search.value = '';
+    leadsActiveKpiFilter = null;
+    renderLeadsKpiStrip();
     renderLeadsTable(allLeads.filter((l) => !l.employee_id || !String(l.employee_id).trim()));
     toast('Filtro: solo dipendenti senza matricola');
 }
@@ -8746,9 +8760,12 @@ async function loadAnalytics() {
     if (typeof a2wLoadAnalytics === 'function' && typeof isA2wDeploy === 'function' && isA2wDeploy()) {
         return a2wLoadAnalytics();
     }
+    const campaignsEnabled = isLegacyCampaignsUiEnabled();
     const [analytics, campaigns, passes] = await Promise.all([
         fetchCachedJson(`${API}/analytics/${brandId}`, { headers: { ...getAuthHeaders() } }),
-        fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } }),
+        campaignsEnabled
+            ? fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } })
+            : Promise.resolve([]),
         fetchCachedJson(`${API}/passes?brand_id=${brandId}&limit=600`, { headers: { ...getAuthHeaders() } })
     ]);
 
@@ -8785,9 +8802,14 @@ async function loadAnalytics() {
     syncAnalyticsRangeControls();
     renderAnalyticsTrendChart(allPasses);
     renderAnalyticsWalletSplit(allPasses);
-    renderAnalyticsTopCampaigns(campaigns);
+    renderAnalyticsTopCampaigns(campaignsEnabled ? campaigns : []);
 
     const tbody = document.querySelector('#campaignAnalyticsTable tbody');
+    if (!campaignsEnabled) {
+        const tableWrap = document.getElementById('campaignAnalyticsTable')?.closest('.card');
+        if (tableWrap) tableWrap.style.display = 'none';
+        return;
+    }
     if (!campaigns.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nessuna campagna</td></tr>'; return; }
     tbody.innerHTML = campaigns.map(c => {
         const conv = c.total_downloads > 0 ? ((c.total_installs / c.total_downloads) * 100).toFixed(1) : '0';
@@ -10343,16 +10365,38 @@ function a2wBiEnsureUiBound() {
 }
 
 async function loadBrandIdentity() {
+    const pageRoot = document.querySelector('#brand-identity .a2w-bi-page');
+    const a2wEnabled = isA2wBrandIdentityV2Enabled();
+    if (pageRoot) pageRoot.classList.toggle('a2w-bi-legacy-shell', !a2wEnabled);
+    if (a2wEnabled) {
+        a2wBiEnsureUiBound();
+    } else {
+        const saveBtn = a2wBiField('a2wBiSaveBtn');
+        if (saveBtn) saveBtn.disabled = false;
+        const stateBadge = a2wBiField('a2wBiSaveStateBadge');
+        if (stateBadge) stateBadge.textContent = '';
+    }
     if (!brandId) {
-        ['biName','biSlug','biSettore','biHomepage'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+        ['biName','biSlug','biTagline','biSettore','biLang','biHomepage','biSupportEmail','biSupportPhone','biSocialInstagram','biSocialFacebook','biSocialLinkedin','biSocialTiktok','biSocialX']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        brandIdentityState.selectedAssets = { logo: null, strip: null, thumbnail: null, background: null };
+        a2wBiRenderAssetsGrid();
+        a2wBiUpdatePreviewCard();
+        brandIdentityState.baseline = a2wBiSerializeState(a2wBiCollectFormData(), brandIdentityState.selectedAssets);
+        brandIdentityState.dirty = false;
+        a2wBiUpdateSaveButton(0);
         return;
     }
-    const res = await fetch(`${API}/brands/${brandId}`);
+    const res = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
     const brand = await res.json();
     const c = brand.config || {};
     document.getElementById('biName').value = brand.name || '';
     document.getElementById('biSlug').value = brand.slug || '';
     document.getElementById('biSettore').value = c.settore || '';
+    const biLang = document.getElementById('biLang');
+    if (biLang) biLang.value = c.language || 'it';
+    const biTagline = document.getElementById('biTagline');
+    if (biTagline) biTagline.value = c.tagline || '';
     document.getElementById('biHomepage').value = c.homepage || '';
     const support = c.support || {};
     if (document.getElementById('biSupportEmail')) document.getElementById('biSupportEmail').value = support.email || '';
@@ -10383,7 +10427,8 @@ async function loadBrandIdentity() {
 }
 
 async function saveBrandIdentity() {
-    const name = document.getElementById('biName').value.trim();
+    const data = a2wBiCollectFormData();
+    const name = data.name;
     if (!name) { toast('Inserisci il nome del brand'); return; }
     if (isA2wBrandIdentityV2Enabled()) {
         a2wBiClearErrors();
@@ -10455,13 +10500,42 @@ async function saveBrandIdentity() {
             syncBrandUrl();
             toast('Brand creato!');
             await loadBrands();
-        } else { toast('Errore creazione brand'); return; }
-    } else {
-        // UPDATE existing brand
-        const existing = await fetch(`${API}/brands/${brandId}`).then(r => r.json());
-        const mergedConfig = { ...(existing.config || {}), ...config };
-        await fetch(`${API}/brands/${brandId}`, { method: 'PUT', headers: {'Content-Type':'application/json', ...getAuthHeaders()}, body: JSON.stringify({ name, slug, config: mergedConfig }) });
-        toast('Identità brand salvata!');
+        } else {
+            // UPDATE existing brand
+            const existing = await fetch(`${API}/brands/${brandId}`).then(r => r.json());
+            const mergedConfig = {
+                ...(existing.config || {}),
+                ...config,
+                brand_identity_assets: assets,
+                brand_identity_last_saved_at: new Date().toISOString()
+            };
+            const saveRes = await fetch(`${API}/brands/${brandId}`, {
+                method: 'PUT',
+                headers: {'Content-Type':'application/json', ...getAuthHeaders()},
+                body: JSON.stringify({ name, slug, config: mergedConfig })
+            });
+            if (!saveRes.ok) {
+                const err = await saveRes.json().catch(() => ({}));
+                if (isA2wBrandIdentityV2Enabled() && /slug|duplicate|unique/i.test(err.error || '')) {
+                    a2wBiSetFieldError('biSlug', 'Slug già in uso');
+                    a2wBiUpdateSaveButton(1);
+                }
+                throw new Error(err.error || 'Errore salvataggio identità');
+            }
+            toast('Identità brand salvata!');
+        }
+        if (isA2wBrandIdentityV2Enabled()) {
+            brandIdentityState.lastSavedAt = Date.now();
+        }
+        applyBrandTheme();
+        await loadBrandIdentity();
+    } catch (e) {
+        toast(e.message || 'Errore salvataggio identità');
+    } finally {
+        if (isA2wBrandIdentityV2Enabled()) {
+            brandIdentityState.saving = false;
+            a2wBiSyncDirtyState();
+        }
     }
 }
 
