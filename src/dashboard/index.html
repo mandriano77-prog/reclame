@@ -355,8 +355,15 @@
 
         .pass-table-wrap { overflow-x: auto; max-height: 66vh; border-radius: var(--radius-md); }
         .pass-table thead th { position: sticky; top: 0; z-index: 2; }
-        .pass-table__select-col { width: 42px; text-align: center; vertical-align: middle; }
-        .pass-table__select-col input { width: 16px; height: 16px; accent-color: var(--teal, var(--accent)); cursor: pointer; }
+        .pass-table__select-col,
+        .bulk-select-col { width: 52px; min-width: 52px; text-align: center; vertical-align: middle; padding: 8px 6px !important; }
+        .a2w-bulk-check {
+            width: 20px !important; height: 20px !important; min-width: 20px !important; min-height: 20px !important;
+            margin: 0; padding: 0 !important; border: 2px solid var(--border) !important; border-radius: 5px !important;
+            background: var(--bg2, #1a1a2e) !important; box-shadow: none !important; flex-shrink: 0;
+            accent-color: var(--teal, var(--accent)); cursor: pointer; vertical-align: middle;
+        }
+        .a2w-bulk-check:checked { border-color: var(--teal, var(--accent)) !important; background: rgba(20, 184, 170, 0.2) !important; }
         .pass-table__id { font-family: ui-monospace, monospace; font-size: 11px; max-width: 148px; }
         .pass-id-copy {
             display: inline-block; max-width: 100%; padding: 2px 6px; border-radius: 6px;
@@ -377,12 +384,18 @@
             background: rgba(239, 68, 68, 0.06);
         }
         .pass-action-btn--danger:hover { background: rgba(239, 68, 68, 0.12); border-color: #ef4444; color: #dc2626; }
+        .bulk-action-bar,
         .pass-bulk-bar {
             display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
             margin-bottom: 10px; padding: 10px 14px; border-radius: var(--radius-md);
             border: 1px solid rgba(124, 58, 237, 0.35); background: rgba(124, 58, 237, 0.08);
         }
+        .bulk-action-bar[hidden],
         .pass-bulk-bar[hidden] { display: none !important; }
+        .bulk-select-hint {
+            font-size: 12px; color: var(--text2); margin: 0 0 10px; padding: 8px 12px;
+            border-radius: var(--radius-md); border: 1px dashed var(--border); background: var(--bg-subtle, var(--bg2));
+        }
         .pass-bulk-bar__count { font-size: 13px; font-weight: 600; color: var(--text); }
         .pass-table-legend {
             margin-bottom: 12px;
@@ -4822,6 +4835,7 @@ function renderPassTableLegendHtml() {
             <span><strong>Samsung</strong> <span class="legend-pill legend-pill--ok">SW</span> salvato · <span class="legend-pill legend-pill--pending">SW°</span> in attesa</span>
             <span><strong>Push (APNs)</strong> ✔ ultima consegnata · ✖ errore · <em>Nx</em> = numero invii</span>
             <span><strong>Pass ID</strong> clic per copiare l'identificativo completo</span>
+            <span><strong>Selezione multipla</strong> ☑ prima colonna → <em>Elimina selezionati</em></span>
         </div>
     </div>`;
 }
@@ -5147,7 +5161,8 @@ async function loadPasses(resetPage = false) {
     const allOnPageSelected = filteredPasses.length > 0 && selectedOnPage === filteredPasses.length;
 
     el.innerHTML = statsHtml + renderPassTableLegendHtml() + `
-        <div id="passBulkBar" class="pass-bulk-bar" hidden>
+        <p class="bulk-select-hint">Seleziona uno o più pass con la <strong>casella ☑</strong> a sinistra (o tutti dalla testata), poi usa <strong>Elimina selezionati</strong>.</p>
+        <div id="passBulkBar" class="pass-bulk-bar bulk-action-bar" hidden>
             <span class="pass-bulk-bar__count"><span id="passBulkCount">0</span> pass selezionati</span>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button type="button" class="btn small sec" onclick="clearPassSelection()">Deseleziona</button>
@@ -5168,8 +5183,8 @@ async function loadPasses(resetPage = false) {
         <div class="pass-table-wrap">
         <table class="table pass-table">
             <thead><tr>
-                <th class="pass-table__select-col" title="Seleziona tutti i pass in questa pagina">
-                    <input type="checkbox" id="passSelectAll" aria-label="Seleziona tutti" ${allOnPageSelected ? 'checked' : ''} onchange="onPassSelectAllChange(this)">
+                <th class="pass-table__select-col bulk-select-col" title="Seleziona tutti i pass in questa pagina">
+                    <input type="checkbox" id="passSelectAll" class="a2w-bulk-check" aria-label="Seleziona tutti i pass" ${allOnPageSelected ? 'checked' : ''} onchange="onPassSelectAllChange(this)">
                 </th>
                 <th title="Identificativo univoco del pass (clic per copiare)">Pass ID</th>
                 <th title="Momento in cui il pass è stato generato sul server (non è l'aggiunta al Wallet)">Pass creato</th>
@@ -5217,8 +5232,8 @@ async function loadPasses(resetPage = false) {
                 }
                 walletReachHtml += '</span>';
                 return `<tr data-pass-id="${esc(p.id)}">
-                    <td class="pass-table__select-col">
-                        <input type="checkbox" class="pass-row-cb" aria-label="Seleziona pass" data-pass-id="${esc(p.id)}" ${rowSelected ? 'checked' : ''} onchange="onPassRowCheckboxChange('${p.id}', this)">
+                    <td class="pass-table__select-col bulk-select-col">
+                        <input type="checkbox" class="pass-row-cb a2w-bulk-check" aria-label="Seleziona pass" data-pass-id="${esc(p.id)}" ${rowSelected ? 'checked' : ''} onchange="onPassRowCheckboxChange('${p.id}', this)">
                     </td>
                     <td class="pass-table__id">
                         <button type="button" class="pass-id-copy" onclick="copyPassIdToClipboard('${esc(p.id)}')" title="${esc(p.id)}">${esc(formatPassIdShort(p.id))}</button>
@@ -6838,6 +6853,84 @@ async function saveGeofencing() {
 }
 
 // --- Storico ---
+function getPushSelectedIds() {
+    if (!window._pushSelectedIds) window._pushSelectedIds = new Set();
+    return window._pushSelectedIds;
+}
+
+function updatePushBulkBar() {
+    const bar = document.getElementById('pushBulkBar');
+    if (!bar) return;
+    const n = getPushSelectedIds().size;
+    bar.hidden = n === 0;
+    const countEl = document.getElementById('pushBulkCount');
+    if (countEl) countEl.textContent = String(n);
+}
+
+function onPushRowCheckboxChange(id, el) {
+    const set = getPushSelectedIds();
+    if (el.checked) set.add(String(id));
+    else set.delete(String(id));
+    updatePushBulkBar();
+    syncPushSelectAllCheckbox();
+}
+
+function syncPushSelectAllCheckbox() {
+    const master = document.getElementById('pushSelectAll');
+    const logs = pushHistoryCache || [];
+    if (!master || !logs.length) return;
+    const set = getPushSelectedIds();
+    const onPage = logs.filter((l) => set.has(String(l.id))).length;
+    master.checked = onPage > 0 && onPage === logs.length;
+    master.indeterminate = onPage > 0 && onPage < logs.length;
+}
+
+function onPushSelectAllChange(el) {
+    (pushHistoryCache || []).forEach((l) => {
+        if (el.checked) getPushSelectedIds().add(String(l.id));
+        else getPushSelectedIds().delete(String(l.id));
+    });
+    document.querySelectorAll('.push-row-cb').forEach((cb) => { cb.checked = el.checked; });
+    updatePushBulkBar();
+}
+
+function clearPushSelection() {
+    getPushSelectedIds().clear();
+    document.querySelectorAll('.push-row-cb').forEach((cb) => { cb.checked = false; });
+    const master = document.getElementById('pushSelectAll');
+    if (master) { master.checked = false; master.indeterminate = false; }
+    updatePushBulkBar();
+}
+
+async function deleteSelectedPushHistory() {
+    const ids = [...getPushSelectedIds()];
+    if (!ids.length) return;
+    if (!await appConfirm({
+        title: 'Elimina notifiche selezionate',
+        message: `Eliminare ${ids.length} voci dallo storico?`,
+        confirmLabel: 'Elimina',
+        tone: 'danger'
+    })) return;
+    let ok = 0;
+    let fail = 0;
+    for (const id of ids) {
+        try {
+            const res = await fetch(`${API}/push/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { ...getAuthHeaders() } });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && !data.error) {
+                ok += 1;
+                getPushSelectedIds().delete(id);
+            } else fail += 1;
+        } catch (_) {
+            fail += 1;
+        }
+    }
+    if (ok) toast(`Eliminate ${ok} voci dallo storico`);
+    if (fail) toast(`${fail} voci non eliminate`);
+    updatePushBulkBar();
+    await loadPushHistory();
+}
+
 async function loadPushHistory() {
     if (!brandId) return;
     const res = await fetch(`${API}/push/history?brand_id=${brandId}&limit=20`);
@@ -6845,20 +6938,49 @@ async function loadPushHistory() {
     pushHistoryCache = Array.isArray(logs) ? logs : [];
     const el = document.getElementById('pushHistory');
     if (!logs.length) { el.innerHTML = '<p style="color:var(--text2)">Nessuna notifica inviata.</p>'; return; }
-    el.innerHTML = `<table class="table">
-        <thead><tr><th>Data</th><th>Canale</th><th>Titolo</th><th>Messaggio</th><th>Inviati</th><th>Azioni</th></tr></thead>
-        <tbody>${logs.map(l => `<tr>
+    const selectedOnPage = logs.filter((l) => getPushSelectedIds().has(String(l.id))).length;
+    const allOnPageSelected = logs.length > 0 && selectedOnPage === logs.length;
+    el.innerHTML = `
+        <p class="bulk-select-hint" style="margin-bottom:10px;">Seleziona le notifiche con ☑ e usa <strong>Elimina selezionate</strong> per rimuoverle dallo storico.</p>
+        <div id="pushBulkBar" class="bulk-action-bar" hidden>
+            <span class="pass-bulk-bar__count"><span id="pushBulkCount">0</span> notifiche selezionate</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn small sec" onclick="clearPushSelection()">Deseleziona</button>
+                <button type="button" class="btn small danger" onclick="deleteSelectedPushHistory()">Elimina selezionate</button>
+            </div>
+        </div>
+        <div class="pass-table-wrap">
+        <table class="table pass-table">
+        <thead><tr>
+            <th class="bulk-select-col" title="Seleziona tutte">
+                <input type="checkbox" id="pushSelectAll" class="a2w-bulk-check" aria-label="Seleziona tutte le notifiche" ${allOnPageSelected ? 'checked' : ''} onchange="onPushSelectAllChange(this)">
+            </th>
+            <th>Data</th><th>Canale</th><th>Titolo</th><th>Messaggio</th><th>Inviati</th><th style="text-align:right;">Azioni</th>
+        </tr></thead>
+        <tbody>${logs.map(l => {
+            const pid = String(l.id);
+            const rowSelected = getPushSelectedIds().has(pid);
+            return `<tr>
+            <td class="bulk-select-col">
+                <input type="checkbox" class="push-row-cb a2w-bulk-check" aria-label="Seleziona notifica" data-push-id="${esc(pid)}" ${rowSelected ? 'checked' : ''} onchange="onPushRowCheckboxChange('${esc(pid)}', this)">
+            </td>
             <td style="font-size:12px;">${new Date(l.sent_at||l.created_at).toLocaleString('it')}</td>
             <td>${pushChannelDisplayLabel(l.channel || 'apple')}</td>
             <td>${esc(l.title)}</td>
-            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(l.message)}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(l.message || '')}">${esc(l.message)}</td>
             <td>${l.sent_count||0}</td>
-            <td style="white-space:nowrap;">
-                <button class="btn small" onclick="resendPushFromHistory('${String(l.id)}')">Reinvia</button>
-                <button class="btn small danger" onclick="deletePushFromHistory('${String(l.id)}')">Elimina</button>
+            <td style="text-align:right;">
+                <div class="pass-row-actions">
+                    <button type="button" class="pass-action-btn pass-action-btn--view" onclick="resendPushFromHistory('${esc(pid)}')">Reinvia</button>
+                    <button type="button" class="pass-action-btn pass-action-btn--danger" onclick="deletePushFromHistory('${esc(pid)}')" title="Elimina" aria-label="Elimina">&#128465;</button>
+                </div>
             </td>
-        </tr>`).join('')}</tbody>
-    </table>`;
+        </tr>`;
+        }).join('')}</tbody>
+    </table>
+    </div>`;
+    updatePushBulkBar();
+    syncPushSelectAllCheckbox();
 }
 
 async function resendPushFromHistory(pushId) {
@@ -6909,6 +7031,7 @@ async function deletePushFromHistory(pushId) {
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.error) throw new Error(data.error || 'Eliminazione non riuscita');
         toast('Voce eliminata');
+        getPushSelectedIds().delete(String(pushId));
         await loadPushHistory();
     } catch (err) {
         toast('Errore eliminazione: ' + (err.message || err));
