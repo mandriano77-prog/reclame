@@ -1,5 +1,17 @@
 # Filo Diretto UI Changelog
 
+## Fix — Nav HR: nascondi Campagne (`[FD] nav`)
+
+### Added
+- `src/filodiretto/fd-nav.css` — `display: none !important` su voce Campagne e sezione `#campaigns`
+- `src/filodiretto/fd-nav.js` — riapplica mask dopo `updateNavState()` / `nav('campaigns')`
+
+### Changed
+- `isHrDashboard()` riconosce anche `data-app=filodiretto`
+- `updateNavState()` non ripristina più `display` sulla voce Campagne in modalità HR
+
+---
+
 ## Fix — Identità brand Filo (`[FD] brand-identity`)
 
 ### Added
