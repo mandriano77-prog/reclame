@@ -1,5 +1,19 @@
 # Filo Diretto UI Changelog
 
+## FD-14 — Push & Notifiche (`[FD] push`)
+
+### Added
+- `src/filodiretto/fd-push.css` — layout con anteprima sticky, segmented canale, contatori caratteri
+- `src/filodiretto/fd-push.js` — preview lock-screen iOS/Android, «Invia di prova», label HR-friendly
+- API `POST /push/send` accetta `test_pass_id` (invio a un solo pass, retro-compatibile)
+
+### Changed
+- Canale: segmented «iPhone (Apple Wallet)» / «Android (Google Wallet)» / «Entrambi» + tooltip APNs
+- Titolo max ~50, messaggio max ~178 con contatore live
+- HR deploy injects push assets
+
+---
+
 ## FD-13 — Brand switcher (`[FD] brand-switcher`)
 
 ### Added

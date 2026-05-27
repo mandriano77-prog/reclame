@@ -1,0 +1,210 @@
+/**
+ * FD-14 — FiloDiretto Push & Notifiche: preview, counters, channel segmented control.
+ */
+html[data-app='filodiretto'] #push.push--fd {
+  --fd-push-preview-width: 300px;
+}
+
+html[data-app='filodiretto'] #push .fd-push-intro {
+  font-size: var(--fd-font-size-body);
+  line-height: var(--fd-line-height-relaxed);
+  color: var(--fd-color-text-secondary);
+  margin-bottom: var(--fd-space-4);
+  max-width: 62ch;
+}
+
+html[data-app='filodiretto'] #pushPanel_immediate.fd-push-panel--enhanced {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--fd-push-preview-width);
+  gap: var(--fd-space-5);
+  align-items: start;
+}
+
+html[data-app='filodiretto'] #pushPanel_immediate .fd-push-form-col .push-card {
+  margin-top: 0;
+}
+
+html[data-app='filodiretto'] .fd-push-preview {
+  position: sticky;
+  top: var(--fd-space-4);
+  padding: var(--fd-space-4);
+  border: 1px solid var(--fd-border);
+  border-radius: var(--fd-radius-md);
+  background: var(--fd-color-bg-subtle);
+}
+
+html[data-app='filodiretto'] .fd-push-preview__title {
+  margin: 0 0 var(--fd-space-3);
+  font-size: var(--fd-font-size-h3);
+  font-weight: var(--fd-font-weight-semibold);
+  color: var(--fd-color-text-primary);
+}
+
+html[data-app='filodiretto'] .fd-push-preview__device {
+  margin-bottom: var(--fd-space-4);
+  border-radius: var(--fd-radius-md);
+  overflow: hidden;
+  box-shadow: var(--fd-shadow-md);
+  background: #0f172a;
+}
+
+html[data-app='filodiretto'] .fd-push-preview__device:last-child {
+  margin-bottom: 0;
+}
+
+html[data-app='filodiretto'] .fd-push-preview__device-label {
+  display: block;
+  padding: var(--fd-space-1) var(--fd-space-2);
+  font-size: var(--fd-font-size-sm);
+  font-weight: var(--fd-font-weight-medium);
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html[data-app='filodiretto'] .fd-push-preview__lock {
+  padding: var(--fd-space-3);
+  color: #f8fafc;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+html[data-app='filodiretto'] .fd-push-preview__lock-app {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(248, 250, 252, 0.65);
+  margin-bottom: 4px;
+}
+
+html[data-app='filodiretto'] .fd-push-preview__lock-title {
+  font-weight: var(--fd-font-weight-semibold);
+  margin-bottom: 2px;
+}
+
+html[data-app='filodiretto'] .fd-push-preview__lock-body {
+  color: rgba(248, 250, 252, 0.85);
+}
+
+html[data-app='filodiretto'] .fd-push-preview__pass {
+  margin-top: var(--fd-space-3);
+  padding: var(--fd-space-3);
+  border-radius: var(--fd-radius-sm);
+  background: linear-gradient(135deg, var(--fd-color-primary-700), var(--fd-color-primary-500));
+  color: #fff;
+  font-size: 12px;
+}
+
+html[data-app='filodiretto'] .fd-push-preview__pass-name {
+  font-weight: var(--fd-font-weight-semibold);
+  margin-bottom: 4px;
+}
+
+html[data-app='filodiretto'] .fd-push-channel-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+html[data-app='filodiretto'] .fd-push-channel-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2);
+  margin-top: var(--fd-space-2);
+}
+
+html[data-app='filodiretto'] .fd-push-channel-seg__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: var(--fd-space-1) var(--fd-space-3);
+  border: 1px solid var(--fd-border-strong);
+  border-radius: var(--fd-radius-md);
+  background: var(--fd-color-bg-canvas);
+  color: var(--fd-color-text-primary);
+  font-size: var(--fd-font-size-body);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+html[data-app='filodiretto'] .fd-push-channel-seg__btn:hover {
+  border-color: var(--fd-color-primary-500);
+}
+
+html[data-app='filodiretto'] .fd-push-channel-seg__btn.is-active {
+  border-color: var(--fd-color-primary-500);
+  background: var(--fd-color-primary-50);
+  color: var(--fd-color-primary-700);
+  font-weight: var(--fd-font-weight-semibold);
+}
+
+html[data-app='filodiretto'] .fd-push-channel-seg__btn:focus-visible {
+  outline: 3px solid rgba(109, 40, 217, 0.35);
+  outline-offset: 2px;
+}
+
+html[data-app='filodiretto'] .fd-push-channel-help {
+  margin: var(--fd-space-2) 0 0;
+  font-size: var(--fd-font-size-sm);
+  color: var(--fd-color-text-muted);
+  line-height: var(--fd-line-height-body);
+}
+
+html[data-app='filodiretto'] .fd-push-field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--fd-space-2);
+}
+
+html[data-app='filodiretto'] .fd-push-char-count {
+  font-size: var(--fd-font-size-sm);
+  color: var(--fd-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-app='filodiretto'] .fd-push-char-count.is-warn {
+  color: var(--fd-color-warning);
+  font-weight: var(--fd-font-weight-semibold);
+}
+
+html[data-app='filodiretto'] .fd-push-char-count.is-over {
+  color: var(--fd-color-danger);
+  font-weight: var(--fd-font-weight-semibold);
+}
+
+html[data-app='filodiretto'] .fd-push-test {
+  margin-top: var(--fd-space-4);
+  padding-top: var(--fd-space-4);
+  border-top: 1px dashed var(--fd-border);
+}
+
+html[data-app='filodiretto'] .fd-push-test__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2);
+  align-items: flex-end;
+  margin-top: var(--fd-space-2);
+}
+
+html[data-app='filodiretto'] .fd-push-test__row select {
+  flex: 1 1 200px;
+  min-height: 40px;
+  border-radius: var(--fd-radius-sm);
+  border: 1px solid var(--fd-border-strong);
+  padding: var(--fd-space-2);
+  font-size: var(--fd-font-size-body);
+}
+
+@media (max-width: 1100px) {
+  html[data-app='filodiretto'] #pushPanel_immediate.fd-push-panel--enhanced {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-app='filodiretto'] .fd-push-preview {
+    position: static;
+    order: -1;
+  }
+}

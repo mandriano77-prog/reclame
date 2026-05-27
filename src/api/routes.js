@@ -2234,7 +2234,8 @@ router.post('/push/send', async (req, res) => {
       instant_win_id, gamification_id, channel = 'apple',
       back_link_label, back_link_url,
       include_pass_link, pass_link_url, pass_link_label, pass_link_expires_at,
-      strip_media_id, strip_base64
+      strip_media_id, strip_base64,
+      test_pass_id
     } = req.body;
     if (!brand_id || !title || !message) return res.status(400).json({ error: 'brand_id, title, message richiesti' });
     if (!requireBrandId(req, res, brand_id)) return;
@@ -2251,7 +2252,13 @@ router.post('/push/send', async (req, res) => {
     console.log(`[PUSH DEBUG] Total devices in DB: ${allDevices.rows[0].count} | Brand IDs in passes: ${JSON.stringify(allPasses.rows.map(r => r.brand_id))}`);
 
     const pushTargetOpts = { campaign_id, audience_id };
-    const targetPasses = await getTargetPassesForPush(brand_id, pushTargetOpts);
+    let targetPasses = await getTargetPassesForPush(brand_id, pushTargetOpts);
+    if (test_pass_id) {
+      targetPasses = targetPasses.filter((p) => String(p.id) === String(test_pass_id));
+      if (!targetPasses.length) {
+        return res.status(400).json({ error: 'Pass di prova non trovato per questo brand' });
+      }
+    }
     const googleEligible = targetPasses.filter(p => p.google_wallet_object_id);
     const samsungEligible = targetPasses.filter(p => p.samsung_wallet_ref_id && p.samsung_wallet_saved);
 
@@ -2259,6 +2266,10 @@ router.post('/push/send', async (req, res) => {
     let devices = [];
     if (sendApple) {
       devices = await getAppleDevicesForAudience(brand_id, pushTargetOpts);
+      if (test_pass_id && targetPasses.length === 1) {
+        const testSerial = targetPasses[0].serial_number;
+        devices = devices.filter((d) => d.serial_number === testSerial);
+      }
     }
 
     console.log(`[PUSH DEBUG] Devices found for brand: ${devices.length}`);
