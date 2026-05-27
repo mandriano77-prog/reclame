@@ -17,8 +17,28 @@ function getResend() {
 
 const getFromEmail = () => process.env.FROM_EMAIL || 'noreply@ads2wallet.com';
 const getFromName = () => process.env.FROM_NAME || 'Ads2Wallet';
-const getHrFromEmail = () => process.env.HR_FROM_EMAIL || 'noreply@filodiretto.app';
+// HR display name stays FiloDiretto; sender uses verified filodiretto.app domain on Resend.
+const getHrFromEmail = () => process.env.HR_FROM_EMAIL || process.env.FROM_EMAIL || 'noreply@filodiretto.app';
 const getHrFromName = () => process.env.HR_FROM_NAME || 'FiloDiretto.App';
+
+async function sendViaResend(payload, { logLabel = 'email' } = {}) {
+  const resend = getResend();
+  if (!resend) {
+    const reason = 'RESEND_API_KEY not set';
+    console.warn(`[Mailer] ${logLabel} skipped — ${reason}`);
+    throw new Error(reason);
+  }
+
+  const result = await resend.emails.send(payload);
+  if (result?.error) {
+    const message = result.error.message || JSON.stringify(result.error);
+    console.error(`[Mailer] ${logLabel} failed — from: ${payload.from} to: ${payload.to?.join?.(', ') || payload.to} — ${message}`);
+    throw new Error(message);
+  }
+
+  console.log(`[Mailer] ${logLabel} sent — to: ${payload.to?.join?.(', ') || payload.to} id: ${result?.data?.id || 'n/a'}`);
+  return result;
+}
 
 /**
  * Send welcome email after signup
@@ -475,11 +495,6 @@ async function sendPasswordResetEmail({ to, name, resetUrl }) {
  * HR employee pass activation invite (Filodiretto).
  */
 async function sendActivationEmail({ to, firstName, brandName, activateUrl, dpoEmail }) {
-  const resend = getResend();
-  if (!resend) {
-    console.log('⚠️ RESEND_API_KEY not set — skipping activation email to', to);
-    return { skipped: true, reason: 'RESEND_API_KEY not set' };
-  }
   const name = firstName || 'Collega';
   const brand = brandName || 'la tua azienda';
   const fromEmail = getHrFromEmail();
@@ -504,17 +519,15 @@ async function sendActivationEmail({ to, firstName, brandName, activateUrl, dpoE
   <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">Powered by FiloDiretto.App</p>
 </div></body></html>`;
 
-  return resend.emails.send({
+  return sendViaResend({
     from: `${fromName} <${fromEmail}>`,
     to: [to],
     subject: `FiloDiretto.App | Attiva il tuo accesso ${brand}`,
     html
-  });
+  }, { logLabel: 'activation email' });
 }
 
 async function sendActivationReminderEmail({ to, firstName, brandName, activateUrl, dpoEmail }) {
-  const resend = getResend();
-  if (!resend) return { skipped: true, reason: 'RESEND_API_KEY not set' };
   const name = firstName || 'Collega';
   const brand = brandName || 'la tua azienda';
   const fromEmail = getHrFromEmail();
@@ -535,12 +548,12 @@ async function sendActivationReminderEmail({ to, firstName, brandName, activateU
   </div>
   <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">Powered by FiloDiretto.App</p>
 </div></body></html>`;
-  return resend.emails.send({
+  return sendViaResend({
     from: `${fromName} <${fromEmail}>`,
     to: [to],
     subject: `FiloDiretto.App | Promemoria attivazione accesso ${brand}`,
     html
-  });
+  }, { logLabel: 'activation reminder' });
 }
 
 module.exports = {

@@ -8169,7 +8169,13 @@ async function distributeActivationAll() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        toast(`Inviate ${data.sent || 0} email (${data.skipped || 0} saltate)`);
+        const errCount = Array.isArray(data.errors) ? data.errors.length : 0;
+        if (errCount) {
+            const firstErr = data.errors[0]?.reason || 'Errore invio email';
+            toast(`Inviate ${data.sent || 0}, errori ${errCount}: ${firstErr}`);
+        } else {
+            toast(`Inviate ${data.sent || 0} email (${data.skipped || 0} saltate)`);
+        }
         await loadLeads();
     } catch (e) {
         toast(e.message);
