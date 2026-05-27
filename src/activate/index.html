@@ -76,12 +76,6 @@
   <div class="wrap">
     <div id="loading" class="card"><p>Caricamento…</p></div>
     <div id="error" class="card hidden"><p class="err" id="errorText"></p></div>
-    <div id="done" class="card hidden">
-      <div class="badge">Filodiretto</div>
-      <h1>Pass attivato</h1>
-      <p class="meta">Aggiungi il pass ad Apple Wallet per ricevere gli aggiornamenti.</p>
-      <a class="dl" id="downloadBtn" href="#">Scarica pass Apple Wallet</a>
-    </div>
     <div id="formCard" class="card hidden">
       <div class="badge">Filodiretto</div>
       <h1 id="brandTitle">Attivazione pass</h1>
@@ -134,7 +128,12 @@
       }
       state = data;
       if (data.already_activated) {
-        showDone('/api/v1/passes/');
+        if (data.thank_you_url) {
+          window.location.replace(data.thank_you_url);
+          return;
+        }
+        document.getElementById('error').classList.remove('hidden');
+        document.getElementById('errorText').textContent = 'Attivazione già completata.';
         return;
       }
       document.getElementById('formCard').classList.remove('hidden');
@@ -162,13 +161,6 @@
       }
     }
 
-    function showDone(downloadPath) {
-      document.getElementById('formCard').classList.add('hidden');
-      document.getElementById('done').classList.remove('hidden');
-      const a = document.getElementById('downloadBtn');
-      a.href = downloadPath;
-    }
-
     submitBtn.addEventListener('click', async () => {
       if (!privacyBox.checked) return;
       submitBtn.disabled = true;
@@ -189,7 +181,15 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Errore attivazione');
-        showDone(data.download_url);
+        if (data.thank_you_url) {
+          window.location.assign(data.thank_you_url);
+          return;
+        }
+        if (data.download_url) {
+          window.location.assign(data.download_url);
+          return;
+        }
+        throw new Error('Link di download non disponibile');
       } catch (e) {
         alert(e.message);
         submitBtn.disabled = !privacyBox.checked;

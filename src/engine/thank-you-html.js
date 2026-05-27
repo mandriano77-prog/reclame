@@ -16,6 +16,30 @@ function getThankYouFooter() {
   return custom || 'Powered by Filodiretto';
 }
 
+function normalizeHexColor(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  const hex = raw.startsWith('#') ? raw.slice(1) : raw;
+  if (/^[0-9a-fA-F]{6}$/.test(hex)) return `#${hex.toUpperCase()}`;
+  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+    return `#${hex.split('').map((c) => c + c).join('').toUpperCase()}`;
+  }
+  return null;
+}
+
+function shadeHex(hex, factor) {
+  const normalized = normalizeHexColor(hex);
+  if (!normalized) return hex;
+  const num = parseInt(normalized.slice(1), 16);
+  const ch = (offset) => (num >> offset) & 255;
+  const scale = (v) => Math.max(0, Math.min(255, Math.round(v * factor)));
+  const rgb = [scale(ch(16)), scale(ch(8)), scale(ch(0))]
+    .map((v) => v.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+  return `#${rgb}`;
+}
+
 function thankYouStyles() {
   return `
     :root {
@@ -174,11 +198,16 @@ function renderSaveThankYouPage({
   logoUrl,
   passDownloadUrl,
   portalHref,
+  brandColor,
   footer = getThankYouFooter()
 }) {
   const safeBrand = escapeHtml(brandName);
   const initial = escapeHtml((brandName || 'B').charAt(0).toUpperCase());
   const successBlock = thankYouSuccessBlock({ brandName, portalHref, passDownloadUrl });
+  const accent = normalizeHexColor(brandColor) || '#8B5CF6';
+  const accentDark = shadeHex(accent, 0.85);
+  const accentLight = shadeHex(accent, 1.2);
+  const brandVars = `:root{--brand:${accent};--brand-dark:${accentDark};--brand-light:${accentLight};}`;
 
   return `<!DOCTYPE html>
 <html lang="it">
@@ -189,6 +218,7 @@ function renderSaveThankYouPage({
   <title>${safeBrand} · Filo Diretto</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>${thankYouStyles()}</style>
+  <style>${brandVars}</style>
 </head>
 <body>
   <div class="container">
