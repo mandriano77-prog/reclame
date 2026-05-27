@@ -1,0 +1,88 @@
+/**
+ * FD-01 — Global header (FiloDiretto light shell only).
+ */
+html[data-app="filodiretto"] .app-header,
+html[data-shell="light"][data-app="filodiretto"] .app-header {
+  background: var(--fd-color-header-bg, #fafafa);
+  border-bottom: 1px solid var(--fd-border, #e5e7eb);
+  box-shadow: none;
+  padding-top: var(--space-3, 12px);
+  padding-bottom: var(--space-3, 12px);
+}
+
+html[data-app="filodiretto"] .sidebar .fd-logo-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-sm, 6px);
+  margin: calc(-1 * var(--space-1, 4px));
+  padding: var(--space-1, 4px);
+  transition: background 0.15s ease;
+}
+
+html[data-app="filodiretto"] .sidebar .fd-logo-link:hover {
+  background: rgba(124, 58, 237, 0.06);
+}
+
+html[data-app="filodiretto"] .sidebar .fd-logo-link:focus-visible {
+  outline: 2px solid var(--accent, #7c3aed);
+  outline-offset: 2px;
+}
+
+html[data-app="filodiretto"] .user-menu-trigger {
+  position: relative;
+  gap: 6px;
+  width: auto;
+  min-width: 40px;
+  padding: 0 10px 0 4px;
+  border-radius: var(--radius-pill, 999px);
+}
+
+html[data-app="filodiretto"] .user-menu-chevron {
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-secondary, #6b7280);
+  margin-left: 2px;
+  pointer-events: none;
+}
+
+html[data-app="filodiretto"] .user-menu-trigger[data-fd-tooltip]::after {
+  content: attr(data-fd-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--text-primary, #111);
+  background: var(--bg-canvas, #fff);
+  border: 1px solid var(--fd-border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  pointer-events: none;
+  z-index: 50;
+}
+
+html[data-app="filodiretto"] .user-menu-trigger[data-fd-tooltip]:hover::after,
+html[data-app="filodiretto"] .user-menu-trigger[data-fd-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+html[data-app="filodiretto"] #breadcrumbBrand.fd-breadcrumb-home {
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+html[data-app="filodiretto"] #breadcrumbBrand.fd-breadcrumb-home:hover {
+  color: var(--accent-hover, #7c3aed);
+  border-bottom-color: currentColor;
+}

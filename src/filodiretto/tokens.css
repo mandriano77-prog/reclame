@@ -1,0 +1,9 @@
+/**
+ * FiloDiretto design tokens (--fd-*). Scoped usage in filodiretto/*.css only.
+ */
+:root {
+  --fd-color-header-bg: #fafafa;
+  --fd-border: #e5e7eb;
+  --fd-border-strong: #d1d5db;
+  --fd-radius-header: 0;
+}

@@ -161,6 +161,11 @@ app.get(['/dashboard', '/dashboard/'], (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
 });
+app.get(['/dashboard/home', '/dashboard/home/'], (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
+});
+app.use('/filodiretto', express.static(path.join(__dirname, 'filodiretto')));
 app.use('/landing', express.static(path.join(__dirname, 'landing')));
 app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
 

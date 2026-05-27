@@ -84,6 +84,13 @@ html[data-shell="light"] .app-header {
   min-height: 56px;
 }
 
+/* FD-01: header surface — overridden by fd-header.css when data-app=filodiretto */
+html[data-shell="light"][data-app="filodiretto"] .app-header {
+  background: var(--fd-color-header-bg, #fafafa);
+  border-bottom: 1px solid var(--fd-border, #e5e7eb);
+  box-shadow: none;
+}
+
 html[data-shell="light"] .header-start {
   flex: 1 1 auto;
   min-width: 0;

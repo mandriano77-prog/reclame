@@ -20,7 +20,21 @@
             document.title = byline ? (base + ' — ' + byline) : base;
             var desc = document.querySelector('meta[name="description"]');
             if (desc) desc.content = base + (lock === 'hr' ? ' — piattaforma HR Wallet' : ' — dashboard');
-            if (lock === 'hr') document.documentElement.setAttribute('data-shell', 'light');
+            if (lock === 'hr') {
+                document.documentElement.setAttribute('data-shell', 'light');
+                document.documentElement.setAttribute('data-app', 'filodiretto');
+                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-header.css'];
+                fdCss.forEach(function (href) {
+                    var link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = href;
+                    document.head.appendChild(link);
+                });
+                var fdScript = document.createElement('script');
+                fdScript.src = '/filodiretto/fd-header.js';
+                fdScript.defer = true;
+                document.head.appendChild(fdScript);
+            }
             var host = (window.location.hostname || '').toLowerCase();
             if (host.includes('ads2wallet')) {
                 document.documentElement.classList.add('a2w-shell');
@@ -3129,7 +3143,7 @@
 <script src="/dashboard/js/components/ui/index.js"></script>
 <script src="/dashboard/js/components/a2w-modal.js"></script>
 <script src="/dashboard/js/components/contacts/a2w-contacts-ux.js"></script>
-<script src="/dashboard/js/a2w-shell.js"></script>
+    <script src="/dashboard/js/a2w-shell.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
 
 <script>

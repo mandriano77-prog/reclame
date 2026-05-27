@@ -1,5 +1,19 @@
 # Filo Diretto UI Changelog
 
+## FD-01 — Header globale (`[FD] header`)
+
+### Added
+- `src/filodiretto/tokens.css` — `--fd-border`, `--fd-color-header-bg`
+- `src/filodiretto/fd-header.css` — header surface, logo link, account chevron + tooltip
+- `src/filodiretto/fd-header.js` — logo → `/dashboard/home`, `nav('welcome')`; no-op on `a2w-shell`
+- Route `GET /dashboard/home` (same SPA as dashboard)
+
+### Changed
+- HR boot injects Filo assets only when `__2WALLET_PRODUCT_LOCK__ === 'hr'`
+- `data-app="filodiretto"` on `<html>` for Filo deploy
+
+---
+
 ## Phase 2 — Layout, sidebar, header (`feat(ui)`)
 
 ### Added
