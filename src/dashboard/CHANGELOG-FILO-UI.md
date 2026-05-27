@@ -1,5 +1,18 @@
 # Filo Diretto UI Changelog
 
+## FD-04 — Contatti / Anagrafica (`[FD] contacts`)
+
+### Added
+- `src/filodiretto/fd-contacts.css` — KPI grid responsive (max 4 colonne), cluster impilati, icone compatte
+- `src/filodiretto/fd-contacts.js` — patch `renderLeadsKpiStrip` / toolbar; menu ⋮ su card Anagrafica con Esporta CSV
+
+### Changed
+- HR deploy injects `fd-contacts.css` / `fd-contacts.js`
+- Export CSV spostato dal toolbar al menu accanto al titolo «Anagrafica dipendenti»; bottone toolbar nascosto su Filo
+- KPI anagrafica/distribuzione in griglia a wrap con etichette di sezione
+
+---
+
 ## FD-03 — Tabella Utenti (`[FD] users`)
 
 ### Added

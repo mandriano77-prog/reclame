@@ -1,0 +1,164 @@
+/**
+ * FD-04 — FiloDiretto Contatti: KPI grid responsive, export in card menu.
+ */
+html[data-app='filodiretto'] #leads.leads--fd .contacts-card__heading {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu {
+  position: relative;
+  margin-left: auto;
+  order: 3;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd #contactsCardAHelp {
+  order: 2;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd #contactsCardATitle {
+  order: 1;
+  flex: 1 1 auto;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__trigger {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__trigger:hover,
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__trigger[aria-expanded='true'] {
+  border-color: var(--fd-border-strong, #d1d5db);
+  background: var(--bg3, #f9fafb);
+  color: var(--text1);
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__trigger:focus-visible {
+  outline: 2px solid var(--accent, #2563eb);
+  outline-offset: 2px;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__trigger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 180px;
+  padding: 4px;
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__panel[hidden] {
+  display: none;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text1);
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__item:hover:not(:disabled) {
+  background: var(--bg3, #f3f4f6);
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-card-menu__item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd #leadsExportBtn {
+  display: none !important;
+}
+
+/* KPI: stack clusters, responsive grid max 4 columns */
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__divider {
+  width: 100%;
+  height: 1px;
+  min-height: 1px;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__cluster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 8px;
+  flex: none;
+  width: 100%;
+}
+
+@media (min-width: 720px) {
+  html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__cluster {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__cluster::before {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+  margin-bottom: 4px;
+  grid-column: 1 / -1;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__cluster[aria-label='Stato anagrafica']::before {
+  content: 'Anagrafica';
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__cluster[aria-label='Stato distribuzione']::before {
+  content: 'Distribuzione pass';
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi-icon {
+  grid-row: 1 / span 2;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi-item .contacts-kpi-strip__value {
+  font-size: 18px;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi-item .contacts-kpi-strip__label {
+  grid-column: 2;
+}
