@@ -5,6 +5,7 @@ const path = require('path');
 // APNs endpoints
 const APNS_PRODUCTION = 'https://api.push.apple.com';
 const APNS_SANDBOX = 'https://api.sandbox.push.apple.com';
+const APNS_INVALID_TOKEN_REASONS = new Set(['BadDeviceToken', 'DeviceTokenNotForTopic', 'Unregistered']);
 
 // Default to production — Apple Wallet passes with Distribution certs use production APNs
 const APNS_HOST = process.env.APNS_ENV === 'sandbox' ? APNS_SANDBOX : APNS_PRODUCTION;
@@ -105,6 +106,12 @@ async function sendPushUpdate(pushToken, options = {}) {
   });
 }
 
+function shouldPruneApnsRegistration(result) {
+  if (!result || result.success) return false;
+  const reason = String(result.reason || '').trim();
+  return APNS_INVALID_TOKEN_REASONS.has(reason);
+}
+
 /**
  * Send push updates to ALL devices registered for a given pass serial number.
  *
@@ -144,5 +151,6 @@ async function pushUpdateToAllDevices(serialNumber, getDevicesForPass) {
 
 module.exports = {
   sendPushUpdate,
-  pushUpdateToAllDevices
+  pushUpdateToAllDevices,
+  shouldPruneApnsRegistration
 };

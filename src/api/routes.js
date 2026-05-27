@@ -72,7 +72,7 @@ const { resolvePortalHref } = require('../engine/thank-you-html');
 const { getFormats, getFormat, generateWithFal, composeCreative } = require('../engine/creative-ai');
 const { generateBanner, BANNER_TEMPLATES, IAB_FORMATS } = require('../engine/banner-builder');
 const { generateVideo, cleanupVideo, VIDEO_FORMATS, VIDEO_TEMPLATES } = require('../engine/video-builder');
-const { sendPushUpdate } = require('../engine/apns');
+const { sendPushUpdate, shouldPruneApnsRegistration } = require('../engine/apns');
 const { computeInitialScheduledRun } = require('../engine/scheduler');
 const { generateLandingCopy, generateCreativeCopy } = require('../engine/ai-copy');
 const { planScheduledPush } = require('../engine/push-assistant');
@@ -2195,6 +2195,14 @@ router.post('/push/send', async (req, res) => {
           console.log(`[PUSH] token=${device.push_token.substring(0, 12)}... result=${JSON.stringify(result)}`);
           pushResults.push({ token: device.push_token.substring(0, 12) + '...', serial: device.serial_number, ...result });
           if (result.success) sentAppleCount++;
+          else if (shouldPruneApnsRegistration(result) && device.device_library_id && device.serial_number) {
+            try {
+              await unregisterDevice(device.device_library_id, device.serial_number);
+              console.warn(`[PUSH] removed invalid APNs registration device=${device.device_library_id.substring(0, 8)}... serial=${device.serial_number}`);
+            } catch (cleanupErr) {
+              console.warn('[PUSH] failed to cleanup invalid registration:', cleanupErr.message);
+            }
+          }
 
           // Update per-pass push status
           if (device.serial_number) {

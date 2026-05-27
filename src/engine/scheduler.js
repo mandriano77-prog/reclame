@@ -13,12 +13,13 @@ const {
   getTemplate,
   touchPass,
   getDevicesForBrand,
+  unregisterDevice,
   logPush,
   logEvent,
   updatePassDynamicLinks
 } = require('../db');
 const { createPkpass } = require('./passkit');
-const { sendPushUpdate } = require('./apns');
+const { sendPushUpdate, shouldPruneApnsRegistration } = require('./apns');
 const { getTargetPassesForPush, getAppleDevicesForAudience } = require('./audiences');
 const googleWallet = require('./google-wallet');
 const samsungWallet = require('./samsung-wallet');
@@ -237,6 +238,14 @@ async function executeScheduledPush(schedule, baseUrl) {
       try {
         const result = await sendPushUpdate(device.push_token);
         if (result.success) sentCount++;
+        else if (shouldPruneApnsRegistration(result) && device.device_library_id && device.serial_number) {
+          try {
+            await unregisterDevice(device.device_library_id, device.serial_number);
+            console.warn(`[scheduler] removed invalid APNs registration device=${device.device_library_id.substring(0, 8)}... serial=${device.serial_number}`);
+          } catch (cleanupErr) {
+            console.warn('[scheduler] failed cleanup invalid registration:', cleanupErr.message);
+          }
+        }
       } catch (err) {
         console.error(`Push failed for ${device.push_token.substring(0, 8)}:`, err.message);
       }
