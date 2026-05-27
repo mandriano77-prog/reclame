@@ -1,0 +1,156 @@
+/**
+ * FD-13 — FiloDiretto unified brand switcher + breadcrumb without brand prefix.
+ */
+html[data-app='filodiretto'] .app-breadcrumb .breadcrumb-list li:has(#breadcrumbBrand)[hidden] {
+  display: none !important;
+}
+
+html[data-app='filodiretto'] #brand-identity .a2w-bi-breadcrumb #a2wBiBreadcrumbBrand,
+html[data-app='filodiretto'] #brand-identity .a2w-bi-breadcrumb #a2wBiBreadcrumbBrand + [aria-hidden='true'] {
+  display: none;
+}
+
+html[data-app='filodiretto'] .a2w-brand-picker.fd-brand-picker--switcher {
+  position: relative;
+  min-width: 200px;
+}
+
+html[data-app='filodiretto'] .a2w-brand-picker.fd-brand-picker--switcher #brandSelector.fd-brand-switcher-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fd-space-2);
+  min-height: 40px;
+  max-width: min(320px, 42vw);
+  padding: var(--fd-space-2) var(--fd-space-3);
+  border: 1px solid var(--fd-border-strong);
+  border-radius: var(--fd-radius-md);
+  background: var(--fd-color-bg-canvas);
+  color: var(--fd-color-text-primary);
+  font-size: var(--fd-font-size-body);
+  font-weight: var(--fd-font-weight-medium);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__trigger:hover {
+  border-color: var(--fd-color-primary-500);
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__trigger:focus-visible {
+  outline: 3px solid rgba(109, 40, 217, 0.35);
+  outline-offset: 2px;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__trigger[aria-expanded='true'] {
+  border-color: var(--fd-color-primary-500);
+  box-shadow: var(--fd-shadow-sm);
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__chevron {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--fd-color-text-muted);
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(420px, 70vh);
+  overflow: auto;
+  padding: var(--fd-space-3);
+  border: 1px solid var(--fd-border);
+  border-radius: var(--fd-radius-md);
+  background: var(--fd-color-bg-canvas);
+  box-shadow: var(--fd-shadow-menu);
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__panel[hidden] {
+  display: none;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__search {
+  width: 100%;
+  margin-bottom: var(--fd-space-3);
+  padding: var(--fd-space-2) var(--fd-space-3);
+  border: 1px solid var(--fd-border-strong);
+  border-radius: var(--fd-radius-sm);
+  font-size: var(--fd-font-size-body);
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__search:focus-visible {
+  outline: 3px solid rgba(109, 40, 217, 0.35);
+  outline-offset: 2px;
+  border-color: var(--fd-color-primary-500);
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__heading {
+  margin: 0 0 var(--fd-space-2);
+  font-size: var(--fd-font-size-sm);
+  font-weight: var(--fd-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fd-color-text-muted);
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__list {
+  list-style: none;
+  margin: 0 0 var(--fd-space-3);
+  padding: 0;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__list:last-child {
+  margin-bottom: 0;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--fd-space-2) var(--fd-space-3);
+  border: none;
+  border-radius: var(--fd-radius-sm);
+  background: transparent;
+  color: var(--fd-color-text-primary);
+  font-size: var(--fd-font-size-body);
+  cursor: pointer;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__option:hover,
+html[data-app='filodiretto'] .fd-brand-switcher__option:focus-visible {
+  background: var(--fd-color-primary-50);
+  outline: none;
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__option.is-active {
+  background: var(--fd-color-primary-100);
+  color: var(--fd-color-primary-700);
+  font-weight: var(--fd-font-weight-semibold);
+}
+
+html[data-app='filodiretto'] .fd-brand-switcher__empty {
+  margin: 0;
+  padding: var(--fd-space-2) var(--fd-space-3);
+  font-size: var(--fd-font-size-sm);
+  color: var(--fd-color-text-muted);
+}

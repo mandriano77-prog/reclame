@@ -1,5 +1,18 @@
 # Filo Diretto UI Changelog
 
+## FD-13 — Brand switcher (`[FD] brand-switcher`)
+
+### Added
+- `src/filodiretto/fd-brand-switcher.css` — combobox header, pannello search
+- `src/filodiretto/fd-brand-switcher.js` — switcher unico top-right; sezione **Recenti** se ≥6 brand
+
+### Changed
+- Breadcrumb senza prefisso nome brand (solo titolo pagina quando un brand è attivo)
+- Identità brand: breadcrumb interno senza ripetizione brand
+- `<select id="brandSelector">` resta per `changeBrand()` ma è screen-reader only
+
+---
+
 ## FD-12 — Zona pericolosa (`[FD] danger-zone`)
 
 ### Added
