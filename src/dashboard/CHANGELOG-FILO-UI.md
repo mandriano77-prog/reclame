@@ -1,5 +1,17 @@
 # Filo Diretto UI Changelog
 
+## FD-11 — Sistema bottoni (`[FD] buttons`)
+
+### Added
+- `src/filodiretto/fd-buttons.css` — primary (viola pieno), secondary (outline), ghost; toni success; focus 3px; loading spinner
+- `src/filodiretto/fd-buttons.js` — `window.FdButton.render({ variant, tone, size, loading, … })`
+
+### Changed
+- HR deploy injects button assets; `.btn` / `.btn.sec` su Filo allineati a token `--fd-*` (radius 12px)
+- Danger in-page resta gestito da `fd-destructive.css` (outline + modali solidi)
+
+---
+
 ## FD-10 — Tipografia (`[FD] typography`)
 
 ### Added

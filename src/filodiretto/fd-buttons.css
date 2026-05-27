@@ -1,0 +1,188 @@
+/**
+ * FD-11 — FiloDiretto button system (primary / secondary / ghost × neutral / danger / success).
+ * Scoped to [data-app="filodiretto"]. Destructive in-page overrides remain in fd-destructive.css.
+ */
+@keyframes fd-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Base ── */
+html[data-app='filodiretto'] .btn,
+html[data-app='filodiretto'] .btn-primary {
+  min-height: 40px;
+  padding: var(--fd-space-2) var(--fd-space-4);
+  border-radius: var(--fd-radius-md);
+  font-size: var(--fd-font-size-body);
+  font-weight: var(--fd-font-weight-medium);
+  line-height: var(--fd-line-height-body);
+  gap: var(--fd-space-2);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+html[data-app='filodiretto'] .btn.small {
+  min-height: 32px;
+  padding: var(--fd-space-1) var(--fd-space-3);
+  font-size: var(--fd-font-size-sm);
+}
+
+html[data-app='filodiretto'] .btn:focus-visible {
+  outline: 3px solid rgba(109, 40, 217, 0.35);
+  outline-offset: 2px;
+}
+
+html[data-app='filodiretto'] .btn:disabled,
+html[data-app='filodiretto'] .btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Primary (neutral) ── */
+html[data-app='filodiretto'] .btn:not(.sec):not(.btn-secondary):not(.danger):not(.fd-btn-ghost):not(.btn-link):not(.fd-btn-danger-outline) {
+  background: var(--fd-color-primary-500);
+  color: var(--fd-color-text-on-accent);
+  border: 1px solid transparent;
+  box-shadow: var(--fd-shadow-sm);
+}
+
+html[data-app='filodiretto'] .btn:not(.sec):not(.btn-secondary):not(.danger):not(.fd-btn-ghost):not(.btn-link):not(.fd-btn-danger-outline):hover:not(:disabled) {
+  background: var(--fd-color-primary-700);
+  box-shadow: var(--fd-shadow-md);
+}
+
+/* ── Secondary (neutral) ── */
+html[data-app='filodiretto'] .btn.sec,
+html[data-app='filodiretto'] .btn-secondary {
+  background: var(--fd-color-bg-canvas);
+  color: var(--fd-color-text-primary);
+  border: 1px solid var(--fd-border-strong);
+  box-shadow: none;
+}
+
+html[data-app='filodiretto'] .btn.sec:hover:not(:disabled),
+html[data-app='filodiretto'] .btn-secondary:hover:not(:disabled) {
+  background: var(--fd-color-primary-50);
+  border-color: var(--fd-color-primary-500);
+  color: var(--fd-color-primary-700);
+}
+
+html[data-app='filodiretto'] .btn.sec:disabled,
+html[data-app='filodiretto'] .btn.sec[disabled] {
+  border-color: var(--fd-border);
+  color: var(--fd-color-text-muted);
+  background: var(--fd-color-bg-subtle);
+}
+
+/* ── Ghost / link ── */
+html[data-app='filodiretto'] .fd-btn-ghost,
+html[data-app='filodiretto'] .btn-link {
+  min-height: auto;
+  padding: var(--fd-space-1) var(--fd-space-2);
+  background: transparent;
+  color: var(--fd-color-primary-700);
+  border: none;
+  box-shadow: none;
+  font-weight: var(--fd-font-weight-medium);
+  text-decoration: none;
+}
+
+html[data-app='filodiretto'] .fd-btn-ghost:hover:not(:disabled),
+html[data-app='filodiretto'] .btn-link:hover:not(:disabled) {
+  background: var(--fd-color-primary-50);
+  color: var(--fd-color-primary-700);
+  text-decoration: underline;
+}
+
+html[data-app='filodiretto'] .fd-btn-ghost:focus-visible,
+html[data-app='filodiretto'] .btn-link:focus-visible {
+  outline: 3px solid rgba(109, 40, 217, 0.35);
+  outline-offset: 2px;
+}
+
+/* ── Success tone ── */
+html[data-app='filodiretto'] .fd-btn--success:not(.sec):not(.fd-btn-ghost):not(.btn-link) {
+  background: var(--fd-color-success);
+  color: var(--fd-color-text-on-accent);
+  border-color: transparent;
+}
+
+html[data-app='filodiretto'] .fd-btn--success:not(.sec):not(.fd-btn-ghost):hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+html[data-app='filodiretto'] .btn.sec.fd-btn--success,
+html[data-app='filodiretto'] .btn-secondary.fd-btn--success {
+  color: var(--fd-color-success);
+  border-color: var(--fd-color-success-border);
+  background: var(--fd-color-success-bg);
+}
+
+html[data-app='filodiretto'] .btn.sec.fd-btn--success:hover:not(:disabled) {
+  background: var(--fd-color-success-bg);
+  border-color: var(--fd-color-success);
+}
+
+html[data-app='filodiretto'] .fd-btn-ghost.fd-btn--success,
+html[data-app='filodiretto'] .btn-link.fd-btn--success {
+  color: var(--fd-color-success);
+}
+
+/* ── Danger tone (secondary / ghost; solid confirm stays in modals via fd-destructive) ── */
+html[data-app='filodiretto'] .fd-btn-ghost.fd-btn--danger,
+html[data-app='filodiretto'] .btn-link.fd-btn--danger {
+  color: var(--fd-color-danger);
+}
+
+html[data-app='filodiretto'] .fd-btn-ghost.fd-btn--danger:hover:not(:disabled) {
+  background: var(--fd-color-danger-hover-bg);
+}
+
+/* ── Loading ── */
+html[data-app='filodiretto'] .btn.is-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+html[data-app='filodiretto'] .btn.is-loading > * {
+  visibility: hidden;
+}
+
+html[data-app='filodiretto'] .btn.is-loading::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: fd-btn-spin 0.65s linear infinite;
+}
+
+html[data-app='filodiretto'] .btn.sec.is-loading::after,
+html[data-app='filodiretto'] .btn-secondary.is-loading::after,
+html[data-app='filodiretto'] .fd-btn-ghost.is-loading::after {
+  border-color: rgba(109, 40, 217, 0.25);
+  border-top-color: var(--fd-color-primary-700);
+}
+
+html[data-app='filodiretto'] .fd-btn--success.is-loading::after {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-app='filodiretto'] .btn.is-loading::after {
+    animation: none;
+    border-top-color: currentColor;
+  }
+}
