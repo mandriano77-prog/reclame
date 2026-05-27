@@ -34,7 +34,7 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-ui-components.css?v=20260527-contacts">
     <link rel="stylesheet" href="/dashboard/styles/a2w-analytics.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-push.css">
-    <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css?v=20260527-contacts">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css?v=20260527-contacts-v2">
     <link rel="stylesheet" href="/dashboard/styles/a2w-brand-identity.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-contacts-refactor.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
@@ -2301,6 +2301,10 @@
                     <div class="contacts-page-menu__panel" id="contactsPageMenuPanel" hidden role="menu">
                       <button type="button" role="menuitem" class="contacts-page-menu__item" id="contactsShowTourBtn">Mostra tour</button>
                     </div>
+                  </div>
+                  <div class="a2w-contacts-header-actions" id="a2wContactsHeaderActions">
+                    <button type="button" class="btn sec a2w-contacts-header-btn" id="a2wContactsImportBtn" aria-label="Importa contatti da CSV">⬆ Importa CSV</button>
+                    <button type="button" class="btn a2w-contacts-header-btn" id="a2wContactsAddBtn" aria-label="Aggiungi contatto">＋ Aggiungi contatto</button>
                   </div>
                 </div>
                 <div class="contacts-top-grid">
@@ -7326,9 +7330,7 @@ function isLeadPassInstalled(lead) {
 
 function isA2wLeadsRedesignActive() {
     if (leadsHrMode) return false;
-    if (typeof isA2wActive === 'function' && isA2wActive()) return true;
-    return document.documentElement.getAttribute('data-shell') === 'dark'
-        && document.documentElement.classList.contains('a2w-shell');
+    return document.documentElement.classList.contains('a2w-shell');
 }
 
 function resetLeadsFilters() {
@@ -7388,18 +7390,6 @@ function ensureA2wLeadsHeaderChrome() {
         wrap.appendChild(helpBtn);
         wrap.appendChild(helpTip);
         title.appendChild(wrap);
-    }
-
-    let actions = document.getElementById('a2wContactsHeaderActions');
-    if (!actions) {
-        actions = document.createElement('div');
-        actions.className = 'a2w-contacts-header-actions';
-        actions.id = 'a2wContactsHeaderActions';
-        actions.innerHTML = `
-          <button type="button" class="btn sec a2w-contacts-header-btn" id="a2wContactsImportBtn" aria-label="Importa contatti da CSV">⬆ Importa CSV</button>
-          <button type="button" class="btn a2w-contacts-header-btn" id="a2wContactsAddBtn" aria-label="Aggiungi contatto">＋ Aggiungi contatto</button>
-        `;
-        header.appendChild(actions);
     }
 
     const importBtn = document.getElementById('a2wContactsImportBtn');
