@@ -14,7 +14,12 @@ const {
   toApplePass,
   APPLE_EMPLOYEE_PASS_STRUCTURE
 } = require('./employee-pass');
-const { resolveWalletLogoRawBuffer, buildNotificationIconFromRaw } = require('./brand-wallet-logo');
+const {
+  resolveWalletLogoRawBuffer,
+  resolveNotificationIconRawBuffer,
+  buildNotificationIconFromRaw,
+  buildPassLogoBuffersFromRaw
+} = require('./brand-wallet-logo');
 
 /** Rimuove sfondo nero/opaco e ridimensiona la thumb per overlay sulla strip HR. */
 async function prepareThumbForStripOverlay(thumbBuffer, maxW, maxH) {
@@ -734,19 +739,6 @@ function generatePassJson(template, instance, brand, options = {}) {
   return passJson;
 }
 
-async function buildWalletLogoAndIconFromRaw(rawLogoBuffer) {
-  const transparent = { r: 0, g: 0, b: 0, alpha: 0 };
-  const [logo, logo2x, iconBuffers] = await Promise.all([
-    sharp(rawLogoBuffer).resize(160, 50, { fit: 'contain', position: 'left', background: transparent }).png().toBuffer(),
-    sharp(rawLogoBuffer).resize(320, 100, { fit: 'contain', position: 'left', background: transparent }).png().toBuffer(),
-    buildNotificationIconFromRaw(rawLogoBuffer)
-  ]);
-  return {
-    logoBuffers: { logo, logo2x },
-    iconBuffers
-  };
-}
-
 /**
  * Generate icon PNG files with brand initial (geometric paths, no font needed)
  */
@@ -985,18 +977,23 @@ async function createPkpass(template, instance, brand, options = {}) {
   const bgColor = brandCfg.backgroundColor || template.style?.backgroundColor || '#0D0B1A';
   const fgColor = brandCfg.foregroundColor || template.style?.foregroundColor || '#FFFFFF';
 
-  // Pass logo (wide) + notification icon (square crop) from the same raw brand artwork.
+  // Pass logo (wide) + notification icon (prefer dedicated square wallet_icon asset).
   let iconBuffers, logoBuffers;
-  let rawLogoForIcon = null;
   const tplImages = template.style?.images || {};
 
   const resolvedLogo = await resolveWalletLogoRawBuffer(brand, template);
   if (resolvedLogo) {
-    rawLogoForIcon = resolvedLogo.buffer;
-    const built = await buildWalletLogoAndIconFromRaw(resolvedLogo.buffer);
-    logoBuffers = built.logoBuffers;
-    iconBuffers = built.iconBuffers;
+    logoBuffers = await buildPassLogoBuffersFromRaw(resolvedLogo.buffer);
     console.log(`✓ Wallet logo from ${resolvedLogo.source}`);
+  }
+
+  const resolvedIcon = await resolveNotificationIconRawBuffer(brand);
+  if (resolvedIcon) {
+    iconBuffers = await buildNotificationIconFromRaw(resolvedIcon.buffer);
+    console.log(`✓ Notification icon from ${resolvedIcon.source}`);
+  } else if (resolvedLogo) {
+    iconBuffers = await buildNotificationIconFromRaw(resolvedLogo.buffer);
+    console.log('✓ Notification icon derived from pass logo (carica un\'icona quadrata per migliore leggibilità)');
   }
 
   // Fall back to default icon files, then generated (HR skips Hirostar default assets)
@@ -1021,11 +1018,6 @@ async function createPkpass(template, instance, brand, options = {}) {
   if (!logoBuffers?.logo) {
     const logos = await generateLogo(brand.name, bgColor, fgColor);
     logoBuffers = logos;
-  }
-
-  if (!iconBuffers?.icon && rawLogoForIcon) {
-    iconBuffers = await buildNotificationIconFromRaw(rawLogoForIcon);
-    console.log('✓ Notification icon from brand artwork (square crop)');
   }
 
   // Strip images — push override → template → brand → default file → generated

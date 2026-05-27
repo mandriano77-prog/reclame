@@ -1529,10 +1529,11 @@ router.put('/brands/:id', async (req, res) => {
     if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     validateBrandBackLinks(req.body);
     const brand = await updateBrand(req.params.id, req.body);
-    const { syncWalletLogoFromBrandIdentity } = require('../engine/brand-wallet-logo');
+    const { syncWalletLogoFromBrandIdentity, syncWalletIconFromBrandIdentity } = require('../engine/brand-wallet-logo');
     const synced = await syncWalletLogoFromBrandIdentity(req.params.id, brand, {
       syncTemplates: isHrBrand(brand, req)
     });
+    await syncWalletIconFromBrandIdentity(req.params.id, brand, { touchPasses: false });
     if (synced) {
       const refreshed = await getBrand(req.params.id);
       return res.json(refreshed);
@@ -1571,6 +1572,44 @@ router.post('/brands/:id/logo', async (req, res) => {
     res.json({ success: true, templates_synced: isHrBrand(brand, req) });
   } catch (err) {
     console.error('Logo upload error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/brands/:id/wallet-icon', async (req, res) => {
+  try {
+    if (!requireOwnedBrandPk(req, res, req.params.id)) return;
+    const brand = await getBrand(req.params.id);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+
+    let { icon_base64, logo_base64 } = req.body;
+    const raw = icon_base64 || logo_base64;
+    if (!raw) return res.status(400).json({ error: 'icon_base64 richiesto' });
+
+    const iconB64 = await pdfToPngIfNeeded(raw);
+    const { applyWalletIconBase64 } = require('../engine/brand-wallet-logo');
+
+    const media = await createMedia({
+      brand_id: req.params.id,
+      type: 'wallet_icon',
+      title: `Icona notifiche (${new Date().toISOString().slice(0, 10)})`,
+      image_base64: iconB64,
+      width: 512,
+      height: 512
+    });
+
+    const config = { ...(brand.config || {}) };
+    config.brand_identity_assets = {
+      ...(config.brand_identity_assets || {}),
+      wallet_icon: media.id
+    };
+    await updateBrand(req.params.id, { config });
+    const refreshed = await getBrand(req.params.id);
+    await applyWalletIconBase64(req.params.id, iconB64, { brand: refreshed, touchPasses: true });
+
+    res.json({ success: true, wallet_icon_media_id: media.id });
+  } catch (err) {
+    console.error('Wallet icon upload error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2208,11 +2247,12 @@ router.post('/push/send', async (req, res) => {
     // Update pass content if requested
     if (update_pass !== false) {
       let brand = await getBrand(brand_id);
-      const { syncWalletLogoFromBrandIdentity } = require('../engine/brand-wallet-logo');
+      const { syncWalletLogoFromBrandIdentity, syncWalletIconFromBrandIdentity } = require('../engine/brand-wallet-logo');
       try {
         await syncWalletLogoFromBrandIdentity(brand_id, brand, {
           syncTemplates: isHrBrand(brand, req)
         });
+        await syncWalletIconFromBrandIdentity(brand_id, brand, { touchPasses: false });
         brand = await getBrand(brand_id);
       } catch (syncErr) {
         console.warn('[PUSH] wallet logo sync skipped:', syncErr.message);

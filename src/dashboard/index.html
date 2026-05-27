@@ -2816,6 +2816,17 @@
                             <img id="tplImgLogoPreview" style="display:none;height:32px;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
+                    <div class="form-row" id="tplImgWalletIconRow" style="display:none;">
+                        <div class="form-group" style="flex:1;">
+                            <label class="form-label">Icona notifiche Wallet (quadrata)</label>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 8px;line-height:1.45;">Per le push su iPhone: usa un simbolo quadrato (es. 512×512). Il logo orizzontale del pass resta troppo piccolo nelle notifiche.</p>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                                <button type="button" class="btn small" onclick="tplPickFromMedia('wallet_icon')">Da Media Library</button>
+                            </div>
+                            <input type="file" id="tplImgWalletIcon" accept="image/*,.pdf" onchange="previewTplImage(this,'wallet_icon')" style="font-size:12px;">
+                            <img id="tplImgWalletIconPreview" style="display:none;width:48px;height:48px;margin-top:4px;border-radius:8px;object-fit:cover;">
+                        </div>
+                    </div>
                     <div class="form-row" id="tplImgStripRow">
                         <div class="form-group" style="flex:1;">
                             <label class="form-label">Strip Image (PNG, 750x246)</label>
@@ -5449,7 +5460,27 @@ function togglePassBackEditorMode() {
     const hrNote = document.getElementById('tplFrontHrNote');
     const frontBlock = document.getElementById('tplFrontFieldsBlock');
     if (hrNote) hrNote.style.display = hr ? 'block' : 'none';
-    if (frontBlock) frontBlock.style.opacity = hr ? '0.55' : '1';
+    if (frontBlock) frontBlock.style.opacity = '1';
+    const walletIconRow = document.getElementById('tplImgWalletIconRow');
+    if (walletIconRow) walletIconRow.style.display = hr ? '' : 'none';
+}
+
+async function loadHrWalletIconPreview() {
+    const preview = document.getElementById('tplImgWalletIconPreview');
+    if (!preview || !brandId) return;
+    try {
+        const brand = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() }).then((r) => r.json());
+        const mediaId = brand?.config?.brand_identity_assets?.wallet_icon;
+        if (!mediaId) {
+            preview.style.display = 'none';
+            preview.removeAttribute('src');
+            return;
+        }
+        preview.src = `/api/v1/media/${mediaId}/image?t=${Date.now()}`;
+        preview.style.display = 'block';
+    } catch (_) {
+        preview.style.display = 'none';
+    }
 }
 
 function hrAddLinkRow(containerId, label = '', url = '') {
@@ -5549,6 +5580,7 @@ async function openTemplateModal() {
     onPassTypeChange();
     if (isHrDashboard()) {
         await loadHrTemplateBackFields(null);
+        await loadHrWalletIconPreview();
     }
 }
 
@@ -5591,6 +5623,7 @@ async function editTemplate(id) {
     document.getElementById('tplContatti').value = fields.contatti || '';
     if (isHrDashboard()) {
         await loadHrTemplateBackFields(t);
+        await loadHrWalletIconPreview();
     }
     // Reset and load existing images
     tplImageCache = {};
@@ -5677,6 +5710,18 @@ async function saveTemplate() {
         } catch (e) {
             console.warn('[HR] pass_header_hint sync failed:', e);
         }
+        if (tplImageCache.wallet_icon) {
+            try {
+                await fetch(`${API}/brands/${brandId}/wallet-icon`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                    body: JSON.stringify({ icon_base64: tplImageCache.wallet_icon })
+                });
+                delete tplImageCache.wallet_icon;
+            } catch (e) {
+                console.warn('[HR] wallet icon upload failed:', e);
+            }
+        }
     }
     closeModal('templateModal');
     if (editId && saved.wallet_refresh) {
@@ -5692,6 +5737,8 @@ async function saveTemplate() {
 function updatePassPreview() {
     const brandName = currentBrandName || 'BRAND';
     const passType = isHrDashboard() ? 'storeCard' : document.getElementById('tplType').value;
+    const walletIconRow = document.getElementById('tplImgWalletIconRow');
+    if (walletIconRow) walletIconRow.style.display = isHrDashboard() ? '' : 'none';
 
     if (isHrDashboard()) {
         document.getElementById('ppLogo').textContent = brandName;
@@ -5905,12 +5952,24 @@ function onPassTypeChange() {
 let tplImageCache = {}; // { logo: base64, strip: base64, ... }
 
 function tplMediaPreviewId(imageType) {
-    const ids = { logo: 'tplImgLogoPreview', strip: 'tplImgStripPreview', thumbnail: 'tplImgThumbPreview', background: 'tplImgBgPreview' };
+    const ids = {
+        logo: 'tplImgLogoPreview',
+        wallet_icon: 'tplImgWalletIconPreview',
+        strip: 'tplImgStripPreview',
+        thumbnail: 'tplImgThumbPreview',
+        background: 'tplImgBgPreview'
+    };
     return ids[imageType] || ('tplImg' + imageType.charAt(0).toUpperCase() + imageType.slice(1) + 'Preview');
 }
 
 function mediaTypeLabel(type) {
-    return { logo: 'Logo', strip: 'Strip', thumbnail: 'Thumbnail', background: 'Background' }[type] || type;
+    return {
+        logo: 'Logo',
+        wallet_icon: 'Icona notifiche',
+        strip: 'Strip',
+        thumbnail: 'Thumbnail',
+        background: 'Background'
+    }[type] || type;
 }
 
 function getMediaSpecHint(type) {
@@ -10137,6 +10196,7 @@ const BRAND_PASS_FIXED_COLORS = {
 
 const A2W_BRAND_IDENTITY_ASSET_SPECS = {
     logo: { label: 'Logo brand', hint: 'Consigliato 512x512 PNG/SVG', mediaType: 'logo' },
+    wallet_icon: { label: 'Icona notifiche Wallet', hint: 'Quadrata 512×512 PNG — per push iPhone', mediaType: 'wallet_icon' },
     strip: { label: 'Strip campagna default', hint: 'Consigliato 1125x432 px', mediaType: 'strip' },
     thumbnail: { label: 'Thumbnail', hint: 'Consigliato 90x90 px', mediaType: 'thumbnail' },
     background: { label: 'Background pass', hint: 'Consigliato 360x440 px', mediaType: 'background' }
@@ -10155,8 +10215,8 @@ const brandIdentityState = {
     slugChecking: false,
     previewTab: 'apple',
     touched: {},
-    mediaByType: { logo: [], strip: [], thumbnail: [], background: [] },
-    selectedAssets: { logo: null, strip: null, thumbnail: null, background: null }
+    mediaByType: { logo: [], wallet_icon: [], strip: [], thumbnail: [], background: [] },
+    selectedAssets: { logo: null, wallet_icon: null, strip: null, thumbnail: null, background: null }
 };
 
 const A2W_BI_SETTORE_OPTIONS = [
@@ -10205,6 +10265,7 @@ function a2wBiSerializeState(data, selectedAssets) {
         socialX: data.socialX || '',
         assets: {
             logo: selectedAssets.logo?.id || '',
+            wallet_icon: selectedAssets.wallet_icon?.id || '',
             strip: selectedAssets.strip?.id || '',
             thumbnail: selectedAssets.thumbnail?.id || '',
             background: selectedAssets.background?.id || ''
@@ -10389,7 +10450,7 @@ function a2wBiMediaImageUrl(item) {
 
 async function a2wBiLoadMediaByType() {
     if (!brandId) {
-        brandIdentityState.mediaByType = { logo: [], strip: [], thumbnail: [], background: [] };
+        brandIdentityState.mediaByType = { logo: [], wallet_icon: [], strip: [], thumbnail: [], background: [] };
         return;
     }
     const res = await fetch(`${API}/media?brand_id=${brandId}`, { headers: getAuthHeaders() });
@@ -10397,6 +10458,7 @@ async function a2wBiLoadMediaByType() {
     const list = Array.isArray(items) ? items : [];
     brandIdentityState.mediaByType = {
         logo: list.filter((x) => x.type === 'logo'),
+        wallet_icon: list.filter((x) => x.type === 'wallet_icon'),
         strip: list.filter((x) => x.type === 'strip'),
         thumbnail: list.filter((x) => x.type === 'thumbnail'),
         background: list.filter((x) => x.type === 'background')
@@ -10405,7 +10467,7 @@ async function a2wBiLoadMediaByType() {
 
 function a2wBiApplySelectedAssetsFromConfig(config) {
     const saved = config?.brand_identity_assets || {};
-    ['logo', 'strip', 'thumbnail', 'background'].forEach((type) => {
+    ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].forEach((type) => {
         const byId = String(saved[type] || '');
         const pool = brandIdentityState.mediaByType[type] || [];
         brandIdentityState.selectedAssets[type] = pool.find((x) => String(x.id) === byId) || null;
@@ -10506,7 +10568,7 @@ async function a2wBiUploadAsset(type, file) {
 function a2wBiRenderAssetsGrid() {
     const host = a2wBiField('a2wBiAssetsGrid');
     if (!host) return;
-    host.innerHTML = ['logo', 'strip', 'thumbnail', 'background'].map((type) => {
+    host.innerHTML = ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].map((type) => {
         const spec = A2W_BRAND_IDENTITY_ASSET_SPECS[type];
         const item = brandIdentityState.selectedAssets[type];
         const preview = item
@@ -10529,7 +10591,7 @@ function a2wBiRenderAssetsGrid() {
           </article>
         `;
     }).join('');
-    ['logo', 'strip', 'thumbnail', 'background'].forEach(a2wBiBindAssetCardActions);
+    ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].forEach(a2wBiBindAssetCardActions);
 }
 
 function a2wBiUpdatePreviewCard() {
@@ -10815,7 +10877,7 @@ async function loadBrandIdentity() {
     if (!brandId) {
         ['biName','biSlug','biTagline','biSettore','biLang','biHomepage','biSupportEmail','biSupportPhone','biSocialInstagram','biSocialFacebook','biSocialLinkedin','biSocialTiktok','biSocialX']
             .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        brandIdentityState.selectedAssets = { logo: null, strip: null, thumbnail: null, background: null };
+        brandIdentityState.selectedAssets = { logo: null, wallet_icon: null, strip: null, thumbnail: null, background: null };
         a2wBiRenderAssetsGrid();
         a2wBiUpdatePreviewCard();
         brandIdentityState.baseline = a2wBiSerializeState(a2wBiCollectFormData(), brandIdentityState.selectedAssets);
@@ -10907,6 +10969,7 @@ async function saveBrandIdentity() {
         const slug = data.slug || a2wBiSlugify(name);
         const assets = {
             logo: brandIdentityState.selectedAssets.logo?.id || null,
+            wallet_icon: brandIdentityState.selectedAssets.wallet_icon?.id || null,
             strip: brandIdentityState.selectedAssets.strip?.id || null,
             thumbnail: brandIdentityState.selectedAssets.thumbnail?.id || null,
             background: brandIdentityState.selectedAssets.background?.id || null
@@ -10981,6 +11044,30 @@ async function saveBrandIdentity() {
                     }
                 } catch (syncErr) {
                     console.warn('[Brand Identity] wallet logo sync failed:', syncErr);
+                }
+            }
+            const iconAsset = brandIdentityState.selectedAssets?.wallet_icon;
+            if (iconAsset?.id) {
+                try {
+                    const imgRes = await fetch(`${API}/media/${iconAsset.id}/image`, { headers: getAuthHeaders() });
+                    if (imgRes.ok) {
+                        const blob = await imgRes.blob();
+                        const iconB64 = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(String(reader.result || '').split(',')[1] || '');
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        });
+                        if (iconB64) {
+                            await fetch(`${API}/brands/${brandId}/wallet-icon`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                                body: JSON.stringify({ icon_base64: iconB64 })
+                            });
+                        }
+                    }
+                } catch (syncErr) {
+                    console.warn('[Brand Identity] wallet icon sync failed:', syncErr);
                 }
             }
         }
