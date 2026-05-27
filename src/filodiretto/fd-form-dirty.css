@@ -1,0 +1,92 @@
+/**
+ * FD-06 — FiloDiretto form dirty state (brand identity + template modal).
+ */
+html[data-app='filodiretto'] #brand-identity .a2w-bi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+html[data-app='filodiretto'] #brand-identity .a2w-bi-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+html[data-app='filodiretto'] #brand-identity .a2w-bi-state-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--fd-border, var(--border));
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  background: var(--surface, #fff);
+}
+
+html[data-app='filodiretto'] #brand-identity .a2w-bi-state-badge.is-dirty {
+  border-color: rgba(234, 179, 8, 0.55);
+  background: rgba(234, 179, 8, 0.1);
+  color: #a16207;
+}
+
+html[data-app='filodiretto'] #brand-identity .a2w-bi-state-badge.is-saving {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+}
+
+html[data-app='filodiretto'] #brand-identity #a2wBiSaveBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+html[data-app='filodiretto'] #brand-identity .a2w-bi-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  html[data-app='filodiretto'] #brand-identity .a2w-bi-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+html[data-app='filodiretto'] #templateModal .fd-form-dirty-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--fd-border, var(--border));
+}
+
+html[data-app='filodiretto'] #templateModal .fd-form-dirty-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--fd-border, var(--border));
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+html[data-app='filodiretto'] #templateModal .fd-form-dirty-badge.is-dirty {
+  border-color: rgba(234, 179, 8, 0.55);
+  background: rgba(234, 179, 8, 0.1);
+  color: #a16207;
+}
+
+html[data-app='filodiretto'] #templateModal #fdTplSaveBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

@@ -1,5 +1,18 @@
 # Filo Diretto UI Changelog
 
+## FD-06 — Form dirty state (`[FD] form-dirty`)
+
+### Added
+- `src/filodiretto/fd-form-dirty.css` — badge «Modifiche non salvate», save disabled styling (Filo light)
+- `src/filodiretto/fd-form-dirty.js` — abilita brand identity v2 dirty su Filo HR; dirty state su modal Template Pass
+
+### Changed
+- HR deploy injects `fd-form-dirty.css` / `fd-form-dirty.js`
+- **Identità brand**: `Salva modifiche` disabilitato finché non ci sono modifiche; badge stato accanto al bottone
+- **Template pass** (HR): stesso pattern nel modal con barra salvataggio
+
+---
+
 ## FD-05 — CTA destructive (`[FD] destructive`)
 
 ### Added
