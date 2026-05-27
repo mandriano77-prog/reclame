@@ -1118,6 +1118,11 @@ function clientIp(req) {
   );
 }
 
+function activationThankYouUrl(passId) {
+  if (!passId) return null;
+  return `/activate/thank-you/${encodeURIComponent(String(passId))}`;
+}
+
 router.get('/join/:slug/info', async (req, res) => {
   try {
     const brand = await findBrandForPublicJoin(hrActivationDb(), req.params.slug);
@@ -1154,12 +1159,15 @@ router.get('/activate/:token', async (req, res) => {
         last_name: member.last_name,
         email: member.email,
         employee_id: member.employee_id,
-        brand_name: member.brand_name
+        brand_name: member.brand_name,
+        brand_slug: member.brand_slug
       },
       templates: hrTemplates.map((t) => ({ id: t.id, name: t.name })),
       consent_types: ['birthday', 'welfare_geo', 'gamification', 'climate_survey', 'partner_offers'],
       privacy_policy_version: '1.0',
-      already_activated: member.activation_status === 'activated'
+      already_activated: member.activation_status === 'activated',
+      pass_id: member.pass_id || null,
+      thank_you_url: activationThankYouUrl(member.pass_id)
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1181,7 +1189,8 @@ router.post('/activate/:token', async (req, res) => {
       success: true,
       pass_id: result.pass.id,
       download_url: result.download_url,
-      brand_name: result.brand_name
+      brand_name: result.brand_name,
+      thank_you_url: activationThankYouUrl(result.pass.id)
     });
   } catch (err) {
     const status = /non valido|scaduto/i.test(err.message) ? 404 : 400;

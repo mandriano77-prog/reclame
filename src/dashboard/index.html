@@ -1676,10 +1676,6 @@
                                         <input type="text" id="biSlug" maxlength="64" placeholder="motor-k" autocomplete="off">
                                         <span id="biSlugStatus" class="a2w-bi-slug-status" aria-live="polite">…</span>
                                     </div>
-                                    <div class="a2w-bi-url-preview">
-                                        <span id="biSlugPreviewUrl">wallet.ads2wallet.com/</span>
-                                        <button type="button" class="btn sec small" id="biCopySlugUrlBtn" aria-label="Copia URL pubblico">Copia</button>
-                                    </div>
                                     <p class="a2w-bi-field-error" id="biSlugError" role="alert"></p>
                                 </div>
                                 <div class="form-group">
@@ -10190,8 +10186,6 @@ function a2wBiSyncDirtyState() {
 function a2wBiUpdateSlugPreview() {
     const slug = a2wBiCollectFormData().slug;
     const text = a2wBiGetSlugPreviewUrl(slug);
-    const inline = a2wBiField('biSlugPreviewUrl');
-    if (inline) inline.textContent = text;
     const preview = a2wBiField('a2wBiPreviewUrl');
     if (preview) preview.textContent = text;
     const previewSlug = a2wBiField('a2wBiPreviewSlug');
@@ -10549,19 +10543,6 @@ function a2wBiEnsureUiBound() {
         dangerBtn.textContent = 'Elimina brand';
         dangerBtn.addEventListener('click', () => deleteBrandAction());
         dangerHost.appendChild(dangerBtn);
-    }
-
-    const copyBtn = a2wBiField('biCopySlugUrlBtn');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-            const text = a2wBiGetSlugPreviewUrl(a2wBiCollectFormData().slug);
-            try {
-                await navigator.clipboard.writeText(text);
-                toast('URL copiato');
-            } catch (_) {
-                toast(text);
-            }
-        });
     }
 
     const previewTabs = document.querySelectorAll('#brand-identity .a2w-bi-preview-tabs button');

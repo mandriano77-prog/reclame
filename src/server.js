@@ -239,10 +239,31 @@ app.get('/game/puzzle/:serial_number', (req, res) => {
 // URL: /save/{slug}/{campaignId}?utm_source=instagram&utm_medium=story&...
 // For social/digital ads: ad CTA → this URL → iOS opens pass preview → done
 const {
-  getBrandBySlug, getCampaign, getTemplate, listTemplates,
+  getBrand, getBrandBySlug, getCampaign, getTemplate, listTemplates,
+  getPassInstance,
   createPassInstance, logEvent, incrementCampaignDownloads
 } = require('./db');
 const { renderSaveThankYouPage, resolvePortalHref } = require('./engine/thank-you-html');
+
+async function renderThankYouForPass(res, passId) {
+  const passInstance = await getPassInstance(passId);
+  if (!passInstance) return res.status(404).send('Pass non trovato');
+  const brand = await getBrand(passInstance.brand_id);
+  if (!brand) return res.status(404).send('Brand non trovato');
+
+  const brandName = brand.name || 'Wallet';
+  const passDownloadUrl = `/api/v1/passes/${passInstance.id}/download`;
+  const logoUrl = `/api/v1/brands/${encodeURIComponent(String(brand.id))}/logo?t=${Date.now()}`;
+  const portalHref = await resolvePortalHref(passInstance.id, brand.id);
+
+  return res.send(renderSaveThankYouPage({
+    brandName,
+    logoUrl,
+    passDownloadUrl,
+    portalHref,
+    brandColor: brand?.config?.labelColor || null
+  }));
+}
 
 app.get('/save/:slug/:campaignId?', async (req, res) => {
   try {
@@ -285,21 +306,21 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
     if (campaignId) await incrementCampaignDownloads(campaignId);
 
     // Serve confirmation page that auto-downloads the .pkpass via API
-    const brandName = brand.name || slug;
-    const passDownloadUrl = `/api/v1/passes/${passInstance.id}/download`;
-    const logoUrl = `/api/v1/brands/by-slug/${encodeURIComponent(slug)}/logo?t=${Date.now()}`;
-    const portalHref = await resolvePortalHref(passInstance.id, brand.id);
-
-    res.send(renderSaveThankYouPage({
-      brandName,
-      logoUrl,
-      passDownloadUrl,
-      portalHref
-    }));
+    return await renderThankYouForPass(res, passInstance.id);
 
   } catch (err) {
     console.error('Direct save error:', err);
     res.status(500).send('Errore generazione pass');
+  }
+});
+
+app.get('/activate/thank-you/:passId', async (req, res) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    return await renderThankYouForPass(res, req.params.passId);
+  } catch (err) {
+    console.error('Activation thank-you error:', err);
+    return res.status(500).send('Errore pagina di conferma');
   }
 });
 
