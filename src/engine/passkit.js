@@ -983,9 +983,12 @@ async function createPkpass(template, instance, brand, options = {}) {
   const tplImages = template.style?.images || {};
 
   // Derive logo + notification icon from the same source every regeneration.
-  // Avoid stale brand.config.logos.icon (e.g. legacy tenant artwork).
+  // HR: brand identity logo wins over template (templates often keep legacy artwork).
   let rawLogoSource = null;
-  if (tplImages.logo) {
+  if (hrBrand && brand.config?.logos?.logo) {
+    rawLogoSource = Buffer.from(brand.config.logos.logo, 'base64');
+    console.log('✓ HR pass: brand logo drives wallet icon/notification');
+  } else if (tplImages.logo) {
     rawLogoSource = Buffer.from(tplImages.logo, 'base64');
     console.log('✓ Using template-level logo (icon derived from logo)');
   } else if (brand.config?.logos?.logo) {
