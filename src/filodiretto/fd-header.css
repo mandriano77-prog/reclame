@@ -40,14 +40,18 @@ html[data-app="filodiretto"] .user-menu-trigger {
   height: 40px;
   padding: 0 10px 0 4px;
   border-radius: var(--radius-pill, 999px);
-  overflow: hidden;
+  overflow: visible;
 }
 
 html[data-app="filodiretto"] .user-menu-trigger .user-avatar {
   width: 28px;
   height: 28px;
   flex: 0 0 28px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+  font-size: 11px;
 }
 
 html[data-app="filodiretto"] .user-menu-chevron {
