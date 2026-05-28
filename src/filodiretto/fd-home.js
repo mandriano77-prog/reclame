@@ -214,8 +214,12 @@
     container.querySelectorAll('[data-fd-nav]').forEach(function (btn) {
       if (btn.dataset.fdBound === '1') return;
       btn.dataset.fdBound = '1';
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', function (e) {
         var id = btn.getAttribute('data-fd-nav');
+        if (document.body.classList.contains('fd-wai-open') && typeof window.fdNavigateFromWai === 'function') {
+          window.fdNavigateFromWai(btn, e);
+          return;
+        }
         if (typeof window.nav === 'function') window.nav(id);
       });
     });

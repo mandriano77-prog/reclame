@@ -56,6 +56,37 @@
     syncWaiLayoutState();
   }
 
+  /** Home/quick-link CTAs use data-fd-nav (fd-home.js), not sidebar .nav-item onclick. */
+  function resolveFdNavSectionId(el) {
+    if (!el) return '';
+    var fdNav = el.closest('[data-fd-nav]');
+    if (fdNav) return fdNav.getAttribute('data-fd-nav') || '';
+    var navItem = el.closest('.nav-item[data-section-id]');
+    if (navItem) return navItem.getAttribute('data-section-id') || '';
+    return '';
+  }
+
+  function navigateFdSection(sectionId) {
+    if (!sectionId || typeof window.nav !== 'function') return;
+    window.nav(sectionId);
+  }
+
+  /**
+   * When W.AI is open on Home, closing the sheet removes content padding and shifts
+   * layout before the click completes — sidebar nav still works. Navigate first, then close.
+   */
+  function handleFdNavWhileWaiOpen(trigger, e) {
+    var sectionId = resolveFdNavSectionId(trigger);
+    if (!sectionId) return false;
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    navigateFdSection(sectionId);
+    setTimeout(closeWaiPanel, 0);
+    return true;
+  }
+
   function onSectionChanged() {
     var id = getActiveSectionId();
     if (id && lastActiveSection && id !== lastActiveSection) {
@@ -184,9 +215,20 @@
     window.__fdWaiNavClickBound = true;
     document.addEventListener('click', function (e) {
       if (!isFiloWai() || !isPanelOpen()) return;
-      var trigger = e.target.closest('.nav-item, [data-fd-nav], [data-section-id]');
-      if (!trigger) return;
-      closeWaiPanel();
+      var fdNav = e.target.closest('[data-fd-nav]');
+      if (fdNav) {
+        handleFdNavWhileWaiOpen(fdNav, e);
+        return;
+      }
+      var navItem = e.target.closest('.nav-item[data-section-id]');
+      if (navItem) {
+        handleFdNavWhileWaiOpen(navItem, e);
+        return;
+      }
+      var sectionJump = e.target.closest('[data-section-id]');
+      if (sectionJump) {
+        handleFdNavWhileWaiOpen(sectionJump, e);
+      }
     }, true);
   }
 
@@ -203,6 +245,7 @@
 
   window.fdSyncWaiLayoutState = syncWaiLayoutState;
   window.fdCloseWaiPanel = closeWaiPanel;
+  window.fdNavigateFromWai = handleFdNavWhileWaiOpen;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initFdWai);
