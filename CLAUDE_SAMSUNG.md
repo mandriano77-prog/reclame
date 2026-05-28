@@ -12,6 +12,7 @@ Sei nel progetto **Ads2Wallet / Nudj**: Node.js, Express, PostgreSQL, dashboard 
   - Get Card Data / Send Card State (inbound JWT da verificare).  
   - Update Notification outbound: JWT **AUTH** (RS256) con chiave privata **oppure** Bearer da `SAMSUNG_WALLET_ACCESS_TOKEN`.  
   - `cc2` salvato su pass (`samsung_wallet_cc2`) dopo Send Card State; fallback `SAMSUNG_WALLET_DEFAULT_CC2`.
+  - Tipo card configurabile via env `SAMSUNG_WALLET_CARD_TYPE` (default `coupon`) e `SAMSUNG_WALLET_CARD_SUBTYPE` (default `others`). HQ Italy → default cc2 = `IT`.
 
 - Route API: `src/api/routes.js` — `/signup/samsung-wallet`, `/samsung-wallet/status`, `/samsung-wallet/pass/:id`, `/samsung-wallet/cards/:cardId/:refId` (GET + POST).
 
