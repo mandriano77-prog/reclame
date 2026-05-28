@@ -1,5 +1,20 @@
 # Filo Diretto UI Changelog
 
+## Refactor — Media Library header/actions (`[FD] media-library`)
+
+### Changed
+- Header con search globale `Cerca asset…` + CTA `Carica file`
+- Menu ⋮ esteso: `Esporta libreria (.zip)` (stub), `Specifiche tecniche` (modal), `Svuota libreria…`
+- Azione distruttiva globale protetta da conferma con typing `SVUOTA`
+- Rimosso il blocco accordion “Specifiche tecniche consigliate” dalla pagina
+- Posizionamento menu contestuale: offset 8px e collision padding 16 (no clipping su sidebar)
+- Sezioni unificate (schema tipo `MediaSection`) con card asset uniformi
+- Overlay hover per-card con azioni `Preview / Rename / Delete`
+- Dropzone esplicita per sezione vuota + supporto drag&drop con annuncio `aria-live`
+- Selezione multipla con barra bulk e conferma `ELIMINA` per delete massivo
+
+---
+
 ## Fix — Avatar account header (`[FD] header`)
 
 ### Changed

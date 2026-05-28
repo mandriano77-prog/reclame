@@ -109,6 +109,12 @@ html[data-app='filodiretto'] #media-library .fd-media-page-menu__item {
   color: var(--text1);
 }
 
+html[data-app='filodiretto'] #media-library .fd-media-page-menu__sep {
+  border: 0;
+  border-top: 1px solid var(--fd-border, var(--border));
+  margin: 4px 6px;
+}
+
 html[data-app='filodiretto'] #media-library .fd-media-page-menu__item--danger {
   color: var(--fd-danger, #dc2626);
 }

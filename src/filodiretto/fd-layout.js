@@ -16,14 +16,15 @@
 
   function positionFloatingMenu(trigger, panel) {
     if (!trigger || !panel) return;
+    var collisionPadding = 16;
     panel.classList.add('fd-floating-menu-panel');
     panel.hidden = false;
     var rect = trigger.getBoundingClientRect();
     var width = panel.offsetWidth || 168;
-    var left = Math.max(8, rect.right - width);
-    var top = rect.bottom + 4;
-    var maxTop = window.innerHeight - panel.offsetHeight - 8;
-    if (top > maxTop) top = Math.max(8, maxTop);
+    var left = Math.max(collisionPadding, rect.right - width);
+    var top = rect.bottom + 8;
+    var maxTop = window.innerHeight - panel.offsetHeight - collisionPadding;
+    if (top > maxTop) top = Math.max(collisionPadding, maxTop);
     panel.style.position = 'fixed';
     panel.style.top = top + 'px';
     panel.style.left = left + 'px';

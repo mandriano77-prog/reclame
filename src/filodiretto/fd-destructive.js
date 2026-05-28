@@ -43,12 +43,17 @@
     menu.innerHTML =
       '<button type="button" class="fd-media-page-menu__trigger" id="fdMediaPageMenuBtn" aria-label="Azioni Media Library" aria-haspopup="menu" aria-expanded="false">⋮</button>' +
       '<div class="fd-media-page-menu__panel" id="fdMediaPageMenuPanel" role="menu" hidden>' +
-      '<button type="button" class="fd-media-page-menu__item fd-media-page-menu__item--danger" id="fdMediaClearAllBtn" role="menuitem">Svuota tutto</button>' +
+      '<button type="button" class="fd-media-page-menu__item" id="fdMediaExportBtn" role="menuitem">Esporta libreria (.zip)</button>' +
+      '<button type="button" class="fd-media-page-menu__item" id="fdMediaSpecsBtn" role="menuitem">Specifiche tecniche</button>' +
+      '<hr class="fd-media-page-menu__sep">' +
+      '<button type="button" class="fd-media-page-menu__item fd-media-page-menu__item--danger" id="fdMediaClearAllBtn" role="menuitem">Svuota libreria…</button>' +
       '</div>';
     actions.appendChild(menu);
 
     var trigger = document.getElementById('fdMediaPageMenuBtn');
     var panel = document.getElementById('fdMediaPageMenuPanel');
+    var exportItem = document.getElementById('fdMediaExportBtn');
+    var specsItem = document.getElementById('fdMediaSpecsBtn');
     var item = document.getElementById('fdMediaClearAllBtn');
 
     if (trigger && panel) {
@@ -67,11 +72,28 @@
       });
     }
 
+    if (exportItem) {
+      exportItem.addEventListener('click', function (e) {
+        e.stopPropagation();
+        closeMediaMenu();
+        if (typeof window.fdMediaExportLibrary === 'function') window.fdMediaExportLibrary();
+      });
+    }
+
+    if (specsItem) {
+      specsItem.addEventListener('click', function (e) {
+        e.stopPropagation();
+        closeMediaMenu();
+        if (typeof window.fdMediaOpenSpecs === 'function') window.fdMediaOpenSpecs();
+      });
+    }
+
     if (item) {
       item.addEventListener('click', function (e) {
         e.stopPropagation();
         closeMediaMenu();
-        if (typeof window.deleteAllMedia === 'function') window.deleteAllMedia();
+        if (typeof window.fdMediaOpenClearDialog === 'function') window.fdMediaOpenClearDialog();
+        else if (typeof window.deleteAllMedia === 'function') window.deleteAllMedia();
       });
     }
 
