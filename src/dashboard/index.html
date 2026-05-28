@@ -3871,7 +3871,19 @@ function isLegacyCampaignsUiEnabled() {
 }
 
 function isFiloOperationalHome() {
-    return typeof window.isFiloOperationalHome === 'function' && window.isFiloOperationalHome();
+    // Prevent infinite recursion when the global name still points to this wrapper.
+    if (typeof window.fdIsFiloOperationalHome === 'function') {
+        return !!window.fdIsFiloOperationalHome();
+    }
+    const fn = window.isFiloOperationalHome;
+    if (typeof fn === 'function' && fn !== isFiloOperationalHome) {
+        return !!fn();
+    }
+    // Safe fallback while Filo modules are still booting.
+    const hash = String(window.location.hash || '').toLowerCase();
+    if (hash === '#media-library' || hash === '#push' || hash === '#templates' || hash === '#passes') return false;
+    if (hash === '#welcome' || hash === '#home' || hash === '#dashboard' || hash === '#' || !hash) return isHrDashboard();
+    return isHrDashboard();
 }
 
 function getDefaultBrandSection() {

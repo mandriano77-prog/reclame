@@ -325,6 +325,7 @@
 
   window.fdLoadHome = fdLoadHome;
   window.isFiloOperationalHome = isFiloHomeApp;
+  window.fdIsFiloOperationalHome = isFiloHomeApp;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
