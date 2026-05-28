@@ -83,6 +83,12 @@ function isLoyaltyMode() {
   return getPassKind() === 'loyalty';
 }
 
+function getReviewStatus() {
+  const raw = String(process.env.GOOGLE_WALLET_REVIEW_STATUS || 'UNDER_REVIEW').trim().toUpperCase();
+  const allowed = new Set(['DRAFT', 'UNDER_REVIEW', 'APPROVED', 'REJECTED']);
+  return allowed.has(raw) ? raw : 'UNDER_REVIEW';
+}
+
 function isDebugEnabled() {
   const raw = String(process.env.GOOGLE_WALLET_DEBUG || '').trim().toLowerCase();
   if (!raw) return true;
@@ -120,9 +126,29 @@ function walletPublicBrandAssetUri(brand, asset) {
   return `${API_BASE}/brands/by-slug/${encodeURIComponent(brand.slug)}/${asset}`;
 }
 
+/**
+ * Normalize a brand slug for use inside a Google Wallet class ID.
+ * Google Wallet class IDs are case-sensitive: `Motor_K` and `motor-k`
+ * would produce two different classes for the same brand. Lowercasing
+ * and replacing non [a-z0-9_-] avoids accidental duplicates.
+ *
+ * Allowed characters per Google docs: [A-Za-z0-9._-]. We restrict to
+ * lowercase to enforce a single canonical form.
+ */
+function sanitizeSlugForClassId(slug) {
+  if (!slug) return '';
+  return String(slug)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function buildGenericClassId(brand, template) {
   // Keep legacy Generic IDs to reuse existing active classes.
-  return `${ISSUER_ID}.${brand.slug}_${template.id}`;
+  const slug = sanitizeSlugForClassId(brand.slug);
+  return `${ISSUER_ID}.${slug}_${template.id}`;
 }
 
 function buildGenericObjectId(serialNumber) {
@@ -132,7 +158,8 @@ function buildGenericObjectId(serialNumber) {
 
 function buildLoyaltyClassId(brand, template) {
   // Use a loyalty-specific namespace to avoid collisions with legacy Generic classes.
-  return `${ISSUER_ID}.loyalty_${brand.slug}_${template.id}`;
+  const slug = sanitizeSlugForClassId(brand.slug);
+  return `${ISSUER_ID}.loyalty_${slug}_${template.id}`;
 }
 
 function buildLoyaltyObjectId(serialNumber) {
@@ -280,7 +307,7 @@ function buildPassClass(brand, template) {
   if (passKind === 'loyalty') {
     classObj = {
       id: classId,
-      reviewStatus: 'UNDER_REVIEW',
+      reviewStatus: getReviewStatus(),
       issuerName: brand.name,
       programName: (template.name || brand.name || 'Loyalty Program').slice(0, 64)
     };
@@ -296,7 +323,7 @@ function buildPassClass(brand, template) {
     classObj = {
       id: classId,
       issuerName: brand.name,
-      reviewStatus: 'UNDER_REVIEW'
+      reviewStatus: getReviewStatus()
     };
 
     const logoUri = walletPublicBrandAssetUri(brand, 'logo');
@@ -750,6 +777,7 @@ function getStatusInfo() {
   return {
     configured: isConfigured(),
     pass_kind: getPassKind(),
+    review_status: getReviewStatus(),
     issuer_id: ISSUER_ID || null,
     custom_domain: domain || null,
     callback_url: base ? `${base}/google-wallet/callback` : null,
@@ -765,6 +793,10 @@ function getStatusInfo() {
 module.exports = {
   isConfigured,
   getStatusInfo,
+  getReviewStatus,
+  sanitizeSlugForClassId,
+  buildGenericClassId,
+  buildLoyaltyClassId,
   buildPassClass,
   createOrUpdatePassClass, // deprecated, kept for compatibility
   buildPassObject,

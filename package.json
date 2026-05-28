@@ -9,9 +9,11 @@
     "dev:watch": "node --env-file=.env --watch src/server.js",
     "db:init": "node src/db/init.js",
     "portal:backfill": "node --env-file=.env scripts/backfill-portal-pass-link.js",
-    "test:ui": "node --test scripts/a2w-ui-components.test.js scripts/a2w-contacts-ux.test.js scripts/a2w-contacts-page.contract.test.js scripts/samsung-wallet.test.js",
+    "test:ui": "node --test scripts/a2w-ui-components.test.js scripts/a2w-contacts-ux.test.js scripts/a2w-contacts-page.contract.test.js scripts/samsung-wallet.test.js scripts/google-wallet-class-id.test.js",
     "test:e2e": "playwright test",
-    "test:e2e:install": "playwright install chromium"
+    "test:e2e:install": "playwright install chromium",
+    "gwallet:issuer": "node scripts/google-wallet-admin.js issuer:get",
+    "gwallet:list": "node scripts/google-wallet-admin.js classes:list"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0"
