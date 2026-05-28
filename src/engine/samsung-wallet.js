@@ -11,6 +11,7 @@ const path = require('path');
 const os = require('os');
 const jwt = require('jsonwebtoken');
 
+// DEPRECATED: usa SAMSUNG_CARD_SUBTYPE (alias env SAMSUNG_WALLET_CARD_SUBTYPE). Mantenuto per retrocompatibilità.
 const LOYALTY_SUBTYPE = process.env.SAMSUNG_WALLET_LOYALTY_SUBTYPE || 'others';
 const ADD_LINK_HOST = process.env.SAMSUNG_WALLET_ADD_LINK_HOST || 'https://a.swallet.link';
 const SKIP_JWT_VERIFY = process.env.SAMSUNG_WALLET_SKIP_JWT_VERIFY === '1';
@@ -20,6 +21,17 @@ const TSAPI_HOST_TEMPLATE =
   process.env.SAMSUNG_WALLET_TSAPI_HOST_TEMPLATE || 'https://{cc2}-tsapi.walletsvc.samsung.com';
 
 const JWT_KID = process.env.SAMSUNG_WALLET_JWT_KID || 'WLT.PRIKEY';
+
+/** Tipo card Samsung registrato sul portale Partner (coupon | loyalty | giftcard | boardingpass | ticket | id). */
+const SAMSUNG_CARD_TYPE = (process.env.SAMSUNG_WALLET_CARD_TYPE || 'coupon').trim().toLowerCase();
+
+/** SubType registrato sul portale (per coupon: "others" / "discountstore" / ...). Manteniamo retrocompatibilità con LOYALTY_SUBTYPE. */
+const SAMSUNG_CARD_SUBTYPE = (process.env.SAMSUNG_WALLET_CARD_SUBTYPE || process.env.SAMSUNG_WALLET_LOYALTY_SUBTYPE || 'others').trim();
+
+/** Default country code per Update Notification quando il pass non ha ancora salvato cc2 da Send Card State. */
+const DEFAULT_CC2 = (process.env.SAMSUNG_WALLET_DEFAULT_CC2 || 'IT').trim();
+
+console.log(`[SamsungWallet] cardType=${SAMSUNG_CARD_TYPE} subType=${SAMSUNG_CARD_SUBTYPE} defaultCc2=${DEFAULT_CC2}`);
 
 function expandUserPath(p) {
   if (!p || typeof p !== 'string') return '';
@@ -181,8 +193,8 @@ function buildLoyaltyCardResponse(brand, template, instance, refId, cardState = 
 
     return {
       card: {
-        type: 'loyalty',
-        subType: LOYALTY_SUBTYPE,
+        type: SAMSUNG_CARD_TYPE,
+        subType: SAMSUNG_CARD_SUBTYPE,
         data: [
           {
             refId,
@@ -233,10 +245,25 @@ function buildLoyaltyCardResponse(brand, template, instance, refId, cardState = 
   if (amountStr) attrs.amount = amountStr.slice(0, 32);
   if (balanceStr) attrs.balance = balanceStr.slice(0, 32);
 
+  // Coupon-specific optional attributes (popolati solo se SAMSUNG_CARD_TYPE === 'coupon' e i dati esistono)
+  if (SAMSUNG_CARD_TYPE === 'coupon') {
+    const mainTitle = (template?.name || brand?.name || '').trim();
+    if (mainTitle) attrs.mainTitle = mainTitle.slice(0, 64);
+
+    const subT = fv.subtitle || fv.description || fv.offer || '';
+    if (subT) attrs.subTitle1 = String(subT).slice(0, 64);
+
+    const rawExp = fv.expiry || fv.expires_at || fv.valid_until || instance?.expires_at || null;
+    if (rawExp) {
+      const t = typeof rawExp === 'number' ? rawExp : Date.parse(rawExp);
+      if (!isNaN(t) && t > 0) attrs.expiry = t;
+    }
+  }
+
   return {
     card: {
-      type: 'loyalty',
-      subType: LOYALTY_SUBTYPE,
+      type: SAMSUNG_CARD_TYPE,
+      subType: SAMSUNG_CARD_SUBTYPE,
       data: [
         {
           refId,
@@ -275,7 +302,7 @@ function verifyInboundAuth(authHeader, method, pathForLog) {
 }
 
 function buildTsapiBaseUrl(cc2) {
-  const code = String(cc2 || process.env.SAMSUNG_WALLET_DEFAULT_CC2 || 'US')
+  const code = String(cc2 || DEFAULT_CC2)
     .trim()
     .toLowerCase();
   return TSAPI_HOST_TEMPLATE.replace(/\{cc2\}/g, code);
@@ -327,7 +354,7 @@ function signAuthJwtForUpdate(refId) {
 async function requestCardDataUpdate(refId, options = {}) {
   if (!isConfigured()) return { ok: false, skipped: true, reason: 'not_configured' };
 
-  const cc2 = String(options.cc2 || process.env.SAMSUNG_WALLET_DEFAULT_CC2 || 'US').trim();
+  const cc2 = String(options.cc2 || DEFAULT_CC2).trim();
   if (cc2.length !== 2) {
     return { ok: false, skipped: true, reason: 'invalid_cc2', detail: cc2 };
   }
@@ -355,8 +382,8 @@ async function requestCardDataUpdate(refId, options = {}) {
 
   const body = {
     card: {
-      type: 'loyalty',
-      subType: LOYALTY_SUBTYPE,
+      type: SAMSUNG_CARD_TYPE,
+      subType: SAMSUNG_CARD_SUBTYPE,
       data: [{ refId, state: 'UPDATED' }]
     }
   };
@@ -401,7 +428,7 @@ async function notifySavedPassesUpdates(passes) {
   for (const p of passes) {
     if (!p.samsung_wallet_ref_id || !p.samsung_wallet_saved) continue;
     attempted++;
-    const cc2 = p.samsung_wallet_cc2 || process.env.SAMSUNG_WALLET_DEFAULT_CC2 || 'US';
+    const cc2 = p.samsung_wallet_cc2 || DEFAULT_CC2;
     const r = await requestCardDataUpdate(p.samsung_wallet_ref_id, { cc2 });
     if (r && r.ok) notified++;
   }
@@ -414,6 +441,7 @@ module.exports = {
   refIdForPass,
   generateDataFetchLink,
   buildLoyaltyCardResponse,
+  buildTsapiBaseUrl,
   verifyInboundAuth,
   requestCardDataUpdate,
   notifySavedPassesUpdates,
