@@ -11,7 +11,8 @@
   var CHANNELS = [
     { value: 'apple', label: 'iPhone (Apple Wallet)', icon: '', tip: 'Invio tramite APNs (Apple Push Notification service)' },
     { value: 'google', label: 'Android (Google Wallet)', icon: '', tip: 'Aggiornamento messaggio su Google Wallet' },
-    { value: 'all', label: 'Entrambi', icon: '⇄', tip: 'Apple APNs + Google Wallet in parallelo' }
+    { value: 'samsung', label: 'Samsung Wallet', icon: '', tip: 'Aggiornamento contenuto su Samsung Wallet' },
+    { value: 'all', label: 'Tutti i canali', icon: '⇄', tip: 'Apple APNs + Google Wallet + Samsung Wallet' }
   ];
 
   function isFiloPushApp() {
@@ -130,7 +131,15 @@
       var rows = await res.json();
       var list = Array.isArray(rows) ? rows : rows.passes || rows.items || [];
       var withPush = list.filter(function (p) {
-        return p.push_token || p.device_source === 'apple';
+        return (
+          p.push_token ||
+          p.device_source === 'apple' ||
+          p.device_source === 'google' ||
+          p.device_source === 'samsung' ||
+          p.google_wallet_saved ||
+          p.samsung_wallet_saved ||
+          p.samsung_wallet_ref_id
+        );
       });
       sel.innerHTML = '<option value="">— Seleziona pass di prova —</option>';
       if (!withPush.length) {
@@ -141,7 +150,9 @@
         var opt = document.createElement('option');
         opt.value = p.id;
         var label = (p.member_name || p.holder_name || p.email || p.serial_number || p.id).toString();
-        if (p.push_token) label += ' · iPhone';
+        if (p.push_token || p.device_source === 'apple') label += ' · iPhone';
+        else if (p.google_wallet_saved || p.device_source === 'google') label += ' · Google';
+        else if (p.samsung_wallet_saved || p.samsung_wallet_ref_id || p.device_source === 'samsung') label += ' · Samsung';
         opt.textContent = label.slice(0, 72);
         sel.appendChild(opt);
       });
@@ -293,6 +304,13 @@
       '</div></div>' +
       '<div class="fd-push-preview__device fd-push-preview__device--android">' +
       '<span class="fd-push-preview__device-label">Android · notifica</span>' +
+      '<div class="fd-push-preview__lock">' +
+      '<div class="fd-push-preview__lock-app" data-fd-push-preview-brand>Brand</div>' +
+      '<div class="fd-push-preview__lock-title" data-fd-push-preview-title>Titolo notifica</div>' +
+      '<div class="fd-push-preview__lock-body" data-fd-push-preview-body>Testo del messaggio…</div>' +
+      '</div></div>' +
+      '<div class="fd-push-preview__device fd-push-preview__device--samsung">' +
+      '<span class="fd-push-preview__device-label">Samsung · notifica</span>' +
       '<div class="fd-push-preview__lock">' +
       '<div class="fd-push-preview__lock-app" data-fd-push-preview-brand>Brand</div>' +
       '<div class="fd-push-preview__lock-title" data-fd-push-preview-title>Titolo notifica</div>' +

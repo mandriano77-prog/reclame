@@ -48,6 +48,10 @@ html[data-app='filodiretto'] .fd-push-preview__device {
   background: #0f172a;
 }
 
+html[data-app='filodiretto'] .fd-push-preview__device--samsung {
+  background: linear-gradient(135deg, #0b1e62, #1428a0);
+}
+
 html[data-app='filodiretto'] .fd-push-preview__device:last-child {
   margin-bottom: 0;
 }
