@@ -11503,8 +11503,11 @@ async function loadMediaLibrary() {
     const walletGrid = document.getElementById('mediaWalletIconGrid');
     if (walletGrid) walletGrid.innerHTML = '<p style="color:var(--text2)">Caricamento...</p>';
     try {
-        const r = await fetch(`${API}/media?brand_id=${brandId}`);
-        const items = await r.json();
+        const headers = (typeof getAuthHeaders === 'function') ? getAuthHeaders() : {};
+        const r = await fetch(`${API}/media?brand_id=${brandId}`, { headers });
+        if (!r.ok) throw new Error(`media fetch failed ${r.status}`);
+        const payload = await r.json();
+        const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload?.media) ? payload.media : []));
         const logos = items.filter(it => it.type === 'logo');
         const walletIcons = items.filter(it => it.type === 'wallet_icon');
         const strips = items.filter(it => it.type === 'strip');
@@ -11554,7 +11557,15 @@ async function loadMediaLibrary() {
         if (bgGrid) {
             bgGrid.innerHTML = renderMediaGalleryCards(backgrounds, 'Nessun background caricato.');
         }
-    } catch (err) { console.error('loadMediaLibrary error:', err); }
+    } catch (err) {
+        console.error('loadMediaLibrary error:', err);
+        const errMsg = '<p style="color:var(--text2)">Errore caricamento. Riprova tra poco.</p>';
+        if (logoBox) logoBox.innerHTML = errMsg;
+        if (walletGrid) walletGrid.innerHTML = errMsg;
+        if (stripGrid) stripGrid.innerHTML = errMsg;
+        if (thumbGrid) thumbGrid.innerHTML = errMsg;
+        if (bgGrid) bgGrid.innerHTML = errMsg;
+    }
 }
 
 function onMediaUploadTypeChange() {
