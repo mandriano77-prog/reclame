@@ -23,14 +23,14 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css'];
+                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-responsive-tables.css'];
                 fdCss.forEach(function (href) {
                     var link = document.createElement('link');
                     link.rel = 'stylesheet';
                     link.href = href;
                     document.head.appendChild(link);
                 });
-                ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js'].forEach(function (src) {
+                ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-responsive-tables.js'].forEach(function (src) {
                     var fdScript = document.createElement('script');
                     fdScript.src = src;
                     fdScript.defer = true;
@@ -62,6 +62,7 @@
     <link rel="stylesheet" href="/dashboard/css/layout.css">
     <link rel="stylesheet" href="/dashboard/css/components/page-header.css">
     <link rel="stylesheet" href="/dashboard/css/components/empty-state.css">
+    <link rel="stylesheet" href="/dashboard/css/components/table-skeleton.css">
     <link rel="stylesheet" href="/dashboard/css/components/stat-card.css">
     <link rel="stylesheet" href="/dashboard/css/components/data-table.css">
     <link rel="stylesheet" href="/dashboard/css/components/form.css">
@@ -71,6 +72,7 @@
     <link rel="stylesheet" href="/dashboard/css/components/dropzone.css">
     <link rel="stylesheet" href="/dashboard/css/components/fab.css">
     <script src="/dashboard/lib/utils.js"></script>
+    <script src="/dashboard/lib/date-utils.js"></script>
     <script src="/dashboard/lib/nav.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -3122,6 +3124,7 @@
 
 <script src="/dashboard/js/components/confirm-dialog.js"></script>
 <script src="/dashboard/js/components/empty-state.js"></script>
+<script src="/dashboard/js/components/table-skeleton.js"></script>
 <script src="/dashboard/js/components/page-header.js"></script>
 <script src="/dashboard/js/components/sidebar.js"></script>
 <script src="/dashboard/js/components/contacts/contacts-toolbar.js"></script>
@@ -3273,6 +3276,7 @@ function userInitials(user) {
 }
 
 function initFiloNavGroups() {
+    if (typeof window.fdInitNavGroups === 'function' && window.fdInitNavGroups()) return;
     document.querySelectorAll('.nav-group[data-nav-group]').forEach((details) => {
         const id = details.dataset.navGroup;
         if (isFiloShell()) {
@@ -3781,14 +3785,15 @@ function syncSectionDocumentTitle(sectionId) {
 
 function syncNavAriaCurrent(sectionId) {
     document.querySelectorAll('.nav-item').forEach((n) => {
-        const onclick = n.getAttribute('onclick') || '';
-        const match = onclick.match(/nav\('([^']+)'\)/);
-        if (match && match[1] === sectionId) {
+        const section = n.getAttribute('data-section-id')
+            || (n.getAttribute('onclick') || '').match(/nav\('([^']+)'\)/)?.[1];
+        if (section === sectionId) {
             n.setAttribute('aria-current', 'page');
         } else {
             n.removeAttribute('aria-current');
         }
     });
+    if (typeof window.fdSyncNavGroups === 'function') window.fdSyncNavGroups(sectionId);
 }
 
 function navKeydown(e, id) {
@@ -3949,7 +3954,11 @@ function nav(id) {
     }
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const navItem = Array.from(document.querySelectorAll('.nav-item'))
-        .find(n => (n.getAttribute('onclick') || '').includes(`'${id}'`));
+        .find(n => {
+            const sid = n.getAttribute('data-section-id')
+                || (n.getAttribute('onclick') || '').match(/nav\('([^']+)'\)/)?.[1];
+            return sid === id;
+        });
     if (navItem) navItem.classList.add('active');
     syncNavAriaCurrent(id);
     syncSectionDocumentTitle(id);
@@ -7204,12 +7213,16 @@ async function loadInstantWin() {
         }
 
         const res = await fetch(`${API}/instant-win?brand_id=${brandId}`, { headers: getAuthHeaders() });
-        if (!res.ok) { document.getElementById('iwTable').querySelector('tbody').innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Nessuna campagna</td></tr>'; return; }
+        const tbody = document.getElementById('iwTable').querySelector('tbody');
+        const iwEmptyOpts = { title: 'Nessuna campagna Reward', ctaOnclick: 'openIwModal()', icon: 'ticket' };
+        const iwEmptyRow = typeof fdTableEmptyState === 'function'
+            ? fdTableEmptyState(8, iwEmptyOpts)
+            : (typeof renderTableEmptyState === 'function' ? renderTableEmptyState(8, iwEmptyOpts) : '');
+        if (!res.ok) { tbody.innerHTML = iwEmptyRow; return; }
         const campaigns = await res.json();
 
-        const tbody = document.getElementById('iwTable').querySelector('tbody');
         if (!campaigns.length) {
-            tbody.innerHTML = '<tr><td colspan="8">' + renderEmptyState({ title: 'Nessuna campagna Reward', description: 'Creane una per riconoscere e premiare i tuoi dipendenti.', ctaLabel: 'Nuova campagna', ctaOnclick: 'openIwModal()', icon: 'ticket' }) + '</td></tr>';
+            tbody.innerHTML = iwEmptyRow;
             return;
         }
         const gameLabels = { scratch: '🎫 Scratch', wheel: '🎡 Ruota', slots: '🎰 Slot' };
@@ -7539,6 +7552,16 @@ function fillAudienceForm(rules = {}) {
 
 async function loadAudiences() {
     if (!brandId) return;
+    const listEl = document.getElementById('audiencesList');
+    if (listEl && typeof renderTableSkeletonTable === 'function') {
+        listEl.innerHTML = renderTableSkeletonTable({
+            headers: ['Nome', 'Membri', 'Aggiornata', ''],
+            rows: 5,
+            columns: 4
+        });
+    } else if (listEl) {
+        listEl.innerHTML = '';
+    }
     await loadPushAudienceSelect();
     try {
         const res = await fetch(`${API}/brands/${brandId}/audiences/insights`, { headers: getAuthHeaders() });
@@ -7563,7 +7586,11 @@ async function loadAudiences() {
         renderAudiencesList(list);
     } catch (e) {
         console.error('loadAudiences', e);
-        document.getElementById('audiencesList').innerHTML = '<span style="color:var(--text2);">Errore caricamento audience</span>';
+        if (listEl) {
+            listEl.innerHTML = typeof renderTableErrorBlock === 'function'
+                ? renderTableErrorBlock(e.message || 'Errore caricamento audience', 'loadAudiences()')
+                : '<span style="color:var(--text2);">Errore caricamento audience</span>';
+        }
     }
 }
 
@@ -8476,15 +8503,20 @@ async function loadLeads() {
             ? 'Cerca nome, matricola, email…'
             : 'Cerca per nome, email, telefono…';
     }
-    if (isA2wLeadsRedesignActive()) {
+    {
         const table = document.getElementById('leadsTable');
         const tbody = table?.querySelector('tbody');
         const emptyHost = document.getElementById('leadsEmptyHost');
+        const cols = leadsHrMode ? 10 : (isA2wLeadsRedesignActive() ? 7 : 7);
+        const showSkeleton = isA2wLeadsRedesignActive() || leadsHrMode;
         if (emptyHost) {
             emptyHost.innerHTML = '';
             emptyHost.hidden = true;
         }
-        if (table && tbody) {
+        if (showSkeleton && table && tbody && typeof renderTableSkeletonRows === 'function') {
+            table.hidden = false;
+            tbody.innerHTML = renderTableSkeletonRows(6, cols);
+        } else if (isA2wLeadsRedesignActive() && table && tbody) {
             table.hidden = false;
             tbody.innerHTML = Array.from({ length: 6 }).map(() => `
               <tr class="a2w-contacts-skeleton-row">
@@ -8546,6 +8578,8 @@ async function loadLeads() {
                   </div>
                 </td>
               </tr>`;
+        } else if (typeof renderTableErrorRow === 'function') {
+            table.querySelector('tbody').innerHTML = renderTableErrorRow(cols, e.message || mc.leads_load_error, 'loadLeads()');
         } else {
             table.querySelector('tbody').innerHTML =
                 `<tr><td colspan="${cols}" style="color:var(--text2);text-align:center;">${esc(e.message || mc.leads_load_error)}</td></tr>`;
@@ -9449,8 +9483,12 @@ async function loadGamification() {
         document.getElementById('gamStatAwards').textContent = stats.total_awards ?? stats.total_gold ?? 0;
 
         const tbody = document.getElementById('gamTable').querySelector('tbody');
+        const gamEmptyOpts = { title: 'Nessuna challenge attiva', ctaOnclick: 'openGamModal()', icon: 'ticket' };
+        const gamEmptyRow = typeof fdTableEmptyState === 'function'
+            ? fdTableEmptyState(8, gamEmptyOpts)
+            : (typeof renderTableEmptyState === 'function' ? renderTableEmptyState(8, gamEmptyOpts) : '');
         if (!campaigns.length) {
-            tbody.innerHTML = '<tr><td colspan="8">' + renderEmptyState({ title: 'Nessuna challenge attiva', description: 'Creane una per coinvolgere e formare i tuoi team.', ctaLabel: 'Nuova challenge', ctaOnclick: 'openGamModal()', icon: 'ticket' }) + '</td></tr>';
+            tbody.innerHTML = gamEmptyRow;
             return;
         }
         const gameLabels = { quiz: 'Quiz', memory: 'Memory Match', puzzle: 'Puzzle' };
@@ -9565,7 +9603,9 @@ async function loadActivityLog() {
     const body = document.getElementById('activityLogBody');
     if (!brandId) return;
     if (!body) return;
-    body.innerHTML = '<tr><td colspan="5" style="color:var(--text2)">Caricamento…</td></tr>';
+    body.innerHTML = typeof renderTableSkeletonRows === 'function'
+        ? renderTableSkeletonRows(8, 5)
+        : '<tr><td colspan="5" style="color:var(--text2)">Caricamento…</td></tr>';
     try {
         const res = await fetch(`${API}/events/${brandId}?limit=250`, { headers: { ...getAuthHeaders() } });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
@@ -9593,7 +9633,9 @@ async function loadActivityLog() {
             </tr>`;
         }).join('');
     } catch (e) {
-        body.innerHTML = `<tr><td colspan="5" style="color:var(--red)">Errore: ${esc(e.message)}</td></tr>`;
+        body.innerHTML = typeof renderTableErrorRow === 'function'
+            ? renderTableErrorRow(5, e.message || 'Errore caricamento log', 'loadActivityLog()')
+            : `<tr><td colspan="5" style="color:var(--red)">Errore: ${esc(e.message)}</td></tr>`;
     }
 }
 
@@ -10696,12 +10738,14 @@ function a2wBiValidate(data) {
     return errors;
 }
 
-function a2wBiUpdateSaveStateBadge(stateLabel, modeClass) {
+function a2wBiUpdateSaveStateBadge(stateLabel, modeClass, title) {
     const badge = a2wBiField('a2wBiSaveStateBadge');
     if (!badge) return;
     badge.textContent = stateLabel;
     badge.classList.remove('is-dirty', 'is-saving');
     if (modeClass) badge.classList.add(modeClass);
+    if (title) badge.setAttribute('title', title);
+    else badge.removeAttribute('title');
 }
 
 function a2wBiApplyLiveValidation() {
@@ -10719,27 +10763,37 @@ function a2wBiUpdateSaveButton(errorCount) {
     btn.classList.add('a2w-btn-primary');
     if (brandIdentityState.saving) {
         btn.disabled = true;
+        btn.removeAttribute('title');
         btn.textContent = 'Salvataggio…';
         a2wBiUpdateSaveStateBadge('Salvataggio…', 'is-saving');
         return;
     }
     if (errorCount > 0) {
         btn.disabled = true;
+        btn.removeAttribute('title');
         btn.textContent = `${errorCount} campi da correggere`;
         a2wBiUpdateSaveStateBadge('Modifiche non salvate', 'is-dirty');
         return;
     }
     if (brandIdentityState.slugChecking) {
         btn.disabled = true;
+        btn.removeAttribute('title');
         btn.textContent = 'Verifica slug…';
         return;
     }
     btn.disabled = !brandIdentityState.dirty;
     btn.textContent = 'Salva modifiche';
+    if (!brandIdentityState.dirty) {
+        btn.title = 'Nessuna modifica da salvare';
+    } else {
+        btn.removeAttribute('title');
+    }
     if (brandIdentityState.dirty) a2wBiUpdateSaveStateBadge('Modifiche non salvate', 'is-dirty');
     else if (brandIdentityState.lastSavedAt) {
-        const mins = Math.max(0, Math.floor((Date.now() - brandIdentityState.lastSavedAt) / 60000));
-        a2wBiUpdateSaveStateBadge(mins <= 1 ? 'Salvato ora' : `Salvato ${mins} min fa`, '');
+        const rel = typeof formatRelativeSavedLabel === 'function'
+            ? formatRelativeSavedLabel(brandIdentityState.lastSavedAt)
+            : { label: 'Salvato', title: '' };
+        a2wBiUpdateSaveStateBadge(rel.label, '', rel.title);
     } else a2wBiUpdateSaveStateBadge('Salvato', '');
 }
 
@@ -11996,15 +12050,18 @@ async function loadUsers() {
     if (typeof fdLoadUsers === 'function' && (isFiloOperationalHome() || (typeof isHrDashboard === 'function' && isHrDashboard()))) {
         return fdLoadUsers();
     }
+    const tbody = document.querySelector('#usersTable tbody');
+    if (tbody && typeof renderTableSkeletonRows === 'function') {
+        tbody.innerHTML = renderTableSkeletonRows(6, 6);
+    }
+    try {
     const res = await fetch(`${API}/users`, { headers: getAuthHeaders() });
     if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        toast('Errore utenti: ' + (e.error || res.status));
-        return;
+        throw new Error(e.error || String(res.status));
     }
     const users = await res.json();
     const allowlist = getDashboardLoginAllowlist();
-    const tbody = document.querySelector('#usersTable tbody');
     if (!tbody) return;
     tbody.innerHTML = users.map(u => {
         const protectedAdmin = allowlist && allowlist.includes(String(u.email || '').toLowerCase());
@@ -12024,6 +12081,14 @@ async function loadUsers() {
             </td>
         </tr>`;
     }).join('');
+    } catch (e) {
+        if (tbody) {
+            tbody.innerHTML = typeof renderTableErrorRow === 'function'
+                ? renderTableErrorRow(6, e.message || 'Errore caricamento utenti', 'loadUsers()')
+                : `<tr><td colspan="6" style="color:var(--red)">${esc(e.message)}</td></tr>`;
+        }
+        toast('Errore utenti: ' + (e.message || 'caricamento fallito'));
+    }
 }
 
 function openCreateUserModal() {

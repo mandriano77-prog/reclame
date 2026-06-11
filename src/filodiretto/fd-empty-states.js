@@ -25,16 +25,16 @@
     },
     reward: {
       title: 'Nessuna campagna Reward',
-      description: 'Le campagne Reward permettono di riconoscere i dipendenti con premi collegati al pass in Wallet.',
-      ctaLabel: 'Nuova campagna Reward',
+      description: 'Premia i tuoi dipendenti con bonus, voucher welfare, gift card e premi a sorpresa.',
+      ctaLabel: '+ Nuova Campagna',
       ctaOnclick: 'openIwModal()',
       helpHref: DOC_BASE + '#reward',
       icon: 'ticket'
     },
     challenge: {
       title: 'Nessuna challenge attiva',
-      description: 'Le challenge coinvolgono i team con quiz e giochi: i risultati possono aggiornare il pass.',
-      ctaLabel: 'Nuova challenge',
+      description: 'Crea sfide skill-based: quiz formativi, Memory Match, Puzzle e leaderboard a punti.',
+      ctaLabel: '+ Nuova Campagna',
       ctaOnclick: 'openGamModal()',
       helpHref: DOC_BASE + '#challenge',
       icon: 'ticket'
@@ -145,6 +145,17 @@
     patchRenderEmptyState();
   }
 
+  /** Table tbody row with Filo-enriched empty state (preset by key or inferred from opts). */
+  function fdTableEmptyState(colspan, opts) {
+    opts = mergeEmptyOpts(opts || {});
+    var html = typeof window.renderEmptyState === 'function'
+      ? window.renderEmptyState(opts)
+      : '';
+    var span = Math.max(1, parseInt(colspan, 10) || 1);
+    return '<tr class="table-empty-row"><td colspan="' + span + '">' + html + '</td></tr>';
+  }
+
+  window.fdTableEmptyState = fdTableEmptyState;
   window.fdInitEmptyStates = initFdEmptyStates;
 
   if (document.readyState === 'loading') {

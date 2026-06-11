@@ -13,6 +13,21 @@
     return typeof window.isHrDashboard === 'function' && window.isHrDashboard();
   }
 
+  function applyTemplatesSubtitle() {
+    var section = document.getElementById('templates');
+    if (!section || section.querySelector('[data-fd-templates-lead]')) return;
+    var row = section.querySelector(':scope > div[style*="justify-content"]');
+    var lead = document.createElement('p');
+    lead.className = 'page-lead';
+    lead.setAttribute('data-fd-templates-lead', '1');
+    lead.style.color = 'var(--text2)';
+    lead.style.fontSize = '13px';
+    lead.style.margin = '-12px 0 20px';
+    lead.textContent = 'Crea e gestisci i layout dei pass Wallet per i tuoi dipendenti.';
+    if (row && row.parentNode) row.parentNode.insertBefore(lead, row.nextSibling);
+    else section.insertBefore(lead, section.firstChild);
+  }
+
   function applyLeadsChrome() {
     if (!isFiloHr()) return;
 
@@ -57,6 +72,7 @@
       var r = origNav.apply(this, arguments);
       var done = function () {
         if (id === 'leads') applyLeadsChrome();
+        if (id === 'templates') applyTemplatesSubtitle();
       };
       if (r && typeof r.then === 'function') return r.then(done);
       setTimeout(done, 0);
@@ -69,6 +85,7 @@
     patchMenuCopy();
     patchNav();
     applyLeadsChrome();
+    applyTemplatesSubtitle();
   }
 
   if (document.readyState === 'loading') {

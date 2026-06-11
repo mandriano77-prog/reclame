@@ -1,0 +1,65 @@
+/* TableSkeleton — shimmer rows for loading tables */
+
+.table-skeleton-row td,
+.table-skeleton-cell {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  vertical-align: middle;
+}
+
+.table-skeleton-line {
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.18) 0%,
+    rgba(148, 163, 184, 0.36) 50%,
+    rgba(148, 163, 184, 0.18) 100%
+  );
+  background-size: 200% 100%;
+  animation: table-skeleton-shimmer 1.2s linear infinite;
+}
+
+html[data-app='filodiretto'] .table-skeleton-line {
+  background: linear-gradient(
+    90deg,
+    rgba(139, 92, 246, 0.08) 0%,
+    rgba(139, 92, 246, 0.16) 50%,
+    rgba(139, 92, 246, 0.08) 100%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes table-skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.table-skeleton-host {
+  width: 100%;
+}
+
+.table-error-row td {
+  padding: 16px;
+  border: none;
+}
+
+.table-error-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.06);
+  color: var(--text-primary, var(--text));
+  font-size: 13px;
+  text-align: center;
+}
+
+.table-error-banner--block {
+  margin: 8px 0 16px;
+}

@@ -35,5 +35,21 @@
         );
     }
 
+    /**
+     * Empty state inside a table tbody (centered, full row width).
+     * @param {number} colspan
+     * @param {Parameters<typeof renderEmptyState>[0]} opts
+     */
+    function renderTableEmptyState(colspan, opts) {
+        var span = Math.max(1, parseInt(colspan, 10) || 1);
+        return (
+            '<tr class="table-empty-row">' +
+            '<td colspan="' + span + '">' +
+            renderEmptyState(opts) +
+            '</td></tr>'
+        );
+    }
+
     global.renderEmptyState = renderEmptyState;
+    global.renderTableEmptyState = renderTableEmptyState;
 })(typeof window !== 'undefined' ? window : global);

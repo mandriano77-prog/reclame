@@ -79,6 +79,11 @@
     if (!ui) return;
     var dirty = serializeTemplateModalState() !== (window.__fdTplBaseline || '');
     ui.saveBtn.disabled = !dirty;
+    if (!dirty) {
+      ui.saveBtn.title = 'Nessuna modifica da salvare';
+    } else {
+      ui.saveBtn.removeAttribute('title');
+    }
     if (ui.badge) {
       ui.badge.textContent = dirty ? 'Modifiche non salvate' : 'Salvato';
       ui.badge.classList.toggle('is-dirty', dirty);

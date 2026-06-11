@@ -119,6 +119,14 @@
     cache.forEach(function (b) {
       if (b && b.id) map[String(b.id)] = b.name || b.slug || String(b.id);
     });
+    var sel = document.getElementById('brandSelector');
+    if (sel) {
+      Array.from(sel.options || []).forEach(function (o) {
+        if (!o.value) return;
+        var label = String(o.textContent || '').trim();
+        if (label) map[String(o.value)] = label;
+      });
+    }
     if (Object.keys(map).length) return map;
     try {
       var res = await fetch(getApiBase() + '/brands', { headers: authHeaders() });
@@ -146,7 +154,14 @@
       return '<td class="fd-users-brand"><span class="fd-users-brand__name">Tutti i brand</span></td>';
     }
     var id = String(u.brand_id);
-    var name = brandMap[id] || 'Brand sconosciuto';
+    var name = brandMap[id];
+    if (!name) {
+      return (
+        '<td class="fd-users-brand">' +
+        '<span class="fd-users-brand__name fd-users-brand__name--unknown" title="ID: ' + esc(id) + '">Brand non disponibile</span>' +
+        '</td>'
+      );
+    }
     return (
       '<td class="fd-users-brand">' +
       '<span class="fd-users-brand__name">' + esc(name) + '</span>' +
@@ -229,15 +244,17 @@
     var tbody = document.querySelector('#usersTable tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text2);padding:16px;">Caricamento…</td></tr>';
+    if (typeof window.renderTableSkeletonRows === 'function') {
+      tbody.innerHTML = window.renderTableSkeletonRows(6, 6);
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text2);padding:16px;">Caricamento…</td></tr>';
+    }
 
     try {
       var res = await fetch(getApiBase() + '/users', { headers: authHeaders() });
       if (!res.ok) {
         var err = await res.json().catch(function () { return {}; });
-        toast('Errore utenti: ' + (err.error || res.status));
-        tbody.innerHTML = '';
-        return;
+        throw new Error(err.error || String(res.status));
       }
       var users = await res.json();
       var allowlist = typeof window.getDashboardLoginAllowlist === 'function'
@@ -279,7 +296,12 @@
 
       bindTableInteractions(tbody);
     } catch (e) {
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red)">Errore: ' + esc(e.message) + '</td></tr>';
+      toast('Errore utenti: ' + (e.message || 'caricamento fallito'));
+      if (typeof window.renderTableErrorRow === 'function') {
+        tbody.innerHTML = window.renderTableErrorRow(6, e.message || 'Errore caricamento utenti', 'fdLoadUsers()');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red)">Errore: ' + esc(e.message) + '</td></tr>';
+      }
     }
   }
 

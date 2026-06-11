@@ -5,6 +5,8 @@
   'use strict';
 
   var STORAGE_COLLAPSED = 'fd:sidebar:collapsed';
+  var mobileFocusRestore = null;
+  var mobileFocusTrapBound = false;
 
   function isFilo() {
     return document.documentElement.getAttribute('data-app') === 'filodiretto';
@@ -67,11 +69,68 @@
       }
     }
 
+    function sidebarFocusables() {
+      var sidebar = document.querySelector('.sidebar');
+      if (!sidebar) return [];
+      return Array.prototype.slice.call(
+        sidebar.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), .nav-item'
+        )
+      ).filter(function (el) {
+        return !el.hidden && el.getAttribute('aria-hidden') !== 'true';
+      });
+    }
+
+    function trapMobileFocus(e) {
+      if (!document.body.classList.contains('sidebar-open') || isDesktop()) return;
+      if (e.key !== 'Tab') return;
+      var nodes = sidebarFocusables();
+      if (nodes.length < 2) return;
+      var first = nodes[0];
+      var last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    function bindMobileFocusTrap() {
+      if (mobileFocusTrapBound) return;
+      mobileFocusTrapBound = true;
+      document.addEventListener('keydown', trapMobileFocus);
+    }
+
+    function unbindMobileFocusTrap() {
+      if (!mobileFocusTrapBound) return;
+      mobileFocusTrapBound = false;
+      document.removeEventListener('keydown', trapMobileFocus);
+    }
+
     function applyMobile(open) {
       document.body.classList.toggle('sidebar-open', open);
       document.body.classList.remove('fd-sidebar-collapsed');
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
       toggle.setAttribute('aria-label', open ? 'Chiudi menu laterale' : 'Apri menu laterale');
+      if (open) {
+        mobileFocusRestore = document.activeElement;
+        bindMobileFocusTrap();
+        requestAnimationFrame(function () {
+          var nodes = sidebarFocusables();
+          if (nodes.length) nodes[0].focus();
+          else toggle.focus();
+        });
+      } else {
+        unbindMobileFocusTrap();
+        var restore = mobileFocusRestore;
+        mobileFocusRestore = null;
+        requestAnimationFrame(function () {
+          if (restore && typeof restore.focus === 'function') restore.focus();
+          else toggle.focus();
+        });
+      }
     }
 
     try {

@@ -49,6 +49,13 @@ html[data-app='filodiretto'] .fd-users-brand__name {
   font-size: 13px;
 }
 
+html[data-app='filodiretto'] .fd-users-brand__name--unknown {
+  color: var(--text2);
+  font-weight: 400;
+  font-style: italic;
+  cursor: help;
+}
+
 html[data-app='filodiretto'] .fd-users-brand__id-row {
   display: inline-flex;
   align-items: center;

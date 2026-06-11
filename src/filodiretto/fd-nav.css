@@ -9,3 +9,17 @@ html[data-app='filodiretto'] #campaigns.section {
 html[data-app='filodiretto'] #campaignModal {
   display: none !important;
 }
+
+/* Active group + pinned (≤2 visible items) accordion */
+html[data-app='filodiretto'] .nav-group--active > .nav-group-label {
+  color: var(--accent-hover);
+  background: var(--bg-active);
+}
+
+html[data-app='filodiretto'] .nav-group--pinned > .nav-group-label {
+  cursor: default;
+}
+
+html[data-app='filodiretto'] .nav-group--pinned > .nav-group-label::after {
+  display: none;
+}

@@ -85,3 +85,21 @@ html[data-shell="light"] .table-wrap .empty-state {
   background: transparent;
   padding: var(--space-5);
 }
+
+/* Full-width empty row inside data tables */
+tr.table-empty-row td {
+  padding: 0;
+  border: none;
+  vertical-align: middle;
+}
+
+tr.table-empty-row .empty-state {
+  padding: var(--space-8, 32px) var(--space-5, 20px);
+  margin: var(--space-2, 8px) 0 var(--space-4, 16px);
+}
+
+html[data-shell="light"] tr.table-empty-row .empty-state {
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+}

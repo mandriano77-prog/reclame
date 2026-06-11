@@ -82,11 +82,43 @@ html[data-app='filodiretto'] .fd-sidebar-collapse-btn:hover {
 }
 
 @media (max-width: 767px) {
+  html[data-app='filodiretto'] .fd-sidebar-collapse-btn {
+    display: none;
+  }
+
   html[data-app='filodiretto'] .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
     z-index: 180;
   }
 
+  html[data-app='filodiretto'] body.sidebar-open .sidebar-backdrop {
+    display: block;
+  }
+
+  html[data-app='filodiretto'] body.sidebar-open {
+    overflow: hidden;
+  }
+
+  /* index.html hides .sidebar on mobile — override only when drawer is open */
   html[data-app='filodiretto'] .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 85vw);
     z-index: 200;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.12));
+    background: var(--bg-subtle, var(--bg));
+    border-right: 1px solid var(--border-default, var(--border));
+  }
+
+  html[data-app='filodiretto'] body.sidebar-open .sidebar {
+    display: flex !important;
   }
 }
