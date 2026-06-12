@@ -97,6 +97,12 @@ html[data-app='filodiretto'] .fd-users-copy:hover {
   color: var(--text1);
 }
 
+html[data-app='filodiretto'] #users.users--fd .badge.active {
+  color: #166534;
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+}
+
 html[data-app='filodiretto'] .fd-users-protected {
   display: inline-flex;
   align-items: center;
