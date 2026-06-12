@@ -1237,6 +1237,7 @@
     <style id="brandThemeStyle"></style>
 </head>
 <body>
+<a href="#main-content" class="skip-link">Salta al contenuto</a>
 
 <div id="loginGate" class="login-gate" role="dialog" aria-labelledby="loginTitle">
     <div class="login-card card" id="loginPanel">
@@ -1377,7 +1378,7 @@
             </div>
         </header>
 
-        <div class="content">
+        <main id="main-content" class="content" tabindex="-1">
 
             <!-- WELCOME -->
             <div id="welcome" class="section active">
@@ -2791,7 +2792,7 @@
                 </table>
             </div>
 
-        </div>
+        </main>
     </div>
 </div>
 
@@ -3712,9 +3713,23 @@ document.addEventListener('a2w:shell:ready', () => {
     if (getActiveSectionId() === 'leads' && typeof loadLeads === 'function') loadLeads();
 });
 
+function initSectionA11yVisibility() {
+    document.querySelectorAll('.section').forEach((s) => {
+        const active = s.classList.contains('active');
+        if (active) {
+            s.removeAttribute('hidden');
+            s.setAttribute('aria-hidden', 'false');
+        } else {
+            s.setAttribute('hidden', '');
+            s.setAttribute('aria-hidden', 'true');
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initDashboardProductTheme();
     togglePassBackEditorMode();
+    initSectionA11yVisibility();
     initFiloNavGroups();
     if (typeof enhancePageHeaders === 'function') enhancePageHeaders();
     initUserMenu();
@@ -3951,11 +3966,13 @@ function nav(id) {
     document.querySelectorAll('.section').forEach(s => {
         s.classList.remove('active');
         s.setAttribute('hidden', '');
+        s.setAttribute('aria-hidden', 'true');
     });
     const sectionEl = document.getElementById(id);
     if (sectionEl) {
         sectionEl.classList.add('active');
         sectionEl.removeAttribute('hidden');
+        sectionEl.setAttribute('aria-hidden', 'false');
     }
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const navItem = Array.from(document.querySelectorAll('.nav-item'))
