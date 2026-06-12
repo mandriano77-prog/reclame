@@ -370,6 +370,432 @@
     document.getElementById('fdPushTestBtn').addEventListener('click', sendTestPush);
   }
 
+  var fdModalOpeners = Object.create(null);
+
+  function getFocusables(root) {
+    var sel = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    return Array.prototype.filter.call(root.querySelectorAll(sel), function (el) {
+      return el.getAttribute('aria-hidden') !== 'true' && !el.closest('[hidden]');
+    });
+  }
+
+  function setupFdModal(modal) {
+    if (!modal || modal.dataset.fdModalSetup === '1') return;
+    modal.dataset.fdModalSetup = '1';
+    var dialog = modal.querySelector('.modal-content') || modal;
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    var title = dialog.querySelector('.modal-header');
+    if (title) {
+      if (!title.id) title.id = modal.id + 'Title';
+      dialog.setAttribute('aria-labelledby', title.id);
+    }
+    if (!dialog.hasAttribute('tabindex')) dialog.setAttribute('tabindex', '-1');
+
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal && modal.classList.contains('active')) closeFdModal(modal.id);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' || !modal.classList.contains('active')) return;
+      e.preventDefault();
+      closeFdModal(modal.id);
+    });
+
+    dialog.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab' || !modal.classList.contains('active')) return;
+      var nodes = getFocusables(dialog);
+      if (!nodes.length) return;
+      var first = nodes[0];
+      var last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+  }
+
+  function openFdModal(modalId, trigger) {
+    if (typeof window.prepareModalOpen === 'function') window.prepareModalOpen(modalId, trigger);
+    fdModalOpeners[modalId] = trigger || document.activeElement;
+    var modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    var dialog = modal.querySelector('.modal-content') || modal;
+    var nodes = getFocusables(dialog);
+    requestAnimationFrame(function () {
+      (nodes[0] || dialog).focus();
+    });
+  }
+
+  function closeFdModal(modalId) {
+    var modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    if (!document.querySelector('.modal.active')) document.body.classList.remove('modal-open');
+    var opener = fdModalOpeners[modalId];
+    delete fdModalOpeners[modalId];
+    requestAnimationFrame(function () {
+      if (opener && typeof opener.focus === 'function' && document.contains(opener)) opener.focus();
+    });
+  }
+
+  function ensurePushConfirmModal() {
+    if (document.getElementById('fdPushConfirmModal')) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'fdPushConfirmModal';
+    wrap.className = 'modal';
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.innerHTML =
+      '<div class="modal-content">' +
+      '<button type="button" class="modal-close" data-fd-close="fdPushConfirmModal" aria-label="Chiudi">&times;</button>' +
+      '<div class="modal-header" id="fdPushConfirmTitle">Conferma invio notifica</div>' +
+      '<p class="form-hint" style="margin:0 0 12px">Verifica destinatari e contenuto prima dell’invio massivo.</p>' +
+      '<ul class="fd-push-confirm-summary" id="fdPushConfirmSummary"></ul>' +
+      '<p class="fd-push-confirm-zero" id="fdPushConfirmZero" hidden>Nessun pass raggiungibile per questo canale.</p>' +
+      '<div class="modal-actions">' +
+      '<button type="button" class="btn sec" id="fdPushConfirmCancel">Annulla</button>' +
+      '<button type="button" class="btn" id="fdPushConfirmSubmit">Conferma invio</button>' +
+      '</div></div>';
+    document.body.appendChild(wrap);
+    setupFdModal(wrap);
+    wrap.querySelector('[data-fd-close]').addEventListener('click', function () {
+      closeFdModal('fdPushConfirmModal');
+    });
+    document.getElementById('fdPushConfirmCancel').addEventListener('click', function () {
+      closeFdModal('fdPushConfirmModal');
+    });
+  }
+
+  function ensurePushHistoryConfirmModal() {
+    if (document.getElementById('fdPushHistoryConfirmModal')) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'fdPushHistoryConfirmModal';
+    wrap.className = 'modal';
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.innerHTML =
+      '<div class="modal-content">' +
+      '<button type="button" class="modal-close" data-fd-close="fdPushHistoryConfirmModal" aria-label="Chiudi">&times;</button>' +
+      '<div class="modal-header" id="fdPushHistoryConfirmTitle">Elimina dallo storico</div>' +
+      '<p id="fdPushHistoryConfirmMessage" class="form-hint" style="margin:0"></p>' +
+      '<div class="modal-actions">' +
+      '<button type="button" class="btn sec" id="fdPushHistoryConfirmCancel">Annulla</button>' +
+      '<button type="button" class="btn danger" id="fdPushHistoryConfirmSubmit">Elimina</button>' +
+      '</div></div>';
+    document.body.appendChild(wrap);
+    setupFdModal(wrap);
+    wrap.querySelector('[data-fd-close]').addEventListener('click', function () {
+      closeFdModal('fdPushHistoryConfirmModal');
+    });
+    document.getElementById('fdPushHistoryConfirmCancel').addEventListener('click', function () {
+      closeFdModal('fdPushHistoryConfirmModal');
+    });
+  }
+
+  function fdConfirmDialog(opts) {
+    ensurePushHistoryConfirmModal();
+    return new Promise(function (resolve) {
+      var titleEl = document.getElementById('fdPushHistoryConfirmTitle');
+      var msgEl = document.getElementById('fdPushHistoryConfirmMessage');
+      var submit = document.getElementById('fdPushHistoryConfirmSubmit');
+      var cancel = document.getElementById('fdPushHistoryConfirmCancel');
+      if (titleEl) titleEl.textContent = opts.title || 'Confermi?';
+      if (msgEl) msgEl.textContent = opts.message || '';
+      if (submit) submit.textContent = opts.confirmLabel || 'Conferma';
+      submit.classList.toggle('danger', opts.tone === 'danger');
+
+      function cleanup(result) {
+        submit.removeEventListener('click', onConfirm);
+        cancel.removeEventListener('click', onCancel);
+        closeFdModal('fdPushHistoryConfirmModal');
+        resolve(result);
+      }
+      function onConfirm() { cleanup(true); }
+      function onCancel() { cleanup(false); }
+
+      submit.addEventListener('click', onConfirm);
+      cancel.addEventListener('click', onCancel);
+      openFdModal('fdPushHistoryConfirmModal', opts.trigger || document.activeElement);
+    });
+  }
+
+  function passGoogleSavedLocal(p) {
+    if (typeof window.passGoogleSaved === 'function') return window.passGoogleSaved(p);
+    if (!p) return false;
+    if (p.google_wallet_saved === true || p.google_wallet_saved === 'true' || p.google_wallet_saved === 1) return true;
+    if (p.google_installed_at || p.device_source === 'google') return true;
+    return false;
+  }
+
+  function passGooglePendingLocal(p) {
+    if (typeof window.passGooglePending === 'function') return window.passGooglePending(p);
+    if (!p || !p.google_wallet_object_id) return false;
+    return !passGoogleSavedLocal(p);
+  }
+
+  function passSamsungSavedLocal(p) {
+    if (typeof window.passSamsungSaved === 'function') return window.passSamsungSaved(p);
+    if (!p) return false;
+    if (p.samsung_wallet_saved === true || p.samsung_wallet_saved === 'true' || p.samsung_wallet_saved === 1) return true;
+    if (p.samsung_installed_at || p.device_source === 'samsung') return true;
+    return false;
+  }
+
+  function passSamsungPendingLocal(p) {
+    if (typeof window.passSamsungPending === 'function') return window.passSamsungPending(p);
+    if (!p || !p.samsung_wallet_ref_id) return false;
+    return !passSamsungSavedLocal(p);
+  }
+
+  function isAppleReachable(p) {
+    return !!p.push_token;
+  }
+
+  function isGoogleReachable(p) {
+    return !!(p.google_wallet_object_id || passGoogleSavedLocal(p) || passGooglePendingLocal(p));
+  }
+
+  function isSamsungReachable(p) {
+    return !!(p.samsung_wallet_ref_id && passSamsungSavedLocal(p)) || passSamsungPendingLocal(p);
+  }
+
+  function countRecipients(passes, channel) {
+    var apple = 0;
+    var google = 0;
+    var samsung = 0;
+    var any = 0;
+    passes.forEach(function (p) {
+      var a = isAppleReachable(p);
+      var g = isGoogleReachable(p);
+      var s = isSamsungReachable(p);
+      if (a) apple += 1;
+      if (g) google += 1;
+      if (s) samsung += 1;
+      if (a || g || s) any += 1;
+    });
+    if (channel === 'apple') return { total: apple, apple: apple, google: 0, samsung: 0, any: any };
+    if (channel === 'google') return { total: google, apple: 0, google: google, samsung: 0, any: any };
+    if (channel === 'samsung') return { total: samsung, apple: 0, google: 0, samsung: samsung, any: any };
+    return { total: any, apple: apple, google: google, samsung: samsung, any: any };
+  }
+
+  async function fetchRecipientCounts(channel) {
+    if (!window.brandId) return { counts: null, note: null };
+    try {
+      var api = window.API || '/api';
+      var res = await fetch(
+        api + '/passes?brand_id=' + encodeURIComponent(window.brandId) + '&limit=600',
+        { headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {} }
+      );
+      var rows = await res.json();
+      var list = Array.isArray(rows) ? rows : rows.passes || rows.items || [];
+      var audienceId = document.getElementById('pushAudienceTarget')?.value || '';
+      var campaignId =
+        typeof window.isLegacyCampaignsUiEnabled === 'function' && window.isLegacyCampaignsUiEnabled()
+          ? document.getElementById('pushCampaignTarget')?.value || ''
+          : '';
+      var note = null;
+      if (audienceId || campaignId) {
+        note = 'Conteggio sul brand; audience/campagna applicata al momento dell’invio.';
+      }
+      return { counts: countRecipients(list, channel), note: note };
+    } catch (e) {
+      console.warn('[fd-push] recipient count unavailable', e);
+      return { counts: null, note: 'Conteggio destinatari non disponibile; l’invio userà i filtri server.' };
+    }
+  }
+
+  function firstMessageLine(text) {
+    var line = String(text || '').split(/\r?\n/)[0] || '';
+    return line.length > 120 ? line.slice(0, 117) + '…' : line;
+  }
+
+  function selectedOptionLabel(selectId) {
+    var sel = document.getElementById(selectId);
+    if (!sel || !sel.value) return null;
+    var opt = sel.options[sel.selectedIndex];
+    return opt ? opt.textContent.trim() : sel.value;
+  }
+
+  function channelLabel(value) {
+    var ch = CHANNELS.find(function (c) { return c.value === value; });
+    return ch ? ch.label : value;
+  }
+
+  function renderRecipientLines(counts, channel) {
+    if (!counts) return '<li><strong>Destinatari</strong>Conteggio non disponibile</li>';
+    if (channel === 'all') {
+      return (
+        '<li><strong>Destinatari raggiungibili</strong>' +
+        'Apple: ' + counts.apple + ' · Google: ' + counts.google + ' · Samsung: ' + counts.samsung +
+        ' (totale unico: ' + counts.total + ')</li>'
+      );
+    }
+    var names = { apple: 'Apple', google: 'Google', samsung: 'Samsung' };
+    return '<li><strong>Destinatari raggiungibili</strong>' +
+      (names[channel] || channel) + ': ' + counts.total + ' pass</li>';
+  }
+
+  async function openPushSendConfirm(trigger) {
+    if (typeof window.clearPushFieldErrors === 'function') window.clearPushFieldErrors();
+    var title = (document.getElementById('pushTitle')?.value || '').trim();
+    var message = (document.getElementById('pushMessage')?.value || '').trim();
+    var invalid = false;
+    if (!title) {
+      if (typeof window.setPushFieldError === 'function') {
+        window.setPushFieldError('pushTitle', 'Inserisci un titolo per la notifica');
+      }
+      invalid = true;
+    }
+    if (!message) {
+      if (typeof window.setPushFieldError === 'function') {
+        window.setPushFieldError('pushMessage', 'Inserisci il testo del messaggio');
+      }
+      invalid = true;
+    }
+    if (!window.brandId) {
+      if (typeof toast === 'function') toast('Seleziona un brand');
+      return;
+    }
+    if (invalid) return;
+
+    ensurePushConfirmModal();
+    var channel = document.getElementById('pushChannel')?.value || 'apple';
+    var updatePass = document.getElementById('pushUpdatePass')?.checked;
+    var summary = document.getElementById('fdPushConfirmSummary');
+    var zeroBanner = document.getElementById('fdPushConfirmZero');
+    var submitBtn = document.getElementById('fdPushConfirmSubmit');
+    if (summary) summary.innerHTML = '<li><strong>Caricamento…</strong>Calcolo destinatari</li>';
+
+    openFdModal('fdPushConfirmModal', trigger || document.getElementById('pushSendBtn'));
+
+    var result = await fetchRecipientCounts(channel);
+    var counts = result.counts;
+    var html =
+      '<li><strong>Canale</strong>' + esc(channelLabel(channel)) + '</li>' +
+      renderRecipientLines(counts, channel) +
+      '<li><strong>Titolo</strong>' + esc(title) + '</li>' +
+      '<li><strong>Messaggio</strong>' + esc(firstMessageLine(message)) + '</li>';
+    var iw = selectedOptionLabel('pushInstantWin');
+    if (iw) html += '<li><strong>Reward collegato</strong>' + esc(iw) + '</li>';
+    var gam = selectedOptionLabel('pushGamification');
+    if (gam) html += '<li><strong>Challenge collegata</strong>' + esc(gam) + '</li>';
+    html += '<li><strong>Aggiorna contenuto pass</strong>' + (updatePass ? 'Sì' : 'No') + '</li>';
+    if (result.note) html += '<li><strong>Nota</strong>' + esc(result.note) + '</li>';
+    if (summary) summary.innerHTML = html;
+
+    var disable = counts && counts.total === 0;
+    if (zeroBanner) zeroBanner.hidden = !disable;
+    if (submitBtn) submitBtn.disabled = !!disable;
+  }
+
+  function wirePushSendConfirm() {
+    var btn = document.getElementById('pushSendBtn');
+    if (!btn || btn.dataset.fdConfirmWired === '1') return;
+    btn.dataset.fdConfirmWired = '1';
+    btn.removeAttribute('onclick');
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      openPushSendConfirm(btn);
+    });
+
+    ensurePushConfirmModal();
+    var submitBtn = document.getElementById('fdPushConfirmSubmit');
+    if (submitBtn && !submitBtn.dataset.fdWired) {
+      submitBtn.dataset.fdWired = '1';
+      submitBtn.addEventListener('click', async function () {
+        if (submitBtn.disabled) return;
+        closeFdModal('fdPushConfirmModal');
+        if (typeof window.sendImmediatePush === 'function') {
+          await window.sendImmediatePush();
+        }
+      });
+    }
+  }
+
+  async function deletePushHistoryCore(pushId) {
+    try {
+      var api = window.API || '/api';
+      var res = await fetch(api + '/push/' + encodeURIComponent(pushId), {
+        method: 'DELETE',
+        headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || data.error) throw new Error(data.error || 'Eliminazione non riuscita');
+      if (typeof toast === 'function') toast('Voce eliminata');
+      if (typeof window.getPushSelectedIds === 'function') window.getPushSelectedIds().delete(String(pushId));
+      if (typeof window.loadPushHistory === 'function') await window.loadPushHistory();
+    } catch (err) {
+      if (typeof toast === 'function') toast('Errore eliminazione: ' + (err.message || err));
+    }
+  }
+
+  async function deleteSelectedPushHistoryCore(ids) {
+    var ok = 0;
+    var fail = 0;
+    var api = window.API || '/api';
+    for (var i = 0; i < ids.length; i += 1) {
+      try {
+        var res = await fetch(api + '/push/' + encodeURIComponent(ids[i]), {
+          method: 'DELETE',
+          headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}
+        });
+        var data = await res.json().catch(function () { return {}; });
+        if (res.ok && !data.error) {
+          ok += 1;
+          if (typeof window.getPushSelectedIds === 'function') window.getPushSelectedIds().delete(ids[i]);
+        } else fail += 1;
+      } catch (_) {
+        fail += 1;
+      }
+    }
+    if (ok && typeof toast === 'function') toast('Eliminate ' + ok + ' voci dallo storico');
+    if (fail && typeof toast === 'function') toast(fail + ' voci non eliminate');
+    if (typeof window.updatePushBulkBar === 'function') window.updatePushBulkBar();
+    if (typeof window.loadPushHistory === 'function') await window.loadPushHistory();
+  }
+
+  function patchPushHistoryDelete() {
+    if (window.__fdPushHistoryPatched || !isFiloPushApp()) return;
+    window.__fdPushHistoryPatched = true;
+    ensurePushHistoryConfirmModal();
+
+    window.deletePushFromHistory = async function (pushId) {
+      var log = (window.pushHistoryCache || []).find(function (row) {
+        return String(row.id) === String(pushId);
+      });
+      var ok = await fdConfirmDialog({
+        title: 'Elimina dallo storico',
+        message: 'Eliminare 1 notifica dallo storico' + (log && log.title ? ' («' + log.title + '»)' : '') + '?',
+        confirmLabel: 'Elimina',
+        tone: 'danger',
+        trigger: document.activeElement
+      });
+      if (!ok) return;
+      return deletePushHistoryCore(pushId);
+    };
+
+    window.deleteSelectedPushHistory = async function () {
+      var ids = typeof window.getPushSelectedIds === 'function' ? [...window.getPushSelectedIds()] : [];
+      if (!ids.length) return;
+      var ok = await fdConfirmDialog({
+        title: 'Elimina notifiche selezionate',
+        message: 'Eliminare ' + ids.length + ' voci dallo storico?',
+        confirmLabel: 'Elimina',
+        tone: 'danger',
+        trigger: document.activeElement
+      });
+      if (!ok) return;
+      return deleteSelectedPushHistoryCore(ids);
+    };
+  }
+
   function enhanceImmediatePanel() {
     var panel = document.getElementById('pushPanel_immediate');
     if (!panel || panel.dataset.fdPushEnhanced === '1') return;
@@ -393,6 +819,7 @@
     wrapCharField('pushMessage', MESSAGE_MAX);
     syncPreview();
     loadTestPasses();
+    wirePushSendConfirm();
   }
 
   function enhanceIntro() {
@@ -426,6 +853,7 @@
     enhanceIntro();
     enhanceImmediatePanel();
     patchNavForPush();
+    patchPushHistoryDelete();
   }
 
   window.fdInitPush = initFdPush;

@@ -1,0 +1,59 @@
+/**
+ * FD — Reward & Challenge: KPI compatte a zero campagne, tooltip colonne tabella.
+ */
+html[data-app='filodiretto'] #iwStats.stats-grid--compact,
+html[data-app='filodiretto'] #gamStats.stats-grid--compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2);
+  margin-bottom: var(--fd-space-3);
+  padding: var(--fd-space-2) var(--fd-space-3);
+  border: 1px dashed var(--fd-border);
+  border-radius: var(--fd-radius-sm);
+  background: var(--fd-color-bg-subtle);
+}
+
+html[data-app='filodiretto'] #iwStats.stats-grid--compact .stat-card,
+html[data-app='filodiretto'] #gamStats.stats-grid--compact .stat-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: var(--fd-space-1) var(--fd-space-2);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+html[data-app='filodiretto'] #iwStats.stats-grid--compact .stat-value,
+html[data-app='filodiretto'] #gamStats.stats-grid--compact .stat-value {
+  font-size: var(--fd-font-size-body);
+  font-weight: var(--fd-font-weight-semibold);
+  line-height: 1.2;
+}
+
+html[data-app='filodiretto'] #iwStats.stats-grid--compact .stat-label,
+html[data-app='filodiretto'] #gamStats.stats-grid--compact .stat-label {
+  font-size: var(--fd-font-size-sm);
+  color: var(--fd-color-text-muted);
+  margin: 0;
+}
+
+html[data-app='filodiretto'] #iwTable th .fd-th-help,
+html[data-app='filodiretto'] #gamTable th .fd-th-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  margin-left: 4px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: var(--fd-font-weight-semibold);
+  color: var(--fd-color-text-muted);
+  border: 1px solid var(--fd-border-strong);
+  cursor: help;
+  vertical-align: middle;
+}
