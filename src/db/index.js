@@ -871,6 +871,7 @@ async function getDb() {
 
     // Seed admin
     await seedAdminUser();
+    await bootstrapSuperAdminFromEnv();
     return { pool };
 
   } catch (error) {
@@ -2259,6 +2260,62 @@ async function seedAdminUser() {
 }
 
 // Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Media Hub Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+
+
+/** One-shot ops bootstrap (set BOOTSTRAP_SUPER_ADMIN_EMAIL on Railway, redeploy, then unset). */
+async function bootstrapSuperAdminFromEnv() {
+  const email = String(process.env.BOOTSTRAP_SUPER_ADMIN_EMAIL || '').trim().toLowerCase();
+  if (!email) return;
+
+  const name = String(process.env.BOOTSTRAP_SUPER_ADMIN_NAME || 'Super Admin').trim();
+  const resendInvite = String(process.env.BOOTSTRAP_SUPER_ADMIN_RESEND_INVITE || '1') === '1';
+  const promoteEmail = String(process.env.BOOTSTRAP_PROMOTE_TO_ADMIN || '').trim().toLowerCase();
+
+  try {
+    if (promoteEmail) {
+      const promoteUser = await getUserByEmail(promoteEmail);
+      if (promoteUser && promoteUser.role !== 'admin') {
+        await updateUser(promoteUser.id, { role: 'admin', brand_id: null });
+        console.log('✓ Promoted to admin:', promoteEmail);
+      }
+    }
+
+    let user = await getUserByEmail(email);
+    let tempPassword = null;
+
+    if (user) {
+      const needsRoleFix = user.role !== 'admin' || user.brand_id != null;
+      if (needsRoleFix) {
+        await updateUser(user.id, { role: 'admin', brand_id: null });
+        console.log('✓ Updated super admin role:', email);
+      }
+      if (resendInvite) {
+        tempPassword = randomBytes(9).toString('base64url').slice(0, 12);
+        await updateUser(user.id, { password: tempPassword });
+      }
+    } else {
+      tempPassword = randomBytes(9).toString('base64url').slice(0, 12);
+      user = await createUser({ email, password: tempPassword, name, role: 'admin', brand_id: null });
+      console.log('✓ Created super admin:', email);
+    }
+
+    if (tempPassword && resendInvite) {
+      const { sendUserInviteEmail } = require('../engine/mailer');
+      const domain = String(process.env.CUSTOM_DOMAIN || 'studio.filodiretto.app').replace(/^https?:\/\//, '');
+      await sendUserInviteEmail({
+        to: email,
+        name: user.name || name,
+        password: tempPassword,
+        role: 'admin',
+        brandName: null,
+        dashboardUrl: `https://${domain}/dashboard`
+      });
+      console.log('✓ Super admin invite email sent to', email);
+    }
+  } catch (e) {
+    console.error('Bootstrap super admin failed:', e.message);
+  }
+}
 
 async function createMedia({ brand_id, campaign_id = null, type, title, image_base64, width, height }) {
   const id = uuidv4();
