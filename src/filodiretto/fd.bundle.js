@@ -5006,6 +5006,44 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
+  function isValidBrandId(value) {
+    if (value == null) return false;
+    var id = String(value).trim();
+    return !!(id && id !== 'undefined' && id !== 'null');
+  }
+  function getCurrentBrandId() {
+    if (typeof window.ensureBrandIdFromContext === 'function') {
+      try {
+        var fromCtx = window.ensureBrandIdFromContext();
+        if (isValidBrandId(fromCtx)) return String(fromCtx).trim();
+      } catch (_) {}
+    }
+    try {
+      var sel = document.getElementById('brandSelector');
+      if (sel && isValidBrandId(sel.value)) return String(sel.value).trim();
+    } catch (_) {}
+    try {
+      var qpBrandId = new URLSearchParams(window.location.search || '').get('brand_id');
+      if (isValidBrandId(qpBrandId)) return String(qpBrandId).trim();
+    } catch (_) {}
+    try {
+      if (isValidBrandId(window.brandId)) return String(window.brandId).trim();
+    } catch (_) {}
+    return '';
+  }
+  function syncBrandIdForPush() {
+    var id = getCurrentBrandId();
+    if (!id) return '';
+    try {
+      window.brandId = id;
+    } catch (_) {}
+    if (typeof window.ensureBrandIdFromContext === 'function') {
+      try {
+        window.ensureBrandIdFromContext();
+      } catch (_) {}
+    }
+    return id;
+  }
   function getBrandLabel() {
     var sel = document.getElementById('brandSelector');
     if (sel && sel.value && sel.selectedIndex >= 0) {
@@ -5062,7 +5100,7 @@
     var channel = document.getElementById('pushChannel').value || 'apple';
     var updatePass = document.getElementById('pushUpdatePass').checked;
     var body = {
-      brand_id: window.brandId,
+      brand_id: syncBrandIdForPush(),
       title: title,
       message: message,
       update_pass: updatePass,
@@ -5087,11 +5125,12 @@
   }
   async function loadTestPasses() {
     var sel = document.getElementById('fdPushTestPass');
-    if (!sel || !window.brandId) return;
+    var brandId = syncBrandIdForPush();
+    if (!sel || !brandId) return;
     sel.innerHTML = '<option value="">— Caricamento… —</option>';
     try {
       var api = window.API || '/api';
-      var res = await fetch(api + '/passes?brand_id=' + encodeURIComponent(window.brandId) + '&limit=200', {
+      var res = await fetch(api + '/passes?brand_id=' + encodeURIComponent(brandId) + '&limit=200', {
         headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}
       });
       var rows = await res.json();
@@ -5133,7 +5172,7 @@
     }
   }
   async function sendTestPush() {
-    if (!window.brandId) {
+    if (!syncBrandIdForPush()) {
       if (typeof toast === 'function') toast('Seleziona un brand');
       return;
     }
@@ -5519,11 +5558,12 @@
     return { total: any, apple: apple, google: google, samsung: samsung, any: any };
   }
   async function fetchRecipientCounts(channel) {
-    if (!window.brandId) return { counts: null, note: null };
+    var brandId = syncBrandIdForPush();
+    if (!brandId) return { counts: null, note: null };
     try {
       var api = window.API || '/api';
       var res = await fetch(
-        api + '/passes?brand_id=' + encodeURIComponent(window.brandId) + '&limit=600',
+        api + '/passes?brand_id=' + encodeURIComponent(brandId) + '&limit=600',
         { headers: typeof getAuthHeaders === 'function' ? getAuthHeaders() : {} }
       );
       var rows = await res.json();
@@ -5587,7 +5627,7 @@
       }
       invalid = true;
     }
-    if (!window.brandId) {
+    if (!syncBrandIdForPush()) {
       if (typeof toast === 'function') toast('Seleziona un brand');
       return;
     }
@@ -5633,6 +5673,10 @@
       submitBtn.dataset.fdWired = '1';
       submitBtn.addEventListener('click', async function () {
         if (submitBtn.disabled) return;
+        if (!syncBrandIdForPush()) {
+          if (typeof toast === 'function') toast('Seleziona un brand');
+          return;
+        }
         closeFdModal('fdPushConfirmModal');
         if (typeof window.sendImmediatePush === 'function') {
           await window.sendImmediatePush();
