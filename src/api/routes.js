@@ -288,8 +288,9 @@ router.post('/auth/login', async (req, res) => {
     }
     const valid = await verifyPassword(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Credenziali non valide' });
-    const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role, brand_id: user.brand_id }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, brand_id: user.brand_id } });
+    const operator = await ensurePlatformAdminIfAllowlisted(user);
+    const token = jwt.sign({ id: operator.id, email: operator.email, name: operator.name, role: operator.role, brand_id: operator.brand_id }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    res.json({ token, user: { id: operator.id, email: operator.email, name: operator.name, role: operator.role, brand_id: operator.brand_id } });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Errore login' });
@@ -1354,11 +1355,22 @@ function requireOwnedBrandPk(req, res, brandPk) {
 }
 
 function requireAdmin(req, res) {
-  if (req.user?.role !== 'admin') {
+  if (normalizeRole(req.user?.role) !== 'admin') {
     res.status(403).json({ error: 'Richiede privilegi amministratore' });
     return false;
   }
   return true;
+}
+
+/** On restricted HR deploys, allowlisted operator emails are always platform admins (all brands + Utenti). */
+async function ensurePlatformAdminIfAllowlisted(user) {
+  const list = dashboardLoginAllowlist();
+  if (!list || !user) return user;
+  const email = String(user.email || '').trim().toLowerCase();
+  if (!list.includes(email)) return user;
+  if (normalizeRole(user.role) === 'admin' && user.brand_id == null) return user;
+  await updateUser(user.id, { role: 'admin', brand_id: null });
+  return { ...user, role: 'admin', brand_id: null };
 }
 
 /**

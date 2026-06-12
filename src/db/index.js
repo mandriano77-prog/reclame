@@ -871,6 +871,7 @@ async function getDb() {
 
     // Seed admin
     await seedAdminUser();
+    await ensureAllowlistPlatformAdmins();
     await bootstrapSuperAdminFromEnv();
     return { pool };
 
@@ -2263,6 +2264,34 @@ async function seedAdminUser() {
 
 
 /** One-shot ops bootstrap (set BOOTSTRAP_SUPER_ADMIN_EMAIL on Railway, redeploy, then unset). */
+
+function deployLoginAllowlistEmails() {
+  const raw = String(process.env.DASHBOARD_LOGIN_ALLOWLIST || '').trim();
+  if (raw) {
+    return raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  }
+  if (String(process.env.DASHBOARD_PRODUCT_LINE || '').toLowerCase() === 'hr') {
+    return ['admin@nudj.studio'];
+  }
+  return [];
+}
+
+async function ensureAllowlistPlatformAdmins() {
+  const emails = deployLoginAllowlistEmails();
+  if (!emails.length) return;
+  for (const email of emails) {
+    try {
+      const user = await getUserByEmail(email);
+      if (!user) continue;
+      if (user.role === 'admin' && user.brand_id == null) continue;
+      await updateUser(user.id, { role: 'admin', brand_id: null });
+      console.log('✓ Allowlist operator promoted to platform admin:', email);
+    } catch (e) {
+      console.error('Allowlist admin promotion failed for', email, e.message);
+    }
+  }
+}
+
 async function bootstrapSuperAdminFromEnv() {
   const email = String(process.env.BOOTSTRAP_SUPER_ADMIN_EMAIL || '').trim().toLowerCase();
   if (!email) return;
