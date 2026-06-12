@@ -177,10 +177,19 @@
       if (typeof toast === 'function') toast('Seleziona un dispositivo di prova');
       return;
     }
-    var title = document.getElementById('pushTitle').value;
-    var message = document.getElementById('pushMessage').value;
-    if (!title || !message) {
-      if (typeof alert === 'function') alert('Compila titolo e messaggio');
+    var title = (document.getElementById('pushTitle')?.value || '').trim();
+    var message = (document.getElementById('pushMessage')?.value || '').trim();
+    if (typeof window.clearPushFieldErrors === 'function') window.clearPushFieldErrors();
+    if (!title) {
+      if (typeof window.setPushFieldError === 'function') {
+        window.setPushFieldError('pushTitle', 'Inserisci un titolo per la notifica');
+      } else if (typeof alert === 'function') alert('Compila titolo e messaggio');
+      return;
+    }
+    if (!message) {
+      if (typeof window.setPushFieldError === 'function') {
+        window.setPushFieldError('pushMessage', 'Inserisci il testo del messaggio');
+      } else if (typeof alert === 'function') alert('Compila titolo e messaggio');
       return;
     }
     if (title.length > TITLE_MAX || message.length > MESSAGE_MAX) {
@@ -193,17 +202,27 @@
       btn.disabled = true;
       btn.textContent = 'Invio prova…';
     }
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () {
+      controller.abort();
+    }, 60000);
     try {
       var body = buildPushBody({ test_pass_id: passId });
       var api = window.API || '/api';
       var res = await fetch(api + '/push/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(typeof getAuthHeaders === 'function' ? getAuthHeaders() : {}) },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
-      var data = await res.json();
-      if (data.error) {
-        if (typeof alert === 'function') alert('Errore: ' + data.error);
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || data.error) {
+        var errMsg = data.error || 'Invio non riuscito, riprova';
+        var banner = document.getElementById('pushSendError');
+        if (banner) {
+          banner.textContent = errMsg;
+          banner.hidden = false;
+        } else if (typeof alert === 'function') alert('Errore: ' + errMsg);
         return;
       }
       localStorage.setItem(TEST_PASS_KEY, passId);
@@ -214,8 +233,16 @@
       if (typeof toast === 'function') toast(msg);
       else if (typeof alert === 'function') alert(msg);
     } catch (e) {
-      if (typeof alert === 'function') alert('Errore: ' + (e.message || 'invio fallito'));
+      var failMsg = (e && e.name === 'AbortError')
+        ? 'Invio non riuscito, riprova'
+        : (e.message || 'Invio non riuscito, riprova');
+      var failBanner = document.getElementById('pushSendError');
+      if (failBanner) {
+        failBanner.textContent = failMsg;
+        failBanner.hidden = false;
+      } else if (typeof alert === 'function') alert('Errore: ' + failMsg);
     } finally {
+      clearTimeout(timeoutId);
       if (btn) {
         btn.disabled = false;
         btn.textContent = 'Invia di prova';

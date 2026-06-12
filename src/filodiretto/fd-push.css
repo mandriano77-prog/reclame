@@ -5,6 +5,34 @@ html[data-app='filodiretto'] #push.push--fd {
   --fd-push-preview-width: 300px;
 }
 
+html[data-app='filodiretto'] .pass-wallet-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+html[data-app='filodiretto'] .push-field-error,
+.push-field-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--red, #dc2626);
+  min-height: 0;
+}
+
+html[data-app='filodiretto'] .push-send-error,
+.push-send-error {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid var(--fd-color-danger-border, #fecaca);
+  background: var(--fd-color-danger-bg, #fef2f2);
+  color: var(--fd-color-danger-text, #b91c1c);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 html[data-app='filodiretto'] #push .fd-push-intro {
   font-size: var(--fd-font-size-body);
   line-height: var(--fd-line-height-relaxed);

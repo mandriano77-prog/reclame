@@ -99,6 +99,9 @@
   }
 
   async function fetchJson(url) {
+    if (typeof window.fetchCachedJson === 'function') {
+      return window.fetchCachedJson(url, { headers: authHeaders() });
+    }
     var res = await fetch(url, { headers: authHeaders() });
     if (!res.ok) {
       var err = {};
@@ -483,35 +486,45 @@
     };
   }
 
+  var homeLoadInflight = null;
+
   async function fdLoadHome() {
     if (!isFiloHomeApp()) return;
-    var welcome = document.getElementById('welcome');
-    var root = ensureMount();
-    if (!root) return;
+    if (homeLoadInflight) return homeLoadInflight;
 
-    var bid = getBrandId();
-    if (!bid) {
-      renderNoBrand(root);
-      return;
-    }
+    homeLoadInflight = (async function () {
+      var welcome = document.getElementById('welcome');
+      var root = ensureMount();
+      if (!root) return;
 
-    renderLoading(root);
-    try {
-      var data = await loadHomeData(bid);
-      renderBrandHome(root, data);
-    } catch (e) {
-      setHomeState(welcome, 'error');
-      root.innerHTML =
-        '<div class="fd-home-loading" aria-live="polite">' +
-        '<p class="fd-home-empty">Errore caricamento home: ' + esc(e.message) + '</p>' +
-        '<button type="button" class="btn sec small" style="margin-top:10px" id="fdHomeRetryBtn">Riprova</button>' +
-        '</div>';
-      var retry = document.getElementById('fdHomeRetryBtn');
-      if (retry && retry.dataset.fdBound !== '1') {
-        retry.dataset.fdBound = '1';
-        retry.addEventListener('click', function () { fdLoadHome(); });
+      var bid = getBrandId();
+      if (!bid) {
+        renderNoBrand(root);
+        return;
       }
-    }
+
+      renderLoading(root);
+      try {
+        var data = await loadHomeData(bid);
+        renderBrandHome(root, data);
+      } catch (e) {
+        setHomeState(welcome, 'error');
+        root.innerHTML =
+          '<div class="fd-home-loading" aria-live="polite">' +
+          '<p class="fd-home-empty">Errore caricamento home: ' + esc(e.message) + '</p>' +
+          '<button type="button" class="btn sec small" style="margin-top:10px" id="fdHomeRetryBtn">Riprova</button>' +
+          '</div>';
+        var retry = document.getElementById('fdHomeRetryBtn');
+        if (retry && retry.dataset.fdBound !== '1') {
+          retry.dataset.fdBound = '1';
+          retry.addEventListener('click', function () { fdLoadHome(); });
+        }
+      }
+    })().finally(function () {
+      homeLoadInflight = null;
+    });
+
+    return homeLoadInflight;
   }
 
   window.fdLoadHome = fdLoadHome;

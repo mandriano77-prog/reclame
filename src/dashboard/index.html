@@ -23,19 +23,34 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260528';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260528';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-responsive-tables.css'];
-                fdCss.forEach(function (href) {
-                    var link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.href = href;
-                    document.head.appendChild(link);
-                });
-                ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-responsive-tables.js'].forEach(function (src) {
-                    var fdScript = document.createElement('script');
-                    fdScript.src = src;
-                    fdScript.defer = true;
-                    document.head.appendChild(fdScript);
-                });
+                var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-responsive-tables.js'];
+                var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
+                if (useFdBundle) {
+                    var bundleCss = document.createElement('link');
+                    bundleCss.rel = 'stylesheet';
+                    bundleCss.href = fdBundleCss;
+                    document.head.appendChild(bundleCss);
+                    var bundleJs = document.createElement('script');
+                    bundleJs.src = fdBundleJs;
+                    bundleJs.defer = true;
+                    document.head.appendChild(bundleJs);
+                } else {
+                    fdCss.forEach(function (href) {
+                        var link = document.createElement('link');
+                        link.rel = 'stylesheet';
+                        link.href = href;
+                        document.head.appendChild(link);
+                    });
+                    fdJs.forEach(function (src) {
+                        var fdScript = document.createElement('script');
+                        fdScript.src = src;
+                        fdScript.defer = true;
+                        document.head.appendChild(fdScript);
+                    });
+                }
             }
             var host = (window.location.hostname || '').toLowerCase();
             if (host.includes('ads2wallet')) {
@@ -1237,6 +1252,7 @@
     <style id="brandThemeStyle"></style>
 </head>
 <body>
+<a href="#main-content" class="skip-link">Salta al contenuto</a>
 
 <div id="loginGate" class="login-gate" role="dialog" aria-labelledby="loginTitle">
     <div class="login-card card" id="loginPanel">
@@ -1377,7 +1393,7 @@
             </div>
         </header>
 
-        <div class="content">
+        <main id="main-content" class="content" tabindex="-1">
 
             <!-- WELCOME -->
             <div id="welcome" class="section active">
@@ -1511,20 +1527,20 @@
                 <div id="pushPanel_immediate" class="push-panel">
                     <div class="push-card">
                         <div class="form-group">
-                            <label class="form-label">Campagna target</label>
-                            <select id="pushCampaignTarget">
+                            <label class="form-label" for="pushCampaignTarget">Campagna target</label>
+                            <select id="pushCampaignTarget" aria-label="Campagna target">
                                 <option value="">Tutti i pass (tutte le campagne)</option>
                             </select>
                         </div>                        <div class="form-group">
-                            <label class="form-label">Audience (opzionale)</label>
-                            <select id="pushAudienceTarget">
+                            <label class="form-label" for="pushAudienceTarget">Audience (opzionale)</label>
+                            <select id="pushAudienceTarget" aria-label="Audience opzionale">
                                 <option value="">— Nessuna (usa campagna o tutti) —</option>
                             </select>
                             <p style="font-size:11px;color:var(--text2);margin-top:4px;">Se selezionata, ha priorità sulla campagna. Crea segmenti in <strong>Audience</strong>.</p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Canale invio</label>
-                            <select id="pushChannel">
+                            <label class="form-label" for="pushChannel">Canale invio</label>
+                            <select id="pushChannel" aria-label="Canale invio">
                                 <option value="apple">Apple Wallet (APNs)</option>
                                 <option value="google">Google Wallet</option>
                                 <option value="samsung">Samsung Wallet</option>
@@ -1532,12 +1548,14 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Titolo</label>
-                            <input type="text" id="pushTitle" placeholder="es. Offerta speciale weekend!">
+                            <label class="form-label" for="pushTitle">Titolo</label>
+                            <input type="text" id="pushTitle" placeholder="es. Offerta speciale weekend!" aria-describedby="pushTitleError">
+                            <p class="push-field-error" id="pushTitleError" role="alert"></p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Messaggio</label>
-                            <textarea id="pushMessage" rows="3" placeholder="es. Scopri la promozione esclusiva!" style="resize:vertical;"></textarea>
+                            <label class="form-label" for="pushMessage">Messaggio</label>
+                            <textarea id="pushMessage" rows="3" placeholder="es. Scopri la promozione esclusiva!" style="resize:vertical;" aria-describedby="pushMessageError"></textarea>
+                            <p class="push-field-error" id="pushMessageError" role="alert"></p>
                         </div>
                         <div class="form-group" style="margin-top:4px;">
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
@@ -1585,20 +1603,21 @@
                             </div>
                         </div>
                         <div class="form-group" style="margin-top:8px;">
-                            <label class="form-label">Collega Reward (opzionale)</label>
-                            <select id="pushInstantWin">
+                            <label class="form-label" for="pushInstantWin">Collega Reward (opzionale)</label>
+                            <select id="pushInstantWin" aria-label="Collega Reward">
                                 <option value="">— Nessuna campagna Reward —</option>
                             </select>
                             <p style="font-size:11px;color:var(--text2);margin-top:4px;">Se selezionata, il link al gioco verrà inserito nel Link 1 del retro di ogni pass.</p>
                         </div>
                         <div class="form-group" style="margin-top:8px;">
-                            <label class="form-label">Collega Challenge (opzionale)</label>
-                            <select id="pushGamification">
+                            <label class="form-label" for="pushGamification">Collega Challenge (opzionale)</label>
+                            <select id="pushGamification" aria-label="Collega Challenge">
                                 <option value="">— Nessuna campagna Challenge —</option>
                             </select>
                             <p style="font-size:11px;color:var(--text2);margin-top:4px;">Quiz, Memory o Puzzle — il link al gioco verrà inserito nel Link 1 del retro di ogni pass.</p>
                         </div>
-                        <button class="btn" style="width:100%;font-weight:700;margin-top:12px;" onclick="sendImmediatePush()">&#9889; Invia Notifica Ora</button>
+                        <p class="push-send-error" id="pushSendError" role="alert" hidden></p>
+                        <button type="button" class="btn" id="pushSendBtn" style="width:100%;font-weight:700;margin-top:12px;" onclick="sendImmediatePush()">&#9889; Invia Notifica Ora</button>
                     </div>
                     <div class="sec-title" style="margin-top:24px;">Storico Notifiche</div>
                     <div id="pushHistory"></div>
@@ -2788,7 +2807,7 @@
                 </table>
             </div>
 
-        </div>
+        </main>
     </div>
 </div>
 
@@ -2879,7 +2898,7 @@
                                 <button type="button" class="btn small" onclick="tplPickFromMedia('logo')">Da Media Library</button>
                             </div>
                             <input type="file" id="tplImgLogo" accept="image/*,.pdf" onchange="previewTplImage(this,'logo')" style="font-size:12px;">
-                            <img id="tplImgLogoPreview" style="display:none;height:32px;margin-top:4px;border-radius:4px;">
+                            <img id="tplImgLogoPreview" alt="Anteprima logo template" style="display:none;height:32px;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
                     <div class="form-row" id="tplImgWalletIconRow" style="display:none;">
@@ -2890,7 +2909,7 @@
                                 <button type="button" class="btn small" onclick="tplPickFromMedia('wallet_icon')">Da Media Library</button>
                             </div>
                             <input type="file" id="tplImgWalletIcon" accept="image/*,.pdf" onchange="previewTplImage(this,'wallet_icon')" style="font-size:12px;">
-                            <img id="tplImgWalletIconPreview" style="display:none;width:48px;height:48px;margin-top:4px;border-radius:8px;object-fit:cover;">
+                            <img id="tplImgWalletIconPreview" alt="Anteprima icona wallet" style="display:none;width:48px;height:48px;margin-top:4px;border-radius:8px;object-fit:cover;">
                         </div>
                     </div>
                     <div class="form-row" id="tplImgStripRow">
@@ -2903,7 +2922,7 @@
                                 </select>
                             </div>
                             <input type="file" id="tplImgStrip" accept="image/*,.pdf" onchange="previewTplImage(this,'strip')" style="font-size:12px;">
-                            <img id="tplImgStripPreview" style="display:none;width:100%;max-width:300px;margin-top:4px;border-radius:4px;">
+                            <img id="tplImgStripPreview" alt="Anteprima strip template" style="display:none;width:100%;max-width:300px;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
                     <div class="form-row" id="tplImgThumbRow" style="display:none;">
@@ -2913,7 +2932,7 @@
                                 <button type="button" class="btn small" onclick="tplPickFromMedia('thumbnail')">Da Media Library</button>
                             </div>
                             <input type="file" id="tplImgThumb" accept="image/*,.pdf" onchange="previewTplImage(this,'thumbnail')" style="font-size:12px;">
-                            <img id="tplImgThumbPreview" style="display:none;width:60px;height:60px;object-fit:cover;margin-top:4px;border-radius:4px;">
+                            <img id="tplImgThumbPreview" alt="Anteprima thumbnail template" style="display:none;width:60px;height:60px;object-fit:cover;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
                     <div class="form-row" id="tplImgBgRow" style="display:none;">
@@ -2923,7 +2942,7 @@
                                 <button type="button" class="btn small" onclick="tplPickFromMedia('background')">Da Media Library</button>
                             </div>
                             <input type="file" id="tplImgBg" accept="image/*,.pdf" onchange="previewTplImage(this,'background')" style="font-size:12px;">
-                            <img id="tplImgBgPreview" style="display:none;width:100px;margin-top:4px;border-radius:4px;">
+                            <img id="tplImgBgPreview" alt="Anteprima sfondo template" style="display:none;width:100px;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
                 </div>
@@ -3149,6 +3168,7 @@
 <script src="/dashboard/js/components/ui/action-menu.js"></script>
 <script src="/dashboard/js/components/ui/index.js"></script>
 <script src="/dashboard/js/components/a2w-modal.js"></script>
+<script src="/dashboard/js/components/modal-a11y.js"></script>
 <script src="/dashboard/js/components/contacts/a2w-contacts-ux.js"></script>
     <script src="/dashboard/js/a2w-shell.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
@@ -3634,6 +3654,7 @@ const PASSES_PAGE_SIZE = 50;
 /** Sections reachable without selecting a brand */
 const SECTIONS_NO_BRAND = new Set(['welcome', 'users', 'brand-identity']);
 const brandDataCache = new Map();
+const brandDataInflight = new Map();
 let passPageIndex = 0;
 let passHasNextPage = false;
 let passTotalCount = null;
@@ -3707,9 +3728,23 @@ document.addEventListener('a2w:shell:ready', () => {
     if (getActiveSectionId() === 'leads' && typeof loadLeads === 'function') loadLeads();
 });
 
+function initSectionA11yVisibility() {
+    document.querySelectorAll('.section').forEach((s) => {
+        const active = s.classList.contains('active');
+        if (active) {
+            s.removeAttribute('hidden');
+            s.setAttribute('aria-hidden', 'false');
+        } else {
+            s.setAttribute('hidden', '');
+            s.setAttribute('aria-hidden', 'true');
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initDashboardProductTheme();
     togglePassBackEditorMode();
+    initSectionA11yVisibility();
     initFiloNavGroups();
     if (typeof enhancePageHeaders === 'function') enhancePageHeaders();
     initUserMenu();
@@ -3946,11 +3981,13 @@ function nav(id) {
     document.querySelectorAll('.section').forEach(s => {
         s.classList.remove('active');
         s.setAttribute('hidden', '');
+        s.setAttribute('aria-hidden', 'true');
     });
     const sectionEl = document.getElementById(id);
     if (sectionEl) {
         sectionEl.classList.add('active');
         sectionEl.removeAttribute('hidden');
+        sectionEl.setAttribute('aria-hidden', 'false');
     }
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const navItem = Array.from(document.querySelectorAll('.nav-item'))
@@ -4024,16 +4061,30 @@ async function fetchCachedJson(url, options = {}, ttlMs = BRAND_CACHE_TTL_MS) {
     const now = Date.now();
     const cached = brandDataCache.get(key);
     if (cached && (now - cached.ts) < ttlMs) return cached.data;
-    const res = await fetch(url, options);
-    const data = await res.json();
-    brandDataCache.set(key, { ts: now, data });
-    return data;
+
+    const inflight = brandDataInflight.get(key);
+    if (inflight) return inflight;
+
+    const promise = (async () => {
+        const res = await fetch(url, options);
+        const data = await res.json();
+        brandDataCache.set(key, { ts: Date.now(), data });
+        return data;
+    })().finally(() => {
+        brandDataInflight.delete(key);
+    });
+
+    brandDataInflight.set(key, promise);
+    return promise;
 }
 
 function invalidateBrandCache() {
     const prefix = `${brandId || 'no-brand'}:`;
     for (const key of brandDataCache.keys()) {
         if (key.startsWith(prefix)) brandDataCache.delete(key);
+    }
+    for (const key of brandDataInflight.keys()) {
+        if (key.startsWith(prefix)) brandDataInflight.delete(key);
     }
 }
 
@@ -4587,9 +4638,6 @@ async function refreshOverview() {
             fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } })
         ]);
         campaignsCache = campaigns;
-        if (isFiloOperationalHome() && getActiveSectionId() === 'welcome' && typeof fdLoadHome === 'function') {
-            fdLoadHome();
-        }
     } catch(e) { console.error('refreshOverview:', e); }
 }
 
@@ -5259,33 +5307,36 @@ async function loadPasses(resetPage = false) {
                 const isInstalled = !!(p.device_id || googleSaved || samsungSaved);
                 const applePushOn = !!p.push_token;
                 const installDateStr = p.install_date ? new Date(p.install_date).toLocaleDateString('it') : '';
-                const installTitle = !isInstalled ? 'Non installato nei wallet configurati'
-                    : p.device_source === 'google' ? 'Salvato in Google Wallet'
-                    : p.device_source === 'samsung' ? 'Salvato in Samsung Wallet'
-                    : p.device_source === 'apple' ? 'Installato in Apple Wallet'
-                    : 'Installato nel wallet';
-                const installCellInner = isInstalled
-                    ? `<span title="${installTitle}" style="color:var(--green);font-size:16px;line-height:1;">&#9745;</span><span style="font-size:11px;color:var(--text);">${installDateStr ? esc(installDateStr) : '<span style="opacity:0.5">—</span>'}</span>`
-                    : `<span title="Solo generato / link inviato, non salvato nel wallet" style="opacity:0.35;font-size:16px;line-height:1;">&#9744;</span><span style="font-size:11px;opacity:0.45;">—</span>`;
-                let walletReachHtml = '<span style="display:inline-flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">';
-                walletReachHtml += applePushOn
+                const useTextBadges = typeof isHrDashboard === 'function' && isHrDashboard();
+                const installCellInner = useTextBadges
+                    ? passInstallStatusBadge(p)
+                    : (isInstalled
+                        ? `<span title="Installato" style="color:var(--green);font-size:16px;line-height:1;">&#9745;</span><span style="font-size:11px;color:var(--text);">${installDateStr ? esc(installDateStr) : '<span style="opacity:0.5">—</span>'}</span>`
+                        : `<span title="Non installato" style="opacity:0.35;font-size:16px;line-height:1;">&#9744;</span><span style="font-size:11px;opacity:0.45;">—</span>`);
+                let walletReachHtml = useTextBadges
+                    ? passReachStatusBadges(p)
+                    : (function () {
+                let html = '<span style="display:inline-flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">';
+                html += applePushOn
                     ? '<span title="Push Apple: token registrato (APNs)" style="color:var(--green);font-size:15px;">&#128276;</span>'
                     : '<span title="Push Apple: nessun token" style="opacity:0.28;font-size:15px;">&#128263;</span>';
                 if (googleSaved) {
-                    walletReachHtml += '<span title="Google Wallet: salvataggio confermato (callback o stato in DB)" style="font-size:11px;font-weight:700;color:var(--green);padding:2px 6px;border-radius:4px;background:rgba(0,212,170,0.15);">GW</span>';
+                    html += '<span title="Google Wallet salvato" style="font-size:11px;font-weight:700;color:var(--green);padding:2px 6px;border-radius:4px;background:rgba(0,212,170,0.15);">GW</span>';
                 } else if (googlePending) {
-                    walletReachHtml += '<span title="Flusso Google avviato: oggetto creato. GW° resta ambra finché Google non notifica il salvataggio (URL callback) o l\'utente non completa Aggiungi a Google Wallet" style="font-size:11px;font-weight:700;color:#fbbf24;padding:2px 6px;border-radius:4px;border:1px solid rgba(245,158,11,0.55);background:rgba(245,158,11,0.12);">GW°</span>';
+                    html += '<span title="Google Wallet in attesa" style="font-size:11px;font-weight:700;color:#fbbf24;padding:2px 6px;border-radius:4px;border:1px solid rgba(245,158,11,0.55);background:rgba(245,158,11,0.12);">GW°</span>';
                 } else {
-                    walletReachHtml += '<span title="Nessun oggetto Google Wallet: pass solo Apple / landing iOS, oppure GW non ancora generato da Vedi pass" style="opacity:0.3;font-size:11px;">—</span>';
+                    html += '<span title="Nessun Google Wallet" style="opacity:0.3;font-size:11px;">—</span>';
                 }
                 if (samsungSaved) {
-                    walletReachHtml += '<span title="Samsung Wallet: salvataggio confermato (Send Card State)" style="font-size:11px;font-weight:700;color:var(--green);padding:2px 6px;border-radius:4px;background:rgba(20,40,160,0.15);">SW</span>';
+                    html += '<span title="Samsung Wallet salvato" style="font-size:11px;font-weight:700;color:var(--green);padding:2px 6px;border-radius:4px;background:rgba(20,40,160,0.15);">SW</span>';
                 } else if (samsungPending) {
-                    walletReachHtml += '<span title="Flusso Samsung: refId generato; in attesa di salvataggio su dispositivo Samsung" style="font-size:11px;font-weight:700;color:#fbbf24;padding:2px 6px;border-radius:4px;border:1px solid rgba(245,158,11,0.55);background:rgba(245,158,11,0.12);">SW°</span>';
+                    html += '<span title="Samsung Wallet in attesa" style="font-size:11px;font-weight:700;color:#fbbf24;padding:2px 6px;border-radius:4px;border:1px solid rgba(245,158,11,0.55);background:rgba(245,158,11,0.12);">SW°</span>';
                 } else {
-                    walletReachHtml += '<span title="Nessun ref Samsung per questo pass" style="opacity:0.3;font-size:11px;">·</span>';
+                    html += '<span title="Nessun Samsung Wallet" style="opacity:0.3;font-size:11px;">·</span>';
                 }
-                walletReachHtml += '</span>';
+                html += '</span>';
+                return html;
+                    })();
                 return `<tr data-pass-id="${esc(p.id)}">
                     <td class="pass-table__select-col bulk-select-col">
                         <input type="checkbox" class="pass-row-cb a2w-bulk-check" aria-label="Seleziona pass" data-pass-id="${esc(p.id)}" ${rowSelected ? 'checked' : ''} onchange="onPassRowCheckboxChange('${p.id}', this)">
@@ -5301,7 +5352,7 @@ async function loadPasses(resetPage = false) {
                         const pushDate = p.last_push_at ? new Date(p.last_push_at).toLocaleDateString('it') : '';
                         return statusIcon + ' <span style="font-size:10px;opacity:0.6;" title="' + esc(String(p.push_count)) + ' push APNs inviate">' + p.push_count + 'x · ' + pushDate + '</span>';
                     })() : '<span style="opacity:0.3;" title="Nessuna push APNs inviata">-</span>'}</td>
-                    <td style="font-family:monospace;font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.device_id||'')}">${p.device_id ? (p.device_source === 'apple' ? '&#127822; ' : p.device_source === 'google' ? '&#129302; ' : p.device_source === 'samsung' ? 'S ' : '') + esc(p.device_id).substring(0,12)+'...' : '<span style="opacity:0.3">-</span>'}</td>
+                    <td style="font-family:monospace;font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.device_id||'')}">${p.device_id ? ((useTextBadges && p.device_source) ? esc(String(p.device_source).toUpperCase()) + ' · ' : (p.device_source === 'apple' ? '&#127822; ' : p.device_source === 'google' ? '&#129302; ' : p.device_source === 'samsung' ? 'S ' : '')) + esc(p.device_id).substring(0,12)+'...' : '<span style="opacity:0.3">-</span>'}</td>
                     <td><span class="badge ${p.status==='active'?'active':'inactive'}">${p.status}</span></td>
                     <td style="text-align:right;">
                         <div class="pass-row-actions">
@@ -6467,25 +6518,52 @@ function buildPushDeliveryMessage(data, intro = 'Invio completato.') {
     return msg;
 }
 
-async function sendImmediatePush() {
-    const title = document.getElementById('pushTitle').value;
-    const message = document.getElementById('pushMessage').value;
+const PUSH_SEND_TIMEOUT_MS = 60000;
+
+function setPushFieldError(fieldId, message) {
+    const err = document.getElementById(fieldId + 'Error');
+    const input = document.getElementById(fieldId);
+    if (err) err.textContent = message || '';
+    if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
+}
+
+function clearPushFieldErrors() {
+    ['pushTitle', 'pushMessage'].forEach((id) => setPushFieldError(id, ''));
+    const banner = document.getElementById('pushSendError');
+    if (banner) {
+        banner.textContent = '';
+        banner.hidden = true;
+    }
+}
+
+function setPushSendLoading(loading) {
+    const btn = document.getElementById('pushSendBtn');
+    if (!btn) return;
+    if (loading) {
+        if (!btn.dataset.pushSendLabel) btn.dataset.pushSendLabel = btn.innerHTML;
+        btn.disabled = true;
+        btn.textContent = 'Invio in corso…';
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.pushSendLabel || '&#9889; Invia Notifica Ora';
+    }
+}
+
+function buildImmediatePushBody() {
+    const title = (document.getElementById('pushTitle')?.value || '').trim();
+    const message = (document.getElementById('pushMessage')?.value || '').trim();
     const campaignId = isLegacyCampaignsUiEnabled()
         ? (document.getElementById('pushCampaignTarget')?.value || null)
         : null;
     const audienceId = document.getElementById('pushAudienceTarget')?.value || null;
-    const channel = document.getElementById('pushChannel').value || 'apple';
-    const updatePass = document.getElementById('pushUpdatePass').checked;
-
-    if (!title || !message) return alert('Compila titolo e messaggio');
-    if (!brandId) return alert('Seleziona un brand');
-
+    const channel = document.getElementById('pushChannel')?.value || 'apple';
+    const updatePass = document.getElementById('pushUpdatePass')?.checked;
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel };
     if (audienceId) body.audience_id = audienceId;
     else if (campaignId && isLegacyCampaignsUiEnabled()) body.campaign_id = campaignId;
-    const iwId = document.getElementById('pushInstantWin').value;
+    const iwId = document.getElementById('pushInstantWin')?.value;
     if (iwId) body.instant_win_id = iwId;
-    const gamId = document.getElementById('pushGamification').value;
+    const gamId = document.getElementById('pushGamification')?.value;
     if (gamId) body.gamification_id = gamId;
     if (document.getElementById('pushIncludePassLink')?.checked) {
         body.include_pass_link = true;
@@ -6501,22 +6579,89 @@ async function sendImmediatePush() {
         }
     }
     if (updatePass && pushStripMediaId) body.strip_media_id = pushStripMediaId;
-    const res = await fetch(`${API}/push/send`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (data.error) { alert('Errore push: ' + data.error); return; }
-    alert(buildPushDeliveryMessage(data));
-    document.getElementById('pushTitle').value = '';
-    document.getElementById('pushMessage').value = '';
+    return body;
+}
+
+function resetImmediatePushForm() {
+    const titleEl = document.getElementById('pushTitle');
+    const messageEl = document.getElementById('pushMessage');
+    if (titleEl) titleEl.value = '';
+    if (messageEl) messageEl.value = '';
+    clearPushFieldErrors();
     const incl = document.getElementById('pushIncludePassLink');
     if (incl) incl.checked = false;
     togglePushPassLinkFields();
-    ['pushPassLinkUrl', 'pushPassLinkLabel', 'pushPassLinkExpires'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['pushPassLinkUrl', 'pushPassLinkLabel', 'pushPassLinkExpires'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
     const pbl = document.getElementById('pushBackLinkLabel');
     const pbu = document.getElementById('pushBackLinkUrl');
     if (pbl) pbl.value = '';
     if (pbu) pbu.value = '';
     pushClearStrip();
-    loadPushHistory();
+}
+
+async function sendImmediatePush() {
+    clearPushFieldErrors();
+    const title = (document.getElementById('pushTitle')?.value || '').trim();
+    const message = (document.getElementById('pushMessage')?.value || '').trim();
+    let invalid = false;
+    if (!title) {
+        setPushFieldError('pushTitle', 'Inserisci un titolo per la notifica');
+        invalid = true;
+    }
+    if (!message) {
+        setPushFieldError('pushMessage', 'Inserisci il testo del messaggio');
+        invalid = true;
+    }
+    if (!brandId) {
+        toast('Seleziona un brand');
+        return;
+    }
+    if (invalid) return;
+
+    const body = buildImmediatePushBody();
+    setPushSendLoading(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), PUSH_SEND_TIMEOUT_MS);
+    try {
+        const res = await fetch(`${API}/push/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(body),
+            signal: controller.signal
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.error) {
+            const msg = data.error || 'Invio non riuscito, riprova';
+            const banner = document.getElementById('pushSendError');
+            if (banner) {
+                banner.textContent = msg;
+                banner.hidden = false;
+            } else {
+                toast(msg);
+            }
+            return;
+        }
+        toast(buildPushDeliveryMessage(data));
+        resetImmediatePushForm();
+        loadPushHistory();
+    } catch (e) {
+        const msg = (e && e.name === 'AbortError')
+            ? 'Invio non riuscito, riprova'
+            : (e.message || 'Invio non riuscito, riprova');
+        const banner = document.getElementById('pushSendError');
+        if (banner) {
+            banner.textContent = msg;
+            banner.hidden = false;
+        } else {
+            toast(msg);
+        }
+    } finally {
+        clearTimeout(timeoutId);
+        setPushSendLoading(false);
+    }
 }
 
 // --- TAB 2: Push Programmata ---
@@ -9598,6 +9743,61 @@ async function deleteGamCampaign(id) {
     } catch(e) { toast('Errore: ' + e.message); }
 }
 
+function formatActivityLogDetails(ev) {
+    const meta = ev && ev.metadata && typeof ev.metadata === 'object' ? ev.metadata : null;
+    const parts = [];
+    if (meta) {
+        if (meta.source) parts.push('Fonte: ' + meta.source);
+        if (meta.channel) parts.push('Canale: ' + meta.channel);
+        if (meta.member_id) parts.push('Member ' + String(meta.member_id).slice(0, 8) + '…');
+        if (meta.email) parts.push(meta.email);
+        if (meta.reason) parts.push(meta.reason);
+        if (meta.push_id) parts.push('Push ' + String(meta.push_id).slice(0, 8) + '…');
+    }
+    if (parts.length) return parts.join(' · ');
+    if (ev && ev.metadata == null) return '—';
+    if (typeof ev.metadata === 'string') return ev.metadata.length > 160 ? ev.metadata.slice(0, 157) + '…' : ev.metadata;
+    try {
+        const raw = JSON.stringify(ev.metadata);
+        return raw.length > 160 ? raw.slice(0, 157) + '…' : raw;
+    } catch (_) {
+        return '—';
+    }
+}
+
+function passInstallStatusBadge(p) {
+    const googleSaved = passGoogleSaved(p);
+    const samsungSaved = passSamsungSaved(p);
+    const isInstalled = !!(p.device_id || googleSaved || samsungSaved);
+    if (!isInstalled) {
+        return '<span class="badge inactive" title="Solo generato, non salvato nel wallet">Non installato</span>';
+    }
+    const label = p.device_source === 'google' ? 'Google Wallet'
+        : p.device_source === 'samsung' ? 'Samsung Wallet'
+        : p.device_source === 'apple' ? 'Apple Wallet'
+        : 'Installato';
+    const date = p.install_date ? new Date(p.install_date).toLocaleDateString('it') : '';
+    return `<span class="badge active" title="${esc(label)}">${esc(label)}${date ? ' · ' + esc(date) : ''}</span>`;
+}
+
+function passReachStatusBadges(p) {
+    const applePushOn = !!p.push_token;
+    const googleSaved = passGoogleSaved(p);
+    const googlePending = passGooglePending(p);
+    const samsungSaved = passSamsungSaved(p);
+    const samsungPending = passSamsungPending(p);
+    let html = '<span class="pass-wallet-badges">';
+    html += applePushOn
+        ? '<span class="badge active" title="Push Apple attiva">Push Apple</span>'
+        : '<span class="badge inactive" title="Nessun token push Apple">No push</span>';
+    if (googleSaved) html += '<span class="badge active" title="Google Wallet salvato">Google</span>';
+    else if (googlePending) html += '<span class="badge inactive" title="Google Wallet in attesa">Google pending</span>';
+    if (samsungSaved) html += '<span class="badge active" title="Samsung Wallet salvato">Samsung</span>';
+    else if (samsungPending) html += '<span class="badge inactive" title="Samsung Wallet in attesa">Samsung pending</span>';
+    html += '</span>';
+    return html;
+}
+
 // ==================== ACTIVITY LOG ====================
 async function loadActivityLog() {
     const body = document.getElementById('activityLogBody');
@@ -9616,12 +9816,10 @@ async function loadActivityLog() {
         }
         body.innerHTML = events.map(ev => {
             const when = ev.created_at ? new Date(ev.created_at).toLocaleString('it-IT') : '—';
-            const meta =
-                ev.metadata && typeof ev.metadata === 'object'
-                    ? JSON.stringify(ev.metadata)
-                    : (ev.metadata ? String(ev.metadata) : '—');
-            const metaShort =
-                meta.length > 180 ? esc(meta.slice(0, 177)) + '…' : esc(meta);
+            const summary = formatActivityLogDetails(ev);
+            const rawMeta = ev.metadata && typeof ev.metadata === 'object'
+                ? JSON.stringify(ev.metadata)
+                : (ev.metadata ? String(ev.metadata) : '');
             const passCell = ev.pass_id ? `<code style="font-size:11px">${esc(String(ev.pass_id).slice(0, 8))}…</code>` : '—';
             const devCell = ev.device_id ? `<code style="font-size:10px">${esc(String(ev.device_id).slice(0, 24))}${String(ev.device_id).length > 24 ? '…' : ''}</code>` : '—';
             return `<tr>
@@ -9629,7 +9827,7 @@ async function loadActivityLog() {
                 <td><span class="badge inactive" style="text-transform:none;font-size:11px;">${esc(ev.event_type || '—')}</span></td>
                 <td>${passCell}</td>
                 <td style="max-width:120px;">${devCell}</td>
-                <td style="font-size:11px;color:var(--text2);max-width:320px;word-break:break-word;" title="${esc(meta)}">${metaShort}</td>
+                <td style="font-size:12px;color:var(--text2);max-width:320px;word-break:break-word;" title="${esc(rawMeta)}">${esc(summary)}</td>
             </tr>`;
         }).join('');
     } catch (e) {

@@ -16,16 +16,18 @@
   function applyTemplatesSubtitle() {
     var section = document.getElementById('templates');
     if (!section || section.querySelector('[data-fd-templates-lead]')) return;
-    var row = section.querySelector(':scope > div[style*="justify-content"]');
+    if (typeof window.enhancePageHeaders === 'function') window.enhancePageHeaders();
     var lead = document.createElement('p');
-    lead.className = 'page-lead';
+    lead.className = 'page-header__desc';
     lead.setAttribute('data-fd-templates-lead', '1');
-    lead.style.color = 'var(--text2)';
-    lead.style.fontSize = '13px';
-    lead.style.margin = '-12px 0 20px';
     lead.textContent = 'Crea e gestisci i layout dei pass Wallet per i tuoi dipendenti.';
-    if (row && row.parentNode) row.parentNode.insertBefore(lead, row.nextSibling);
-    else section.insertBefore(lead, section.firstChild);
+    var main = section.querySelector('header.page-header .page-header__main');
+    if (main) {
+      main.appendChild(lead);
+      return;
+    }
+    var h1 = section.querySelector('h1');
+    if (h1) h1.insertAdjacentElement('afterend', lead);
   }
 
   function applyLeadsChrome() {

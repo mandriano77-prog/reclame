@@ -3,6 +3,28 @@
  * Scoped to light HR deploy (studio.filodiretto.app)
  */
 
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  padding: 10px 14px;
+  background: var(--bg-canvas, #fff);
+  color: var(--text-primary, #111);
+  border: 1px solid var(--border-default, #e5e7eb);
+  border-radius: var(--radius-sm, 8px);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 12px;
+  top: 12px;
+  outline: 2px solid var(--border-focus, #7c3aed);
+  outline-offset: 2px;
+}
+
 /* ── Focus visible (all shells) ── */
 :where(a, button, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible {
   outline: 2px solid var(--border-focus);

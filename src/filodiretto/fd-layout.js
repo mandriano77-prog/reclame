@@ -177,8 +177,9 @@
 
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-      if (isDesktop()) applyDesktop(true);
-      else applyMobile(false);
+      if (document.querySelector('.modal.active, .a2w-modal--open, dialog[open]')) return;
+      if (document.body.classList.contains('modal-open')) return;
+      if (!isDesktop()) applyMobile(false);
     });
 
     window.addEventListener('resize', function () {
