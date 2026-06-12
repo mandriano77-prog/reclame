@@ -16,9 +16,8 @@ html[data-app='filodiretto'] #leads.leads--fd .contacts-kpi-strip {
 }
 
 html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 
 html[data-app='filodiretto'] #leads.leads--fd .contacts-card__heading {
@@ -135,9 +134,35 @@ html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-str
   width: 100%;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 900px) {
   html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__cluster {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 899px) {
+  html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip {
+    flex-wrap: wrap;
+    overflow: visible;
+    align-items: stretch;
+  }
+
+  html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__divider {
+    display: none;
+  }
+
+  html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__cluster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    width: 100%;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi .contacts-kpi-strip__cluster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
