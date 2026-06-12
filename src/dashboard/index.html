@@ -4088,6 +4088,13 @@ function invalidateBrandCache() {
     }
 }
 
+/** Single cached GET for /brands/{id} (shared by header theme + home loaders). */
+async function fetchBrandById(id) {
+    if (!id) return null;
+    return fetchCachedJson(`${API}/brands/${id}`, { headers: { ...getAuthHeaders() } });
+}
+window.fetchBrandById = fetchBrandById;
+
 function closeModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
@@ -4580,8 +4587,8 @@ function applyBrandTheme() {
         return;
     }
     const targetBrandId = brandId;
-    fetch(`${API}/brands/${brandId}`).then(r => r.json()).then(brand => {
-        if (brandId !== targetBrandId) return;
+    fetchBrandById(targetBrandId).then(brand => {
+        if (!brand || brandId !== targetBrandId) return;
         const name = brand.name || productTitle;
         currentBrandSlug = brand.slug || '';
         if (headerBrandName) headerBrandName.textContent = name;

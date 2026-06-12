@@ -1668,7 +1668,9 @@
     var h = authHeaders();
     var results = await Promise.all([
       fetchJson(api + '/analytics/' + bid).catch(function () { return {}; }),
-      fetchJson(api + '/brands/' + bid).catch(function () { return null; }),
+      (typeof window.fetchBrandById === 'function'
+        ? window.fetchBrandById(bid)
+        : fetchJson(api + '/brands/' + bid)).catch(function () { return null; }),
       fetchJson(api + '/templates?brand_id=' + encodeURIComponent(bid)).catch(function () { return []; }),
       fetchJson(api + '/brands/' + bid + '/employees').catch(function () { return { employees: [], total_employees: 0, with_pass: 0 }; }),
       fetchJson(api + '/push/history?brand_id=' + encodeURIComponent(bid)).catch(function () { return []; }),
