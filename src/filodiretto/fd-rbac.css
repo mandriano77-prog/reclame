@@ -1,0 +1,35 @@
+/**
+ * FiloDiretto RBAC — read-only mode for sender/reporter on 👁 sections.
+ */
+html[data-app='filodiretto'] body.fd-rbac-readonly .btn:not(.sec):not([data-allow-readonly]),
+html[data-app='filodiretto'] body.role-readonly .btn:not(.sec):not([data-allow-readonly]),
+html[data-app='filodiretto'] body.role-reporter .btn:not(.sec):not([data-allow-readonly]),
+html[data-app='filodiretto'] body.role-sender.fd-rbac-readonly .btn:not(.sec):not([data-allow-readonly]) {
+  display: none !important;
+}
+
+html[data-app='filodiretto'] body.fd-rbac-readonly .btn.danger,
+html[data-app='filodiretto'] body.role-readonly .btn.danger {
+  display: none !important;
+}
+
+html[data-app='filodiretto'] body.fd-rbac-readonly input:not([type='search']):not([readonly]),
+html[data-app='filodiretto'] body.fd-rbac-readonly select:not(#brandSelector),
+html[data-app='filodiretto'] body.fd-rbac-readonly textarea {
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+html[data-app='filodiretto'] body.fd-rbac-readonly .fd-rbac-write,
+html[data-app='filodiretto'] body.role-readonly .fd-rbac-write {
+  display: none !important;
+}
+
+html[data-app='filodiretto'] .fd-rbac-denied {
+  padding: 24px;
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: var(--fd-radius-md, 8px);
+  background: var(--bg3, #f9fafb);
+  color: var(--text2);
+  font-size: 14px;
+}

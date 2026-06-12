@@ -1,4 +1,12 @@
 const express = require('express');
+const {
+  normalizeRole,
+  isValidRole,
+  userMayAccessBrand: rbacUserMayAccessBrand,
+  classifyApiRoute,
+  enforceApiPermission,
+  rbacApiMiddleware,
+} = require('../engine/rbac');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
@@ -1297,17 +1305,9 @@ function authMiddleware(req, res, next) {
   }
 }
 
-/** Multi-tenant: admin vede tutti i brand; manager/viewer solo il proprio (`users.brand_id`). */
+/** Multi-tenant: admin vede tutti i brand; altri ruoli solo `users.brand_id` assegnato. */
 function userMayAccessBrand(user, brandId) {
-  if (!user) return false;
-  if (user.role === 'admin') return true;
-  const bid = brandId !== undefined && brandId !== null && String(brandId).length ? String(brandId) : '';
-  const assigned =
-    user.brand_id !== undefined && user.brand_id !== null && String(user.brand_id).length
-      ? String(user.brand_id)
-      : '';
-  if ((user.role === 'manager' || user.role === 'viewer') && assigned) return bid !== '' && bid === assigned;
-  return false;
+  return rbacUserMayAccessBrand(user, brandId);
 }
 
 function requireBrandId(req, res, brandId) {
@@ -1327,8 +1327,22 @@ function requireWriteAccess(req, res) {
     res.status(401).json({ error: 'Non autenticato' });
     return false;
   }
-  if (req.user.role === 'viewer') {
+  const role = normalizeRole(req.user.role);
+  if (role === 'reporter') {
     res.status(403).json({ error: 'Permessi insufficienti (solo lettura)' });
+    return false;
+  }
+  const rule = classifyApiRoute(req.method, req.path);
+  if (rule && rule.write) {
+    const result = enforceApiPermission(req.user, req.method, req.path);
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
+      return false;
+    }
+    return true;
+  }
+  if (role === 'sender') {
+    res.status(403).json({ error: 'Permessi insufficienti per questa operazione' });
     return false;
   }
   return true;
@@ -1376,7 +1390,7 @@ function isJwtBypassRoute(req) {
 
 router.use((req, res, next) => {
   if (isJwtBypassRoute(req)) return next();
-  return authMiddleware(req, res, next);
+  return authMiddleware(req, res, () => rbacApiMiddleware(req, res, next));
 });
 
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Auth (authenticated) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
@@ -1402,24 +1416,10 @@ router.put('/auth/change-password', async (req, res) => {
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Users (admin only) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 router.get('/users', async (req, res) => {
   try {
-    const u = req.user;
+    if (!requireAdmin(req, res)) return;
     const qBrand = req.query.brand_id || null;
-    if (u.role === 'admin') {
-      const users = await listUsers(qBrand || null);
-      res.json(users);
-    } else {
-      const bid = u.brand_id;
-      if (!bid) {
-        res.json([]);
-        return;
-      }
-      if (qBrand && String(qBrand) !== String(bid)) {
-        res.status(403).json({ error: 'Accesso negato per questo brand' });
-        return;
-      }
-      const users = await listUsers(bid);
-      res.json(users);
-    }
+    const users = await listUsers(qBrand || null);
+    res.json(users);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -1433,6 +1433,9 @@ router.post('/users', async (req, res) => {
     }
     const tempPassword = req.body.password || Math.random().toString(36).slice(-10);
     req.body.password = tempPassword;
+    const role = normalizeRole(req.body.role || 'manager');
+    if (!isValidRole(role)) return res.status(400).json({ error: 'Ruolo non valido' });
+    req.body.role = role;
     const user = await createUser(req.body);
     // Send invite email with temp password
     try {
@@ -1479,6 +1482,11 @@ router.post('/users/:id/resend-invite', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
+    if (req.body.role !== undefined) {
+      const role = normalizeRole(req.body.role);
+      if (!isValidRole(role)) return res.status(400).json({ error: 'Ruolo non valido' });
+      req.body.role = role;
+    }
     const user = await updateUser(req.params.id, req.body);
     res.json(user);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1508,7 +1516,7 @@ router.get('/brands', async (req, res) => {
   try {
     let brands = await listBrands();
     const u = req.user;
-    if (u && (u.role === 'manager' || u.role === 'viewer')) {
+    if (u && normalizeRole(u.role) !== 'admin') {
       if (u.brand_id) brands = brands.filter((b) => String(b.id) === String(u.brand_id));
       else brands = [];
     }

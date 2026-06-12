@@ -139,13 +139,27 @@
     return map;
   }
 
+  function normalizeUserRole(role) {
+    var r = String(role || 'manager').toLowerCase();
+    if (r === 'viewer') return 'reporter';
+    return r;
+  }
+
   function roleLabel(role) {
-    return { admin: 'Admin', manager: 'Manager', viewer: 'Viewer' }[role] || role;
+    var r = normalizeUserRole(role);
+    return {
+      admin: 'Admin',
+      manager: 'Manager',
+      sender: 'Sender',
+      reporter: 'Reporter',
+      viewer: 'Reporter'
+    }[r] || role;
   }
 
   function roleBadgeClass(role) {
-    if (role === 'admin') return 'active';
-    if (role === 'manager') return 'inactive';
+    var r = normalizeUserRole(role);
+    if (r === 'admin') return 'active';
+    if (r === 'manager' || r === 'sender') return 'inactive';
     return 'inactive';
   }
 
