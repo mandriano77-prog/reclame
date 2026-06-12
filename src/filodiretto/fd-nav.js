@@ -1,11 +1,39 @@
 /**
- * FD — Filo HR nav: hide ads-only sections, sync accordion groups + active state.
+ * FD — Filo HR nav: icons, accordion groups, mask ads-only sections.
  */
 (function () {
   'use strict';
 
   var STORAGE_KEY = 'filo_nav_group';
-  var PINNED_MAX_ITEMS = 2;
+
+  var SECTION_ICONS = {
+    welcome:
+      '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+    'brand-identity':
+      '<path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L6.5 20l2-7L3 9h7z"/>',
+    'media-library':
+      '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    templates: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/>',
+    passes:
+      '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2M13 17v2M13 11v2"/>',
+    push:
+      '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    'instant-win':
+      '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+    gamification:
+      '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+    campaigns: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+    leads:
+      '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    audiences:
+      '<path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>',
+    analytics:
+      '<line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/>',
+    'activity-log':
+      '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    users:
+      '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><circle cx="12" cy="11" r="3"/>'
+  };
 
   function isFiloNavApp() {
     if (document.documentElement.getAttribute('data-app') === 'filodiretto') return true;
@@ -13,6 +41,14 @@
       if (window.__2WALLET_PRODUCT_LOCK__ === 'hr') return true;
     } catch (_) {}
     return false;
+  }
+
+  function navIconSvg(paths) {
+    return (
+      '<svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      paths +
+      '</svg>'
+    );
   }
 
   function hideCampaignsNav() {
@@ -44,8 +80,72 @@
     return match ? match[1] : '';
   }
 
+  function resolveNavItemLabel(item) {
+    var labelEl = item.querySelector('.nav-label, .a2w-nav-label');
+    if (labelEl) return String(labelEl.textContent || '').trim();
+    var text = '';
+    item.childNodes.forEach(function (n) {
+      if (n.nodeType === Node.TEXT_NODE) text += n.textContent;
+    });
+    text = text.trim();
+    if (text) return text;
+    return String(item.getAttribute('data-menu-default') || item.textContent || '').trim();
+  }
+
+  function injectNavIcons() {
+    if (!isFiloNavApp()) return;
+    document.querySelectorAll('.sidebar .nav-item').forEach(function (item) {
+      var sid = sectionIdFromNavItem(item) || (item.id === 'navItemWelcome' ? 'welcome' : '');
+      var paths = SECTION_ICONS[sid];
+      if (!paths) return;
+
+      var badge = item.querySelector('.nav-badge');
+      var preserved = [];
+      item.querySelectorAll(':scope > *').forEach(function (el) {
+        if (
+          el.classList.contains('nav-icon') ||
+          el.classList.contains('nav-label') ||
+          el.classList.contains('a2w-nav-icon') ||
+          el.classList.contains('a2w-nav-label') ||
+          el.classList.contains('nav-badge')
+        ) {
+          return;
+        }
+        preserved.push(el);
+      });
+
+      var labelText = resolveNavItemLabel(item);
+      var iconEl = item.querySelector('.nav-icon, .a2w-nav-icon');
+      if (!iconEl) {
+        item.insertAdjacentHTML('afterbegin', navIconSvg(paths));
+      }
+
+      var labelSpan = item.querySelector('.nav-label, .a2w-nav-label');
+      if (!labelSpan) {
+        labelSpan = document.createElement('span');
+        labelSpan.className = 'nav-label';
+        var iconRef = item.querySelector('.nav-icon, .a2w-nav-icon');
+        if (iconRef) iconRef.insertAdjacentElement('afterend', labelSpan);
+        else item.appendChild(labelSpan);
+      } else if (!labelSpan.classList.contains('nav-label')) {
+        labelSpan.classList.add('nav-label');
+      }
+      if (labelText) labelSpan.textContent = labelText;
+
+      preserved.forEach(function (el) {
+        item.appendChild(el);
+      });
+      if (badge && !item.contains(badge)) item.appendChild(badge);
+
+      if (labelText) {
+        item.setAttribute('data-fd-tooltip', labelText);
+        item.setAttribute('aria-label', labelText);
+      }
+    });
+  }
+
   function sectionToGroup(sectionId) {
-    if (!sectionId || sectionId === 'welcome') return 'dashboard';
+    if (!sectionId || sectionId === 'welcome') return null;
     var nav = window.FD_NAV && window.FD_NAV.NAV;
     if (!nav) return null;
     for (var i = 0; i < nav.length; i++) {
@@ -67,26 +167,12 @@
     return 'welcome';
   }
 
-  function isNavItemVisible(el) {
-    if (!el) return false;
-    if (el.style.display === 'none') return false;
-    if (el.classList.contains('fd-nav-hidden')) return false;
-    if (el.getAttribute('aria-hidden') === 'true') return false;
-    return true;
-  }
-
-  function visibleItemsCount(details) {
-    var n = 0;
-    details.querySelectorAll('.nav-item').forEach(function (el) {
-      if (isNavItemVisible(el)) n += 1;
-    });
-    return n;
-  }
-
   function syncNavGroupA11y(details) {
     var summary = details.querySelector('summary.nav-group-label');
     if (!summary) return;
+    var label = String(summary.textContent || '').trim() || 'sezione';
     summary.setAttribute('aria-expanded', details.open ? 'true' : 'false');
+    summary.setAttribute('aria-label', (details.open ? 'Comprimi' : 'Espandi') + ' sezione ' + label);
   }
 
   function syncNavGroups(sectionId) {
@@ -96,15 +182,9 @@
 
     document.querySelectorAll('.nav-group[data-nav-group]').forEach(function (details) {
       var gid = details.dataset.navGroup;
-      var pinned = visibleItemsCount(details) <= PINNED_MAX_ITEMS;
-
-      details.classList.toggle('nav-group--pinned', pinned);
-      if (pinned) details.setAttribute('open', '');
-
       var isActive = gid === activeGroup;
       details.classList.toggle('nav-group--active', isActive);
       if (isActive) details.setAttribute('open', '');
-
       syncNavGroupA11y(details);
     });
   }
@@ -112,7 +192,6 @@
   function restoreNavGroupPrefs() {
     if (!isFiloNavApp()) return;
     document.querySelectorAll('.nav-group[data-nav-group]').forEach(function (details) {
-      if (details.classList.contains('nav-group--pinned')) return;
       var id = details.dataset.navGroup;
       try {
         var saved = localStorage.getItem(STORAGE_KEY + ':' + id);
@@ -131,11 +210,6 @@
         var id = details.dataset.navGroup;
         var activeGroup = sectionToGroup(getActiveSectionForGroups());
 
-        if (details.classList.contains('nav-group--pinned')) {
-          details.setAttribute('open', '');
-          return;
-        }
-
         if (id === activeGroup && !details.open) {
           details.setAttribute('open', '');
           return;
@@ -151,6 +225,7 @@
 
   function fdInitNavGroups() {
     if (!isFiloNavApp()) return false;
+    injectNavIcons();
     bindNavGroups();
     restoreNavGroupPrefs();
     syncNavGroups(getActiveSectionForGroups());
@@ -164,6 +239,7 @@
     window.updateNavState = function () {
       orig.apply(this, arguments);
       applyFiloNavMask();
+      injectNavIcons();
       syncNavGroups(getActiveSectionForGroups());
     };
   }
@@ -172,9 +248,11 @@
     if (!isFiloNavApp()) return;
     patchUpdateNavState();
     applyFiloNavMask();
+    injectNavIcons();
   }
 
   window.fdApplyFiloNavMask = applyFiloNavMask;
+  window.fdInjectNavIcons = injectNavIcons;
   window.fdSyncNavGroups = syncNavGroups;
   window.fdInitNavGroups = fdInitNavGroups;
   window.fdSectionToNavGroup = sectionToGroup;

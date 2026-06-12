@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260612-rbac-user-fix';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260612-rbac-user-fix';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260528-sidebar-nav';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260528-sidebar-nav';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -124,6 +124,11 @@
             flex-direction: column;
         }
 
+        .sidebar-nav {
+            flex: 1;
+            min-height: 0;
+        }
+
         .logo {
             font-size: var(--text-lg);
             font-weight: 700;
@@ -159,11 +164,11 @@
             list-style: none;
             font-size: var(--text-xs);
             text-transform: uppercase;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.08em;
             color: var(--text-muted);
-            margin: var(--space-5) 0 var(--space-2);
+            margin: var(--space-3) 0 var(--space-1);
             font-weight: 600;
-            opacity: 1;
+            opacity: 0.72;
             cursor: pointer;
             padding: 0 var(--space-3);
         }
@@ -219,9 +224,9 @@
             display: flex;
             align-items: center;
             gap: var(--space-3);
-            padding: var(--space-2) var(--space-3);
-            margin-bottom: var(--space-1);
-            min-height: 40px;
+            padding: 7px var(--space-3);
+            margin-bottom: 2px;
+            min-height: 38px;
             border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: var(--text-sm);
@@ -1294,51 +1299,52 @@
 <div class="layout" id="mainLayout" style="display:none;">
     <aside class="sidebar" role="navigation" aria-label="Menu principale">
         <div class="logo"><span class="chrome-product-title">Ads2Wallet</span><small class="chrome-byline">by Underdogs Group</small></div>
-        <details class="nav-group" open data-nav-group="dashboard" id="navGroupDashboard">
-            <summary class="nav-group-label" id="navLabelDashboard">Dashboard</summary>
-            <div class="nav-item active" id="navItemWelcome" onclick="nav('welcome')">Inizio</div>
-        </details>
+        <div class="sidebar-nav">
+            <div class="nav-item nav-item--standalone active" id="navItemWelcome" data-section-id="welcome" onclick="nav('welcome')" role="button" tabindex="0">Inizio</div>
 
-        <details class="nav-group" open data-nav-group="brand">
-            <summary class="nav-group-label">Brand</summary>
-            <div class="nav-item" onclick="nav('brand-identity')" data-section-id="brand-identity" data-requires-perm="brand_identity">Identità Brand</div>
-            <div class="nav-item" onclick="nav('media-library')" data-section-id="media-library" data-requires-perm="media_library">Media Library</div>
-        </details>
+            <details class="nav-group" data-nav-group="brand-pass">
+                <summary class="nav-group-label">Brand &amp; Pass</summary>
+                <div class="nav-group-items">
+                    <div class="nav-item" onclick="nav('brand-identity')" data-section-id="brand-identity" data-requires-perm="brand_identity" role="button" tabindex="0">Identità Brand</div>
+                    <div class="nav-item" onclick="nav('media-library')" data-section-id="media-library" data-requires-perm="media_library" role="button" tabindex="0">Media Library</div>
+                    <div class="nav-item" onclick="nav('templates')" data-section-id="templates" data-requires-perm="templates" role="button" tabindex="0">Template Pass</div>
+                    <div class="nav-item" onclick="nav('passes')" data-section-id="passes" data-requires-perm="passes" role="button" tabindex="0">Pass Emessi</div>
+                </div>
+            </details>
 
-        <details class="nav-group" open data-nav-group="pass">
-            <summary class="nav-group-label">Pass</summary>
-            <div class="nav-item" onclick="nav('templates')" data-section-id="templates" data-requires-perm="templates">Template Pass</div>
-            <div class="nav-item" onclick="nav('passes')" data-section-id="passes" data-requires-perm="passes">Pass Emessi</div>
-        </details>
+            <details class="nav-group" data-nav-group="comunicazione">
+                <summary class="nav-group-label">Comunicazione</summary>
+                <div class="nav-group-items">
+                    <div class="nav-item" onclick="nav('push')" data-section-id="push" data-requires-perm="push" role="button" tabindex="0">Push &amp; Notifiche</div>
+                    <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards" role="button" tabindex="0">Reward</div>
+                    <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges" role="button" tabindex="0">Challenge</div>
+                    <div class="nav-item" onclick="nav('campaigns')" data-section-id="campaigns" role="button" tabindex="0">Campagne</div>
+                </div>
+            </details>
 
-        <details class="nav-group" open data-nav-group="comunicazione">
-            <summary class="nav-group-label">Comunicazione</summary>
-            <div class="nav-item" onclick="nav('campaigns')" data-section-id="campaigns">Campagne</div>
-            <div class="nav-item" onclick="nav('push')" data-section-id="push" data-requires-perm="push">Push &amp; Notifiche</div>
-        </details>
+            <details class="nav-group" data-nav-group="database">
+                <summary class="nav-group-label">Database</summary>
+                <div class="nav-group-items">
+                    <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-requires-perm="employees" data-menu-key="nav_leads" data-menu-default="Contatti" role="button" tabindex="0">Contatti <span id="navNoMatricolaBadge" class="nav-badge" style="display:none;" title="Dipendenti senza matricola"></span></div>
+                    <div class="nav-item" onclick="nav('audiences')" data-section-id="audiences" data-requires-perm="audiences" role="button" tabindex="0">Audience</div>
+                </div>
+            </details>
 
-        <details class="nav-group" open data-nav-group="engagement">
-            <summary class="nav-group-label">Engagement</summary>
-            <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards">Reward</div>
-            <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges">Challenge</div>
-        </details>
+            <details class="nav-group" data-nav-group="insights">
+                <summary class="nav-group-label">Insights</summary>
+                <div class="nav-group-items">
+                    <div class="nav-item" onclick="nav('analytics')" data-section-id="analytics" data-requires-perm="analytics" role="button" tabindex="0">Analytics</div>
+                    <div class="nav-item" onclick="nav('activity-log')" data-section-id="activity-log" data-requires-perm="activity_log" role="button" tabindex="0">Log Attività</div>
+                </div>
+            </details>
 
-        <details class="nav-group" open data-nav-group="database">
-            <summary class="nav-group-label">Database</summary>
-            <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-requires-perm="employees" data-menu-key="nav_leads" data-menu-default="Contatti">Contatti <span id="navNoMatricolaBadge" class="nav-badge" style="display:none;" title="Dipendenti senza matricola"></span></div>
-            <div class="nav-item" onclick="nav('audiences')" data-section-id="audiences" data-requires-perm="audiences">Audience</div>
-        </details>
-
-        <details class="nav-group" open data-nav-group="insights">
-            <summary class="nav-group-label">Insights</summary>
-            <div class="nav-item" onclick="nav('analytics')" data-section-id="analytics" data-requires-perm="analytics">Analytics</div>
-            <div class="nav-item" onclick="nav('activity-log')" data-section-id="activity-log" data-requires-perm="activity_log">Log Attività</div>
-        </details>
-
-        <details class="nav-group" open data-nav-group="setup">
-            <summary class="nav-group-label">Setup</summary>
-            <div class="nav-item" onclick="nav('users')" data-section-id="users" data-requires-perm="users" data-role-min="admin">Utenti</div>
-        </details>
+            <details class="nav-group nav-group--setup" data-nav-group="setup">
+                <summary class="nav-group-label">Setup</summary>
+                <div class="nav-group-items">
+                    <div class="nav-item" onclick="nav('users')" data-section-id="users" data-requires-perm="users" data-role-min="admin" role="button" tabindex="0">Utenti</div>
+                </div>
+            </details>
+        </div>
 
         <div class="sidebar-footer">
             <div class="sidebar-footer-text"><span class="chrome-product-title">Ads2Wallet</span><br><span class="chrome-byline">by Underdogs Group</span></div>
@@ -3920,12 +3926,8 @@ function updateNavState() {
 
     // Hide Dashboard/Inizio once a brand is selected (Filo HR keeps Inizio as operational home).
     const filoHome = typeof isFiloOperationalHome === 'function' && isFiloOperationalHome();
-    const navGroupDashboard = document.getElementById('navGroupDashboard');
-    if (navGroupDashboard) navGroupDashboard.style.display = (hasBrand && !filoHome) ? 'none' : '';
-    const dashboardLabel = document.getElementById('navLabelDashboard');
     const welcomeItem = document.getElementById('navItemWelcome');
-    if (dashboardLabel && !navGroupDashboard) dashboardLabel.style.display = (hasBrand && !filoHome) ? 'none' : '';
-    if (welcomeItem && !navGroupDashboard) welcomeItem.style.display = (hasBrand && !filoHome) ? 'none' : '';
+    if (welcomeItem) welcomeItem.style.display = (hasBrand && !filoHome) ? 'none' : '';
 
     // Hide all action buttons for viewer role
     document.querySelectorAll('[data-role-min]').forEach(el => {

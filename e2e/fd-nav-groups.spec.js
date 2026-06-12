@@ -13,25 +13,32 @@ async function bootNavGroupsShell(page) {
 <html data-app="filodiretto" data-shell="light">
 <body>
   <aside class="sidebar">
-    <details class="nav-group" data-nav-group="dashboard" open>
-      <summary class="nav-group-label">Dashboard</summary>
-      <div class="nav-item active" data-section-id="welcome" onclick="nav('welcome')">Inizio</div>
+    <div class="nav-item active" data-section-id="welcome" onclick="nav('welcome')" role="button" tabindex="0">Inizio</div>
+    <details class="nav-group" data-nav-group="brand-pass">
+      <summary class="nav-group-label">Brand &amp; Pass</summary>
+      <div class="nav-group-items">
+        <div class="nav-item" data-section-id="brand-identity" onclick="nav('brand-identity')">Identità Brand</div>
+      </div>
     </details>
     <details class="nav-group" data-nav-group="database">
       <summary class="nav-group-label">Database</summary>
-      <div class="nav-item" data-section-id="leads" onclick="nav('leads')">Contatti</div>
-      <div class="nav-item" data-section-id="audiences" onclick="nav('audiences')">Audience</div>
-      <div class="nav-item" data-section-id="imports" onclick="nav('imports')">Import</div>
+      <div class="nav-group-items">
+        <div class="nav-item" data-section-id="leads" onclick="nav('leads')">Contatti</div>
+        <div class="nav-item" data-section-id="audiences" onclick="nav('audiences')">Audience</div>
+      </div>
     </details>
-    <details class="nav-group" data-nav-group="engagement">
-      <summary class="nav-group-label">Engagement</summary>
-      <div class="nav-item" data-section-id="instant-win" onclick="nav('instant-win')">Reward</div>
-      <div class="nav-item" data-section-id="gamification" onclick="nav('gamification')">Challenge</div>
-      <div class="nav-item" data-section-id="loyalty" onclick="nav('loyalty')">Loyalty</div>
+    <details class="nav-group" data-nav-group="comunicazione">
+      <summary class="nav-group-label">Comunicazione</summary>
+      <div class="nav-group-items">
+        <div class="nav-item" data-section-id="instant-win" onclick="nav('instant-win')">Reward</div>
+        <div class="nav-item" data-section-id="gamification" onclick="nav('gamification')">Challenge</div>
+      </div>
     </details>
-    <details class="nav-group" data-nav-group="setup">
+    <details class="nav-group nav-group--setup" data-nav-group="setup">
       <summary class="nav-group-label">Setup</summary>
-      <div class="nav-item" data-section-id="users" onclick="nav('users')">Utenti</div>
+      <div class="nav-group-items">
+        <div class="nav-item" data-section-id="users" onclick="nav('users')">Utenti</div>
+      </div>
     </details>
   </aside>
   <script>
@@ -73,15 +80,10 @@ test.describe('Filo nav groups accordion', () => {
     await expect(page.locator('.nav-item[data-section-id="leads"]')).toHaveAttribute('aria-current', 'page');
   });
 
-  test('setup group stays pinned open without chevron', async ({ page }) => {
+  test('nav items receive stroke icons', async ({ page }) => {
     await bootNavGroupsShell(page);
-    const setup = page.locator('details[data-nav-group="setup"]');
-    await expect(setup).toHaveClass(/nav-group--pinned/);
-    await expect(setup).toHaveAttribute('open', '');
-    const chevronDisplay = await setup.locator('summary').evaluate((el) => {
-      return getComputedStyle(el, '::after').display;
-    });
-    expect(chevronDisplay).toBe('none');
+    await expect(page.locator('.nav-item[data-section-id="welcome"] .nav-icon')).toHaveCount(1);
+    await expect(page.locator('.nav-item[data-section-id="leads"] .nav-icon')).toHaveCount(1);
   });
 
   test('opening one group does not close another', async ({ page }) => {
@@ -89,10 +91,10 @@ test.describe('Filo nav groups accordion', () => {
     await page.evaluate(() => window.nav('leads'));
     const database = page.locator('details[data-nav-group="database"]');
     await expect(database).toHaveAttribute('open', '');
-    const engagement = page.locator('details[data-nav-group="engagement"]');
-    await expect(engagement).not.toHaveAttribute('open', '');
-    await engagement.locator('summary').click();
-    await expect(engagement).toHaveAttribute('open', '');
+    const comunicazione = page.locator('details[data-nav-group="comunicazione"]');
+    await expect(comunicazione).not.toHaveAttribute('open', '');
+    await comunicazione.locator('summary').click();
+    await expect(comunicazione).toHaveAttribute('open', '');
     await expect(database).toHaveAttribute('open', '');
   });
 });

@@ -3,17 +3,11 @@
  */
 export const NAV = [
     {
-        id: 'brand',
-        label: 'Brand',
+        id: 'brand-pass',
+        label: 'Brand & Pass',
         items: [
             { id: 'brand-identity', label: 'Identità Brand' },
-            { id: 'media-library', label: 'Media Library' }
-        ]
-    },
-    {
-        id: 'pass',
-        label: 'Pass',
-        items: [
+            { id: 'media-library', label: 'Media Library' },
             { id: 'templates', label: 'Template Pass' },
             { id: 'passes', label: 'Pass Emessi' }
         ]
@@ -22,16 +16,10 @@ export const NAV = [
         id: 'comunicazione',
         label: 'Comunicazione',
         items: [
-            { id: 'campaigns', label: 'Campagne' },
-            { id: 'push', label: 'Push & Notifiche' }
-        ]
-    },
-    {
-        id: 'engagement',
-        label: 'Engagement',
-        items: [
+            { id: 'push', label: 'Push & Notifiche' },
             { id: 'instant-win', label: 'Reward' },
-            { id: 'gamification', label: 'Challenge' }
+            { id: 'gamification', label: 'Challenge' },
+            { id: 'campaigns', label: 'Campagne' }
         ]
     },
     {
@@ -90,7 +78,9 @@ export function applyNavNaming() {
         section.items.forEach((item) => {
             document.querySelectorAll(`.nav-item[data-section-id="${item.id}"]`).forEach((el) => {
                 if (el.hasAttribute('data-menu-key')) return;
-                el.textContent = item.label;
+                const labelEl = el.querySelector('.nav-label, .a2w-nav-label');
+                if (labelEl) labelEl.textContent = item.label;
+                else if (!el.querySelector('.nav-icon, .a2w-nav-icon')) el.textContent = item.label;
             });
         });
     });

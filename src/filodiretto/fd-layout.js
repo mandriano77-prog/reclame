@@ -7,6 +7,9 @@
   var STORAGE_COLLAPSED = 'fd:sidebar:collapsed';
   var mobileFocusRestore = null;
   var mobileFocusTrapBound = false;
+  var tooltipNode = null;
+  var tooltipTarget = null;
+  var tooltipBound = false;
 
   function isFilo() {
     return document.documentElement.getAttribute('data-app') === 'filodiretto';
@@ -14,6 +17,89 @@
 
   function isDesktop() {
     return window.matchMedia('(min-width: 768px)').matches;
+  }
+
+  function isSidebarCollapsed() {
+    return document.body.classList.contains('fd-sidebar-collapsed');
+  }
+
+  function ensureNavTooltip() {
+    if (tooltipNode) return tooltipNode;
+    tooltipNode = document.createElement('div');
+    tooltipNode.id = 'fdSidebarTooltip';
+    tooltipNode.className = 'fd-sidebar-tooltip';
+    tooltipNode.setAttribute('role', 'tooltip');
+    tooltipNode.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(tooltipNode);
+    return tooltipNode;
+  }
+
+  function hideNavTooltip() {
+    if (!tooltipNode) return;
+    tooltipNode.classList.remove('is-visible');
+    tooltipNode.setAttribute('aria-hidden', 'true');
+    tooltipNode.textContent = '';
+    tooltipTarget = null;
+  }
+
+  function showNavTooltip(target) {
+    if (!isFilo() || !isDesktop() || !isSidebarCollapsed()) {
+      hideNavTooltip();
+      return;
+    }
+    var label =
+      target.getAttribute('data-fd-tooltip') ||
+      target.getAttribute('data-a2w-tooltip-label') ||
+      String(target.getAttribute('aria-label') || '').trim();
+    if (!label) return;
+    var node = ensureNavTooltip();
+    tooltipTarget = target;
+    node.textContent = label;
+    node.setAttribute('aria-hidden', 'false');
+    var rect = target.getBoundingClientRect();
+    node.style.top = Math.round(rect.top + rect.height / 2 - node.offsetHeight / 2) + 'px';
+    node.style.left = Math.round(rect.right + 10) + 'px';
+    node.classList.add('is-visible');
+  }
+
+  function bindCollapsedNavTooltips() {
+    if (tooltipBound) return;
+    tooltipBound = true;
+    document.addEventListener(
+      'mouseover',
+      function (e) {
+        var target = e.target.closest('.sidebar .nav-item');
+        if (!target) return;
+        showNavTooltip(target);
+      },
+      true
+    );
+    document.addEventListener(
+      'mouseout',
+      function (e) {
+        var target = e.target.closest('.sidebar .nav-item');
+        if (!target) return;
+        var related = e.relatedTarget;
+        if (related && target.contains(related)) return;
+        hideNavTooltip();
+      },
+      true
+    );
+    document.addEventListener('focusin', function (e) {
+      var target = e.target.closest('.sidebar .nav-item');
+      if (target) showNavTooltip(target);
+    });
+    document.addEventListener('focusout', function (e) {
+      var target = e.target.closest('.sidebar .nav-item');
+      if (!target) return;
+      requestAnimationFrame(function () {
+        var active = document.activeElement;
+        if (active && active.closest && active.closest('.sidebar .nav-item') === target) return;
+        hideNavTooltip();
+      });
+    });
+    document.addEventListener('scroll', hideNavTooltip, true);
+    window.addEventListener('resize', hideNavTooltip);
   }
 
   function positionFloatingMenu(trigger, panel) {
@@ -54,6 +140,7 @@
       btn.id = 'fdSidebarCollapseBtn';
       btn.className = 'fd-sidebar-collapse-btn';
       btn.textContent = 'Comprimi menu';
+      btn.setAttribute('aria-expanded', 'true');
       footer.appendChild(btn);
       return btn;
     }
@@ -62,23 +149,27 @@
       document.body.classList.toggle('fd-sidebar-collapsed', collapsed);
       document.body.classList.remove('sidebar-open');
       toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-      toggle.setAttribute('aria-label', collapsed ? 'Apri menu laterale' : 'Chiudi menu laterale');
+      toggle.setAttribute('aria-label', collapsed ? 'Espandi menu laterale' : 'Comprimi menu laterale');
       if (sidebarBtn) {
         sidebarBtn.textContent = collapsed ? 'Espandi menu' : 'Comprimi menu';
+        sidebarBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
         sidebarBtn.setAttribute('aria-label', sidebarBtn.textContent);
       }
+      if (!collapsed) hideNavTooltip();
     }
 
     function sidebarFocusables() {
       var sidebar = document.querySelector('.sidebar');
       if (!sidebar) return [];
-      return Array.prototype.slice.call(
-        sidebar.querySelectorAll(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), .nav-item'
+      return Array.prototype.slice
+        .call(
+          sidebar.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), .nav-item'
+          )
         )
-      ).filter(function (el) {
-        return !el.hidden && el.getAttribute('aria-hidden') !== 'true';
-      });
+        .filter(function (el) {
+          return !el.hidden && el.getAttribute('aria-hidden') !== 'true';
+        });
     }
 
     function trapMobileFocus(e) {
@@ -131,6 +222,7 @@
           else toggle.focus();
         });
       }
+      hideNavTooltip();
     }
 
     try {
@@ -192,12 +284,14 @@
         }
       } else {
         document.body.classList.remove('fd-sidebar-collapsed');
+        hideNavTooltip();
       }
     });
   }
 
   function boot() {
     if (!isFilo()) return;
+    bindCollapsedNavTooltips();
     initSidebarToggle();
   }
 

@@ -65,22 +65,6 @@ html[data-app='filodiretto'] .fd-sidebar-collapse-btn:hover {
   background: var(--bg3, #f9fafb);
 }
 
-@media (min-width: 768px) {
-  html[data-app='filodiretto'] body.fd-sidebar-collapsed .layout {
-    grid-template-columns: 0 minmax(0, 1fr);
-  }
-
-  html[data-app='filodiretto'] body.fd-sidebar-collapsed .sidebar {
-    width: 0;
-    min-width: 0;
-    padding: 0;
-    border: none;
-    overflow: hidden;
-    visibility: hidden;
-    pointer-events: none;
-  }
-}
-
 @media (max-width: 767px) {
   html[data-app='filodiretto'] .fd-sidebar-collapse-btn {
     display: none;
