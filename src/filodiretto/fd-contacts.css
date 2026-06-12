@@ -1,6 +1,26 @@
 /**
  * FD-04 — FiloDiretto Contatti: KPI grid responsive, export in card menu.
  */
+html[data-app='filodiretto'] #leads.leads--fd {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .contacts-toolbar,
+html[data-app='filodiretto'] #leads.leads--fd .contacts-card,
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi,
+html[data-app='filodiretto'] #leads.leads--fd .contacts-kpi-strip {
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-app='filodiretto'] #leads.leads--fd .fd-contacts-kpi {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
 html[data-app='filodiretto'] #leads.leads--fd .contacts-card__heading {
   flex-wrap: wrap;
   gap: 8px 12px;
