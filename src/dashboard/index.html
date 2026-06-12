@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260612-rbac';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260612-rbac';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260612-rbac-write';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260612-rbac-write';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -1479,7 +1479,7 @@
             </div>
 
             <!-- PASSES -->
-            <div id="passes" class="section">
+            <div id="passes" class="section" data-rbac-section="passes">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1 class="sec-title page-title" style="margin-bottom:0">Pass Emessi</h1>
                     <div style="display:flex;gap:8px;">
@@ -1494,10 +1494,10 @@
             </div>
 
             <!-- TEMPLATES -->
-            <div id="templates" class="section">
+            <div id="templates" class="section" data-rbac-section="templates">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1 class="sec-title page-title" style="margin-bottom:0">Template Pass</h1>
-                    <button class="btn" onclick="openTemplateModal()">+ Nuovo Template</button>
+                    <button class="btn" data-requires-write="templates" onclick="openTemplateModal()">+ Nuovo Template</button>
                 </div>
                 <div id="templatesList" style="color:var(--text2)">Caricamento...</div>
             </div>
@@ -1730,7 +1730,7 @@
             </div>
 
             <!-- BRAND IDENTITY -->
-            <div id="brand-identity" class="section">
+            <div id="brand-identity" class="section" data-rbac-section="brand-identity">
                 <div class="a2w-bi-page" data-a2w-component="brand-identity-page">
                     <header class="a2w-bi-header">
                         <div class="a2w-bi-header__copy">
@@ -1740,7 +1740,7 @@
                         </div>
                         <div class="a2w-bi-header__actions">
                             <span id="a2wBiSaveStateBadge" class="a2w-bi-state-badge">Salvato</span>
-                            <button type="button" id="a2wBiSaveBtn" class="btn a2w-btn-primary" onclick="saveBrandIdentity()" disabled>Salva modifiche</button>
+                            <button type="button" id="a2wBiSaveBtn" class="btn a2w-btn-primary" data-requires-write="brand-identity" onclick="saveBrandIdentity()" disabled>Salva modifiche</button>
                         </div>
                     </header>
 
@@ -1808,7 +1808,7 @@
                                         <h2>Logo e immagini chiave</h2>
                                         <p>Carica o sostituisci gli asset principali. Per gestione avanzata usa la Media Library.</p>
                                     </div>
-                                    <button type="button" class="a2w-bi-link-btn" id="a2wBiOpenMediaLibraryBtn">Apri Media Library</button>
+                                    <button type="button" class="a2w-bi-link-btn fd-rbac-write" data-requires-write="brand-identity" id="a2wBiOpenMediaLibraryBtn">Apri Media Library</button>
                                 </div>
                                 <div class="a2w-bi-assets-grid" id="a2wBiAssetsGrid"></div>
                             </section>
@@ -1916,12 +1916,12 @@
             </div>
 
             <!-- MEDIA LIBRARY -->
-            <div id="media-library" class="section">
+            <div id="media-library" class="section" data-rbac-section="media-library">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1 class="sec-title page-title" style="margin-bottom:0">Media Library</h1>
                     <div style="display:flex;gap:8px;">
-                        <button class="btn" onclick="openMediaUpload()">+ Carica Immagine</button>
-                        <button class="btn sec" style="color:#f66;border-color:#f66;" onclick="deleteAllMedia()">Svuota tutto</button>
+                        <button class="btn" data-requires-write="media-library" onclick="openMediaUpload()">+ Carica Immagine</button>
+                        <button class="btn sec fd-rbac-write" data-requires-write="media-library" style="color:#f66;border-color:#f66;" onclick="deleteAllMedia()">Svuota tutto</button>
                     </div>
                 </div>
                 <div class="card" style="margin-bottom:14px;">
@@ -1961,7 +1961,7 @@
             </div>
 
             <!-- MEDIA UPLOAD MODAL -->
-            <div id="mediaUploadModal" class="modal">
+            <div id="mediaUploadModal" class="modal" data-rbac-section="media-library">
                 <div class="modal-content" style="max-width:480px;">
                     <button class="modal-close" onclick="closeModal('mediaUploadModal')">&times;</button>
                     <div class="modal-header">Carica Immagine</div>
@@ -2259,7 +2259,7 @@
             </div>
 
             <!-- INSTANT WIN -->
-            <div id="instant-win" class="section">
+            <div id="instant-win" class="section" data-rbac-section="instant-win">
                 <h1 class="sec-title page-title">Reward</h1>
                 <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne Reward per premiare i tuoi dipendenti con riconoscimenti immediati: bonus, voucher welfare, gift card e premi a sorpresa.</p>
 
@@ -2272,7 +2272,7 @@
 
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                     <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Reward</div>
-                    <button class="btn" onclick="openIwModal()">+ Nuova Campagna</button>
+                    <button class="btn" data-requires-write="instant-win" onclick="openIwModal()">+ Nuova Campagna</button>
                 </div>
                 <table class="table" id="iwTable">
                     <thead><tr><th>NOME</th><th>TIPO</th><th>PREMIO</th><th>PROBABILITÀ</th><th>ASSEGNATI</th><th>RISCATTATI</th><th>STATO</th><th>AZIONI</th></tr></thead>
@@ -2314,7 +2314,7 @@
             </div>
 
             <!-- GAMIFICATION -->
-            <div id="gamification" class="section">
+            <div id="gamification" class="section" data-rbac-section="gamification">
                 <h1 class="sec-title page-title">Challenge</h1>
                 <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea sfide skill-based per i tuoi team: Quiz formativi, Memory Match, Puzzle e leaderboard a punti.</p>
 
@@ -2327,7 +2327,7 @@
 
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                     <div class="sec-title" style="font-size:18px;margin-bottom:0;">Campagne Challenge</div>
-                    <button class="btn" onclick="openGamModal()">+ Nuova Campagna</button>
+                    <button class="btn" data-requires-write="gamification" onclick="openGamModal()">+ Nuova Campagna</button>
                 </div>
                 <table class="table" id="gamTable">
                     <thead><tr><th>NOME</th><th>TIPO</th><th>ORO</th><th>ARGENTO</th><th>BRONZO</th><th>PARTECIPANTI</th><th>STATO</th><th>AZIONI</th></tr></thead>
@@ -2611,10 +2611,10 @@
             </div>
 
             <!-- AUDIENCES -->
-                        <div id="audiences" class="section">
+                        <div id="audiences" class="section" data-rbac-section="audiences">
                 <h1 class="sec-title page-title">Audience</h1>
                 <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">Segmentazione possessori pass, statistiche di apertura e click sul retro, audience salvate. Per segmenti in linguaggio naturale usa <strong>W.AI</strong> (pulsante in basso a destra).</p>
-                <button type="button" class="btn sec" style="margin-bottom:16px;" onclick="openWaiForAudience()">Apri W.AI · segmenta audience</button>
+                <button type="button" class="btn sec fd-rbac-write" data-requires-write="audiences" style="margin-bottom:16px;" onclick="openWaiForAudience()">Apri W.AI · segmenta audience</button>
 
                 <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
                     <button type="button" class="aud-subtab active" id="audTab_overview" onclick="switchAudienceTab('overview')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid var(--teal);margin-bottom:-2px;color:var(--teal);font-weight:700;font-size:13px;cursor:pointer;">Panoramica</button>
@@ -2659,13 +2659,13 @@
                 <div id="audPanel_saved" class="aud-panel" style="display:none;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                         <div class="sec-title" style="font-size:16px;margin:0;">Le tue audience</div>
-                        <button class="btn" onclick="openAudienceEditor()">+ Nuova audience</button>
+                        <button class="btn" data-requires-write="audiences" onclick="openAudienceEditor()">+ Nuova audience</button>
                     </div>
                     <div id="audiencesList" style="color:var(--text2);">Caricamento...</div>
                 </div>
             </div>
 
-            <div id="audienceEditorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:16px;">
+            <div id="audienceEditorModal" data-rbac-section="audiences" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:16px;">
                 <div class="card" style="max-width:560px;width:100%;max-height:90vh;overflow:auto;margin:0;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                         <div class="sec-title" style="margin:0;font-size:18px;" id="audienceEditorTitle">Nuova audience</div>
@@ -2711,7 +2711,7 @@
                         <div class="form-group" style="flex:1;"><label class="form-label">Min count</label><input type="number" id="audBehaviorMinCount" value="1" min="1"></div>
                     </div>
                     <div style="background:var(--bg2);padding:12px;border-radius:8px;margin:12px 0;">Anteprima: <strong id="audPreviewCount">—</strong></div>
-                    <div style="display:flex;gap:8px;"><button class="btn sec" onclick="previewAudienceRules()">Anteprima</button><button class="btn" onclick="saveAudience()">Salva</button></div>
+                    <div style="display:flex;gap:8px;"><button class="btn sec" data-allow-readonly="true" onclick="previewAudienceRules()">Anteprima</button><button class="btn" data-requires-write="audiences" onclick="saveAudience()">Salva</button></div>
                 </div>
             </div>
 
@@ -2846,7 +2846,7 @@
 </div>
 
 <!-- Template Modal -->
-<div id="templateModal" class="modal">
+<div id="templateModal" class="modal" data-rbac-section="templates">
     <div class="modal-content" style="max-width:920px;width:96%;">
         <button class="modal-close" onclick="closeModal('templateModal')">&times;</button>
         <div class="modal-header" id="templateModalTitle">Nuovo Template</div>
@@ -5419,6 +5419,7 @@ async function loadPasses(resetPage = false) {
     updatePassBulkBar();
     syncPassSelectAllCheckbox();
     persistPassFilters();
+    if (typeof fdRbacHook === 'function') fdRbacHook('passes');
     } catch (e) {
         console.error('loadPasses', e);
         if (el) el.innerHTML = `<p style="color:var(--danger);padding:16px;">${esc(e.message || 'Errore caricamento pass')}</p>`;
@@ -5670,7 +5671,7 @@ async function loadTemplates() {
     if (!brandId) return;
     const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('templatesList');
-    if (!templates.length) { el.innerHTML = renderEmptyState({ title: 'Nessun template', description: 'Crea un template riutilizzabile per i tuoi pass.', ctaLabel: 'Nuovo template', ctaOnclick: 'openTemplateModal()', icon: 'inbox' }); return; }
+    if (!templates.length) { el.innerHTML = renderEmptyState({ title: 'Nessun template', description: 'Crea un template riutilizzabile per i tuoi pass.', ctaLabel: 'Nuovo template', ctaOnclick: 'openTemplateModal()', icon: 'inbox' }); if (typeof fdRbacHook === 'function') fdRbacHook('templates'); return; }
     el.innerHTML = templates.map(t => `
         <div class="card">
             <div class="card-row">
@@ -5686,6 +5687,7 @@ async function loadTemplates() {
             </div>
         </div>
     `).join('');
+    if (typeof fdRbacHook === 'function') fdRbacHook('templates');
 }
 
 const EMPLOYEE_PASS_TYPE = 'employee_pass';
@@ -7433,6 +7435,7 @@ async function loadInstantWin() {
         console.error('loadInstantWin error:', e);
         document.getElementById('iwTable').querySelector('tbody').innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Errore caricamento</td></tr>';
     }
+    if (typeof fdRbacHook === 'function') fdRbacHook('instant-win');
 }
 
 function openIwModal(campaign) {
@@ -7771,6 +7774,7 @@ async function loadAudiences() {
         const list = listRes.ok ? await listRes.json() : [];
         audiencesCache = list;
         renderAudiencesList(list);
+        if (typeof fdRbacHook === 'function') fdRbacHook('audiences');
     } catch (e) {
         console.error('loadAudiences', e);
         if (listEl) {
@@ -7785,6 +7789,7 @@ function renderAudiencesList(list) {
     const el = document.getElementById('audiencesList');
     if (!list.length) {
         el.innerHTML = renderEmptyState({ title: 'Nessuna audience', description: 'Crea un segmento con i filtri sui possessori del pass.', ctaLabel: 'Nuova audience', ctaOnclick: 'openAudienceEditor()', icon: 'users' });
+        if (typeof fdRbacHook === 'function') fdRbacHook('audiences');
         return;
     }
     el.innerHTML = `<table class="table"><thead><tr><th>Nome</th><th>Membri</th><th>Aggiornata</th><th></th></tr></thead><tbody>${
@@ -7800,6 +7805,7 @@ function renderAudiencesList(list) {
             </td>
         </tr>`).join('')
     }</tbody></table>`;
+    if (typeof fdRbacHook === 'function') fdRbacHook('audiences');
 }
 
 function openAudienceEditor(id) {
@@ -9677,6 +9683,7 @@ async function loadGamification() {
             : (typeof renderTableEmptyState === 'function' ? renderTableEmptyState(8, gamEmptyOpts) : '');
         if (!campaigns.length) {
             tbody.innerHTML = gamEmptyRow;
+            if (typeof fdRbacHook === 'function') fdRbacHook('gamification');
             return;
         }
         const gameLabels = { quiz: 'Quiz', memory: 'Memory Match', puzzle: 'Puzzle' };
@@ -9699,6 +9706,7 @@ async function loadGamification() {
         console.error('loadGamification error:', e);
         document.getElementById('gamTable').querySelector('tbody').innerHTML = '<tr><td colspan="8" style="color:var(--text2);text-align:center;">Errore caricamento</td></tr>';
     }
+    if (typeof fdRbacHook === 'function') fdRbacHook('gamification');
 }
 
 function openGamModal(editId) {
@@ -11532,6 +11540,7 @@ async function loadBrandIdentity() {
         brandIdentityState.baseline = a2wBiSerializeState(a2wBiCollectFormData(), brandIdentityState.selectedAssets);
         brandIdentityState.dirty = false;
         a2wBiUpdateSaveButton(0);
+        if (typeof fdRbacHook === 'function') fdRbacHook('brand-identity');
         return;
     }
     const res = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
@@ -11575,6 +11584,7 @@ async function loadBrandIdentity() {
         a2wBiScheduleSlugAvailabilityCheck();
         a2wBiUpdateSaveButton(0);
     }
+    if (typeof fdRbacHook === 'function') fdRbacHook('brand-identity');
 }
 
 async function saveBrandIdentity() {
@@ -11869,6 +11879,7 @@ async function loadMediaLibrary() {
         if (thumbGrid) thumbGrid.innerHTML = errMsg;
         if (bgGrid) bgGrid.innerHTML = errMsg;
     }
+    if (typeof fdRbacHook === 'function') fdRbacHook('media-library');
 }
 
 function onMediaUploadTypeChange() {
