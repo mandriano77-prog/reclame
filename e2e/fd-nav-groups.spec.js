@@ -86,6 +86,21 @@ test.describe('Filo nav groups accordion', () => {
     await expect(page.locator('.nav-item[data-section-id="leads"] .nav-icon')).toHaveCount(1);
   });
 
+  test('nav item labels are not duplicated as text nodes', async ({ page }) => {
+    await bootNavGroupsShell(page);
+    const duplicateCount = await page.evaluate(() => {
+      const item = document.querySelector('.nav-item[data-section-id="brand-identity"]');
+      if (!item) return -1;
+      let textNodes = 0;
+      item.childNodes.forEach((n) => {
+        if (n.nodeType === Node.TEXT_NODE && String(n.textContent || '').trim()) textNodes += 1;
+      });
+      const labels = item.querySelectorAll('.nav-label').length;
+      return textNodes + labels;
+    });
+    expect(duplicateCount).toBe(1);
+  });
+
   test('opening one group does not close another', async ({ page }) => {
     await bootNavGroupsShell(page);
     await page.evaluate(() => window.nav('leads'));

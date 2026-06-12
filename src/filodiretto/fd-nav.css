@@ -89,10 +89,20 @@ html[data-app='filodiretto'] .nav-item.active .nav-icon {
   opacity: 1;
 }
 
-html[data-app='filodiretto'] .nav-label {
+html[data-app='filodiretto'] .nav-item .nav-label {
   flex: 1;
   min-width: 0;
   line-height: 1.25;
+  font-size: var(--text-sm, 14px);
+  font-weight: inherit;
+  color: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  opacity: 1;
 }
 
 html[data-app='filodiretto'] .nav-item.active {
@@ -183,17 +193,10 @@ html[data-app='filodiretto'] .fd-sidebar-tooltip.is-visible {
     opacity: 0.15;
   }
 
-  html[data-app='filodiretto'] body.fd-sidebar-collapsed .nav-label,
+  html[data-app='filodiretto'] body.fd-sidebar-collapsed .nav-item .nav-label,
+  html[data-app='filodiretto'] body.fd-sidebar-collapsed .nav-item .a2w-nav-label,
   html[data-app='filodiretto'] body.fd-sidebar-collapsed .nav-badge {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+    display: none;
   }
 
   html[data-app='filodiretto'] body.fd-sidebar-collapsed .nav-group-label {

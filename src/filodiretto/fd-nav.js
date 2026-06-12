@@ -92,6 +92,12 @@
     return String(item.getAttribute('data-menu-default') || item.textContent || '').trim();
   }
 
+  function removeNavItemTextNodes(item) {
+    Array.prototype.slice.call(item.childNodes).forEach(function (n) {
+      if (n.nodeType === Node.TEXT_NODE) item.removeChild(n);
+    });
+  }
+
   function injectNavIcons() {
     if (!isFiloNavApp()) return;
     document.querySelectorAll('.sidebar .nav-item').forEach(function (item) {
@@ -115,27 +121,27 @@
       });
 
       var labelText = resolveNavItemLabel(item);
-      var iconEl = item.querySelector('.nav-icon, .a2w-nav-icon');
-      if (!iconEl) {
-        item.insertAdjacentHTML('afterbegin', navIconSvg(paths));
-      }
 
-      var labelSpan = item.querySelector('.nav-label, .a2w-nav-label');
-      if (!labelSpan) {
-        labelSpan = document.createElement('span');
-        labelSpan.className = 'nav-label';
-        var iconRef = item.querySelector('.nav-icon, .a2w-nav-icon');
-        if (iconRef) iconRef.insertAdjacentElement('afterend', labelSpan);
-        else item.appendChild(labelSpan);
-      } else if (!labelSpan.classList.contains('nav-label')) {
-        labelSpan.classList.add('nav-label');
-      }
-      if (labelText) labelSpan.textContent = labelText;
+      item.querySelectorAll('.nav-icon, .a2w-nav-icon, .nav-label, .a2w-nav-label').forEach(function (el) {
+        el.remove();
+      });
+      removeNavItemTextNodes(item);
+
+      item.insertAdjacentHTML('afterbegin', navIconSvg(paths));
+
+      var labelSpan = document.createElement('span');
+      labelSpan.className = 'nav-label';
+      labelSpan.textContent = labelText;
+      var iconRef = item.querySelector('.nav-icon');
+      if (iconRef) iconRef.insertAdjacentElement('afterend', labelSpan);
+      else item.appendChild(labelSpan);
 
       preserved.forEach(function (el) {
         item.appendChild(el);
       });
       if (badge && !item.contains(badge)) item.appendChild(badge);
+
+      removeNavItemTextNodes(item);
 
       if (labelText) {
         item.setAttribute('data-fd-tooltip', labelText);
