@@ -144,6 +144,7 @@
       window.loadMediaLibrary = async function () {
         await origMedia.apply(this, arguments);
         if (isFiloDestructiveApp()) enhanceMediaLibraryDom();
+        if (typeof window.fdRbacHook === 'function') window.fdRbacHook('media-library');
       };
     }
 
@@ -152,6 +153,7 @@
       window.a2wBiRenderAssetsGrid = function () {
         origBiGrid.apply(this, arguments);
         if (isFiloDestructiveApp()) enhanceBrandIdentityAssetButtons();
+        if (typeof window.fdRbacHook === 'function') window.fdRbacHook('brand-identity');
       };
     }
   }

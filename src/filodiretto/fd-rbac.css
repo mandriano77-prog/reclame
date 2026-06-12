@@ -9,20 +9,40 @@ html[data-app='filodiretto'] body.role-sender.fd-rbac-readonly .btn:not(.sec):no
 }
 
 html[data-app='filodiretto'] body.fd-rbac-readonly .btn.danger,
-html[data-app='filodiretto'] body.role-readonly .btn.danger {
+html[data-app='filodiretto'] body.role-readonly .btn.danger,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .btn.danger,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-rbac-gated,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-rbac-write,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly [data-requires-write] {
   display: none !important;
 }
 
 html[data-app='filodiretto'] body.fd-rbac-readonly input:not([type='search']):not([readonly]),
 html[data-app='filodiretto'] body.fd-rbac-readonly select:not(#brandSelector),
-html[data-app='filodiretto'] body.fd-rbac-readonly textarea {
+html[data-app='filodiretto'] body.fd-rbac-readonly textarea,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly input:not([type='search']):not([readonly]),
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly select:not(#brandSelector),
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly textarea {
   pointer-events: none;
   opacity: 0.65;
 }
 
 html[data-app='filodiretto'] body.fd-rbac-readonly .fd-rbac-write,
-html[data-app='filodiretto'] body.role-readonly .fd-rbac-write {
+html[data-app='filodiretto'] body.role-readonly .fd-rbac-write,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .pass-action-btn--danger,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .card-actions .btn {
   display: none !important;
+}
+
+html[data-app='filodiretto'] .fd-rbac-readonly-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--fd-border, var(--border));
+  background: color-mix(in srgb, var(--teal, #0d9488) 8%, var(--bg3, #f9fafb));
+  color: var(--text2);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 html[data-app='filodiretto'] .fd-rbac-denied {

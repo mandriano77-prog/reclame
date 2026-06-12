@@ -726,6 +726,7 @@
         renderSectionAssets('background', rows.filter(function (x) { return x.type === 'background'; }));
         applyGlobalSearchFilter();
         syncBulkUi();
+        if (typeof window.fdRbacHook === 'function') window.fdRbacHook('media-library');
       } catch (e) {
         console.error('fd-media-library load error:', e);
         document.querySelectorAll('#mediaLogoBox, #mediaWalletIconGrid, #mediaStripGrid, #mediaThumbnailGrid, #mediaBackgroundGrid').forEach(function (node) {

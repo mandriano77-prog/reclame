@@ -155,6 +155,7 @@
     if (!host) return;
     var obs = new MutationObserver(function () {
       enhanceDeleteTrigger();
+      if (typeof window.fdRbacHook === 'function') window.fdRbacHook('brand-identity');
     });
     obs.observe(host, { childList: true, subtree: true });
     enhanceDeleteTrigger();
