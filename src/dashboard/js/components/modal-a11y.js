@@ -1,11 +1,11 @@
 /**
- * Legacy `.modal` / `.modal-content` accessibility — dialog role, focus trap, Escape, focus restore.
+ * Legacy `.modal` / `.modal-content` — dialog semantics, focus trap, unified close + focus restore.
  */
 (function (global) {
   'use strict';
 
   var modalState = Object.create(null);
-  var lastModalTrigger = null;
+  var pendingOpeners = Object.create(null);
 
   function getDialogRoot(modal) {
     if (!modal) return null;
@@ -40,22 +40,95 @@
     dialog.setAttribute('aria-label', 'Finestra di dialogo');
   }
 
-  function resolveOpener(modal) {
-    var opener = lastModalTrigger || document.activeElement;
-    if (!opener || opener === document.body || opener === document.documentElement) {
-      opener = modal && modal.__modalOpener;
-    }
-    if (opener && (opener === modal || (modal && modal.contains(opener)))) {
-      opener = modal.__modalOpener || lastModalTrigger;
-    }
-    if (opener && !document.contains(opener)) opener = null;
-    return opener;
+  function isValidTrigger(el) {
+    return !!(el && el !== document.body && el !== document.documentElement && typeof el.focus === 'function');
   }
 
-  function closeLegacyModal(modal) {
+  function buildRestoreSelector(el) {
+    if (!el || el.nodeType !== 1) return '';
+    if (el.id) return '#' + CSS.escape(el.id);
+    var onclick = el.getAttribute('onclick');
+    if (onclick) {
+      return 'button[onclick="' + onclick.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"],' +
+        '[onclick="' + onclick.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
+    }
+    var dataId = el.getAttribute('data-focus-restore');
+    if (dataId) return '[data-focus-restore="' + dataId.replace(/"/g, '\\"') + '"]';
+    return '';
+  }
+
+  function storeOpener(modalId, trigger) {
+    if (!modalId) return;
+    var el = trigger || global.__modalLastTrigger || document.activeElement;
+    if (!isValidTrigger(el) || el.closest && el.closest('.modal')) {
+      el = global.__modalLastTrigger;
+    }
+    if (!isValidTrigger(el)) return;
+    pendingOpeners[modalId] = {
+      el: el,
+      selector: buildRestoreSelector(el)
+    };
+  }
+
+  function restoreFocus(stored) {
+    if (!stored) return;
+    var target = stored.el;
+    if (target && document.contains(target)) {
+      target.focus();
+      return;
+    }
+    if (stored.selector) {
+      var parts = stored.selector.split(',');
+      for (var i = 0; i < parts.length; i++) {
+        var candidate = document.querySelector(parts[i].trim());
+        if (candidate && isValidTrigger(candidate)) {
+          candidate.focus();
+          return;
+        }
+      }
+    }
+  }
+
+  function teardownModal(modal) {
+    if (!modal || !modal.id) return null;
+    var state = modalState[modal.id];
+    if (!state) return null;
+
+    if (state.onDocKeydown) document.removeEventListener('keydown', state.onDocKeydown);
+    if (state.onKeydown && state.dialog) state.dialog.removeEventListener('keydown', state.onKeydown);
+    if (state.onBackdropClick) modal.removeEventListener('click', state.onBackdropClick);
+
+    modal.setAttribute('aria-hidden', 'true');
+    if (state.dialog) state.dialog.setAttribute('aria-hidden', 'true');
+
+    delete modalState[modal.id];
+    return state.opener;
+  }
+
+  function finishModalClose(modal) {
     if (!modal || !modal.id) return;
-    if (typeof global.closeModal === 'function') global.closeModal(modal.id);
-    else modal.classList.remove('active');
+    var opener = teardownModal(modal);
+    if (!document.querySelector('.modal.active')) {
+      document.body.classList.remove('modal-open');
+    }
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        restoreFocus(opener);
+      });
+    });
+  }
+
+  function legacyCloseModalDom(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    if (el.classList.contains('active')) el.classList.remove('active');
+    return el;
+  }
+
+  function closeModal(id) {
+    var el = legacyCloseModalDom(id);
+    if (el) finishModalClose(el);
+    else if (!document.querySelector('.modal.active')) document.body.classList.remove('modal-open');
   }
 
   function onModalOpen(modal) {
@@ -68,8 +141,12 @@
     dialog.setAttribute('aria-hidden', 'false');
     if (!dialog.hasAttribute('tabindex')) dialog.setAttribute('tabindex', '-1');
 
-    var opener = resolveOpener(modal);
-    modal.__modalOpener = opener;
+    var pending = pendingOpeners[modal.id];
+    delete pendingOpeners[modal.id];
+    var opener = pending || (modal.__modalOpener ? { el: modal.__modalOpener, selector: buildRestoreSelector(modal.__modalOpener) } : null);
+    if (!opener && isValidTrigger(global.__modalLastTrigger)) {
+      opener = { el: global.__modalLastTrigger, selector: buildRestoreSelector(global.__modalLastTrigger) };
+    }
 
     var state = {
       dialog: dialog,
@@ -87,9 +164,10 @@
     });
 
     state.onDocKeydown = function (e) {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || !modal.classList.contains('active')) return;
       e.preventDefault();
-      closeLegacyModal(modal);
+      e.stopPropagation();
+      closeModal(modal.id);
     };
     document.addEventListener('keydown', state.onDocKeydown);
 
@@ -115,31 +193,14 @@
 
     state.onBackdropClick = function (e) {
       if (e.target !== modal) return;
-      closeLegacyModal(modal);
+      closeModal(modal.id);
     };
     modal.addEventListener('click', state.onBackdropClick);
   }
 
-  function onModalClose(modal) {
-    if (!modal || !modal.id) return;
-    var state = modalState[modal.id];
-    if (!state) return;
-
-    if (state.onDocKeydown) document.removeEventListener('keydown', state.onDocKeydown);
-    if (state.onKeydown && state.dialog) state.dialog.removeEventListener('keydown', state.onKeydown);
-    if (state.onBackdropClick) modal.removeEventListener('click', state.onBackdropClick);
-
-    modal.setAttribute('aria-hidden', 'true');
-    if (state.dialog) state.dialog.setAttribute('aria-hidden', 'true');
-
-    var opener = state.opener || modal.__modalOpener;
-    if (opener && typeof opener.focus === 'function' && document.contains(opener)) {
-      requestAnimationFrame(function () { opener.focus(); });
-    }
-
-    delete modalState[modal.id];
-    delete modal.__modalOpener;
-    lastModalTrigger = null;
+  function onModalCloseFromObserver(modal) {
+    if (!modal || !modal.id || !modalState[modal.id]) return;
+    finishModalClose(modal);
   }
 
   function bindModal(modal) {
@@ -160,31 +221,38 @@
         document.body.classList.add('modal-open');
         onModalOpen(modal);
       } else {
-        onModalClose(modal);
-        if (!document.querySelector('.modal.active')) document.body.classList.remove('modal-open');
+        onModalCloseFromObserver(modal);
       }
     });
     observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
     if (modal.classList.contains('active')) onModalOpen(modal);
   }
 
+  function prepareModalOpen(modalId, trigger) {
+    storeOpener(modalId, trigger);
+  }
+
+  function openLegacyModal(modalId, trigger) {
+    storeOpener(modalId, trigger);
+    var modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.add('active');
+    document.body.classList.add('modal-open');
+  }
+
   function initLegacyModalA11y() {
-    document.addEventListener('mousedown', function (e) {
+    document.addEventListener('pointerdown', function (e) {
       var trigger = e.target.closest('button, [role="button"], a, [onclick]');
-      if (trigger && !trigger.closest('.modal-content')) lastModalTrigger = trigger;
+      if (trigger && !trigger.closest('.modal-content')) {
+        global.__modalLastTrigger = trigger;
+      }
     }, true);
 
     document.querySelectorAll('.modal').forEach(bindModal);
 
-    if (typeof global.closeModal === 'function' && !global.__modalA11yClosePatched) {
-      global.__modalA11yClosePatched = true;
-      var origClose = global.closeModal;
-      global.closeModal = function (id) {
-        var el = document.getElementById(id);
-        origClose.apply(this, arguments);
-        if (el) onModalClose(el);
-      };
-    }
+    global.prepareModalOpen = prepareModalOpen;
+    global.openLegacyModal = openLegacyModal;
+    global.closeModal = closeModal;
   }
 
   global.initLegacyModalA11y = initLegacyModalA11y;

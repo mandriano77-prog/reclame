@@ -5800,6 +5800,7 @@ function syncPushPassLinkLabel() {
 }
 
 async function openTemplateModal() {
+    if (typeof prepareModalOpen === 'function') prepareModalOpen('templateModal');
     nav('templates');
     togglePassBackEditorMode();
     document.getElementById('templateEditId').value = '';
@@ -5823,6 +5824,7 @@ async function openTemplateModal() {
 }
 
 async function editTemplate(id) {
+    if (typeof prepareModalOpen === 'function') prepareModalOpen('templateModal');
     nav('templates');
     togglePassBackEditorMode();
     const res = await fetch(`${API}/templates/${id}`);
