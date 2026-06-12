@@ -40,7 +40,7 @@
     if (!host) return;
 
     host.innerHTML = '';
-    host.classList.add('contacts-kpi-strip');
+    host.classList.add('contacts-kpi-strip', 'fd-contacts-kpi');
 
     const clusterAnagrafica = document.createElement('div');
     clusterAnagrafica.className = 'contacts-kpi-strip__cluster';

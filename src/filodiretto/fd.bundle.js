@@ -2125,10 +2125,11 @@
       : (filteredLen ? 'Esporta contatti in CSV' : 'Nessun risultato con i filtri attivi');
   }
   function enhanceFiloKpiStrip() {
-    if (!isFiloContactsApp() || !isHrLeadsActive()) return;
+    if (!isFiloContactsApp()) return;
     var host = document.getElementById('leadsStats');
     if (!host) return;
     host.classList.add('fd-contacts-kpi');
+    if (!isHrLeadsActive()) return;
     host.querySelectorAll('.contacts-kpi-strip__item').forEach(function (btn) {
       var key = btn.dataset.kpiKey;
       if (!key || btn.classList.contains('fd-contacts-kpi-item')) return;
