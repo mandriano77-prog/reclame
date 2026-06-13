@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-delete-plural';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-delete-plural';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-delete-confirm-fix';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-delete-confirm-fix';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -11402,13 +11402,20 @@ function a2wBiToggleDeleteDialog(open) {
 async function a2wBiOpenDeleteDialog() {
     const data = a2wBiCollectFormData();
     const counts = await a2wBiBuildDeleteCounts();
-    const token = data.name || 'Brand';
+    const token = (typeof window.fdResolveBrandConfirmName === 'function' && window.fdResolveBrandConfirmName())
+        || data.name
+        || (currentBrandName && String(currentBrandName).trim())
+        || 'Brand';
     const tokenNode = a2wBiField('a2wDeleteBrandNameToken');
     const countsNode = a2wBiField('a2wDeleteBrandCounts');
     const input = a2wBiField('a2wDeleteBrandConfirmInput');
     const confirmBtn = a2wBiField('a2wDeleteBrandConfirmBtn');
     if (tokenNode) tokenNode.textContent = `"${token}"`;
-    if (countsNode) countsNode.textContent = `${counts.passes} pass, ${counts.contatti} contatti, ${counts.campagne} campagne`;
+    if (countsNode) {
+        countsNode.textContent = typeof window.fdFormatDeleteBrandCounts === 'function'
+            ? window.fdFormatDeleteBrandCounts(counts)
+            : `${counts.passes} pass, ${counts.contatti} contatti, ${counts.campagne} campagne`;
+    }
     if (input) input.value = '';
     if (confirmBtn) confirmBtn.disabled = true;
     a2wBiToggleDeleteDialog(true);
@@ -11548,7 +11555,9 @@ function a2wBiEnsureUiBound() {
     if (cancelBtn) cancelBtn.addEventListener('click', () => a2wBiToggleDeleteDialog(false));
     if (confirmInput && confirmBtn) {
         confirmInput.addEventListener('input', () => {
-            const target = a2wBiCollectFormData().name || '';
+            const target = (typeof window.fdResolveBrandConfirmName === 'function' && window.fdResolveBrandConfirmName())
+                || a2wBiCollectFormData().name
+                || '';
             confirmBtn.disabled = confirmInput.value !== target;
         });
     }
@@ -11853,18 +11862,24 @@ async function deleteBrandAction() {
         }
         return;
     }
-    const data = a2wBiCollectFormData();
     const counts = await a2wBiBuildDeleteCounts();
-    const confirmName = data.name || 'Brand';
+    const confirmName = (typeof window.fdResolveBrandConfirmName === 'function' && window.fdResolveBrandConfirmName())
+        || (a2wBiCollectFormData().name || '').trim()
+        || (currentBrandName && String(currentBrandName).trim())
+        || '';
+    const impactItems = typeof window.fdBuildDeleteBrandImpactItems === 'function'
+        ? window.fdBuildDeleteBrandImpactItems(counts)
+        : [
+            `${counts.passes} pass emessi`,
+            `${counts.contatti} contatti`,
+            `${counts.campagne} campagne`
+        ].filter((_, i) => [counts.passes, counts.contatti, counts.campagne][i] > 0);
     if (window.A2W && A2W.UI && typeof A2W.UI.openConfirmDialog === 'function') {
+        if (!confirmName) return toast('Nome brand non disponibile');
         const ok = await A2W.UI.openConfirmDialog({
             title: 'Elimina brand',
             description: 'Questa azione è irreversibile. Verranno eliminati tutti i dati collegati al brand.',
-            impactedItems: [
-                `${counts.passes} pass emessi`,
-                `${counts.contatti} contatti`,
-                `${counts.campagne} campagne`
-            ],
+            impactedItems: impactItems,
             requireTyping: true,
             confirmText: confirmName,
             confirmLabel: 'Elimina definitivamente'
