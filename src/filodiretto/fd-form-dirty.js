@@ -75,6 +75,7 @@
 
   function syncTemplateDirtyState() {
     if (!isFiloFormDirtyApp() || !isHrContext()) return;
+    if (isSectionReadOnly()) return;
     var ui = ensureTemplateDirtyUi();
     if (!ui) return;
     var dirty = serializeTemplateModalState() !== (window.__fdTplBaseline || '');
@@ -163,8 +164,20 @@
     return bar;
   }
 
+  function isSectionReadOnly() {
+    if (window.FdRbac && typeof window.FdRbac.isActiveSectionReadOnly === 'function') {
+      return window.FdRbac.isActiveSectionReadOnly();
+    }
+    return document.body && document.body.classList.contains('fd-rbac-readonly');
+  }
+
   function syncBrandIdentityStickyBar() {
     if (!isFiloFormDirtyApp()) return;
+    if (isSectionReadOnly()) {
+      var barReadonly = document.getElementById('fdBiStickyBar');
+      if (barReadonly) barReadonly.hidden = true;
+      return;
+    }
     var bar = document.getElementById('fdBiStickyBar') || ensureBrandIdentityStickyBar();
     if (!bar) return;
     var state = window.brandIdentityState || {};

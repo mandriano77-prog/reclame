@@ -4136,6 +4136,7 @@
   }
   function syncTemplateDirtyState() {
     if (!isFiloFormDirtyApp() || !isHrContext()) return;
+    if (isSectionReadOnly()) return;
     var ui = ensureTemplateDirtyUi();
     if (!ui) return;
     var dirty = serializeTemplateModalState() !== (window.__fdTplBaseline || '');
@@ -4215,8 +4216,19 @@
     });
     return bar;
   }
+  function isSectionReadOnly() {
+    if (window.FdRbac && typeof window.FdRbac.isActiveSectionReadOnly === 'function') {
+      return window.FdRbac.isActiveSectionReadOnly();
+    }
+    return document.body && document.body.classList.contains('fd-rbac-readonly');
+  }
   function syncBrandIdentityStickyBar() {
     if (!isFiloFormDirtyApp()) return;
+    if (isSectionReadOnly()) {
+      var barReadonly = document.getElementById('fdBiStickyBar');
+      if (barReadonly) barReadonly.hidden = true;
+      return;
+    }
     var bar = document.getElementById('fdBiStickyBar') || ensureBrandIdentityStickyBar();
     if (!bar) return;
     var state = window.brandIdentityState || {};
@@ -4799,14 +4811,18 @@
     sender: 'push',
     reporter: 'analytics'
   };
+  var FORM_FIELD_QUERY = 'input:not([type="search"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea';
   var WRITE_ACTION_SELECTORS = [
     '[data-requires-write]',
+    '[data-fd-danger-btn]',
     '.fd-rbac-write',
     '.btn:not(.sec):not([data-allow-readonly])',
     '.btn.danger',
     '.btn.sec.danger',
     '.btn.sec.fd-rbac-write',
     '.a2w-bi-link-btn',
+    '.a2w-ui-btn-destructive',
+    '.fd-btn-danger-outline',
     '.a2w-bi-danger-zone button',
     '#a2wBiDangerActionHost button',
     '.card-actions .btn',
@@ -4916,7 +4932,19 @@
     if (host) return host.getAttribute('data-rbac-section');
     return sectionId;
   }
+  function isExplicitWriteControl(el) {
+    if (!el) return false;
+    if (el.closest('#a2wBiDangerActionHost, .a2w-bi-danger-zone, .fd-danger-zone')) return true;
+    if (el.getAttribute('data-fd-danger-btn')) return true;
+    if (el.classList.contains('fd-btn-danger-outline')) return true;
+    if (el.classList.contains('a2w-ui-btn-destructive')) return true;
+    if (el.classList.contains('fd-rbac-write')) return true;
+    if (el.hasAttribute('data-requires-write')) return true;
+    if (el.closest('.card-actions')) return true;
+    return false;
+  }
   function isReadonlySafeAction(el) {
+    if (isExplicitWriteControl(el)) return false;
     if (el.getAttribute('data-allow-readonly') === 'true') return true;
     if (el.classList.contains('pass-action-btn--view')) return true;
     if (el.classList.contains('pass-id-copy')) return true;
@@ -4925,30 +4953,131 @@
     var onclick = el.getAttribute('onclick') || '';
     if (READONLY_SAFE_PATTERNS.test(onclick)) return true;
     if (el.classList.contains('sec') && !el.classList.contains('danger') && !el.classList.contains('fd-rbac-write') && !el.hasAttribute('data-requires-write')) {
-      if (/download|export|csv|push|goprev|gonext|switch|filter|clearselection|deseleziona/i.test(onclick)) return true;
-      if (!/delete|save|edit|open|upload|create|elimina|modifica|nuov|carica|svuota|salva/i.test(onclick)) return true;
+      if (/download|export|csv|push|goprev|gonext|switch|filter|clearselection|deseleziona|cancel|annulla|close|chiudi/i.test(onclick)) return true;
+      var label = (el.textContent || '').trim().toLowerCase();
+      if (/^(annulla|chiudi|cancel|indietro|close)$/.test(label)) return true;
     }
     return false;
+  }
+  function shouldSkipFormFieldLock(el) {
+    if (!el) return true;
+    if (el.id === 'brandSelector') return true;
+    if (el.getAttribute('data-allow-readonly') === 'true') return true;
+    if (el.getAttribute('data-fd-rbac-field-exempt') === 'true') return true;
+    if (el.closest('#loginGate, .sidebar, .topbar, .user-menu')) return true;
+    return false;
+  }
+  function unlockFormField(el) {
+    if (!el || el.getAttribute('data-fd-rbac-locked') !== '1') return;
+    var wasDisabled = el.getAttribute('data-fd-rbac-was-disabled') === '1';
+    el.removeAttribute('data-fd-rbac-locked');
+    el.removeAttribute('data-fd-rbac-was-disabled');
+    el.readOnly = false;
+    el.disabled = wasDisabled;
+  }
+  function lockSectionFormFields(sectionEl, readonly) {
+    if (!sectionEl) return;
+    sectionEl.querySelectorAll(FORM_FIELD_QUERY).forEach(function (el) {
+      if (shouldSkipFormFieldLock(el)) return;
+      if (readonly) {
+        if (el.getAttribute('data-fd-rbac-locked') === '1') return;
+        el.setAttribute('data-fd-rbac-locked', '1');
+        el.setAttribute('data-fd-rbac-was-disabled', el.disabled ? '1' : '0');
+        if (el.tagName === 'SELECT') {
+          el.disabled = true;
+        } else if (el.tagName === 'TEXTAREA') {
+          el.readOnly = true;
+          el.disabled = true;
+        } else if (el.tagName === 'INPUT') {
+          el.readOnly = true;
+        }
+      } else {
+        unlockFormField(el);
+      }
+    });
+  }
+  function suppressBrandIdentityDirtyState() {
+    try {
+      if (global.brandIdentityState) global.brandIdentityState.dirty = false;
+    } catch (_) {}
+    var bar = document.getElementById('fdBiStickyBar');
+    if (bar) bar.hidden = true;
+    if (typeof global.a2wBiUpdateSaveStateBadge === 'function') {
+      global.a2wBiUpdateSaveStateBadge('Salvato', '');
+    }
+  }
+  function isActiveSectionReadOnly() {
+    return document.body && document.body.classList.contains('fd-rbac-readonly');
+  }
+  function patchBrandIdentityDirtyFlows() {
+    if (global.__fdRbacBiDirtyPatched) return;
+    global.__fdRbacBiDirtyPatched = true;
+    if (typeof global.a2wBiSyncDirtyState === 'function') {
+      var origSync = global.a2wBiSyncDirtyState;
+      global.a2wBiSyncDirtyState = function () {
+        if (isActiveSectionReadOnly()) {
+          suppressBrandIdentityDirtyState();
+          return;
+        }
+        return origSync.apply(this, arguments);
+      };
+    }
+    var origBindGuards = global.a2wBiBindGuards;
+    if (typeof origBindGuards === 'function') {
+      global.a2wBiBindGuards = function () {
+        origBindGuards.apply(this, arguments);
+        if (global.__fdRbacNavInnerPatched) return;
+        global.__fdRbacNavInnerPatched = true;
+        var navFn = global.nav;
+        if (typeof navFn !== 'function') return;
+        global.nav = async function fdRbacReadonlyNav(id) {
+          if (isActiveSectionReadOnly()) suppressBrandIdentityDirtyState();
+          return navFn.apply(this, arguments);
+        };
+      };
+    }
+    window.addEventListener('beforeunload', function () {
+      if (isActiveSectionReadOnly() && global.brandIdentityState) {
+        global.brandIdentityState.dirty = false;
+      }
+    }, true);
   }
   function gateWriteElement(el, sectionId, role) {
     if (isReadonlySafeAction(el)) {
       el.classList.remove('fd-rbac-gated');
-      el.removeAttribute('disabled');
-      el.style.removeProperty('display');
-      el.setAttribute('aria-hidden', 'false');
+      if (el.getAttribute('data-fd-rbac-gated') === '1') {
+        el.removeAttribute('data-fd-rbac-gated');
+        el.removeAttribute('disabled');
+        el.removeAttribute('aria-disabled');
+        el.removeAttribute('tabindex');
+        el.style.removeProperty('display');
+        el.style.removeProperty('pointer-events');
+        el.setAttribute('aria-hidden', 'false');
+      }
       return;
     }
     var allow = canWriteSection(sectionId, role);
     el.classList.toggle('fd-rbac-gated', !allow);
     if (el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
-      if (!allow) el.setAttribute('disabled', 'disabled');
-      else el.removeAttribute('disabled');
+      if (!allow) {
+        el.setAttribute('disabled', 'disabled');
+        el.setAttribute('aria-disabled', 'true');
+      } else if (el.getAttribute('data-fd-rbac-gated') === '1') {
+        el.removeAttribute('disabled');
+        el.removeAttribute('aria-disabled');
+      }
     }
     if (!allow) {
+      el.setAttribute('data-fd-rbac-gated', '1');
       el.style.setProperty('display', 'none', 'important');
+      el.style.setProperty('pointer-events', 'none', 'important');
+      el.setAttribute('tabindex', '-1');
       el.setAttribute('aria-hidden', 'true');
-    } else {
+    } else if (el.getAttribute('data-fd-rbac-gated') === '1') {
+      el.removeAttribute('data-fd-rbac-gated');
       el.style.removeProperty('display');
+      el.style.removeProperty('pointer-events');
+      el.removeAttribute('tabindex');
       el.setAttribute('aria-hidden', 'false');
     }
   }
@@ -4988,6 +5117,18 @@
       gateWriteElement(el, resolveWriteSection(el, sectionId), role);
     });
   }
+  function observeSectionFields(sectionEl, sectionId) {
+    if (!sectionEl || sectionEl.dataset.fdRbacFieldObs === '1') return;
+    sectionEl.dataset.fdRbacFieldObs = '1';
+    var obs = new MutationObserver(function () {
+      var readonly = !canWriteSection(sectionId, getCurrentRole());
+      if (readonly) {
+        lockSectionFormFields(sectionEl, true);
+        scanWriteTargets(sectionEl, sectionId, getCurrentRole());
+      }
+    });
+    obs.observe(sectionEl, { childList: true, subtree: true, attributes: false });
+  }
   function scanSectionWriteActions(sectionId, role) {
     if (!isFiloApp() || !sectionId) return;
     var sectionEl = document.getElementById(sectionId);
@@ -4995,11 +5136,16 @@
     var readonly = !canWriteSection(sectionId, role);
     sectionEl.classList.toggle('fd-rbac-section-readonly', readonly);
     ensureReadOnlyBanner(sectionEl, readonly);
+    lockSectionFormFields(sectionEl, readonly);
+    observeSectionFields(sectionEl, sectionId);
     scanWriteTargets(sectionEl, sectionId, role);
+    if (readonly && sectionId === 'brand-identity') suppressBrandIdentityDirtyState();
   }
   function scanLinkedModals(sectionId, role) {
+    var readonly = !canWriteSection(sectionId, role);
     document.querySelectorAll('[data-rbac-section="' + sectionId + '"]').forEach(function (modal) {
       if (modal.id === sectionId) return;
+      lockSectionFormFields(modal, readonly);
       scanWriteTargets(modal, sectionId, role);
     });
   }
@@ -5079,6 +5225,11 @@
     applyNavGating(role);
     applyReadOnlyMode(null, role);
   }
+  function initFdRbac() {
+    if (!isFiloApp()) return;
+    patchBrandIdentityDirtyFlows();
+    syncRbac(getCurrentRole());
+  }
   global.fdRbacHook = hookSectionRender;
   global.FdRbac = {
     ROLES: ROLES,
@@ -5094,8 +5245,14 @@
     applyReadOnlyMode: applyReadOnlyMode,
     applyBodyRoleClasses: applyBodyRoleClasses,
     hookSectionRender: hookSectionRender,
+    isActiveSectionReadOnly: isActiveSectionReadOnly,
     UI_SECTION_MAP: UI_SECTION_MAP
   };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFdRbac);
+  } else {
+    initFdRbac();
+  }
 })(typeof window !== 'undefined' ? window : global);
 (function () {
   'use strict';

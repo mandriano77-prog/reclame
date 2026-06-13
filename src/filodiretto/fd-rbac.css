@@ -10,21 +10,35 @@ html[data-app='filodiretto'] body.role-sender.fd-rbac-readonly .btn:not(.sec):no
 
 html[data-app='filodiretto'] body.fd-rbac-readonly .btn.danger,
 html[data-app='filodiretto'] body.role-readonly .btn.danger,
+html[data-app='filodiretto'] body.fd-rbac-readonly .a2w-ui-btn-destructive,
+html[data-app='filodiretto'] body.fd-rbac-readonly .fd-btn-danger-outline,
+html[data-app='filodiretto'] body.fd-rbac-readonly [data-fd-danger-btn],
+html[data-app='filodiretto'] body.fd-rbac-readonly #a2wBiDangerActionHost,
 html[data-app='filodiretto'] .section.fd-rbac-section-readonly .btn.danger,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .a2w-ui-btn-destructive,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-btn-danger-outline,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly [data-fd-danger-btn],
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly #a2wBiDangerActionHost,
 html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-rbac-gated,
 html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-rbac-write,
 html[data-app='filodiretto'] .section.fd-rbac-section-readonly [data-requires-write] {
   display: none !important;
+  pointer-events: none !important;
 }
 
-html[data-app='filodiretto'] body.fd-rbac-readonly input:not([type='search']):not([readonly]),
+html[data-app='filodiretto'] body.fd-rbac-readonly input:not([type='search']):not([type='hidden']):not([type='checkbox']):not([type='radio']),
 html[data-app='filodiretto'] body.fd-rbac-readonly select:not(#brandSelector),
 html[data-app='filodiretto'] body.fd-rbac-readonly textarea,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly input:not([type='search']):not([readonly]),
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly input:not([type='search']):not([type='hidden']):not([type='checkbox']):not([type='radio']),
 html[data-app='filodiretto'] .section.fd-rbac-section-readonly select:not(#brandSelector),
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly textarea {
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly textarea,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly input[readonly],
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly input:disabled,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly select:disabled,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly textarea:disabled {
   pointer-events: none;
   opacity: 0.65;
+  cursor: not-allowed;
 }
 
 html[data-app='filodiretto'] body.fd-rbac-readonly .fd-rbac-write,
