@@ -1,0 +1,87 @@
+/**
+ * FD — Log Attività: filtri, ricerca, export CSV, copia ID, dettagli leggibili.
+ */
+html[data-app='filodiretto'] #activity-log.activity-log--fd {
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fd-space-3);
+  margin-bottom: var(--fd-space-4);
+  padding: var(--fd-space-3) var(--fd-space-4);
+  border: 1px solid var(--fd-border);
+  border-radius: var(--fd-radius-md);
+  background: var(--fd-color-bg-subtle);
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar__group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar__group--search {
+  flex: 1 1 220px;
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar__label {
+  font-size: var(--fd-font-size-sm);
+  font-weight: var(--fd-font-weight-medium);
+  color: var(--fd-color-text-muted);
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar select,
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar input[type='search'],
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar input[type='date'] {
+  min-height: 38px;
+  padding: var(--fd-space-2);
+  border: 1px solid var(--fd-border-strong);
+  border-radius: var(--fd-radius-sm);
+  font-size: var(--fd-font-size-body);
+  background: var(--fd-color-bg-canvas);
+  color: var(--fd-color-text-primary);
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2);
+  margin-left: auto;
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-details {
+  font-size: 12px;
+  color: var(--fd-color-text-secondary);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-id-copy {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-id-copy.is-copied {
+  border-color: var(--fd-color-success);
+  color: var(--fd-color-success);
+}
+
+html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-filter-hint {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--fd-font-size-sm);
+  color: var(--fd-color-text-muted);
+}
+
+@media (max-width: 767px) {
+  html[data-app='filodiretto'] #activity-log.activity-log--fd .fd-activity-log-toolbar__actions {
+    margin-left: 0;
+    width: 100%;
+  }
+}
