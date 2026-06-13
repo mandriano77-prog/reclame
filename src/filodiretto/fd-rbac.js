@@ -10,17 +10,20 @@
     manager: {
       brand_identity: 'full', media_library: 'full', templates: 'full', passes: 'full',
       push: 'full', rewards: 'full', challenges: 'full', employees: 'full',
-      audiences: 'full', analytics: 'full', activity_log: 'none', users: 'none', welcome: 'full'
+      audiences: 'full', analytics: 'full', activity_log: 'none', users: 'none', welcome: 'full',
+      profile: 'full'
     },
     sender: {
       brand_identity: 'none', media_library: 'read', templates: 'read', passes: 'read',
       push: 'full', rewards: 'read', challenges: 'read', employees: 'none',
-      audiences: 'read', analytics: 'read', activity_log: 'none', users: 'none', welcome: 'read'
+      audiences: 'read', analytics: 'read', activity_log: 'none', users: 'none', welcome: 'read',
+      profile: 'full'
     },
     reporter: {
       brand_identity: 'read', media_library: 'none', templates: 'none', passes: 'read',
       push: 'none', rewards: 'none', challenges: 'none', employees: 'none',
-      audiences: 'none', analytics: 'read', activity_log: 'read', users: 'none', welcome: 'read'
+      audiences: 'none', analytics: 'read', activity_log: 'read', users: 'none', welcome: 'read',
+      profile: 'full'
     }
   };
 
@@ -37,7 +40,8 @@
     audiences: 'audiences',
     analytics: 'analytics',
     'activity-log': 'activity_log',
-    users: 'users'
+    users: 'users',
+    profile: 'profile'
   };
 
   var DEFAULT_LANDING = {

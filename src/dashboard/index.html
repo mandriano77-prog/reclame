@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-auth-role-guard';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-auth-role-guard';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-profile-section';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-profile-section';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -1376,7 +1376,6 @@
                             <span class="user-menu-role role-tag" id="dashboardUserRole"></span>
                         </div>
                         <button type="button" class="user-menu-item" role="menuitem" id="userMenuProfileBtn">Profilo</button>
-                        <button type="button" class="user-menu-item" role="menuitem" id="userMenuSettingsBtn">Impostazioni</button>
                         <button type="button" class="user-menu-item user-menu-item--danger" role="menuitem" onclick="closeUserMenu(); logout();">Esci</button>
                     </div>
                 </div>
@@ -2790,6 +2789,55 @@
                 </div>
             </div>
 
+            <!-- PROFILE -->
+            <div class="section" id="profile" hidden aria-hidden="true">
+                <h1 class="sec-title page-title">Profilo</h1>
+                <p class="page-lead fd-profile-lead">I tuoi dati di accesso alla dashboard.</p>
+
+                <div class="fd-profile-card">
+                    <h2 class="fd-profile-card__title">Account</h2>
+                    <dl class="fd-profile-dl">
+                        <div class="fd-profile-row">
+                            <dt>Nome</dt>
+                            <dd id="fdProfileName">—</dd>
+                        </div>
+                        <div class="fd-profile-row">
+                            <dt>Email</dt>
+                            <dd id="fdProfileEmail">—</dd>
+                        </div>
+                        <div class="fd-profile-row">
+                            <dt>Ruolo</dt>
+                            <dd id="fdProfileRole">—</dd>
+                        </div>
+                        <div class="fd-profile-row">
+                            <dt>Brand</dt>
+                            <dd id="fdProfileBrand">—</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="fd-profile-card">
+                    <h2 class="fd-profile-card__title">Cambia password</h2>
+                    <div class="fd-profile-password-form">
+                        <div class="form-group">
+                            <label class="form-label" for="fdProfileCurrentPassword">Password attuale</label>
+                            <input type="password" id="fdProfileCurrentPassword" autocomplete="current-password">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="fdProfileNewPassword">Nuova password</label>
+                            <input type="password" id="fdProfileNewPassword" autocomplete="new-password" minlength="8">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="fdProfileConfirmPassword">Conferma nuova password</label>
+                            <input type="password" id="fdProfileConfirmPassword" autocomplete="new-password" minlength="8">
+                        </div>
+                        <p id="fdProfilePasswordError" class="fd-profile-password-error" role="alert"></p>
+                        <p id="fdProfilePasswordSuccess" class="fd-profile-password-success" role="status"></p>
+                        <button type="button" class="btn fd-btn-primary" id="fdProfilePasswordBtn">Aggiorna password</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- USERS -->
             <div class="section" id="users">
                 <h1 class="sec-title page-title">Utenti</h1>
@@ -3364,7 +3412,6 @@ function toggleUserMenu() {
 function initUserMenu() {
     const trigger = document.getElementById('userMenuTrigger');
     const profileBtn = document.getElementById('userMenuProfileBtn');
-    const settingsBtn = document.getElementById('userMenuSettingsBtn');
     if (trigger && trigger.dataset.userMenuBound !== '1') {
         trigger.dataset.userMenuBound = '1';
         trigger.addEventListener('click', (e) => {
@@ -3384,16 +3431,7 @@ function initUserMenu() {
         profileBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeUserMenu();
-            if (currentUser) toast(currentUser.email || 'Profilo');
-        });
-    }
-    if (settingsBtn && settingsBtn.dataset.userMenuBound !== '1') {
-        settingsBtn.dataset.userMenuBound = '1';
-        settingsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            closeUserMenu();
-            if (currentUser?.role === 'admin') nav('users');
-            else toast('Impostazioni account — in arrivo');
+            nav('profile');
         });
     }
 }
@@ -3671,7 +3709,7 @@ const LAST_BRAND_KEY = 'ads2wallet:lastBrandId';
 const BRAND_CACHE_TTL_MS = 45000;
 const PASSES_PAGE_SIZE = 50;
 /** Sections reachable without selecting a brand */
-const SECTIONS_NO_BRAND = new Set(['welcome', 'users', 'brand-identity']);
+const SECTIONS_NO_BRAND = new Set(['welcome', 'users', 'brand-identity', 'profile']);
 const brandDataCache = new Map();
 const brandDataInflight = new Map();
 let passPageIndex = 0;
@@ -3801,6 +3839,7 @@ const SECTION_PAGE_TITLES = (typeof window !== 'undefined' && window.FD_NAV && w
         analytics: 'Analytics',
         'activity-log': 'Log Attività',
         users: 'Utenti',
+        profile: 'Profilo',
         'pass-design': 'Design Pass',
         'pass-wizard': 'Crea Pass'
     };
@@ -4076,7 +4115,10 @@ function nav(id) {
         'gamification': loadGamification,
         'leads': loadLeads,
         audiences: loadAudiences,
-        users: loadUsers
+        users: loadUsers,
+        profile: () => {
+            if (typeof fdLoadProfile === 'function') fdLoadProfile();
+        }
     };
     if (loaders[id]) loaders[id]();
 }
