@@ -332,6 +332,7 @@
 
   async function fdLoadUsers() {
     if (!isFiloUsersApp()) return;
+    if (typeof window.isDashboardAdmin === 'function' && !window.isDashboardAdmin()) return;
     ensureDismissBound();
     ensureUsersChrome();
     ensureCreateUserButton();

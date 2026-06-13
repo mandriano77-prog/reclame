@@ -1331,13 +1331,26 @@ function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Token mancante. Effettua il login.' });
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = applyAllowlistOperatorContext(decoded);
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Token non valido o scaduto' });
-  }
+  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+    if (err) return res.status(401).json({ error: 'Token non valido o scaduto' });
+    try {
+      const dbUser = await getUser(decoded.id);
+      if (!dbUser || dbUser.active === false) {
+        return res.status(401).json({ error: 'Utente non trovato o disattivato' });
+      }
+      req.user = applyAllowlistOperatorContext({
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        role: dbUser.role,
+        brand_id: dbUser.brand_id,
+      });
+      next();
+    } catch (e) {
+      console.error('authMiddleware user load failed:', e.message);
+      return res.status(500).json({ error: 'Errore autenticazione' });
+    }
+  });
 }
 
 /** Multi-tenant: admin vede tutti i brand; altri ruoli solo `users.brand_id` assegnato. */
