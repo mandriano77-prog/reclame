@@ -320,7 +320,8 @@
 
     var bar = document.createElement('div');
     bar.id = 'fdActivityLogToolbar';
-    bar.className = 'fd-activity-log-toolbar';
+    bar.className = 'fd-activity-log-toolbar fd-rbac-read-scope';
+    bar.setAttribute('data-rbac-read-scope', 'true');
     bar.innerHTML =
       '<div class="fd-activity-log-toolbar__group">' +
       '<label class="fd-activity-log-toolbar__label" for="fdActivityLogTypeFilter">Tipo evento</label>' +
@@ -339,7 +340,7 @@
       '<input type="date" id="fdActivityLogDateTo" aria-label="Filtra eventi al">' +
       '</div>' +
       '<div class="fd-activity-log-toolbar__actions">' +
-      '<button type="button" class="btn sec" id="fdActivityLogExportBtn">Esporta CSV</button>' +
+      '<button type="button" class="btn sec" id="fdActivityLogExportBtn" data-allow-readonly="true">Esporta CSV</button>' +
       '</div>' +
       '<p class="fd-activity-log-filter-hint" id="fdActivityLogFilterHint" aria-live="polite"></p>';
 
@@ -389,6 +390,7 @@
       cache = Array.isArray(events) ? events : [];
       populateTypeFilter();
       renderTableBody();
+      if (typeof window.fdRbacHook === 'function') window.fdRbacHook('activity-log');
     } catch (e) {
       body.innerHTML = typeof window.renderTableErrorRow === 'function'
         ? window.renderTableErrorRow(5, e.message || 'Errore caricamento log', 'loadActivityLog()')
@@ -412,6 +414,7 @@
         setTimeout(function () {
           buildToolbar();
           wireCopyDelegation();
+          if (typeof window.fdRbacHook === 'function') window.fdRbacHook('activity-log');
         }, 60);
       }
       return out;

@@ -81,7 +81,7 @@
         menuId +
         '" role="menu" hidden>' +
         '<button type="button" class="fd-pass-row-menu__item" role="menuitem" data-action="view">Dettaglio pass</button>' +
-        '<button type="button" class="fd-pass-row-menu__item fd-pass-row-menu__item--danger" role="menuitem" data-action="delete">Elimina pass</button>' +
+        '<button type="button" class="fd-pass-row-menu__item fd-pass-row-menu__item--danger" role="menuitem" data-action="delete" data-rbac-write="passes">Elimina pass</button>' +
         '</div></div>';
       var trigger = wrap.querySelector('.fd-pass-row-menu__trigger');
       var panel = wrap.querySelector('.fd-pass-row-menu__panel');
@@ -142,6 +142,7 @@
         await orig.apply(this, arguments);
         enhancePassesDom();
         if (typeof origDiag === 'function') await origDiag();
+        if (typeof window.fdRbacHook === 'function') window.fdRbacHook('passes');
       } finally {
         window.loadPassWalletChannelsDiag = origDiag;
       }

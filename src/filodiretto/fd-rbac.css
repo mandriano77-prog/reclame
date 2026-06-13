@@ -1,51 +1,41 @@
 /**
- * FiloDiretto RBAC — read-only mode for sender/reporter on 👁 sections.
+ * FiloDiretto RBAC — read-only mode (write controls neutralized; read filters stay active).
  */
-html[data-app='filodiretto'] body.fd-rbac-readonly .btn:not(.sec):not([data-allow-readonly]),
-html[data-app='filodiretto'] body.role-readonly .btn:not(.sec):not([data-allow-readonly]),
-html[data-app='filodiretto'] body.role-reporter .btn:not(.sec):not([data-allow-readonly]),
-html[data-app='filodiretto'] body.role-sender.fd-rbac-readonly .btn:not(.sec):not([data-allow-readonly]) {
-  display: none !important;
-}
-
-html[data-app='filodiretto'] body.fd-rbac-readonly .btn.danger,
-html[data-app='filodiretto'] body.role-readonly .btn.danger,
-html[data-app='filodiretto'] body.fd-rbac-readonly .a2w-ui-btn-destructive,
-html[data-app='filodiretto'] body.fd-rbac-readonly .fd-btn-danger-outline,
-html[data-app='filodiretto'] body.fd-rbac-readonly [data-fd-danger-btn],
-html[data-app='filodiretto'] body.fd-rbac-readonly #a2wBiDangerActionHost,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly .btn.danger,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly .a2w-ui-btn-destructive,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-btn-danger-outline,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly [data-fd-danger-btn],
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly #a2wBiDangerActionHost,
+html[data-app='filodiretto'] body.fd-rbac-readonly .fd-rbac-neutralized,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-rbac-neutralized,
+html[data-app='filodiretto'] body.fd-rbac-readonly [data-rbac-write]:not([data-allow-readonly]),
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly [data-rbac-write]:not([data-allow-readonly]),
+html[data-app='filodiretto'] body.fd-rbac-readonly .fd-rbac-gated,
 html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-rbac-gated,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-rbac-write,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly [data-requires-write] {
-  display: none !important;
-  pointer-events: none !important;
-}
-
-html[data-app='filodiretto'] body.fd-rbac-readonly input:not([type='search']):not([type='hidden']):not([type='checkbox']):not([type='radio']),
-html[data-app='filodiretto'] body.fd-rbac-readonly select:not(#brandSelector),
-html[data-app='filodiretto'] body.fd-rbac-readonly textarea,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly input:not([type='search']):not([type='hidden']):not([type='checkbox']):not([type='radio']),
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly select:not(#brandSelector),
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly textarea,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly input[readonly],
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly input:disabled,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly select:disabled,
-html[data-app='filodiretto'] .section.fd-rbac-section-readonly textarea:disabled {
-  pointer-events: none;
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
 html[data-app='filodiretto'] body.fd-rbac-readonly .fd-rbac-write,
-html[data-app='filodiretto'] body.role-readonly .fd-rbac-write,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-rbac-write,
+html[data-app='filodiretto'] body.fd-rbac-readonly [data-requires-write],
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly [data-requires-write],
+html[data-app='filodiretto'] body.fd-rbac-readonly [data-fd-danger-btn],
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly [data-fd-danger-btn],
+html[data-app='filodiretto'] body.fd-rbac-readonly #a2wBiDangerActionHost,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly #a2wBiDangerActionHost,
 html[data-app='filodiretto'] .section.fd-rbac-section-readonly .pass-action-btn--danger,
+html[data-app='filodiretto'] .section.fd-rbac-section-readonly .fd-pass-row-menu__item--danger,
 html[data-app='filodiretto'] .section.fd-rbac-section-readonly .card-actions .btn {
   display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+html[data-app='filodiretto'] #brand-identity.fd-rbac-section-readonly .fd-rbac-field-locked,
+html[data-app='filodiretto'] #brand-identity.fd-rbac-section-readonly input:not([type='hidden']):not([type='checkbox']):not([type='radio']):disabled,
+html[data-app='filodiretto'] #brand-identity.fd-rbac-section-readonly input[readonly],
+html[data-app='filodiretto'] #brand-identity.fd-rbac-section-readonly select:disabled,
+html[data-app='filodiretto'] #brand-identity.fd-rbac-section-readonly textarea:disabled,
+html[data-app='filodiretto'] [data-rbac-write-form] .fd-rbac-field-locked,
+html[data-app='filodiretto'] [data-rbac-write-form] input:disabled,
+html[data-app='filodiretto'] [data-rbac-write-form] input[readonly],
+html[data-app='filodiretto'] [data-rbac-write-form] select:disabled,
+html[data-app='filodiretto'] [data-rbac-write-form] textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background-color: var(--fd-color-bg-subtle, var(--bg3, #f8fafc));
 }
 
 html[data-app='filodiretto'] .fd-rbac-readonly-banner {
