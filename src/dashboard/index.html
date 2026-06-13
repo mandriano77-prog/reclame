@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-rbac-readonly';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-rbac-readonly';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-rbac-readonly2';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-rbac-readonly2';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -1726,7 +1726,7 @@
             </div>
 
             <!-- BRAND IDENTITY -->
-            <div id="brand-identity" class="section" data-rbac-section="brand-identity">
+            <div id="brand-identity" class="section" data-rbac-section="brand-identity" data-rbac-write-form="true">
                 <div class="a2w-bi-page" data-a2w-component="brand-identity-page">
                     <header class="a2w-bi-header">
                         <div class="a2w-bi-header__copy">
@@ -2713,7 +2713,7 @@
 
 
             <!-- ANALYTICS -->
-            <div id="analytics" class="section">
+            <div id="analytics" class="section" data-rbac-section="analytics">
                 <h1 class="sec-title page-title">Analytics</h1>
                 <div class="stats-grid" id="analyticsStats"></div>
                 <div class="form-row" style="margin-bottom:16px;">
@@ -2767,14 +2767,14 @@
             </div>
 
             <!-- ACTIVITY LOG (events table) -->
-            <div id="activity-log" class="section">
+            <div id="activity-log" class="section" data-rbac-section="activity-log">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
                     <div>
                         <h1 class="sec-title page-title">Log Attività</h1>
                         <p style="font-size:12px;color:var(--text2);margin-top:8px;max-width:42rem;line-height:1.45;">
                             Cronologia eventi del brand (pass creati, installazioni, wallet, landing, ecc.) registrati dal server.<br>Righe più recenti in alto · massimo 500 per richiesta.</p>
                     </div>
-                    <button type="button" class="btn small sec" onclick="loadActivityLog()">Aggiorna</button>
+                    <button type="button" class="btn small sec" data-allow-readonly="true" onclick="loadActivityLog()">Aggiorna</button>
                 </div>
                 <div class="pass-table-wrap">
                     <table class="table" id="activityLogTable">

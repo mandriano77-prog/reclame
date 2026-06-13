@@ -56,6 +56,7 @@
     var btn = host.querySelector('button');
     if (!btn || btn.dataset.fdDangerBtn === '1') return;
     btn.dataset.fdDangerBtn = '1';
+    btn.setAttribute('data-rbac-write', 'brand-identity');
     btn.className = 'btn sec fd-btn-danger-outline';
     btn.textContent = 'Elimina brand…';
   }

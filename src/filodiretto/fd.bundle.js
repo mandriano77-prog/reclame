@@ -3837,7 +3837,7 @@
         menuId +
         '" role="menu" hidden>' +
         '<button type="button" class="fd-pass-row-menu__item" role="menuitem" data-action="view">Dettaglio pass</button>' +
-        '<button type="button" class="fd-pass-row-menu__item fd-pass-row-menu__item--danger" role="menuitem" data-action="delete">Elimina pass</button>' +
+        '<button type="button" class="fd-pass-row-menu__item fd-pass-row-menu__item--danger" role="menuitem" data-action="delete" data-rbac-write="passes">Elimina pass</button>' +
         '</div></div>';
       var trigger = wrap.querySelector('.fd-pass-row-menu__trigger');
       var panel = wrap.querySelector('.fd-pass-row-menu__panel');
@@ -3896,6 +3896,7 @@
         await orig.apply(this, arguments);
         enhancePassesDom();
         if (typeof origDiag === 'function') await origDiag();
+        if (typeof window.fdRbacHook === 'function') window.fdRbacHook('passes');
       } finally {
         window.loadPassWalletChannelsDiag = origDiag;
       }
@@ -4664,6 +4665,7 @@
     var btn = host.querySelector('button');
     if (!btn || btn.dataset.fdDangerBtn === '1') return;
     btn.dataset.fdDangerBtn = '1';
+    btn.setAttribute('data-rbac-write', 'brand-identity');
     btn.className = 'btn sec fd-btn-danger-outline';
     btn.textContent = 'Elimina brand…';
   }
@@ -4811,8 +4813,10 @@
     sender: 'push',
     reporter: 'analytics'
   };
-  var FORM_FIELD_QUERY = 'input:not([type="search"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea';
+  var WRITE_FORM_SECTIONS = { 'brand-identity': true };
+  var FORM_FIELD_QUERY = 'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea';
   var WRITE_ACTION_SELECTORS = [
+    '[data-rbac-write]',
     '[data-requires-write]',
     '[data-fd-danger-btn]',
     '.fd-rbac-write',
@@ -4851,7 +4855,7 @@
     'button[onclick*="editGamCampaign"]',
     'button[onclick*="deleteGamCampaign"]'
   ].join(',');
-  var READONLY_SAFE_PATTERNS = /download|export|csv|close|annulla|cancel|deseleziona|copy|anteprima|preview|viewpass|dettaglio|precedente|successiva|pushtab|switchaudience|switchpush|mpfilter|useaudienceinpush|exportaudience|closemodal|closeaudience|closeiwmodal|closegammodal|gotostep|wzgo/i;
+  var READONLY_SAFE_PATTERNS = /download|export|csv|close|annulla|cancel|deseleziona|copy|anteprima|preview|viewpass|dettaglio|precedente|successiva|pushtab|switchaudience|switchpush|mpfilter|useaudienceinpush|exportaudience|closemodal|closeaudience|closeiwmodal|closegammodal|gotostep|wzgo|loadactivitylog|loadpasses|exportanalytics|viewpassdetail|setanalytics/i;
   function isFiloApp() {
     return document.documentElement.getAttribute('data-app') === 'filodiretto' ||
       global.__2WALLET_PRODUCT_LOCK__ === 'hr';
@@ -4932,6 +4936,20 @@
     if (host) return host.getAttribute('data-rbac-section');
     return sectionId;
   }
+  function isReadControl(el) {
+    if (!el) return false;
+    if (el.getAttribute('data-allow-readonly') === 'true') return true;
+    if (el.getAttribute('data-rbac-read') === 'true') return true;
+    if (el.closest('[data-rbac-read-scope], .fd-rbac-read-scope, .fd-activity-log-toolbar, .analytics-toolbar, .analytics-actions')) return true;
+    if (el.id === 'brandSelector' || el.id === 'passFilterCampaign' || el.id === 'passSearchInput') return true;
+    if (el.classList.contains('pass-id-copy') || el.classList.contains('fd-activity-id-copy')) return true;
+    if (el.classList.contains('analytics-chip')) return true;
+    var type = String(el.type || '').toLowerCase();
+    if (type === 'search') return true;
+    var onclick = el.getAttribute('onclick') || '';
+    if (/loadpasses|loadactivitylog|exportanalytics|viewpassdetail|onanalytics/i.test(onclick)) return true;
+    return false;
+  }
   function isExplicitWriteControl(el) {
     if (!el) return false;
     if (el.closest('#a2wBiDangerActionHost, .a2w-bi-danger-zone, .fd-danger-zone')) return true;
@@ -4939,6 +4957,7 @@
     if (el.classList.contains('fd-btn-danger-outline')) return true;
     if (el.classList.contains('a2w-ui-btn-destructive')) return true;
     if (el.classList.contains('fd-rbac-write')) return true;
+    if (el.hasAttribute('data-rbac-write')) return true;
     if (el.hasAttribute('data-requires-write')) return true;
     if (el.closest('.card-actions')) return true;
     return false;
@@ -4967,22 +4986,35 @@
     if (el.closest('#loginGate, .sidebar, .topbar, .user-menu')) return true;
     return false;
   }
+  function shouldLockFormField(el, sectionId, readonly) {
+    if (!readonly || !el) return false;
+    if (isReadControl(el)) return false;
+    if (shouldSkipFormFieldLock(el)) return false;
+    if (el.hasAttribute('data-rbac-write')) return true;
+    if (el.closest('[data-rbac-write-form]')) return true;
+    return !!WRITE_FORM_SECTIONS[sectionId];
+  }
   function unlockFormField(el) {
     if (!el || el.getAttribute('data-fd-rbac-locked') !== '1') return;
     var wasDisabled = el.getAttribute('data-fd-rbac-was-disabled') === '1';
     el.removeAttribute('data-fd-rbac-locked');
     el.removeAttribute('data-fd-rbac-was-disabled');
+    el.classList.remove('fd-rbac-field-locked');
     el.readOnly = false;
     el.disabled = wasDisabled;
   }
-  function lockSectionFormFields(sectionEl, readonly) {
+  function lockSectionFormFields(sectionEl, sectionId, readonly) {
     if (!sectionEl) return;
     sectionEl.querySelectorAll(FORM_FIELD_QUERY).forEach(function (el) {
-      if (shouldSkipFormFieldLock(el)) return;
+      if (!shouldLockFormField(el, sectionId, readonly)) {
+        if (!readonly) unlockFormField(el);
+        return;
+      }
       if (readonly) {
         if (el.getAttribute('data-fd-rbac-locked') === '1') return;
         el.setAttribute('data-fd-rbac-locked', '1');
         el.setAttribute('data-fd-rbac-was-disabled', el.disabled ? '1' : '0');
+        el.classList.add('fd-rbac-field-locked');
         if (el.tagName === 'SELECT') {
           el.disabled = true;
         } else if (el.tagName === 'TEXTAREA') {
@@ -5042,44 +5074,81 @@
       }
     }, true);
   }
-  function gateWriteElement(el, sectionId, role) {
+  function restoreWriteElement(el) {
+    if (!el || el.getAttribute('data-fd-rbac-gated') !== '1') return;
+    el.removeAttribute('data-fd-rbac-gated');
+    el.classList.remove('fd-rbac-neutralized');
+    el.removeAttribute('disabled');
+    el.removeAttribute('aria-disabled');
+    el.removeAttribute('tabindex');
+    el.style.removeProperty('display');
+    el.style.removeProperty('pointer-events');
+    el.style.removeProperty('visibility');
+    el.setAttribute('aria-hidden', 'false');
+  }
+  function neutralizeWriteElement(el, sectionId, role) {
     if (isReadonlySafeAction(el)) {
+      restoreWriteElement(el);
       el.classList.remove('fd-rbac-gated');
-      if (el.getAttribute('data-fd-rbac-gated') === '1') {
-        el.removeAttribute('data-fd-rbac-gated');
-        el.removeAttribute('disabled');
-        el.removeAttribute('aria-disabled');
-        el.removeAttribute('tabindex');
-        el.style.removeProperty('display');
-        el.style.removeProperty('pointer-events');
-        el.setAttribute('aria-hidden', 'false');
-      }
       return;
     }
     var allow = canWriteSection(sectionId, role);
     el.classList.toggle('fd-rbac-gated', !allow);
+    if (allow) {
+      restoreWriteElement(el);
+      return;
+    }
+    if (!el.getAttribute('data-rbac-write')) {
+      el.setAttribute('data-rbac-write', resolveWriteSection(el, sectionId) || sectionId || 'true');
+    }
+    el.setAttribute('data-fd-rbac-gated', '1');
+    el.classList.add('fd-rbac-neutralized');
     if (el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
-      if (!allow) {
-        el.setAttribute('disabled', 'disabled');
-        el.setAttribute('aria-disabled', 'true');
-      } else if (el.getAttribute('data-fd-rbac-gated') === '1') {
-        el.removeAttribute('disabled');
-        el.removeAttribute('aria-disabled');
+      el.disabled = true;
+      el.setAttribute('aria-disabled', 'true');
+    }
+    el.style.setProperty('display', 'none', 'important');
+    el.style.setProperty('pointer-events', 'none', 'important');
+    el.style.setProperty('visibility', 'hidden', 'important');
+    el.setAttribute('tabindex', '-1');
+    el.setAttribute('aria-hidden', 'true');
+  }
+  function gateWriteElement(el, sectionId, role) {
+    neutralizeWriteElement(el, sectionId, role);
+  }
+  function markSectionReadScopes(sectionEl) {
+    if (!sectionEl) return;
+    sectionEl.querySelectorAll('.analytics-toolbar, .analytics-actions, .fd-activity-log-toolbar').forEach(function (el) {
+      el.classList.add('fd-rbac-read-scope');
+      el.setAttribute('data-rbac-read-scope', 'true');
+    });
+    ['passFilterCampaign', 'passSearchInput', 'analyticsTrendRange', 'analyticsDateFrom', 'analyticsDateTo'].forEach(function (id) {
+      var el = sectionEl.querySelector('#' + id);
+      if (el) el.setAttribute('data-rbac-read', 'true');
+    });
+  }
+  function patchSaveBlockers() {
+    if (global.__fdRbacSaveBlocked) return;
+    global.__fdRbacSaveBlocked = true;
+    if (typeof global.saveBrandIdentity === 'function') {
+      var origSaveBi = global.saveBrandIdentity;
+      global.saveBrandIdentity = async function () {
+        if (isActiveSectionReadOnly()) return;
+        return origSaveBi.apply(this, arguments);
+      };
+    }
+    document.addEventListener('keydown', function (e) {
+      if (!isActiveSectionReadOnly()) return;
+      if ((e.ctrlKey || e.metaKey) && String(e.key || '').toLowerCase() === 's') {
+        e.preventDefault();
+        e.stopPropagation();
       }
-    }
-    if (!allow) {
-      el.setAttribute('data-fd-rbac-gated', '1');
-      el.style.setProperty('display', 'none', 'important');
-      el.style.setProperty('pointer-events', 'none', 'important');
-      el.setAttribute('tabindex', '-1');
-      el.setAttribute('aria-hidden', 'true');
-    } else if (el.getAttribute('data-fd-rbac-gated') === '1') {
-      el.removeAttribute('data-fd-rbac-gated');
-      el.style.removeProperty('display');
-      el.style.removeProperty('pointer-events');
-      el.removeAttribute('tabindex');
-      el.setAttribute('aria-hidden', 'false');
-    }
+    }, true);
+    document.addEventListener('submit', function (e) {
+      if (!isActiveSectionReadOnly()) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
   }
   function ensureReadOnlyBanner(sectionEl, show) {
     var banner = sectionEl.querySelector(':scope > .fd-rbac-readonly-banner, :scope > div > .fd-rbac-readonly-banner');
@@ -5123,7 +5192,8 @@
     var obs = new MutationObserver(function () {
       var readonly = !canWriteSection(sectionId, getCurrentRole());
       if (readonly) {
-        lockSectionFormFields(sectionEl, true);
+        lockSectionFormFields(sectionEl, sectionId, true);
+        markSectionReadScopes(sectionEl);
         scanWriteTargets(sectionEl, sectionId, getCurrentRole());
       }
     });
@@ -5136,7 +5206,8 @@
     var readonly = !canWriteSection(sectionId, role);
     sectionEl.classList.toggle('fd-rbac-section-readonly', readonly);
     ensureReadOnlyBanner(sectionEl, readonly);
-    lockSectionFormFields(sectionEl, readonly);
+    markSectionReadScopes(sectionEl);
+    lockSectionFormFields(sectionEl, sectionId, readonly);
     observeSectionFields(sectionEl, sectionId);
     scanWriteTargets(sectionEl, sectionId, role);
     if (readonly && sectionId === 'brand-identity') suppressBrandIdentityDirtyState();
@@ -5145,7 +5216,7 @@
     var readonly = !canWriteSection(sectionId, role);
     document.querySelectorAll('[data-rbac-section="' + sectionId + '"]').forEach(function (modal) {
       if (modal.id === sectionId) return;
-      lockSectionFormFields(modal, readonly);
+      lockSectionFormFields(modal, sectionId, readonly);
       scanWriteTargets(modal, sectionId, role);
     });
   }
@@ -5228,6 +5299,7 @@
   function initFdRbac() {
     if (!isFiloApp()) return;
     patchBrandIdentityDirtyFlows();
+    patchSaveBlockers();
     syncRbac(getCurrentRole());
   }
   global.fdRbacHook = hookSectionRender;
@@ -6658,7 +6730,8 @@
     if (!tableWrap) return;
     var bar = document.createElement('div');
     bar.id = 'fdActivityLogToolbar';
-    bar.className = 'fd-activity-log-toolbar';
+    bar.className = 'fd-activity-log-toolbar fd-rbac-read-scope';
+    bar.setAttribute('data-rbac-read-scope', 'true');
     bar.innerHTML =
       '<div class="fd-activity-log-toolbar__group">' +
       '<label class="fd-activity-log-toolbar__label" for="fdActivityLogTypeFilter">Tipo evento</label>' +
@@ -6677,7 +6750,7 @@
       '<input type="date" id="fdActivityLogDateTo" aria-label="Filtra eventi al">' +
       '</div>' +
       '<div class="fd-activity-log-toolbar__actions">' +
-      '<button type="button" class="btn sec" id="fdActivityLogExportBtn">Esporta CSV</button>' +
+      '<button type="button" class="btn sec" id="fdActivityLogExportBtn" data-allow-readonly="true">Esporta CSV</button>' +
       '</div>' +
       '<p class="fd-activity-log-filter-hint" id="fdActivityLogFilterHint" aria-live="polite"></p>';
     tableWrap.parentNode.insertBefore(bar, tableWrap);
@@ -6721,6 +6794,7 @@
       cache = Array.isArray(events) ? events : [];
       populateTypeFilter();
       renderTableBody();
+      if (typeof window.fdRbacHook === 'function') window.fdRbacHook('activity-log');
     } catch (e) {
       body.innerHTML = typeof window.renderTableErrorRow === 'function'
         ? window.renderTableErrorRow(5, e.message || 'Errore caricamento log', 'loadActivityLog()')
@@ -6742,6 +6816,7 @@
         setTimeout(function () {
           buildToolbar();
           wireCopyDelegation();
+          if (typeof window.fdRbacHook === 'function') window.fdRbacHook('activity-log');
         }, 60);
       }
       return out;
