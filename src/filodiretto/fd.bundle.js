@@ -2323,6 +2323,7 @@
       if (brandSel) brandSel.value = '';
     }
   }
+  window.fdSyncUserBrandFieldVisibility = syncUserBrandFieldVisibility;
   function wireCreateUserForm() {
     if (document.body.dataset.fdUserFormBound === '1') return;
     document.body.dataset.fdUserFormBound = '1';
@@ -2475,7 +2476,8 @@
   }
   function renderActionsCell(u, protectedAdmin) {
     var menuId = 'fd-users-menu-' + u.id;
-    var items = '<button type="button" class="fd-users-kebab-item" data-action="resend" data-user-id="' + esc(u.id) + '">Reinvia mail</button>';
+    var items = '<button type="button" class="fd-users-kebab-item" data-action="edit" data-user-id="' + esc(u.id) + '">Modifica</button>';
+    items += '<button type="button" class="fd-users-kebab-item" data-action="resend" data-user-id="' + esc(u.id) + '">Reinvia mail</button>';
     if (!protectedAdmin) {
       items += '<button type="button" class="fd-users-kebab-item fd-users-kebab-item--danger" data-action="delete" data-user-id="' + esc(u.id) + '">Elimina</button>';
     }
@@ -2524,7 +2526,10 @@
         closeAllMenus();
         var uid = item.getAttribute('data-user-id');
         var action = item.getAttribute('data-action');
-        if (action === 'resend' && typeof window.resendInvite === 'function') {
+        if (action === 'edit' && typeof window.openEditUserModal === 'function') {
+          var user = (window.__fdUsersCache || []).find(function (row) { return String(row.id) === String(uid); });
+          if (user) window.openEditUserModal(user);
+        } else if (action === 'resend' && typeof window.resendInvite === 'function') {
           window.resendInvite(uid);
         } else if (action === 'delete' && typeof window.deleteUser === 'function') {
           window.deleteUser(uid);
@@ -2552,6 +2557,7 @@
         throw new Error(err.error || String(res.status));
       }
       var users = await res.json();
+      window.__fdUsersCache = users;
       var allowlist = typeof window.getDashboardLoginAllowlist === 'function'
         ? window.getDashboardLoginAllowlist()
         : null;

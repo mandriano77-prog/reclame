@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-user-brand-fix';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-user-brand-fix';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-user-edit-brand';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-user-edit-brand';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -3121,10 +3121,11 @@
 <div id="userModal" class="modal">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
-        <div class="modal-header">Nuovo Utente</div>
+        <input type="hidden" id="userEditId" value="">
+        <div class="modal-header" id="userModalTitle">Nuovo utente</div>
         <div class="form-group"><label class="form-label">Nome</label><input type="text" id="userName" placeholder="Nome Cognome"></div>
         <div class="form-group"><label class="form-label">Email</label><input type="email" id="userEmail" placeholder="email@example.com"></div>
-        <div class="form-group"><label class="form-label">Password</label><input type="password" id="userPassword" placeholder="Min 6 caratteri"></div>
+        <div class="form-group" id="userPasswordGroup"><label class="form-label">Password</label><input type="password" id="userPassword" placeholder="Min 6 caratteri"></div>
         <div class="form-group"><label class="form-label">Ruolo</label>
             <select id="userRole">
                 <option value="reporter">Reporter (sola lettura analytics)</option>
@@ -3136,7 +3137,7 @@
         <div class="form-group" id="userBrandGroup"><label class="form-label">Brand assegnato</label>
             <select id="userBrand"><option value="">— Seleziona brand —</option></select>
         </div>
-        <button class="btn" onclick="createUser()">Crea Utente</button>
+        <button class="btn" id="userModalSubmitBtn" onclick="saveUser()">Crea utente</button>
     </div>
 </div>
 
@@ -12412,33 +12413,96 @@ async function loadUsers() {
     }
 }
 
+async function populateUserBrandSelect(selectedId) {
+    const brandSel = document.getElementById('userBrand');
+    if (!brandSel) return;
+    brandSel.innerHTML = '<option value="">— Seleziona brand —</option>';
+    let brands = brandsListCache && brandsListCache.length ? brandsListCache : null;
+    if (!brands) {
+        try {
+            const res = await fetch(`${API}/brands`, { headers: getAuthHeaders() });
+            if (res.ok) brands = await res.json();
+        } catch (_) {}
+    }
+    (brands || []).forEach((b) => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = b.name || b.slug || b.id;
+        brandSel.appendChild(opt);
+    });
+    if (selectedId) brandSel.value = String(selectedId);
+    if (typeof window.fdSyncUserBrandFieldVisibility === 'function') {
+        window.fdSyncUserBrandFieldVisibility();
+    }
+}
+
 function openCreateUserModal() {
+    document.getElementById('userEditId').value = '';
+    document.getElementById('userModalTitle').textContent = 'Nuovo utente';
+    document.getElementById('userModalSubmitBtn').textContent = 'Crea utente';
     document.getElementById('userName').value = '';
     document.getElementById('userEmail').value = '';
     document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').placeholder = 'Min 6 caratteri';
+    document.getElementById('userPasswordGroup').style.display = '';
     document.getElementById('userRole').value = 'manager';
-    // Populate brand select
-    const brandSel = document.getElementById('userBrand');
-    brandSel.innerHTML = '<option value="">— Seleziona brand —</option>';
-    const mainSel = document.getElementById('brandSelector');
-    [...mainSel.options].forEach(o => { if (o.value) { const opt = document.createElement('option'); opt.value = o.value; opt.textContent = o.textContent; brandSel.appendChild(opt); }});
+    populateUserBrandSelect(null);
     document.getElementById('userModal').classList.add('active');
 }
 
-async function createUser() {
+function openEditUserModal(user) {
+    if (!user || !user.id) return;
+    document.getElementById('userEditId').value = user.id;
+    document.getElementById('userModalTitle').textContent = 'Modifica utente';
+    document.getElementById('userModalSubmitBtn').textContent = 'Salva modifiche';
+    document.getElementById('userName').value = user.name || '';
+    document.getElementById('userEmail').value = user.email || '';
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').placeholder = 'Lascia vuoto per non cambiare';
+    const role = (typeof FdRbac !== 'undefined' && FdRbac.normalizeRole)
+        ? FdRbac.normalizeRole(user.role)
+        : (user.role === 'viewer' ? 'reporter' : user.role);
+    document.getElementById('userRole').value = role || 'manager';
+    populateUserBrandSelect(user.brand_id || null);
+    document.getElementById('userModal').classList.add('active');
+}
+window.openEditUserModal = openEditUserModal;
+
+async function saveUser() {
+    const editId = document.getElementById('userEditId')?.value?.trim() || '';
     const body = {
         name: document.getElementById('userName').value,
         email: document.getElementById('userEmail').value,
-        password: document.getElementById('userPassword').value,
         role: document.getElementById('userRole').value,
         brand_id: document.getElementById('userBrand').value || null
     };
-    if (!body.name || !body.email || !body.password) return alert('Compila tutti i campi');
+    const password = document.getElementById('userPassword').value;
+    if (!body.name || !body.email) return alert('Compila nome ed email');
     const role = (typeof FdRbac !== 'undefined' && FdRbac.normalizeRole)
         ? FdRbac.normalizeRole(body.role)
         : body.role;
     if (role !== 'admin' && !body.brand_id) return alert('Seleziona un brand per questo ruolo');
     if (role === 'admin') body.brand_id = null;
+
+    if (editId) {
+        if (password) body.password = password;
+        const res = await fetch(`${API}/users/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            return toast('Errore: ' + (e.error || 'aggiornamento fallito'));
+        }
+        closeModal('userModal');
+        toast('Utente aggiornato');
+        loadUsers();
+        return;
+    }
+
+    if (!password) return alert('Inserisci una password per il nuovo utente');
+    body.password = password;
     const res = await fetch(`${API}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -12451,6 +12515,10 @@ async function createUser() {
     closeModal('userModal');
     toast('Utente creato!');
     loadUsers();
+}
+
+async function createUser() {
+    return saveUser();
 }
 
 async function resendInvite(id) {
