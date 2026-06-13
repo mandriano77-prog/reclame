@@ -22,7 +22,7 @@ const CSS_FILES = [
 
 const JS_FILES = [
   'fd-buttons.js', 'fd-header.js', 'fd-layout.js', 'fd-wai.js', 'fd-brand-switcher.js',
-  'fd-icons.js', 'fd-nav.js', 'fd-hr-copy.js', 'fd-brand-scope.js', 'fd-brand-identity.js',
+  'fd-icons.js', 'fd-nav.js', 'fd-legacy-campaigns.js', 'fd-hr-copy.js', 'fd-brand-scope.js', 'fd-brand-identity.js',
   'fd-brand-pass-flow.js', 'fd-home.js', 'fd-users.js', 'fd-contacts.js', 'fd-media-library.js',
   'fd-templates.js', 'fd-passes.js', 'fd-destructive.js', 'fd-form-dirty.js',
   'fd-form-help.js', 'fd-form-a11y.js', 'fd-empty-states.js', 'fd-danger-zone.js',

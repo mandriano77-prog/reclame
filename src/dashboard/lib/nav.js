@@ -24,8 +24,7 @@
             items: [
                 { id: 'push', label: 'Push & Notifiche' },
                 { id: 'instant-win', label: 'Reward' },
-                { id: 'gamification', label: 'Challenge' },
-                { id: 'campaigns', label: 'Campagne' }
+                { id: 'gamification', label: 'Challenge' }
             ]
         },
         {

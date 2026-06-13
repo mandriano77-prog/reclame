@@ -23,7 +23,6 @@
       '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
     gamification:
       '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
-    campaigns: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
     leads:
       '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
     audiences:
@@ -52,25 +51,11 @@
     );
   }
 
-  function hideCampaignsNav() {
-    document.querySelectorAll('.nav-item[data-section-id="campaigns"]').forEach(function (el) {
-      el.style.display = 'none';
-      el.setAttribute('aria-hidden', 'true');
-      el.classList.add('fd-nav-hidden');
-    });
-    var section = document.getElementById('campaigns');
-    if (section) {
-      section.style.display = 'none';
-      section.setAttribute('aria-hidden', 'true');
-    }
-  }
-
   function applyFiloNavMask() {
     if (!isFiloNavApp()) return;
     if (typeof window.applyLegacyCampaignsUiMask === 'function') {
       window.applyLegacyCampaignsUiMask();
     }
-    hideCampaignsNav();
   }
 
   function sectionIdFromNavItem(el) {

@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-wording';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-wording';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-cleanup2';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-cleanup2';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -1318,7 +1318,6 @@
                     <div class="nav-item" onclick="nav('push')" data-section-id="push" data-requires-perm="push" role="button" tabindex="0">Push &amp; Notifiche</div>
                     <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards" role="button" tabindex="0">Reward</div>
                     <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges" role="button" tabindex="0">Challenge</div>
-                    <div class="nav-item" onclick="nav('campaigns')" data-section-id="campaigns" role="button" tabindex="0">Campagne</div>
                 </div>
             </details>
 
@@ -1433,15 +1432,6 @@
                     <div style="font-size:13px;color:var(--text2);">Nessun alert bloccante al momento.</div>
                 </div>
                 </div>
-            </div>
-
-            <!-- CAMPAIGNS -->
-            <div id="campaigns" class="section">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <h1 class="sec-title page-title" style="margin-bottom:0">Campagne</h1>
-                    <button class="btn" onclick="openCampaignModal()">+ Nuova Campagna</button>
-                </div>
-                <div id="campaignsList" style="color:var(--text2)">Caricamento...</div>
             </div>
 
             <!-- CREATIVES -->
@@ -3803,7 +3793,6 @@ const SECTION_PAGE_TITLES = (typeof window !== 'undefined' && window.FD_NAV && w
         'media-library': 'Media Library',
         templates: 'Template Pass',
         passes: 'Pass Emessi',
-        campaigns: 'Campagne',
         push: 'Push & Notifiche',
         'instant-win': 'Reward',
         gamification: 'Challenge',
@@ -3911,8 +3900,6 @@ function updateNavState() {
             n.style.display = 'none';
         } else if (section === 'users' && !isAdmin) {
             n.style.display = 'none';
-        } else if (section === 'campaigns' && !isLegacyCampaignsUiEnabled()) {
-            n.style.display = 'none';
         } else {
             n.style.display = '';
         }
@@ -3975,16 +3962,11 @@ function getDefaultBrandSection() {
     if (isHrDashboard() && typeof FdRbac !== 'undefined' && typeof FdRbac.defaultLandingSection === 'function') {
         return FdRbac.defaultLandingSection();
     }
-    return isLegacyCampaignsUiEnabled() ? 'campaigns' : 'passes';
+    return 'passes';
 }
 
 function applyLegacyCampaignsUiMask() {
     const hidden = !isLegacyCampaignsUiEnabled();
-    const campaignNav = document.querySelector('.nav-item[data-section-id="campaigns"]');
-    if (campaignNav) campaignNav.style.display = hidden ? 'none' : '';
-
-    const campaignSection = document.getElementById('campaigns');
-    if (campaignSection) campaignSection.style.display = hidden ? 'none' : '';
 
     const campaignModal = document.getElementById('campaignModal');
     if (campaignModal && hidden) campaignModal.classList.remove('active');
@@ -4022,7 +4004,7 @@ function nav(id) {
     if (isHrDashboard() && typeof FdRbac !== 'undefined' && typeof FdRbac.guardNav === 'function') {
         id = FdRbac.guardNav(id);
     }
-    if (id === 'campaigns' && !isLegacyCampaignsUiEnabled()) id = getDefaultBrandSection();
+    if (id === 'campaigns') id = getDefaultBrandSection();
     if (id === 'welcome' && brandId && !isFiloOperationalHome()) id = getDefaultBrandSection();
     if (!brandId && !SECTIONS_NO_BRAND.has(id)) {
         toast('Seleziona un brand dall\'elenco in alto');
@@ -4057,7 +4039,6 @@ function nav(id) {
         welcome: () => {
             if (typeof fdLoadHome === 'function') fdLoadHome();
         },
-        campaigns: loadCampaigns,
         passes: loadPasses,
         templates: loadTemplates,
         push: () => {
@@ -4703,22 +4684,19 @@ function adjustAlpha(hex, alpha) {
 
 // ==================== OVERVIEW ====================
 async function refreshOverview() {
-    if (!brandId) return;
+    if (!brandId || !isLegacyCampaignsUiEnabled()) return;
     try {
-        const [analytics, campaigns] = await Promise.all([
-            fetchCachedJson(`${API}/analytics/${brandId}`, { headers: { ...getAuthHeaders() } }),
-            fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } })
-        ]);
-        campaignsCache = campaigns;
+        campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     } catch(e) { console.error('refreshOverview:', e); }
 }
 
 
 // ==================== CAMPAIGNS ====================
 async function loadCampaigns() {
-    if (!brandId) return;
-    campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
+    if (!brandId || !isLegacyCampaignsUiEnabled()) return;
     const el = document.getElementById('campaignsList');
+    if (!el) return;
+    campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     if (!campaignsCache.length) { el.innerHTML = renderEmptyState({ title: 'Nessuna campagna', description: 'Crea la prima campagna per iniziare.', ctaLabel: 'Nuova campagna', ctaOnclick: 'openCampaignModal()', icon: 'ticket' }); return; }
     el.innerHTML = campaignsCache.map(c => `
         <div class="card">

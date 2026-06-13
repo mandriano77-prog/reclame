@@ -1,15 +1,6 @@
 /**
  * FD — Filo HR navigation: compact sidebar, icons, accordion, collapsed rail.
  */
-html[data-app='filodiretto'] .nav-item[data-section-id='campaigns'],
-html[data-app='filodiretto'] #campaigns.section {
-  display: none !important;
-}
-
-html[data-app='filodiretto'] #campaignModal {
-  display: none !important;
-}
-
 html[data-app='filodiretto'] .sidebar {
   display: flex;
   flex-direction: column;
