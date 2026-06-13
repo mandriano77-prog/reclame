@@ -5157,6 +5157,12 @@
       if (el.id !== 'fdRbacGlobalBanner') el.remove();
     });
   }
+  function removeSectionReadOnlyBanners(scope) {
+    var root = scope || document;
+    root.querySelectorAll('.fd-rbac-readonly-banner[data-rbac-section-banner]').forEach(function (el) {
+      el.remove();
+    });
+  }
   function ensureGlobalReadOnlyBanner(show) {
     var main = document.getElementById('main-content');
     if (!main) return;
@@ -5170,34 +5176,6 @@
         banner.setAttribute('role', 'status');
         banner.textContent = 'Sola lettura — il tuo ruolo consente solo consultazione in questa sezione.';
         main.insertBefore(banner, main.firstChild);
-      }
-      banner.hidden = false;
-    } else if (banner) {
-      banner.hidden = true;
-    }
-  }
-  function ensureReadOnlyBanner(sectionEl, show) {
-    if (!sectionEl || sectionEl.id === 'main-content') return;
-    var banner = sectionEl.querySelector(':scope > .fd-rbac-readonly-banner[data-rbac-section-banner]');
-    if (!banner) {
-      banner = sectionEl.querySelector(':scope > div > .fd-rbac-readonly-banner[data-rbac-section-banner]');
-    }
-    if (!banner) {
-      banner = sectionEl.querySelector('.fd-rbac-readonly-banner[data-rbac-section-banner]');
-    }
-    if (show) {
-      if (!banner) {
-        banner = document.createElement('div');
-        banner.className = 'fd-rbac-readonly-banner';
-        banner.setAttribute('data-rbac-section-banner', 'true');
-        banner.setAttribute('role', 'status');
-        banner.textContent = 'Sola lettura — il tuo ruolo consente solo consultazione in questa sezione.';
-        var header = sectionEl.querySelector('.a2w-bi-header, .page-title, .sec-title');
-        if (header) {
-          header.insertAdjacentElement('afterend', banner);
-        } else {
-          sectionEl.insertBefore(banner, sectionEl.firstChild);
-        }
       }
       banner.hidden = false;
     } else if (banner) {
@@ -5238,7 +5216,7 @@
     if (!sectionEl) return;
     var readonly = !canWriteSection(sectionId, role);
     sectionEl.classList.toggle('fd-rbac-section-readonly', readonly);
-    ensureReadOnlyBanner(sectionEl, readonly);
+    removeSectionReadOnlyBanners(sectionEl);
     markSectionReadScopes(sectionEl);
     lockSectionFormFields(sectionEl, sectionId, readonly);
     observeSectionFields(sectionEl, sectionId);
@@ -5299,6 +5277,7 @@
     var readonly = sid && !canWriteSection(sid, role);
     document.body.classList.toggle('fd-rbac-readonly', !!readonly);
     document.body.classList.toggle('role-readonly', !!readonly);
+    removeSectionReadOnlyBanners(document);
     ensureGlobalReadOnlyBanner(!!readonly);
     cleanupStrayMainContentBanners();
     document.querySelectorAll('[data-requires-write]').forEach(function (el) {
