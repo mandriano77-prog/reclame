@@ -72,13 +72,15 @@ function inviteEmailFromIdentity() {
   return { fromEmail: getFromEmail(), fromName: getFromName() };
 }
 
-function buildInviteBrandBadgeHtml(brandName, brandLogoUrl) {
+function buildInviteBrandBadgeHtml(brandName, logo) {
   if (!brandName) return '';
   const safeName = escapeHtml(brandName);
   const initials = escapeHtml(brandInitialsFromName(brandName));
-  const logoCell = brandLogoUrl
-    ? `<img src="${escapeHtml(brandLogoUrl)}" alt="${safeName}" width="56" height="56" style="display:block;width:56px;height:56px;border:0;outline:none;text-decoration:none;border-radius:12px;object-fit:contain;background-color:${FD_INVITE_EMAIL.card};" />`
-    : `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="56" height="56" style="width:56px;height:56px;border-radius:28px;background-color:${FD_INVITE_EMAIL.primary};color:#FFFFFF;font-family:${FD_INVITE_EMAIL.fontStack};font-size:18px;font-weight:700;line-height:56px;text-align:center;">${initials}</td></tr></table>`;
+  const logoCell = logo?.cid
+    ? `<img src="cid:${escapeHtml(logo.cid)}" alt="${safeName}" width="56" height="56" style="display:block;width:56px;height:56px;border:0;outline:none;text-decoration:none;border-radius:12px;object-fit:contain;background-color:${FD_INVITE_EMAIL.card};" />`
+    : logo?.url
+      ? `<img src="${escapeHtml(logo.url)}" alt="${safeName}" width="56" height="56" style="display:block;width:56px;height:56px;border:0;outline:none;text-decoration:none;border-radius:12px;object-fit:contain;background-color:${FD_INVITE_EMAIL.card};" />`
+      : `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="56" height="56" style="width:56px;height:56px;border-radius:28px;background-color:${FD_INVITE_EMAIL.primary};color:#FFFFFF;font-family:${FD_INVITE_EMAIL.fontStack};font-size:18px;font-weight:700;line-height:56px;text-align:center;">${initials}</td></tr></table>`;
 
   return `
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px;">
@@ -126,7 +128,7 @@ function buildUserInviteEmailHtml({
   userName,
   role,
   brandName,
-  brandLogoUrl,
+  brandLogo,
   activateUrl,
 }) {
   const product = dashboardEmailProductTitle(productTitle);
@@ -148,7 +150,7 @@ function buildUserInviteEmailHtml({
     accessParagraph = `Ti è stato creato un accesso alla dashboard ${safeProduct} come <strong style="color:${FD_INVITE_EMAIL.textPrimary};font-weight:600;">${roleLabel}</strong>. Attiva l'account e scegli una password personale per iniziare.`;
   }
 
-  const brandBadge = buildInviteBrandBadgeHtml(brandName, brandLogoUrl);
+  const brandBadge = buildInviteBrandBadgeHtml(brandName, brandLogo);
   const year = new Date().getFullYear();
 
   return `<!DOCTYPE html>
@@ -423,7 +425,7 @@ async function sendWelcomeEmail({ to, name, brandName, brandColor, points, downl
 /**
  * Send invite email when admin creates a new dashboard user (activation link, no password).
  */
-async function sendUserInviteEmail({ to, name, role, brandName, brandLogoUrl, activateUrl, productTitle }) {
+async function sendUserInviteEmail({ to, name, role, brandName, brandLogo, brandLogoAttachment, activateUrl, productTitle }) {
   console.log('📧 sendUserInviteEmail called — to:', to);
 
   const resend = getResend();
@@ -434,12 +436,15 @@ async function sendUserInviteEmail({ to, name, role, brandName, brandLogoUrl, ac
 
   const product = dashboardEmailProductTitle(productTitle);
   const { fromEmail, fromName } = inviteEmailFromIdentity();
+  const logoForBadge = brandLogoAttachment?.cid
+    ? { cid: brandLogoAttachment.cid }
+    : brandLogo || null;
   const html = buildUserInviteEmailHtml({
     productTitle: product,
     userName: name,
     role,
     brandName: brandName || null,
-    brandLogoUrl: brandLogoUrl || null,
+    brandLogo: logoForBadge,
     activateUrl,
   });
   const text = buildUserInviteEmailText({
@@ -454,13 +459,22 @@ async function sendUserInviteEmail({ to, name, role, brandName, brandLogoUrl, ac
     ? `Attiva il tuo accesso a ${brandName} — ${product}`
     : `Il tuo accesso a ${product}`;
 
-  const result = await resend.emails.send({
+  const payload = {
     from: `${fromName} <${fromEmail}>`,
     to: [to],
     subject,
     html,
     text,
-  });
+  };
+  if (brandLogoAttachment?.cid && brandLogoAttachment.content) {
+    payload.attachments = [{
+      filename: brandLogoAttachment.filename || 'brand-logo.png',
+      content: brandLogoAttachment.content,
+      content_id: brandLogoAttachment.cid,
+    }];
+  }
+
+  const result = await resend.emails.send(payload);
 
   console.log('✓ Invite email sent to', to, JSON.stringify(result));
   return result;

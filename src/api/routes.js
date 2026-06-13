@@ -337,37 +337,56 @@ function dashboardProductTitle() {
     || (String(process.env.DASHBOARD_PRODUCT_LINE || '').toLowerCase() === 'hr' ? 'FiloDiretto' : 'FiloDiretto');
 }
 
-function buildPublicMediaImageUrl(mediaId) {
-  if (!mediaId) return null;
+function buildPublicBrandLogoUrl(brand) {
+  if (!brand?.slug) return null;
   const raw = String(process.env.CUSTOM_DOMAIN || process.env.BASE_URL || '').trim();
   if (!raw) return null;
   const host = raw.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  return `https://${host}/api/v1/media/${encodeURIComponent(mediaId)}/image`;
+  return `https://${host}/api/v1/brands/by-slug/${encodeURIComponent(brand.slug)}/logo`;
 }
 
 async function resolveUserInviteBrandContext(user) {
-  if (!user?.brand_id) return { brandName: null, brandLogoUrl: null };
+  if (!user?.brand_id) return { brandName: null, brandLogo: null, brandLogoAttachment: null };
   const brand = await getBrand(user.brand_id);
-  if (!brand) return { brandName: null, brandLogoUrl: null };
-  const cfg = typeof brand.config === 'string' ? JSON.parse(brand.config) : (brand.config || {});
-  const mediaId = cfg?.brand_identity_assets?.logo || null;
+  if (!brand) return { brandName: null, brandLogo: null, brandLogoAttachment: null };
+
+  const { resolveBrandLogoRawBuffer } = require('../engine/brand-wallet-logo');
+  const resolved = await resolveBrandLogoRawBuffer(brand);
+  let brandLogoAttachment = null;
+  if (resolved?.buffer?.length) {
+    brandLogoAttachment = {
+      cid: 'brand-invite-logo',
+      filename: 'brand-logo.png',
+      content: resolved.buffer.toString('base64'),
+    };
+  }
+
+  const brandLogoUrl = buildPublicBrandLogoUrl(brand);
+  const brandLogo = brandLogoAttachment?.cid
+    ? { cid: brandLogoAttachment.cid }
+    : brandLogoUrl
+      ? { url: brandLogoUrl }
+      : null;
+
   return {
     brandName: brand.name || null,
-    brandLogoUrl: buildPublicMediaImageUrl(mediaId),
+    brandLogo,
+    brandLogoAttachment,
   };
 }
 
 async function sendDashboardUserInviteEmail(req, user) {
   const token = await createPasswordResetToken(user.id, 72 * 60 * 60 * 1000);
   const activateUrl = buildDashboardPublicUrl(req, `reset=${encodeURIComponent(token)}`);
-  const { brandName, brandLogoUrl } = await resolveUserInviteBrandContext(user);
+  const { brandName, brandLogo, brandLogoAttachment } = await resolveUserInviteBrandContext(user);
   const { sendUserInviteEmail } = require('../engine/mailer');
   await sendUserInviteEmail({
     to: user.email,
     name: user.name,
     role: user.role || 'manager',
     brandName,
-    brandLogoUrl,
+    brandLogo,
+    brandLogoAttachment,
     activateUrl,
     productTitle: dashboardProductTitle()
   });
