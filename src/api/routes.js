@@ -150,7 +150,7 @@ function validateTemplateBackPayload(body) {
   validateBrandBackLinks(body);
 }
 
-/** Comma-separated emails allowed to log in on this deploy (e.g. Filo Diretto → admin@nudj.studio). */
+/** Comma-separated deploy operator emails (platform bootstrap + protected admins on HR deploys). */
 function dashboardLoginAllowlist() {
   const raw = String(process.env.DASHBOARD_LOGIN_ALLOWLIST || '').trim();
   if (raw) {
@@ -160,14 +160,25 @@ function dashboardLoginAllowlist() {
   return null;
 }
 
-function isDashboardLoginAllowed(email) {
+function isDashboardOperatorEmail(email) {
   const list = dashboardLoginAllowlist();
-  if (!list) return true;
+  if (!list) return false;
   return list.includes(String(email || '').trim().toLowerCase());
 }
 
-function rejectIfDeployLoginNotAllowed(req, res) {
-  if (!isDashboardLoginAllowed(req.user?.email)) {
+/** Whether a stored dashboard account may sign in on a locked HR deploy. */
+function canDashboardUserLogin(user) {
+  const list = dashboardLoginAllowlist();
+  if (!list) return true;
+  const email = String(user?.email || '').trim().toLowerCase();
+  if (isDashboardOperatorEmail(email)) return true;
+  // Default dev seed must not bypass operator lock on existing HR databases.
+  if (email === 'admin@ads2wallet.com') return false;
+  return Boolean(user?.id);
+}
+
+function rejectIfDeployOperatorNotAllowed(req, res) {
+  if (dashboardLoginAllowlist() && !isDashboardOperatorEmail(req.user?.email)) {
     res.status(403).json({ error: 'Accesso non autorizzato su questa istanza dashboard' });
     return true;
   }
@@ -283,7 +294,7 @@ router.post('/auth/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Email e password richiesti' });
     const user = await getUserByEmail(email);
     if (!user) return res.status(401).json({ error: 'Credenziali non valide' });
-    if (!isDashboardLoginAllowed(user.email)) {
+    if (!canDashboardUserLogin(user)) {
       return res.status(403).json({ error: 'Accesso non autorizzato su questa istanza dashboard' });
     }
     const valid = await verifyPassword(password, user.password_hash);
@@ -1296,9 +1307,6 @@ function authMiddleware(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Token mancante. Effettua il login.' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (!isDashboardLoginAllowed(decoded.email)) {
-      return res.status(403).json({ error: 'Accesso non autorizzato su questa istanza dashboard' });
-    }
     req.user = applyAllowlistOperatorContext(decoded);
     next();
   } catch (err) {
@@ -1447,11 +1455,7 @@ router.get('/users', async (req, res) => {
 router.post('/users', async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    if (rejectIfDeployLoginNotAllowed(req, res)) return;
-    const newEmail = String(req.body.email || '').trim().toLowerCase();
-    if (dashboardLoginAllowlist() && !isDashboardLoginAllowed(newEmail)) {
-      return res.status(403).json({ error: 'Su questa istanza sono ammessi solo gli account autorizzati dal deploy' });
-    }
+    if (rejectIfDeployOperatorNotAllowed(req, res)) return;
     const tempPassword = req.body.password || Math.random().toString(36).slice(-10);
     req.body.password = tempPassword;
     const role = normalizeRole(req.body.role || 'manager');
@@ -1516,14 +1520,14 @@ router.put('/users/:id', async (req, res) => {
 router.delete('/users/:id', async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    if (rejectIfDeployLoginNotAllowed(req, res)) return;
+    if (rejectIfDeployOperatorNotAllowed(req, res)) return;
     const target = await getUser(req.params.id);
     if (!target) return res.status(404).json({ error: 'Utente non trovato' });
     if (String(target.id) === String(req.user.id)) {
       return res.status(400).json({ error: 'Non puoi eliminare il tuo account mentre sei connesso' });
     }
     const allowlist = dashboardLoginAllowlist();
-    if (allowlist && isDashboardLoginAllowed(target.email)) {
+    if (allowlist && isDashboardOperatorEmail(target.email)) {
       return res.status(400).json({ error: 'Non puoi eliminare un account amministratore autorizzato su questo deploy' });
     }
     await deleteUser(req.params.id);

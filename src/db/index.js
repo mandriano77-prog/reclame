@@ -2246,6 +2246,7 @@ async function markPasswordResetTokenUsed(token) {
 
 async function seedAdminUser() {
   try {
+    if (deployLoginAllowlistEmails().length) return;
     const existing = await pool.query(`SELECT id FROM users WHERE role = 'admin' LIMIT 1`);
     if (existing.rows.length === 0) {
       await createUser({
