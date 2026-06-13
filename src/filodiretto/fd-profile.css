@@ -1,0 +1,93 @@
+/**
+ * FD — FiloDiretto profile section (account info + change password).
+ */
+html[data-app='filodiretto'] #profile.profile--fd {
+  max-width: 640px;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-lead {
+  color: var(--text2, var(--fd-color-text-muted, #64748b));
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+  max-width: 52ch;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-card {
+  background: var(--surface, #fff);
+  border: 1px solid var(--fd-border, var(--border, #e5e7eb));
+  border-radius: var(--fd-radius-md, 12px);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  box-shadow: var(--fd-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text1, var(--fd-color-text-primary, #0f172a));
+  margin: 0 0 16px;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-dl {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px 16px;
+  align-items: baseline;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-row dt {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text2, #64748b);
+  text-transform: none;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-row dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text1, #0f172a);
+  word-break: break-word;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-role {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--fd-color-primary-50, #f5f3ff);
+  color: var(--fd-color-primary-700, #6d28d9);
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-password-form {
+  display: grid;
+  gap: 12px;
+  max-width: 360px;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-password-form .form-group {
+  margin: 0;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-password-error {
+  color: var(--red, #dc2626);
+  font-size: 13px;
+  margin: 0;
+  display: none;
+}
+
+html[data-app='filodiretto'] #profile.profile--fd .fd-profile-password-success {
+  color: var(--fd-color-success, #10b981);
+  font-size: 13px;
+  margin: 0;
+  display: none;
+}
