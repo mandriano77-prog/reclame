@@ -22,6 +22,22 @@
     return String(input || '').trim() === String(expected || '').trim();
   }
 
+  function pluralCount(n, singular, plural) {
+    var num = Number(n) || 0;
+    return num + ' ' + (num === 1 ? singular : plural);
+  }
+
+  function formatDeleteBrandCounts(counts) {
+    if (!counts) return '—';
+    var parts = [];
+    if (counts.passes > 0) parts.push(pluralCount(counts.passes, 'pass emesso', 'pass emessi'));
+    if (counts.contatti > 0) parts.push(pluralCount(counts.contatti, 'contatto', 'contatti'));
+    if (counts.campagne > 0) parts.push(pluralCount(counts.campagne, 'campagna', 'campagne'));
+    return parts.length ? parts.join(', ') : 'nessuna entità collegata';
+  }
+
+  window.fdFormatDeleteBrandCounts = formatDeleteBrandCounts;
+
   function ensureDangerIcon(parent, small) {
     if (!parent || parent.querySelector('.fd-danger-zone__icon')) return;
     var icon = document.createElement('span');
@@ -145,7 +161,17 @@
     window.__fdOpenDeletePatched = true;
     var orig = window.a2wBiOpenDeleteDialog;
     window.a2wBiOpenDeleteDialog = async function () {
+      var counts = null;
+      if (typeof window.a2wBiBuildDeleteCounts === 'function') {
+        try {
+          counts = await window.a2wBiBuildDeleteCounts();
+        } catch (_) {}
+      }
       await orig.apply(this, arguments);
+      if (counts) {
+        var countsNode = document.getElementById('a2wDeleteBrandCounts');
+        if (countsNode) countsNode.textContent = formatDeleteBrandCounts(counts);
+      }
       enhanceFallbackDeleteDialog();
       rebindFallbackTyping();
     };
