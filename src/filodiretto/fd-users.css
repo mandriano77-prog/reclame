@@ -202,3 +202,14 @@ html[data-app='filodiretto'] .fd-users-role {
   text-transform: none;
   font-size: 11px;
 }
+
+/* Native <dialog> centering — UA uses inset:0 + margin:0 without auto */
+html[data-app='filodiretto'] #appConfirmDialog.confirm-dialog {
+  margin: auto;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+html[data-app='filodiretto'] #userModal #userBrandGroup[hidden] {
+  display: none;
+}
