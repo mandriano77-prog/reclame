@@ -873,6 +873,7 @@ async function getDb() {
     await seedAdminUser();
     await ensureAllowlistPlatformAdmins();
     await bootstrapSuperAdminFromEnv();
+    await bootstrapUserBrandAssignmentsFromEnv();
     return { pool };
 
   } catch (error) {
@@ -2343,6 +2344,79 @@ async function bootstrapSuperAdminFromEnv() {
     }
   } catch (e) {
     console.error('Bootstrap super admin failed:', e.message);
+  }
+}
+
+/** One-shot brand assignment (set BOOTSTRAP_USER_BRAND_EMAILS + BOOTSTRAP_USER_BRAND_NAME on Railway, redeploy, then unset). */
+async function resolveBootstrapBrand() {
+  const id = String(process.env.BOOTSTRAP_USER_BRAND_ID || '').trim();
+  if (id) {
+    const brand = await getBrand(id);
+    if (brand) return brand;
+    console.warn('BOOTSTRAP_USER_BRAND_ID not found:', id);
+    return null;
+  }
+  const slug = String(process.env.BOOTSTRAP_USER_BRAND_SLUG || '').trim();
+  if (slug) {
+    const brand = await getBrandBySlug(slug);
+    if (brand) return brand;
+    console.warn('BOOTSTRAP_USER_BRAND_SLUG not found:', slug);
+    return null;
+  }
+  const name = String(process.env.BOOTSTRAP_USER_BRAND_NAME || '').trim();
+  if (name) {
+    const res = await pool.query(
+      'SELECT * FROM brands WHERE name ILIKE $1 ORDER BY created_at DESC LIMIT 1',
+      [name]
+    );
+    if (res.rows[0]) {
+      const row = res.rows[0];
+      return {
+        ...row,
+        config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config,
+      };
+    }
+    console.warn('BOOTSTRAP_USER_BRAND_NAME not found:', name);
+    return null;
+  }
+  return null;
+}
+
+async function bootstrapUserBrandAssignmentsFromEnv() {
+  const emailsRaw = String(process.env.BOOTSTRAP_USER_BRAND_EMAILS || '').trim();
+  if (!emailsRaw) return;
+  const emails = emailsRaw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  if (!emails.length) return;
+
+  const brand = await resolveBootstrapBrand();
+  if (!brand) {
+    console.error('✗ BOOTSTRAP_USER_BRAND_*: brand not resolved; user assignments skipped');
+    return;
+  }
+
+  const force = String(process.env.BOOTSTRAP_USER_BRAND_FORCE || '0') === '1';
+
+  for (const email of emails) {
+    try {
+      const user = await getUserByEmail(email);
+      if (!user) {
+        console.warn('Bootstrap brand assign skipped — user not found:', email);
+        continue;
+      }
+      const role = String(user.role || '').toLowerCase();
+      if (role === 'admin') {
+        console.log('Bootstrap brand assign skipped — admin:', email);
+        continue;
+      }
+      if (!force && user.brand_id && String(user.brand_id) === String(brand.id)) {
+        console.log('Already assigned:', email, '→', brand.name);
+        continue;
+      }
+      await updateUser(user.id, { brand_id: brand.id });
+      console.log('✓ Assigned brand', brand.name, 'to', email);
+    } catch (e) {
+      console.error('Bootstrap brand assign failed for', email, e.message);
+    }
   }
 }
 

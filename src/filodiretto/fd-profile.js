@@ -54,8 +54,9 @@
   function resolveBrandLabel(user, brandMap) {
     if (!user) return '—';
     var role = normalizeUserRole(user.role);
-    if (role === 'admin' || user.brand_id == null || user.brand_id === '') {
-      return 'Tutti i brand';
+    if (role === 'admin') return 'Tutti i brand';
+    if (user.brand_id == null || user.brand_id === '') {
+      return 'Nessun brand assegnato';
     }
     var bid = String(user.brand_id);
     if (brandMap && brandMap[bid]) return brandMap[bid];
