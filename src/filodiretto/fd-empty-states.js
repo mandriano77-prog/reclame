@@ -32,8 +32,8 @@
       icon: 'ticket'
     },
     challenge: {
-      title: 'Nessuna challenge attiva',
-      description: 'Crea sfide skill-based: quiz formativi, Memory Match, Puzzle e leaderboard a punti.',
+      title: 'Nessuna campagna Challenge',
+      description: 'Crea sfide basate sulle abilità: quiz formativi, Memory Match, Puzzle e classifica a punti.',
       ctaLabel: '+ Nuova Campagna',
       ctaOnclick: 'openGamModal()',
       helpHref: DOC_BASE + '#challenge',

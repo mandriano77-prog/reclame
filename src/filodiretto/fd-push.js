@@ -9,8 +9,8 @@
   var TEST_PASS_KEY = 'fd:pushTestPassId';
 
   var CHANNELS = [
-    { value: 'apple', label: 'iPhone (Apple Wallet)', icon: '', tip: 'Invio tramite APNs (Apple Push Notification service)' },
-    { value: 'google', label: 'Android (Google Wallet)', icon: '', tip: 'Aggiornamento messaggio su Google Wallet' },
+    { value: 'apple', label: 'Apple Wallet', icon: '', tip: 'Invio tramite APNs (Apple Push Notification service)' },
+    { value: 'google', label: 'Google Wallet', icon: '', tip: 'Aggiornamento messaggio su Google Wallet' },
     { value: 'samsung', label: 'Samsung Wallet', icon: '', tip: 'Aggiornamento contenuto su Samsung Wallet' },
     { value: 'all', label: 'Tutti i canali', icon: '⇄', tip: 'Apple APNs + Google Wallet + Samsung Wallet' }
   ];

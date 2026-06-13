@@ -36,15 +36,15 @@
       '<div class="stats-grid fd-aud-behavior-grid">' +
       statCard(b.unique_holders_active ?? 0, 'Possessori attivi') +
       statCard(f.opened ?? 0, 'Aperture pass') +
-      statCard(f.link_clicks ?? 0, 'Click link retro') +
-      statCard(f.unique_clickers ?? 0, 'Utenti unici click') +
+      statCard(f.link_clicks ?? 0, 'Clic link retro') +
+      statCard(f.unique_clickers ?? 0, 'Utenti unici clic') +
       '</div></div>'
     );
   }
 
   function renderLinkFunnels(funnels) {
     if (!funnels.length) {
-      return '<span>Nessun click per link nel periodo. Rigenera i pass per attivare il tracking.</span>';
+      return '<span>Nessun clic per link nel periodo. Rigenera i pass per attivare il tracking.</span>';
     }
     return funnels.map(function (item) {
       return (
@@ -55,7 +55,7 @@
         '<div><strong>' + escHtml(item.pass_holders) + '</strong><span>Pass</span></div>' +
         '<div><strong>' + escHtml(item.installed) + '</strong><span>Install.</span></div>' +
         '<div><strong>' + escHtml(item.opened) + '</strong><span>Aperti</span></div>' +
-        '<div><strong>' + escHtml(item.unique_clickers) + '</strong><span>Click unici</span></div>' +
+        '<div><strong>' + escHtml(item.unique_clickers) + '</strong><span>Clic unici</span></div>' +
         '<div><strong>' + escHtml(item.ctr_from_opened_pct) + '%</strong><span>CTR/Aperti</span></div>' +
         '</div></div>'
       );
@@ -101,7 +101,7 @@
               '<strong>' + escHtml(l.clicks) + '</strong></div>'
             );
           }).join('')
-          : '<span>Nessun click registrato ancora. I nuovi pass tracciano i link del retro.</span>';
+          : '<span>Nessun clic registrato ancora. I nuovi pass tracciano i link del retro.</span>';
       }
 
       var evRes = await fetch(api + '/brands/' + encodeURIComponent(brandId) + '/holder-events?limit=40', {

@@ -20,11 +20,11 @@
     host.innerHTML = `
       <div class="contacts-card__heading contacts-join-card__header">
         <div class="contacts-join-card__title-wrap">
-          <h2 class="contacts-card__title">Pagina Join pubblica</h2>
+          <h2 class="contacts-card__title">Pagina di adesione pubblica</h2>
           <div id="contactsJoinHelp" class="contacts-card__help"></div>
         </div>
         <label class="contacts-join-card__toggle">
-          <span>Pagina Join attiva</span>
+          <span>Pagina di adesione attiva</span>
           <input type="checkbox" id="contactsJoinEnabled" aria-describedby="contactsJoinToggleStatus">
           <span id="contactsJoinToggleStatus" class="contacts-join-card__toggle-status">Bozza</span>
         </label>
@@ -52,7 +52,7 @@
 
     window.HelpPopover.render({
       host: host.querySelector('#contactsJoinHelp'),
-      title: 'Pagina Join pubblica',
+      title: 'Pagina di adesione pubblica',
       what: 'URL pubblico dove i dipendenti richiedono il pass da soli.',
       whenToUse: [
         'Quando non hai l\'elenco completo',

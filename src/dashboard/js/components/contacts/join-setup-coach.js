@@ -14,19 +14,19 @@
     {
       id: 'distribution',
       title: 'Scegli come distribuire i pass',
-      body: 'Seleziona invito diretto, pagina Join pubblica o modalità ibrida.',
+      body: 'Seleziona invito diretto, pagina di adesione pubblica o modalità ibrida.',
       target: '#contactsCardBHost'
     },
     {
       id: 'slug',
-      title: 'Imposta lo slug della tua pagina Join',
+      title: 'Imposta lo slug della tua pagina di adesione',
       body: 'Lo slug compone l\'URL pubblico che condividerai con i dipendenti.',
       target: '#contactsJoinSlug'
     },
     {
       id: 'share',
       title: 'Condividi il link o invita dall\'anagrafica',
-      body: 'Copia il link Join oppure usa «Invia attivazione» dalla toolbar anagrafica.',
+      body: 'Copia il link di adesione oppure usa «Invia attivazione» dalla toolbar anagrafica.',
       target: '#contactsJoinCopyBtn, #leadsDistributeBtn'
     }
   ];

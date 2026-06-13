@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-setup-ux';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-setup-ux';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260613-wording';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260613-wording';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -2273,7 +2273,7 @@
                     <div class="stat-card"><div class="stat-value" id="iwStatCampaigns">0</div><div class="stat-label">Campagne attive</div></div>
                     <div class="stat-card"><div class="stat-value" id="iwStatPlays">0</div><div class="stat-label">Premi assegnati</div></div>
                     <div class="stat-card"><div class="stat-value" id="iwStatWins">0</div><div class="stat-label">Premi riscattati</div></div>
-                    <div class="stat-card"><div class="stat-value" id="iwStatRate">0%</div><div class="stat-label">Redemption Rate (%)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="iwStatRate">0%</div><div class="stat-label">Tasso di riscatto (%)</div></div>
                 </div>
 
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -2322,7 +2322,7 @@
             <!-- GAMIFICATION -->
             <div id="gamification" class="section" data-rbac-section="gamification">
                 <h1 class="sec-title page-title">Challenge</h1>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea sfide skill-based per i tuoi team: Quiz formativi, Memory Match, Puzzle e leaderboard a punti.</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea sfide basate sulle abilità per i tuoi team: quiz formativi, Memory Match, Puzzle e classifica a punti.</p>
 
                 <div class="stats-grid" id="gamStats">
                     <div class="stat-card"><div class="stat-value" id="gamStatCampaigns">0</div><div class="stat-label">Challenge attive</div></div>
@@ -2619,7 +2619,7 @@
             <!-- AUDIENCES -->
                         <div id="audiences" class="section" data-rbac-section="audiences">
                 <h1 class="sec-title page-title">Audience</h1>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">Segmentazione possessori pass, statistiche di apertura e click sul retro, audience salvate. Per segmenti in linguaggio naturale usa <strong>W.AI</strong> (pulsante in basso a destra).</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">Segmentazione possessori pass, statistiche di apertura e clic sul retro, audience salvate. Per segmenti in linguaggio naturale usa <strong>W.AI</strong> (pulsante in basso a destra).</p>
                 <button type="button" class="btn sec fd-rbac-write" data-requires-write="audiences" style="margin-bottom:16px;" onclick="openWaiForAudience()">Apri W.AI · segmenta audience</button>
 
                 <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
@@ -2709,7 +2709,7 @@
                                 <option value="never">Non ha mai fatto</option>
                             </select>
                         </div>
-                        <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction"><option value="">—</option><option value="opened">Aperto pass</option><option value="link_click">Click link retro</option><option value="installed">Installato</option><option value="instant_win_played">Reward</option><option value="gamification_played">Challenge</option></select></div>
+                        <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction"><option value="">—</option><option value="opened">Aperto pass</option><option value="link_click">Clic link retro</option><option value="installed">Installato</option><option value="instant_win_played">Reward</option><option value="gamification_played">Challenge</option></select></div>
                         <div class="form-group" style="flex:1;"><label class="form-label">Target key</label><input type="text" id="audBehaviorTargetKey" placeholder="link_0"></div>
                     </div>
                     <div class="form-row">
@@ -2761,7 +2761,7 @@
                 </div>
                 <div class="card" style="margin-bottom:16px;">
                     <div class="analytics-toolbar">
-                        <div class="sec-title" style="font-size:16px;margin-bottom:0;">Top campagne per conversione</div>
+                        <div class="sec-title" style="font-size:16px;margin-bottom:0;">Migliori campagne per conversione</div>
                         <div class="analytics-actions">
                             <button type="button" class="btn small sec" onclick="exportAnalyticsChart('top','png')">PNG</button>
                             <button type="button" class="btn small sec" onclick="exportAnalyticsChart('top','svg')">SVG</button>
@@ -2769,7 +2769,7 @@
                     </div>
                     <div id="analyticsTopCampaigns"></div>
                 </div>
-                <div class="sec-title" style="font-size:18px;">Performance per Campagna</div>
+                <div class="sec-title" style="font-size:18px;">Performance per campagna</div>
                 <table class="table" id="campaignAnalyticsTable">
                     <thead><tr><th>Campagna</th><th>Download</th><th>Install</th><th>Conv. %</th><th>UTM Source</th><th>Stato</th></tr></thead>
                     <tbody></tbody>
@@ -7628,8 +7628,8 @@ async function loadAudienceBehavior() {
             <div class="stat-num">${b.total_events ?? 0}</div><div class="stat-label">Eventi (${days} gg)</div>
             <div class="stat-card"><div class="stat-num">${b.unique_holders_active ?? 0}<div class="stat-label">Possessori attivi</div></div>
             <div class="stat-card"><div class="stat-num">${f.opened ?? 0}</div><div class="stat-label">Aperture pass</div></div>
-            <div class="stat-card"><div class="stat-num">${f.link_clicks ?? 0}</div><div class="stat-label">Click link retro</div></div>
-            <div class="stat-card"><div class="stat-num">${f.unique_clickers ?? 0}</div>Utenti unici click
+            <div class="stat-card"><div class="stat-num">${f.link_clicks ?? 0}</div><div class="stat-label">Clic link retro</div></div>
+            <div class="stat-card"><div class="stat-num">${f.unique_clickers ?? 0}</div>Utenti unici clic
         `.replace(/<\/?motion[^>]*>/g, '');
 
         const funnels = b.link_funnels || [];
@@ -7640,11 +7640,11 @@ async function loadAudienceBehavior() {
                     <div>${f.pass_holders}</div><div style="color:var(--text2);">Pass</div></div>
                     <div><div style="font-weight:700;">${f.installed}</div><div style="color:var(--text2);">Install.</div></div>
                     <div><div style="font-weight:700;">${f.opened}</div><div style="color:var(--text2);">Aperti</div></div>
-                    <div><div style="font-weight:700;">${f.unique_clickers}</div><div style="color:var(--text2);">Click unici</div></div>
+                    <div><div style="font-weight:700;">${f.unique_clickers}</div><div style="color:var(--text2);">Clic unici</div></div>
                     <div><div style="font-weight:700;">${f.ctr_from_opened_pct}%</div><div style="color:var(--text2);">CTR/Aperti</div></div>
                 </div>
             </div>
-        `).join('') : '<span>Nessun click per link nel periodo. Rigenera i pass per attivare il tracking.</span>';
+        `).join('') : '<span>Nessun clic per link nel periodo. Rigenera i pass per attivare il tracking.</span>';
 
         const links = b.top_link_clicks || [];
         document.getElementById('audienceTopLinks').innerHTML = links.length ? links.map(l =>
@@ -7652,7 +7652,7 @@ async function loadAudienceBehavior() {
                 <span>${esc(l.target_label || l.target_key || 'Link')} <span style="color:var(--text2);font-size:11px;">${esc((l.target_url || '').slice(0,40))}</span></span>
                 <strong>${l.clicks}</strong>
             `
-        ).join('') : '<span>Nessun click registrato ancora. I nuovi pass tracciano i link del retro.</span>';
+        ).join('') : '<span>Nessun clic registrato ancora. I nuovi pass tracciano i link del retro.</span>';
 
         const evRes = await fetch(`${API}/brands/${brandId}/holder-events?limit=40`, { headers: getAuthHeaders() });
         const events = evRes.ok ? await evRes.json() : [];
@@ -9709,7 +9709,7 @@ async function loadGamification() {
         document.getElementById('gamStatAwards').textContent = stats.total_awards ?? stats.total_gold ?? 0;
 
         const tbody = document.getElementById('gamTable').querySelector('tbody');
-        const gamEmptyOpts = { title: 'Nessuna challenge attiva', ctaOnclick: 'openGamModal()', icon: 'ticket' };
+        const gamEmptyOpts = { title: 'Nessuna campagna Challenge', ctaOnclick: 'openGamModal()', icon: 'ticket' };
         const gamEmptyRow = typeof fdTableEmptyState === 'function'
             ? fdTableEmptyState(8, gamEmptyOpts)
             : (typeof renderTableEmptyState === 'function' ? renderTableEmptyState(8, gamEmptyOpts) : '');
@@ -9956,9 +9956,9 @@ async function loadAnalytics() {
         `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Callback Google ricevuti: ${gwCb} · processati: ${gwCbProcessed}</div>`;
     const swHint = `<div style="font-size:11px;color:var(--text2);margin-top:4px;">Confermati tramite Send Card State da Samsung Wallet</div>`;
     document.getElementById('analyticsStats').innerHTML = `
-        <div class="stat-card"><div class="stat-label">Pass Totali</div><div class="stat-value">${analytics.totalPasses||0}</div></div>
-        <div class="stat-card"><div class="stat-label">Download Totali</div><div class="stat-value">${totalDL}</div></div>
-        <div class="stat-card"><div class="stat-label">Install Totali</div><div class="stat-value">${totalIN}</div></div>
+        <div class="stat-card"><div class="stat-label">Pass totali</div><div class="stat-value">${analytics.totalPasses||0}</div></div>
+        <div class="stat-card"><div class="stat-label">Download totali</div><div class="stat-value">${totalDL}</div></div>
+        <div class="stat-card"><div class="stat-label">Installazioni totali</div><div class="stat-value">${totalIN}</div></div>
         <div class="stat-card"><div class="stat-label">Download da desktop (info)</div><div class="stat-value">${desktopDownloads}</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">Separati dai KPI wallet confermati</div></div>
         <div class="stat-card"><div class="stat-label">Apple · dispositivi PassKit</div><div class="stat-value">${appleDv}</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">iPhone/iPad distinti con pass in Wallet</div></div>
         <div class="stat-card"><div class="stat-label">Google Wallet · pass salvati</div><div class="stat-value">${gwSaved}</div>${gwHint}</div>

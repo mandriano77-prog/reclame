@@ -9,7 +9,7 @@
     },
     {
       id: 'public_join',
-      title: 'Pagina Join pubblica',
+      title: 'Pagina di adesione pubblica',
       description: 'I dipendenti si registrano da soli su una pagina dedicata.'
     },
     {
@@ -21,9 +21,9 @@
   ];
 
   const MODE_COPY = {
-    direct_invite: 'Gli inviti partono solo dall\'anagrafica: seleziona i dipendenti e usa «Invia attivazione». La pagina Join pubblica resta disattivata.',
-    public_join: 'I dipendenti ottengono il pass solo dalla pagina Join pubblica. Configura slug, domini e condividi il link o il QR.',
-    hybrid: 'Inviti email dall\'anagrafica e auto-iscrizione dalla pagina Join pubblica restano entrambi attivi. Ideale con anagrafica parziale o popolazione in crescita.'
+    direct_invite: 'Gli inviti partono solo dall\'anagrafica: seleziona i dipendenti e usa «Invia attivazione». La pagina di adesione pubblica resta disattivata.',
+    public_join: 'I dipendenti ottengono il pass solo dalla pagina di adesione pubblica. Configura slug, domini e condividi il link o il QR.',
+    hybrid: 'Inviti email dall\'anagrafica e auto-iscrizione dalla pagina di adesione pubblica restano entrambi attivi. Ideale con anagrafica parziale o popolazione in crescita.'
   };
 
   function renderDistributionModeCard(options) {
@@ -44,7 +44,7 @@
     window.HelpPopover.render({
       host: host.querySelector('#contactsDistributionHelp'),
       title: 'Distribuzione pass — Ibrida',
-      what: 'Permette ai dipendenti di ottenere il pass sia tramite invito diretto sia auto-iscrivendosi dalla pagina Join pubblica.',
+      what: 'Permette ai dipendenti di ottenere il pass sia tramite invito diretto sia auto-iscrivendosi dalla pagina di adesione pubblica.',
       whenToUse: [
         'Anagrafica parziale',
         'Popolazione in crescita',

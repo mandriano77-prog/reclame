@@ -124,7 +124,7 @@
     var intro = section.querySelector('p');
     if (intro && /W\.AI/i.test(intro.textContent || '')) {
       intro.innerHTML =
-        'Segmentazione possessori pass, statistiche di apertura e click sul retro, audience salvate. ' +
+        'Segmentazione possessori pass, statistiche di apertura e clic sul retro, audience salvate. ' +
         'Per segmenti in linguaggio naturale usa l\'assistente ' +
         '<button type="button" class="fd-wai-inline-link" data-fd-wai-open data-fd-wai-mode="audience">W.AI</button>.';
     }

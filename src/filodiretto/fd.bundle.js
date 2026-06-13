@@ -558,7 +558,7 @@
     var intro = section.querySelector('p');
     if (intro && /W\.AI/i.test(intro.textContent || '')) {
       intro.innerHTML =
-        'Segmentazione possessori pass, statistiche di apertura e click sul retro, audience salvate. ' +
+        'Segmentazione possessori pass, statistiche di apertura e clic sul retro, audience salvate. ' +
         'Per segmenti in linguaggio naturale usa l\'assistente ' +
         '<button type="button" class="fd-wai-inline-link" data-fd-wai-open data-fd-wai-mode="audience">W.AI</button>.';
     }
@@ -4461,8 +4461,8 @@
       icon: 'ticket'
     },
     challenge: {
-      title: 'Nessuna challenge attiva',
-      description: 'Crea sfide skill-based: quiz formativi, Memory Match, Puzzle e leaderboard a punti.',
+      title: 'Nessuna campagna Challenge',
+      description: 'Crea sfide basate sulle abilità: quiz formativi, Memory Match, Puzzle e classifica a punti.',
       ctaLabel: '+ Nuova Campagna',
       ctaOnclick: 'openGamModal()',
       helpHref: DOC_BASE + '#challenge',
@@ -5076,8 +5076,8 @@
   var MESSAGE_MAX = 178;
   var TEST_PASS_KEY = 'fd:pushTestPassId';
   var CHANNELS = [
-    { value: 'apple', label: 'iPhone (Apple Wallet)', icon: '', tip: 'Invio tramite APNs (Apple Push Notification service)' },
-    { value: 'google', label: 'Android (Google Wallet)', icon: '', tip: 'Aggiornamento messaggio su Google Wallet' },
+    { value: 'apple', label: 'Apple Wallet', icon: '', tip: 'Invio tramite APNs (Apple Push Notification service)' },
+    { value: 'google', label: 'Google Wallet', icon: '', tip: 'Aggiornamento messaggio su Google Wallet' },
     { value: 'samsung', label: 'Samsung Wallet', icon: '', tip: 'Aggiornamento contenuto su Samsung Wallet' },
     { value: 'all', label: 'Tutti i canali', icon: '⇄', tip: 'Apple APNs + Google Wallet + Samsung Wallet' }
   ];
@@ -6042,14 +6042,14 @@
       '<div class="stats-grid fd-aud-behavior-grid">' +
       statCard(b.unique_holders_active ?? 0, 'Possessori attivi') +
       statCard(f.opened ?? 0, 'Aperture pass') +
-      statCard(f.link_clicks ?? 0, 'Click link retro') +
-      statCard(f.unique_clickers ?? 0, 'Utenti unici click') +
+      statCard(f.link_clicks ?? 0, 'Clic link retro') +
+      statCard(f.unique_clickers ?? 0, 'Utenti unici clic') +
       '</div></div>'
     );
   }
   function renderLinkFunnels(funnels) {
     if (!funnels.length) {
-      return '<span>Nessun click per link nel periodo. Rigenera i pass per attivare il tracking.</span>';
+      return '<span>Nessun clic per link nel periodo. Rigenera i pass per attivare il tracking.</span>';
     }
     return funnels.map(function (item) {
       return (
@@ -6060,7 +6060,7 @@
         '<div><strong>' + escHtml(item.pass_holders) + '</strong><span>Pass</span></div>' +
         '<div><strong>' + escHtml(item.installed) + '</strong><span>Install.</span></div>' +
         '<div><strong>' + escHtml(item.opened) + '</strong><span>Aperti</span></div>' +
-        '<div><strong>' + escHtml(item.unique_clickers) + '</strong><span>Click unici</span></div>' +
+        '<div><strong>' + escHtml(item.unique_clickers) + '</strong><span>Clic unici</span></div>' +
         '<div><strong>' + escHtml(item.ctr_from_opened_pct) + '%</strong><span>CTR/Aperti</span></div>' +
         '</div></div>'
       );
@@ -6100,7 +6100,7 @@
               '<strong>' + escHtml(l.clicks) + '</strong></div>'
             );
           }).join('')
-          : '<span>Nessun click registrato ancora. I nuovi pass tracciano i link del retro.</span>';
+          : '<span>Nessun clic registrato ancora. I nuovi pass tracciano i link del retro.</span>';
       }
       var evRes = await fetch(api + '/brands/' + encodeURIComponent(brandId) + '/holder-events?limit=40', {
         headers: headers
