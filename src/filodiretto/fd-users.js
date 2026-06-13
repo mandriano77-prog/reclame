@@ -79,6 +79,85 @@
     btn.classList.add('fd-btn-primary');
   }
 
+  function getUserBrandGroup() {
+    var brandSel = document.getElementById('userBrand');
+    if (!brandSel) return null;
+    var group = brandSel.closest('.form-group');
+    if (group && !group.id) group.id = 'userBrandGroup';
+    return group;
+  }
+
+  function syncUserBrandFieldVisibility() {
+    var roleEl = document.getElementById('userRole');
+    var group = getUserBrandGroup();
+    if (!roleEl || !group) return;
+    var isManager = roleEl.value === 'manager';
+    group.hidden = !isManager;
+    if (!isManager) {
+      var brandSel = document.getElementById('userBrand');
+      if (brandSel) brandSel.value = '';
+    }
+  }
+
+  function wireCreateUserForm() {
+    if (document.body.dataset.fdUserFormBound === '1') return;
+    document.body.dataset.fdUserFormBound = '1';
+
+    var nameEl = document.getElementById('userName');
+    var emailEl = document.getElementById('userEmail');
+    var passEl = document.getElementById('userPassword');
+    if (nameEl) {
+      nameEl.setAttribute('autocomplete', 'name');
+      nameEl.setAttribute('name', 'name');
+    }
+    if (emailEl) {
+      emailEl.setAttribute('autocomplete', 'email');
+      emailEl.setAttribute('name', 'email');
+    }
+    if (passEl) {
+      passEl.setAttribute('autocomplete', 'new-password');
+      passEl.setAttribute('name', 'password');
+    }
+
+    var roleEl = document.getElementById('userRole');
+    if (roleEl) roleEl.addEventListener('change', syncUserBrandFieldVisibility);
+
+    syncUserBrandFieldVisibility();
+    patchUserModalHooks();
+  }
+
+  function patchUserModalHooks() {
+    if (window.__fdUserModalHooksPatched) return;
+    window.__fdUserModalHooksPatched = true;
+
+    var origOpen = window.openCreateUserModal;
+    if (typeof origOpen === 'function') {
+      window.openCreateUserModal = function () {
+        origOpen.apply(this, arguments);
+        syncUserBrandFieldVisibility();
+      };
+    }
+
+    var origCreate = window.createUser;
+    if (typeof origCreate === 'function') {
+      window.createUser = async function () {
+        var roleEl = document.getElementById('userRole');
+        var brandSel = document.getElementById('userBrand');
+        if (roleEl && roleEl.value !== 'manager' && brandSel) brandSel.value = '';
+        return origCreate.apply(this, arguments);
+      };
+    }
+  }
+
+  function ensureConfirmDialogCentering() {
+    var dlg = document.getElementById('appConfirmDialog');
+    if (!dlg || dlg.dataset.fdConfirmCentered === '1') return;
+    dlg.dataset.fdConfirmCentered = '1';
+    if (dlg.parentNode && dlg.parentNode !== document.body) {
+      document.body.appendChild(dlg);
+    }
+  }
+
   function ensureUsersChrome() {
     var section = document.getElementById('users');
     if (!section) return;
@@ -86,6 +165,8 @@
       section.classList.add('users--fd');
     }
     ensureCreateUserButton();
+    wireCreateUserForm();
+    ensureConfirmDialogCentering();
 
     if (section.classList.contains('fd-users-chrome-ready')) return;
     section.classList.add('fd-users-chrome-ready');
@@ -323,9 +404,14 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      if (isFiloUsersApp()) ensureUsersChrome();
+      if (!isFiloUsersApp()) return;
+      ensureConfirmDialogCentering();
+      wireCreateUserForm();
+      ensureUsersChrome();
     });
   } else if (isFiloUsersApp()) {
+    ensureConfirmDialogCentering();
+    wireCreateUserForm();
     ensureUsersChrome();
   }
 })();
