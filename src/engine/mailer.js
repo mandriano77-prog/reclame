@@ -72,15 +72,26 @@ function inviteEmailFromIdentity() {
   return { fromEmail: getFromEmail(), fromName: getFromName() };
 }
 
+function buildInviteInlineLogoAttachment(brandLogoAttachment) {
+  if (!brandLogoAttachment?.cid) return null;
+  const att = {
+    filename: brandLogoAttachment.filename || 'brand-logo.png',
+    content_id: brandLogoAttachment.cid,
+    content_type: brandLogoAttachment.content_type || 'image/png',
+  };
+  if (brandLogoAttachment.path) att.path = brandLogoAttachment.path;
+  else if (brandLogoAttachment.content) att.content = brandLogoAttachment.content;
+  else return null;
+  return att;
+}
+
 function buildInviteBrandBadgeHtml(brandName, logo) {
   if (!brandName) return '';
   const safeName = escapeHtml(brandName);
   const initials = escapeHtml(brandInitialsFromName(brandName));
   const logoCell = logo?.cid
     ? `<img src="cid:${escapeHtml(logo.cid)}" alt="${safeName}" width="56" height="56" style="display:block;width:56px;height:56px;border:0;outline:none;text-decoration:none;border-radius:12px;object-fit:contain;background-color:${FD_INVITE_EMAIL.card};" />`
-    : logo?.url
-      ? `<img src="${escapeHtml(logo.url)}" alt="${safeName}" width="56" height="56" style="display:block;width:56px;height:56px;border:0;outline:none;text-decoration:none;border-radius:12px;object-fit:contain;background-color:${FD_INVITE_EMAIL.card};" />`
-      : `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="56" height="56" style="width:56px;height:56px;border-radius:28px;background-color:${FD_INVITE_EMAIL.primary};color:#FFFFFF;font-family:${FD_INVITE_EMAIL.fontStack};font-size:18px;font-weight:700;line-height:56px;text-align:center;">${initials}</td></tr></table>`;
+    : `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" width="56" height="56" style="width:56px;height:56px;border-radius:28px;background-color:${FD_INVITE_EMAIL.primary};color:#FFFFFF;font-family:${FD_INVITE_EMAIL.fontStack};font-size:18px;font-weight:700;line-height:56px;text-align:center;">${initials}</td></tr></table>`;
 
   return `
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px;">
@@ -436,9 +447,8 @@ async function sendUserInviteEmail({ to, name, role, brandName, brandLogo, brand
 
   const product = dashboardEmailProductTitle(productTitle);
   const { fromEmail, fromName } = inviteEmailFromIdentity();
-  const logoForBadge = brandLogoAttachment?.cid
-    ? { cid: brandLogoAttachment.cid }
-    : brandLogo || null;
+  const inlineLogoAttachment = buildInviteInlineLogoAttachment(brandLogoAttachment);
+  const logoForBadge = inlineLogoAttachment ? { cid: inlineLogoAttachment.content_id } : null;
   const html = buildUserInviteEmailHtml({
     productTitle: product,
     userName: name,
@@ -466,12 +476,8 @@ async function sendUserInviteEmail({ to, name, role, brandName, brandLogo, brand
     html,
     text,
   };
-  if (brandLogoAttachment?.cid && brandLogoAttachment.content) {
-    payload.attachments = [{
-      filename: brandLogoAttachment.filename || 'brand-logo.png',
-      content: brandLogoAttachment.content,
-      content_id: brandLogoAttachment.cid,
-    }];
+  if (inlineLogoAttachment) {
+    payload.attachments = [inlineLogoAttachment];
   }
 
   const result = await resend.emails.send(payload);

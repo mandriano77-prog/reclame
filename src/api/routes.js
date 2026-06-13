@@ -350,27 +350,15 @@ async function resolveUserInviteBrandContext(user) {
   const brand = await getBrand(user.brand_id);
   if (!brand) return { brandName: null, brandLogo: null, brandLogoAttachment: null };
 
-  const { resolveBrandLogoRawBuffer } = require('../engine/brand-wallet-logo');
+  const { resolveBrandLogoRawBuffer, buildInviteEmailLogoAttachment } = require('../engine/brand-wallet-logo');
   const resolved = await resolveBrandLogoRawBuffer(brand);
-  let brandLogoAttachment = null;
-  if (resolved?.buffer?.length) {
-    brandLogoAttachment = {
-      cid: 'brand-invite-logo',
-      filename: 'brand-logo.png',
-      content: resolved.buffer.toString('base64'),
-    };
-  }
-
-  const brandLogoUrl = buildPublicBrandLogoUrl(brand);
-  const brandLogo = brandLogoAttachment?.cid
-    ? { cid: brandLogoAttachment.cid }
-    : brandLogoUrl
-      ? { url: brandLogoUrl }
-      : null;
+  const brandLogoAttachment = resolved?.buffer?.length
+    ? await buildInviteEmailLogoAttachment(resolved.buffer)
+    : null;
 
   return {
     brandName: brand.name || null,
-    brandLogo,
+    brandLogo: brandLogoAttachment ? { cid: brandLogoAttachment.cid } : null,
     brandLogoAttachment,
   };
 }

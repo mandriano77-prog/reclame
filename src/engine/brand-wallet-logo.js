@@ -26,6 +26,28 @@ async function resolveBrandLogoRawBuffer(brand) {
   return null;
 }
 
+const INVITE_EMAIL_LOGO_CID = 'brand-invite-logo';
+
+/** PNG inline attachment for dashboard invite emails (Resend CID). */
+async function buildInviteEmailLogoAttachment(rawBuffer) {
+  if (!rawBuffer?.length) return null;
+  try {
+    const png = await sharp(rawBuffer)
+      .png()
+      .resize(120, 120, { fit: 'inside', withoutEnlargement: true })
+      .toBuffer();
+    return {
+      cid: INVITE_EMAIL_LOGO_CID,
+      filename: 'brand-logo.png',
+      content_type: 'image/png',
+      content: png.toString('base64'),
+    };
+  } catch (err) {
+    console.warn('[invite-email] logo normalize failed:', err.message);
+    return null;
+  }
+}
+
 /** Square icon for push notifications — dedicated asset, not the wide pass logo. */
 async function resolveNotificationIconRawBuffer(brand) {
   const mediaId = brand?.config?.brand_identity_assets?.wallet_icon;
@@ -264,6 +286,8 @@ async function inspectPkpassIcon(pkpassBuffer) {
 
 module.exports = {
   resolveBrandLogoRawBuffer,
+  buildInviteEmailLogoAttachment,
+  INVITE_EMAIL_LOGO_CID,
   resolveNotificationIconRawBuffer,
   resolveWalletLogoRawBuffer,
   resolvePassIconBuffers,
