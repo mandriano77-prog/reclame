@@ -16,7 +16,7 @@ const {
   createTemplate, getTemplate, listTemplates, updateTemplate, deleteTemplate,
   createCampaign, getCampaign, listCampaigns, updateCampaign, deleteCampaign,
   incrementCampaignDownloads, incrementCampaignInstalls,
-  createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesForTemplate, listPasses, countPasses, deletePass,
+  createPassInstance, getPassInstance, getPassBySerial, updatePassInstance, touchPass, touchPassesByIds, touchPassesForTemplate, listPasses, countPasses, deletePass,
   getMemberForPass, listEmployeesForBrand, getEmployeeFieldOptionsForBrand,
   isEmployeeMatricolaAvailable, importEmployeesBatch,
   findMemberByBrandKey, createMemberRecord, updateMemberRecord, deleteMemberRecord,
@@ -27,6 +27,7 @@ const {
   registerDevice, getDevicesForPass, getDevicesForBrand, getDevicesForTemplate, unregisterDevice, getSerialsForDevice,
   getAnalytics, getCampaignAnalytics,
   logPush, listPushes, deletePush, clearPushHistory,
+  createPushJob, getPushJob,
   createScheduledPush, listScheduledPush, getScheduledPush, updateScheduledPush, deleteScheduledPush, logPushAssistantInteraction, logWaiInteraction, listWaiLog,
   createStripPromo, listStripPromos, getStripPromo, updateStripPromo, deleteStripPromo,
   createUser, getUserByEmail, getUser, listUsers, updateUser, deleteUser, verifyPassword,
@@ -80,7 +81,8 @@ const { resolvePortalHref } = require('../engine/thank-you-html');
 const { getFormats, getFormat, generateWithFal, composeCreative } = require('../engine/creative-ai');
 const { generateBanner, BANNER_TEMPLATES, IAB_FORMATS } = require('../engine/banner-builder');
 const { generateVideo, cleanupVideo, VIDEO_FORMATS, VIDEO_TEMPLATES } = require('../engine/video-builder');
-const { sendPushUpdate, shouldPruneApnsRegistration } = require('../engine/apns');
+const { sendPushUpdate, sendPushBatch, shouldPruneApnsRegistration } = require('../engine/apns');
+const { executeWalletPush, enqueuePushJob } = require('../engine/push-dispatch');
 const { computeInitialScheduledRun } = require('../engine/scheduler');
 const { generateLandingCopy, generateCreativeCopy } = require('../engine/ai-copy');
 const { planScheduledPush } = require('../engine/push-assistant');
@@ -2110,13 +2112,9 @@ router.put('/templates/:id', async (req, res) => {
     const { touched } = await touchPassesForTemplate(req.params.id);
     let wallet_push_sent = 0;
     const devices = await getDevicesForTemplate(req.params.id);
-    for (const device of devices) {
-      try {
-        const result = await sendPushUpdate(device.push_token);
-        if (result.success) wallet_push_sent++;
-      } catch (pushErr) {
-        console.error('[Template] Wallet push error:', pushErr.message);
-      }
+    if (devices.length) {
+      const batch = await sendPushBatch(devices.map((d) => d.push_token));
+      wallet_push_sent = batch.filter((r) => r.success).length;
     }
     res.json({ ...template, wallet_refresh: { passes_touched: touched, push_sent: wallet_push_sent } });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2338,246 +2336,65 @@ router.post('/push/send', async (req, res) => {
       back_link_label, back_link_url,
       include_pass_link, pass_link_url, pass_link_label, pass_link_expires_at,
       strip_media_id, strip_base64,
-      test_pass_id
+      test_pass_id,
     } = req.body;
     if (!brand_id || !title || !message) return res.status(400).json({ error: 'brand_id, title, message richiesti' });
     if (!requireBrandId(req, res, brand_id)) return;
     if (!assertPushChannel(channel)) {
       return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
     }
-    const { sendApple, sendGoogle, sendSamsung } = parseWalletPushFlags(channel);
 
-    console.log(`[PUSH DEBUG] brand_id from dashboard: "${brand_id}" | campaign_id: "${campaign_id || 'none'}" | audience_id: "${audience_id || 'none'}"`);
-
-    // Debug: check what's in the DB
-    const allDevices = await pool.query('SELECT COUNT(*) as count FROM device_registrations');
-    const allPasses = await pool.query('SELECT DISTINCT brand_id FROM pass_instances');
-    console.log(`[PUSH DEBUG] Total devices in DB: ${allDevices.rows[0].count} | Brand IDs in passes: ${JSON.stringify(allPasses.rows.map(r => r.brand_id))}`);
-
-    const pushTargetOpts = { campaign_id, audience_id };
-    let targetPasses = await getTargetPassesForPush(brand_id, pushTargetOpts);
-    if (test_pass_id) {
-      targetPasses = targetPasses.filter((p) => String(p.id) === String(test_pass_id));
-      if (!targetPasses.length) {
-        return res.status(400).json({ error: 'Pass di prova non trovato per questo brand' });
-      }
-    }
-    const googleEligible = targetPasses.filter(p => p.google_wallet_object_id);
-    const samsungEligible = targetPasses.filter(p => p.samsung_wallet_ref_id && p.samsung_wallet_saved);
-
-    // Get Apple APNs devices only if requested
-    let devices = [];
-    if (sendApple) {
-      devices = await getAppleDevicesForAudience(brand_id, pushTargetOpts);
-      if (test_pass_id && targetPasses.length === 1) {
-        const testSerial = targetPasses[0].serial_number;
-        devices = devices.filter((d) => d.serial_number === testSerial);
-      }
-    }
-
-    console.log(`[PUSH DEBUG] Devices found for brand: ${devices.length}`);
-    const appleEmpty = !sendApple || devices.length === 0;
-    const googleEmpty = !sendGoogle || googleEligible.length === 0;
-    const samsungEmpty =
-      !sendSamsung || samsungEligible.length === 0 || !samsungWallet.isConfigured();
-    if (appleEmpty && googleEmpty && samsungEmpty) {
-      return res.json({
-        sent_apns: 0,
-        total_apns: sendApple ? devices.length : 0,
-        google: { attempted: sendGoogle ? googleEligible.length : 0, updated: 0, errors: 0, skipped: !sendGoogle || !googleWallet.isConfigured() },
-        samsung: {
-          attempted: sendSamsung ? samsungEligible.length : 0,
-          notified: 0,
-          skipped: !sendSamsung || !samsungWallet.isConfigured()
-        },
-        message: 'Nessun destinatario per i canali selezionati',
-        debug: { brand_id_sent: brand_id, total_devices_in_db: parseInt(allDevices.rows[0].count), brand_ids_in_passes: allPasses.rows.map(r => r.brand_id) }
-      });
-    }
-
-    // Update pass content if requested
-    if (update_pass !== false) {
-      let brand = await getBrand(brand_id);
-      const { syncWalletLogoFromBrandIdentity, syncWalletIconFromBrandIdentity } = require('../engine/brand-wallet-logo');
+    let resolvedStripBase64 = null;
+    if (update_pass !== false && (strip_media_id || strip_base64)) {
       try {
-        await syncWalletLogoFromBrandIdentity(brand_id, brand, {
-          syncTemplates: isHrBrand(brand, req)
-        });
-        brand = await getBrand(brand_id);
-        await syncWalletIconFromBrandIdentity(brand_id, brand, { touchPasses: true });
-        brand = await getBrand(brand_id);
-      } catch (syncErr) {
-        console.warn('[PUSH] wallet logo sync skipped:', syncErr.message);
-      }
-
-      // Update brand.config.pushAnnouncement — this is what passkit.js reads
-      // to build the announcement field with changeMessage on the pass
-      const config = brand.config || {};
-      config.pushAnnouncement = { title, message, ts: Date.now() };
-
-      // Engagement links must be explicit per push action.
-      // If not selected in this request, clear old sticky values.
-      if (!instant_win_id) delete config.instantWinActive;
-      if (!gamification_id) delete config.gamificationActive;
-
-      let pushStripB64 = null;
-      try {
-        pushStripB64 = await resolvePushStripBase64({ brand_id, strip_media_id, strip_base64 });
+        resolvedStripBase64 = await resolvePushStripBase64({ brand_id, strip_media_id, strip_base64 });
       } catch (stripErr) {
         return res.status(400).json({ error: stripErr.message });
       }
-      delete config.stripOverride;
-
-      let passLink = null;
-      try {
-        passLink = parsePassLinkFromPushBody(
-          { include_pass_link, pass_link_url, pass_link_label, pass_link_expires_at, back_link_url, back_link_label },
-          title
-        );
-        if (!passLink) {
-          const linkOutUrl = (back_link_url || pass_link_url || '').trim();
-          if (linkOutUrl) {
-            passLink = parsePassLinkFromPushBody(
-              {
-                include_pass_link: true,
-                pass_link_url: linkOutUrl,
-                pass_link_label: back_link_label || pass_link_label,
-                pass_link_expires_at
-              },
-              title
-            );
-          }
-        }
-      } catch (linkErr) {
-        return res.status(400).json({ error: linkErr.message });
-      }
-
-      if (passLink) {
-        await updatePassDynamicLinks(targetPasses.map((p) => p.id), passLink);
-        console.log(`[PUSH] Dynamic pass link set on ${targetPasses.length} passes until ${passLink.expiresAt}`);
-        delete config.pushLinkOut;
-      } else {
-        delete config.pushLinkOut;
-      }
-
-      if (pushStripB64) {
-        config.stripOverride = pushStripB64;
-        console.log('[PUSH] Strip override from media library / upload');
-      }
-
-      // Instant Win: inject play link into pass back field
-      if (instant_win_id) {
-        const iwCampaign = await getInstantWinCampaign(instant_win_id);
-        if (iwCampaign && iwCampaign.status === 'active') {
-          config.instantWinActive = {
-            campaign_id: iwCampaign.id,
-            label: iwCampaign.push_message || iwCampaign.name || 'Gioca e Vinci!',
-            game_type: iwCampaign.game_type
-          };
-          if (!pushStripB64 && iwCampaign.strip_base64) {
-            config.stripOverride = iwCampaign.strip_base64;
-          }
-          console.log(`[PUSH] Instant Win injected: campaign=${iwCampaign.id}, game=${iwCampaign.game_type}`);
-        }
-      }
-
-      // Gamification: inject game link into pass back field
-      if (gamification_id) {
-        const gamCampaign = await getGamificationCampaign(gamification_id);
-        if (gamCampaign && gamCampaign.status === 'active') {
-          config.gamificationActive = {
-            campaign_id: gamCampaign.id,
-            label: gamCampaign.push_message || gamCampaign.name || 'Gioca ora!',
-            game_type: gamCampaign.game_type
-          };
-          if (!pushStripB64 && gamCampaign.strip_base64) {
-            config.stripOverride = gamCampaign.strip_base64;
-          }
-          console.log(`[PUSH] Gamification injected: campaign=${gamCampaign.id}, game=${gamCampaign.game_type}`);
-        }
-      }
-
-      await updateBrand(brand_id, { config });
-      console.log(`[PUSH] Updated brand.config.pushAnnouncement: "${title}: ${message}"`);
-
-      // Touch affected passes only for Apple channel refresh
-      if (sendApple) {
-        for (const p of targetPasses) {
-          await touchPass(p.id);
-        }
-      }
     }
 
-    // Google Wallet channel push-like update/message
-    let googleSync = { attempted: 0, updated: 0, errors: 0, skipped: !sendGoogle };
-    if (sendGoogle) {
-      const brand = await getBrand(brand_id);
-      googleSync = await syncGoogleWalletObjectsForPasses({
-        brand,
-        passes: targetPasses,
-        message
-      });
-      console.log('[GoogleWallet] Push sync', googleSync);
+    const brand = await getBrand(brand_id);
+    const pushCtx = {
+      hrDeploy: isHrBrand(brand, req),
+      resolvedStripBase64,
+    };
+    const payload = { ...req.body, field_values };
+
+    if (test_pass_id) {
+      const result = await executeWalletPush(payload, pushCtx);
+      return res.json(result);
     }
 
-    let samsungSync = { attempted: 0, notified: 0, skipped: !sendSamsung || !samsungWallet.isConfigured() };
-    if (sendSamsung && samsungWallet.isConfigured()) {
-      samsungSync = await notifySamsungSavedPasses(targetPasses);
-      console.log('[SamsungWallet] Push notify', samsungSync);
-    }
-
-    // Apple APNs push — track per-pass status
-    let sentAppleCount = 0;
-    const pushResults = [];
-    if (sendApple) {
-      for (const device of devices) {
-        try {
-          const result = await sendPushUpdate(device.push_token);
-          console.log(`[PUSH] token=${device.push_token.substring(0, 12)}... result=${JSON.stringify(result)}`);
-          pushResults.push({ token: device.push_token.substring(0, 12) + '...', serial: device.serial_number, ...result });
-          if (result.success) sentAppleCount++;
-          else if (shouldPruneApnsRegistration(result) && device.device_library_id && device.serial_number) {
-            try {
-              await unregisterDevice(device.device_library_id, device.serial_number);
-              console.warn(`[PUSH] removed invalid APNs registration device=${device.device_library_id.substring(0, 8)}... serial=${device.serial_number}`);
-            } catch (cleanupErr) {
-              console.warn('[PUSH] failed to cleanup invalid registration:', cleanupErr.message);
-            }
-          }
-
-          // Update per-pass push status
-          if (device.serial_number) {
-            const status = result.success ? 'delivered' : (result.reason || 'failed');
-            await pool.query(
-              `UPDATE pass_instances SET last_push_at = NOW(), last_push_status = $1, push_count = COALESCE(push_count, 0) + 1 WHERE serial_number = $2`,
-              [status, device.serial_number]
-            );
-          }
-        } catch (pushErr) {
-          console.error('Push error for token:', device.push_token, pushErr.message);
-          pushResults.push({ token: device.push_token.substring(0, 12) + '...', success: false, reason: pushErr.message });
-          if (device.serial_number) {
-            await pool.query(
-              `UPDATE pass_instances SET last_push_at = NOW(), last_push_status = $1, push_count = COALESCE(push_count, 0) + 1 WHERE serial_number = $2`,
-              ['error: ' + pushErr.message.substring(0, 100), device.serial_number]
-            );
-          }
-        }
-      }
-    }
-
-    const sentCombined = sentAppleCount + (googleSync.updated || 0) + (samsungSync.notified || 0);
-    await logPush({ brand_id, title, message, campaign_id, sent_count: sentCombined, channel });
-    res.json({
-      sent_apns: sentAppleCount,
-      total_apns: sendApple ? devices.length : 0,
-      google: googleSync,
-      samsung: samsungSync,
-      sent: sentCombined,
-      apns_results: pushResults
+    const job = await createPushJob({ brand_id, payload });
+    enqueuePushJob(job.id, pushCtx);
+    return res.status(202).json({
+      job_id: job.id,
+      status: 'queued',
+      message: 'Invio push avviato in background',
     });
   } catch (err) {
     console.error('Push send error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/push/jobs/:id', async (req, res) => {
+  try {
+    const job = await getPushJob(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job non trovato' });
+    if (!requireBrandId(req, res, job.brand_id)) return;
+    res.json({
+      job_id: job.id,
+      brand_id: job.brand_id,
+      status: job.status,
+      progress: job.progress || {},
+      result: job.result || null,
+      error: job.error || null,
+      created_at: job.created_at,
+      started_at: job.started_at,
+      completed_at: job.completed_at,
+    });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
@@ -2780,19 +2597,14 @@ router.put('/brands/:id/geofencing', async (req, res) => {
     const passes = await pool.query(
       'SELECT id FROM pass_instances WHERE brand_id = $1', [req.params.id]
     );
-    for (const p of passes.rows) {
-      await touchPass(p.id);
-    }
+    await touchPassesByIds(passes.rows.map((p) => p.id));
 
-    // Push update to Apple devices so they re-download the pass with new locations
     let pushCount = 0;
     if (sendApple) {
       const devices = await getDevicesForBrand(req.params.id);
-      for (const d of devices) {
-        try {
-          await sendPushUpdate(d.push_token);
-          pushCount++;
-        } catch (e) { console.error('Geofencing push error:', e.message); }
+      if (devices.length) {
+        const batch = await sendPushBatch(devices.map((d) => d.push_token));
+        pushCount = batch.filter((r) => r.success).length;
       }
     }
 
@@ -5134,65 +4946,15 @@ async function maybeGenerateAndApplyWaiStrip(payload) {
 }
 
 async function performImmediatePushForWai(payload) {
-  const { brand_id, title, message, campaign_id = null, audience_id = null, update_pass = true, channel = 'apple' } = payload;
-  if (!assertPushChannel(channel)) throw new Error('channel non valido');
-  const { sendApple, sendGoogle, sendSamsung } = parseWalletPushFlags(channel);
-
-  const pushTargetOpts = { campaign_id, audience_id };
-  const targetPasses = await getTargetPassesForPush(brand_id, pushTargetOpts);
-
-  let devices = [];
-  if (sendApple) {
-    devices = await getAppleDevicesForAudience(brand_id, pushTargetOpts);
-  }
-
+  const brand = await getBrand(payload.brand_id);
   if (payload.strip_base64) {
     await applyGeneratedStripToBrand(payload.brand_id, payload.strip_base64);
   } else if (payload.strip_prompt_en) {
     await maybeGenerateAndApplyWaiStrip(payload);
   }
-
-  if (update_pass !== false) {
-    let brand = await getBrand(brand_id);
-    const { syncWalletLogoFromBrandIdentity } = require('../engine/brand-wallet-logo');
-    try {
-      await syncWalletLogoFromBrandIdentity(brand_id, brand, {
-        syncTemplates: isHrBrand(brand, { headers: {} })
-      });
-      brand = await getBrand(brand_id);
-    } catch (syncErr) {
-      console.warn('[WAI push] wallet logo sync skipped:', syncErr.message);
-    }
-    const config = { ...(brand?.config || {}) };
-    config.pushAnnouncement = { title, message, ts: Date.now() };
-    await updateBrand(brand_id, { config });
-    if (sendApple) {
-      for (const pass of targetPasses) await touchPass(pass.id);
-    }
-  }
-
-  let sentAppleCount = 0;
-  if (sendApple) {
-    for (const device of devices) {
-      const result = await sendPushUpdate(device.push_token);
-      if (result.success) sentAppleCount++;
-    }
-  }
-
-  let googleSync = { attempted: 0, updated: 0, errors: 0, skipped: !sendGoogle };
-  if (sendGoogle) {
-    const brand = await getBrand(brand_id);
-    googleSync = await syncGoogleWalletObjectsForPasses({ brand, passes: targetPasses, message });
-  }
-
-  let samsungSync = { attempted: 0, notified: 0, skipped: !sendSamsung || !samsungWallet.isConfigured() };
-  if (sendSamsung && samsungWallet.isConfigured()) {
-    samsungSync = await notifySamsungSavedPasses(targetPasses.filter((p) => p.samsung_wallet_ref_id && p.samsung_wallet_saved));
-  }
-
-  const sentCombined = sentAppleCount + (googleSync.updated || 0) + (samsungSync.notified || 0);
-  await logPush({ brand_id, title, message, campaign_id, sent_count: sentCombined, channel });
-  return { sent: sentCombined, sent_apns: sentAppleCount, google: googleSync, samsung: samsungSync };
+  return executeWalletPush(payload, {
+    hrDeploy: isHrBrand(brand, { headers: {} }),
+  });
 }
 
 const WAI_EXECUTORS = {

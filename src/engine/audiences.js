@@ -427,7 +427,7 @@ async function getAppleDevicesForAudience(brandId, opts = {}) {
   if (rules && hasActiveRules(rules)) {
     const { whereExtra, params } = buildAudienceFilter(rules);
     const result = await pool.query(
-      `SELECT DISTINCT dr.push_token, dr.serial_number
+      `SELECT DISTINCT dr.push_token, dr.serial_number, dr.device_library_id
        FROM device_registrations dr
        JOIN pass_instances p ON dr.serial_number = p.serial_number
        WHERE p.brand_id = $1
@@ -438,7 +438,7 @@ async function getAppleDevicesForAudience(brandId, opts = {}) {
   }
   if (opts.campaign_id) {
     const result = await pool.query(
-      `SELECT DISTINCT dr.push_token, dr.serial_number
+      `SELECT DISTINCT dr.push_token, dr.serial_number, dr.device_library_id
        FROM device_registrations dr
        JOIN pass_instances pi ON dr.serial_number = pi.serial_number
        WHERE pi.brand_id = $1 AND pi.campaign_id = $2`,

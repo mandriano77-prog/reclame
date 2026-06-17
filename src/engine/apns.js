@@ -2,108 +2,185 @@ const http2 = require('http2');
 const fs = require('fs');
 const path = require('path');
 
-// APNs endpoints
 const APNS_PRODUCTION = 'https://api.push.apple.com';
 const APNS_SANDBOX = 'https://api.sandbox.push.apple.com';
 const APNS_INVALID_TOKEN_REASONS = new Set(['BadDeviceToken', 'DeviceTokenNotForTopic', 'Unregistered']);
-
-// Default to production — Apple Wallet passes with Distribution certs use production APNs
 const APNS_HOST = process.env.APNS_ENV === 'sandbox' ? APNS_SANDBOX : APNS_PRODUCTION;
+const DEFAULT_CONCURRENCY = Math.max(1, Math.min(parseInt(process.env.APNS_PUSH_CONCURRENCY || '32', 10) || 32, 64));
+
+let cachedMaterial = null;
+let activeSession = null;
+let activeSessionHost = null;
+
+function getApnsMaterial(options = {}) {
+  const certPath = options.certPath || process.env.CERT_PATH || path.join(__dirname, '../../certs/signerCert.pem');
+  const keyPath = options.keyPath || process.env.KEY_PATH || path.join(__dirname, '../../certs/signerKey.pem');
+  const passTypeIdentifier = options.passTypeIdentifier || process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj';
+  const host = options.host || APNS_HOST;
+
+  if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+    return null;
+  }
+
+  if (!cachedMaterial || cachedMaterial.certPath !== certPath || cachedMaterial.keyPath !== keyPath) {
+    cachedMaterial = {
+      certPath,
+      keyPath,
+      cert: fs.readFileSync(certPath),
+      key: fs.readFileSync(keyPath),
+    };
+  }
+
+  return {
+    ...cachedMaterial,
+    passTypeIdentifier,
+    host,
+  };
+}
+
+function getOrCreateApnsSession(material) {
+  if (activeSession && activeSessionHost === material.host && !activeSession.destroyed && !activeSession.closed) {
+    return activeSession;
+  }
+  if (activeSession && !activeSession.destroyed) {
+    try { activeSession.close(); } catch (_) {}
+  }
+
+  const client = http2.connect(material.host, {
+    cert: material.cert,
+    key: material.key,
+    rejectUnauthorized: process.env.NODE_ENV === 'production',
+  });
+
+  client.on('error', (err) => {
+    console.error('APNs session error:', err.message);
+    if (activeSession === client) {
+      activeSession = null;
+      activeSessionHost = null;
+    }
+  });
+
+  activeSession = client;
+  activeSessionHost = material.host;
+  return client;
+}
+
+function closeApnsSession() {
+  if (activeSession && !activeSession.destroyed) {
+    try { activeSession.close(); } catch (_) {}
+  }
+  activeSession = null;
+  activeSessionHost = null;
+}
+
+function sendPushOnSession(client, pushToken, passTypeIdentifier) {
+  return new Promise((resolve) => {
+    const headers = {
+      ':method': 'POST',
+      ':path': `/3/device/${pushToken}`,
+      'apns-topic': passTypeIdentifier,
+      'content-length': 2,
+    };
+
+    const req = client.request(headers);
+    let responseData = '';
+    let statusCode;
+
+    req.on('response', (h) => {
+      statusCode = h[':status'];
+    });
+
+    req.on('data', (chunk) => {
+      responseData += chunk;
+    });
+
+    req.on('end', () => {
+      if (statusCode === 200) {
+        resolve({ success: true, statusCode });
+      } else {
+        let reason = 'unknown';
+        try {
+          const parsed = JSON.parse(responseData);
+          reason = parsed.reason || reason;
+        } catch (_) {
+          reason = responseData || reason;
+        }
+        resolve({ success: false, statusCode, reason });
+      }
+    });
+
+    req.on('error', (err) => {
+      resolve({ success: false, reason: 'request_error', error: err.message });
+    });
+
+    req.write('{}');
+    req.end();
+  });
+}
 
 /**
  * Send a push notification to an Apple Wallet pass device.
- *
- * Apple Wallet push is special: the payload is EMPTY.
- * It just tells the device "hey, go check for updates on this pass".
- * The device then calls your webServiceURL to get the updated .pkpass.
- *
- * We authenticate using the same pass signing certificate (PEM cert + key).
+ * Wallet push payload is empty — device fetches updated pass from webServiceURL.
  */
 async function sendPushUpdate(pushToken, options = {}) {
-  const {
-    certPath = process.env.CERT_PATH || path.join(__dirname, '../../certs/signerCert.pem'),
-    keyPath = process.env.KEY_PATH || path.join(__dirname, '../../certs/signerKey.pem'),
-    passTypeIdentifier = process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj',
-    host = APNS_HOST
-  } = options;
+  const results = await sendPushBatch([pushToken], options);
+  const result = results[0];
+  if (!result) return { success: false, reason: 'no_result' };
+  const { pushToken: _token, ...rest } = result;
+  return rest;
+}
 
-  // Check if certs exist
-  if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+/**
+ * Send push updates in parallel over a shared HTTP/2 APNs session.
+ */
+async function sendPushBatch(pushTokens, options = {}) {
+  const material = getApnsMaterial(options);
+  const tokens = (pushTokens || []).filter(Boolean);
+  if (!tokens.length) return [];
+
+  if (!material) {
     console.warn('⚠️ APNs: certificates not found, skipping push');
-    return { success: false, reason: 'no_certs' };
+    return tokens.map((pushToken) => ({ pushToken, success: false, reason: 'no_certs' }));
   }
 
-  return new Promise((resolve) => {
-    try {
-      const cert = fs.readFileSync(certPath);
-      const key = fs.readFileSync(keyPath);
+  let client;
+  try {
+    client = getOrCreateApnsSession(material);
+  } catch (err) {
+    console.error('APNs connection error:', err.message);
+    return tokens.map((pushToken) => ({
+      pushToken,
+      success: false,
+      reason: 'connection_error',
+      error: err.message,
+    }));
+  }
 
-      const client = http2.connect(host, {
-        cert,
-        key,
-        // Don't reject self-signed certs in dev
-        rejectUnauthorized: process.env.NODE_ENV === 'production'
-      });
+  const concurrency = Math.max(1, Math.min(options.concurrency || DEFAULT_CONCURRENCY, tokens.length));
+  const results = new Array(tokens.length);
+  let cursor = 0;
 
-      client.on('error', (err) => {
-        console.error('APNs connection error:', err.message);
-        resolve({ success: false, reason: 'connection_error', error: err.message });
-      });
-
-      const headers = {
-        ':method': 'POST',
-        ':path': `/3/device/${pushToken}`,
-        'apns-topic': passTypeIdentifier,
-        // Empty push for Wallet pass updates
-        'content-length': 2
-      };
-
-      const req = client.request(headers);
-
-      let responseData = '';
-      let statusCode;
-
-      req.on('response', (headers) => {
-        statusCode = headers[':status'];
-      });
-
-      req.on('data', (chunk) => {
-        responseData += chunk;
-      });
-
-      req.on('end', () => {
-        client.close();
-
-        if (statusCode === 200) {
+  async function worker() {
+    while (true) {
+      const index = cursor++;
+      if (index >= tokens.length) break;
+      const pushToken = tokens[index];
+      try {
+        const outcome = await sendPushOnSession(client, pushToken, material.passTypeIdentifier);
+        results[index] = { pushToken, ...outcome };
+        if (outcome.success) {
           console.log(`✓ APNs push sent to ${pushToken.substring(0, 8)}...`);
-          resolve({ success: true, statusCode });
         } else {
-          let reason = 'unknown';
-          try {
-            const parsed = JSON.parse(responseData);
-            reason = parsed.reason || 'unknown';
-          } catch (e) {
-            reason = responseData || 'unknown';
-          }
-          console.warn(`⚠️ APNs push failed (${statusCode}): ${reason}`);
-          resolve({ success: false, statusCode, reason });
+          console.warn(`⚠️ APNs push failed: ${outcome.reason || 'unknown'}`);
         }
-      });
-
-      req.on('error', (err) => {
-        client.close();
-        console.error('APNs request error:', err.message);
-        resolve({ success: false, reason: 'request_error', error: err.message });
-      });
-
-      // Wallet push payload is an empty JSON object
-      req.write('{}');
-      req.end();
-    } catch (err) {
-      console.error('APNs error:', err.message);
-      resolve({ success: false, reason: 'exception', error: err.message });
+      } catch (err) {
+        results[index] = { pushToken, success: false, reason: 'exception', error: err.message };
+      }
     }
-  });
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return results;
 }
 
 function shouldPruneApnsRegistration(result) {
@@ -112,36 +189,22 @@ function shouldPruneApnsRegistration(result) {
   return APNS_INVALID_TOKEN_REASONS.has(reason);
 }
 
-/**
- * Send push updates to ALL devices registered for a given pass serial number.
- *
- * @param {string} serialNumber - The pass serial number
- * @param {Function} getDevicesForPass - Function that returns [{push_token}] for a serial
- * @returns {Object} Summary of push results
- */
 async function pushUpdateToAllDevices(serialNumber, getDevicesForPass) {
   try {
     const devices = await getDevicesForPass(serialNumber);
-
     if (!devices || devices.length === 0) {
       console.log(`ℹ️ No devices registered for pass ${serialNumber}`);
       return { sent: 0, total: 0, results: [] };
     }
 
     console.log(`📤 Sending push to ${devices.length} device(s) for pass ${serialNumber}`);
-
-    const results = [];
-    for (const device of devices) {
-      const result = await sendPushUpdate(device.push_token);
-      results.push({
-        device_library_id: device.device_library_id,
-        ...result
-      });
-    }
-
-    const sent = results.filter(r => r.success).length;
+    const batch = await sendPushBatch(devices.map((d) => d.push_token));
+    const results = batch.map((result, i) => ({
+      device_library_id: devices[i]?.device_library_id,
+      ...result,
+    }));
+    const sent = results.filter((r) => r.success).length;
     console.log(`✓ Push sent: ${sent}/${devices.length}`);
-
     return { sent, total: devices.length, results };
   } catch (err) {
     console.error('pushUpdateToAllDevices error:', err.message);
@@ -151,6 +214,8 @@ async function pushUpdateToAllDevices(serialNumber, getDevicesForPass) {
 
 module.exports = {
   sendPushUpdate,
+  sendPushBatch,
+  closeApnsSession,
   pushUpdateToAllDevices,
-  shouldPruneApnsRegistration
+  shouldPruneApnsRegistration,
 };

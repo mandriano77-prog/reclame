@@ -25,7 +25,7 @@ const {
   listStripPromos
 } = require('../db');
 const { createPkpass } = require('./passkit');
-const { sendPushUpdate } = require('./apns');
+const { sendPushUpdate, sendPushBatch } = require('./apns');
 const googleWallet = require('./google-wallet');
 const path = require('path');
 const fs = require('fs');
@@ -136,15 +136,8 @@ async function sendPromoPush(promo) {
     const devices = await getDevicesForBrand(promo.brand_id);
     if (!devices || devices.length === 0) return;
 
-    let sent = 0;
-    for (const device of devices) {
-      try {
-        await sendPushUpdate(device.push_token);
-        sent++;
-      } catch (e) {
-        // Silently skip failed pushes
-      }
-    }
+    const batch = await sendPushBatch(devices.map((d) => d.push_token));
+    const sent = batch.filter((r) => r.success).length;
 
     await logPush({
       brand_id: promo.brand_id,
@@ -250,8 +243,8 @@ async function regenerateBrandPasses(brand_id) {
 
     // Send push to all devices so they update
     const devices = await getDevicesForBrand(brand_id);
-    for (const device of devices) {
-      try { await sendPushUpdate(device.push_token); } catch(e) {}
+    if (devices.length) {
+      await sendPushBatch(devices.map((d) => d.push_token));
     }
   } catch (e) {
     console.error('[StripPromo] Pass regen error:', e.message);
