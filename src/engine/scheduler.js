@@ -9,29 +9,18 @@ const {
   updateScheduledPush,
   getBrand,
   updateBrand,
-  listPasses,
-  getTemplate,
-  touchPass,
-  getDevicesForBrand,
+  touchPassesByIds,
   unregisterDevice,
   logPush,
   logEvent,
-  updatePassDynamicLinks
+  updatePassDynamicLinks,
+  markPassesPushDelivered,
+  markPassPushStatus,
 } = require('../db');
-const { createPkpass } = require('./passkit');
-const { sendPushUpdate, shouldPruneApnsRegistration } = require('./apns');
+const { sendPushBatch, shouldPruneApnsRegistration, closeApnsSession } = require('./apns');
 const { getTargetPassesForPush, getAppleDevicesForAudience } = require('./audiences');
 const googleWallet = require('./google-wallet');
 const samsungWallet = require('./samsung-wallet');
-const path = require('path');
-const fs = require('fs');
-
-const CACHE_DIR = path.join(__dirname, '..', '..', 'cache');
-
-function ensureCacheDir() {
-  if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
-  return CACHE_DIR;
-}
 
 /**
  * First `next_run_at` when saving a scheduled push from the dashboard.
@@ -89,20 +78,15 @@ function computeInitialScheduledRun(input) {
   return null;
 }
 
-/**
- * Calculate the next run time based on schedule type
- */
 function calculateNextRun(schedule) {
   const [hours, minutes] = (schedule.schedule_time || '09:00').split(':').map(Number);
   const now = new Date();
 
   if (schedule.schedule_type === 'once') {
-    // One-shot: deactivate after run
     return null;
   }
 
   if (schedule.schedule_type === 'daily') {
-    // Next day at schedule_time
     const next = new Date();
     next.setDate(next.getDate() + 1);
     next.setHours(hours, minutes, 0, 0);
@@ -110,7 +94,6 @@ function calculateNextRun(schedule) {
   }
 
   if (schedule.schedule_type === 'weekly') {
-    // Next occurrence of schedule_days (comma-separated day numbers, 0=Sun)
     const days = (schedule.schedule_days || '1').split(',').map(Number);
     const today = now.getDay();
     let minDaysAhead = 8;
@@ -128,13 +111,39 @@ function calculateNextRun(schedule) {
   return null;
 }
 
-/**
- * Execute a single scheduled push notification
- */
+async function applyScheduledApplePushResults(devices, batchResults) {
+  const deliveredSerials = [];
+  let sentCount = 0;
+
+  for (let i = 0; i < devices.length; i++) {
+    const device = devices[i];
+    const result = batchResults[i] || { success: false, reason: 'missing_result' };
+    if (result.success) {
+      sentCount++;
+      if (device.serial_number) deliveredSerials.push(device.serial_number);
+    } else if (shouldPruneApnsRegistration(result) && device.device_library_id && device.serial_number) {
+      try {
+        await unregisterDevice(device.device_library_id, device.serial_number);
+      } catch (cleanupErr) {
+        console.warn('[scheduler] failed cleanup invalid registration:', cleanupErr.message);
+      }
+      if (device.serial_number) await markPassPushStatus(device.serial_number, result.reason || 'failed');
+    } else if (device.serial_number) {
+      await markPassPushStatus(device.serial_number, result.reason || 'failed');
+    }
+  }
+
+  if (deliveredSerials.length) {
+    await markPassesPushDelivered(deliveredSerials);
+  }
+
+  return sentCount;
+}
+
 async function executeScheduledPush(schedule, baseUrl) {
   const {
     brand_id, title, message, target, update_pass, channel = 'apple', campaign_id, audience_id,
-    include_pass_link, pass_link_url, pass_link_label, pass_link_expires_at
+    include_pass_link, pass_link_url, pass_link_label, pass_link_expires_at,
   } = schedule;
   const pushTargetOpts = { campaign_id, audience_id };
   const legacyBoth = channel === 'both';
@@ -153,13 +162,12 @@ async function executeScheduledPush(schedule, baseUrl) {
   let passesUpdated = 0;
   const targetPasses = await getTargetPassesForPush(brand_id, pushTargetOpts);
 
-  // If update_pass, update brand config and regenerate passes
   if (update_pass) {
     const { syncWalletLogoFromBrandIdentity, syncWalletIconFromBrandIdentity } = require('./brand-wallet-logo');
     const hrDeploy = String(process.env.DASHBOARD_PRODUCT_LINE || '').toLowerCase() === 'hr';
     try {
       await syncWalletLogoFromBrandIdentity(brand_id, brand, {
-        syncTemplates: hrDeploy || brand?.config?.product_line === 'hr'
+        syncTemplates: hrDeploy || brand?.config?.product_line === 'hr',
       });
       await syncWalletIconFromBrandIdentity(brand_id, brand, { touchPasses: false });
     } catch (syncErr) {
@@ -172,8 +180,8 @@ async function executeScheduledPush(schedule, baseUrl) {
         title,
         message,
         date: new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     };
     await updateBrand(brand_id, { config: updatedConfig });
 
@@ -182,37 +190,19 @@ async function executeScheduledPush(schedule, baseUrl) {
       await updatePassDynamicLinks(targetPasses.map((p) => p.id), {
         label: pass_link_label || title.slice(0, 40),
         url: pass_link_url,
-        expiresAt: pass_link_expires_at || defaultExpiry
+        expiresAt: pass_link_expires_at || defaultExpiry,
       });
     }
 
-    const passes = targetPasses;
-    const updatedBrand = await getBrand(brand_id);
-    const cacheDir = ensureCacheDir();
-
-    for (const pass of passes) {
-      try {
-        const pkpassPath = path.join(cacheDir, `${pass.id}.pkpass`);
-        if (fs.existsSync(pkpassPath)) fs.unlinkSync(pkpassPath);
-        const template = await getTemplate(pass.template_id);
-        if (template) {
-          const pkpassBuffer = await createPkpass(template, pass, updatedBrand, { baseUrl });
-          fs.writeFileSync(pkpassPath, pkpassBuffer);
-          await touchPass(pass.id);
-          passesUpdated++;
-        }
-      } catch (err) {
-        console.error(`Error regenerating pass ${pass.id}:`, err.message);
-      }
-    }
+    const touched = await touchPassesByIds(targetPasses.map((p) => p.id));
+    passesUpdated = touched.touched || 0;
   }
 
-  // Keep Google Wallet objects in sync when pass content changes.
   if (update_pass && sendGoogle && googleWallet.isConfigured()) {
     try {
-      const passes = targetPasses;
       const syncedBrand = await getBrand(brand_id);
-      for (const pass of passes) {
+      const { getTemplate } = require('../db');
+      for (const pass of targetPasses) {
         if (!pass.google_wallet_object_id) continue;
         try {
           const template = await getTemplate(pass.template_id);
@@ -232,38 +222,24 @@ async function executeScheduledPush(schedule, baseUrl) {
   let samsungNotify = { attempted: 0, notified: 0, skipped: !sendSamsung || !samsungWallet.isConfigured() };
   if (update_pass && sendSamsung && samsungWallet.isConfigured()) {
     try {
-      const passes = targetPasses;
-      samsungNotify = await samsungWallet.notifySavedPassesUpdates(passes);
+      samsungNotify = await samsungWallet.notifySavedPassesUpdates(targetPasses);
       console.log('[SamsungWallet] Scheduled notify', samsungNotify);
     } catch (e) {
       console.error('[SamsungWallet] Scheduled notify error:', e.message);
     }
   }
 
-  // Send APNs push
   let devices = [];
   let sentCount = 0;
   if (sendApple) {
     devices = await getAppleDevicesForAudience(brand_id, pushTargetOpts);
-    for (const device of devices) {
-      try {
-        const result = await sendPushUpdate(device.push_token);
-        if (result.success) sentCount++;
-        else if (shouldPruneApnsRegistration(result) && device.device_library_id && device.serial_number) {
-          try {
-            await unregisterDevice(device.device_library_id, device.serial_number);
-            console.warn(`[scheduler] removed invalid APNs registration device=${device.device_library_id.substring(0, 8)}... serial=${device.serial_number}`);
-          } catch (cleanupErr) {
-            console.warn('[scheduler] failed cleanup invalid registration:', cleanupErr.message);
-          }
-        }
-      } catch (err) {
-        console.error(`Push failed for ${device.push_token.substring(0, 8)}:`, err.message);
-      }
+    if (devices.length) {
+      const batchResults = await sendPushBatch(devices.map((d) => d.push_token));
+      sentCount = await applyScheduledApplePushResults(devices, batchResults);
     }
+    closeApnsSession();
   }
 
-  // Log
   await logPush({ brand_id, title, message, target: target || 'all', sent_count: sentCount, channel });
   await logEvent({
     brand_id,
@@ -274,16 +250,13 @@ async function executeScheduledPush(schedule, baseUrl) {
       sent_count: sentCount,
       samsung_notify: samsungNotify,
       passes_updated: passesUpdated,
-      schedule_id: schedule.id
-    }
+      schedule_id: schedule.id,
+    },
   });
 
-  console.log(`✓ Scheduled push sent: ${sentCount}/${devices.length} devices, ${passesUpdated} passes updated`);
+  console.log(`✓ Scheduled push sent: ${sentCount}/${devices.length} devices, ${passesUpdated} passes touched`);
 }
 
-/**
- * Main scheduler tick — called every 60 seconds
- */
 async function schedulerTick(baseUrl) {
   try {
     const due = await getDueScheduledPush();
@@ -295,12 +268,10 @@ async function schedulerTick(baseUrl) {
       try {
         await executeScheduledPush(schedule, baseUrl);
 
-        // Calculate next run
         const nextRun = calculateNextRun(schedule);
         if (nextRun) {
           await updateScheduledPush(schedule.id, { next_run_at: nextRun, last_run_at: new Date() });
         } else {
-          // One-shot: deactivate
           await updateScheduledPush(schedule.id, { active: false, last_run_at: new Date() });
         }
       } catch (err) {
@@ -312,15 +283,11 @@ async function schedulerTick(baseUrl) {
   }
 }
 
-/**
- * Start the scheduler (call once at server boot)
- */
 let schedulerInterval = null;
 
 function startScheduler(baseUrl) {
   if (schedulerInterval) return;
   console.log('⏰ Push scheduler started (checking every 60s)');
-  // Run immediately once, then every 60s
   schedulerTick(baseUrl);
   schedulerInterval = setInterval(() => schedulerTick(baseUrl), 60 * 1000);
 }

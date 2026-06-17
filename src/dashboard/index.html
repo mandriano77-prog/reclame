@@ -6642,6 +6642,50 @@ function buildPushDeliveryMessage(data, intro = 'Invio completato.') {
 }
 
 const PUSH_SEND_TIMEOUT_MS = 60000;
+const PUSH_JOB_POLL_MS = 2000;
+const PUSH_JOB_POLL_MAX = 300;
+
+async function pollPushJob(jobId, onProgress) {
+    for (let i = 0; i < PUSH_JOB_POLL_MAX; i++) {
+        const res = await fetch(`${API}/push/jobs/${jobId}`, { headers: getAuthHeaders() });
+        const job = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(job.error || 'Job push non trovato');
+        if (onProgress && job.progress) {
+            const p = job.progress;
+            if (p.phase === 'apns' && p.total) {
+                onProgress(`Invio APNs ${p.processed || 0}/${p.total}…`);
+            } else if (p.phase === 'wallet_sync') {
+                onProgress('Sincronizzazione pass…');
+            } else if (p.phase === 'starting') {
+                onProgress('Avvio invio…');
+            }
+        }
+        if (job.status === 'completed') return job.result || {};
+        if (job.status === 'failed') throw new Error(job.error || 'Invio push fallito');
+        await new Promise((resolve) => setTimeout(resolve, PUSH_JOB_POLL_MS));
+    }
+    throw new Error('Timeout attesa invio push');
+}
+
+async function submitPushAndWait(body, { loadingLabel } = {}) {
+    const btn = document.getElementById('pushSendBtn');
+    const res = await fetch(`${API}/push/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok && res.status !== 202) {
+        throw new Error(data.error || 'Invio non riuscito, riprova');
+    }
+    if (data.error) throw new Error(data.error);
+    if (res.status === 202 && data.job_id) {
+        return pollPushJob(data.job_id, (msg) => {
+            if (btn && loadingLabel) btn.textContent = msg;
+        });
+    }
+    return data;
+}
 
 function setPushFieldError(fieldId, message) {
     const err = document.getElementById(fieldId + 'Error');
@@ -6746,34 +6790,13 @@ async function sendImmediatePush() {
 
     const body = buildImmediatePushBody();
     setPushSendLoading(true);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), PUSH_SEND_TIMEOUT_MS);
     try {
-        const res = await fetch(`${API}/push/send`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-            body: JSON.stringify(body),
-            signal: controller.signal
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.error) {
-            const msg = data.error || 'Invio non riuscito, riprova';
-            const banner = document.getElementById('pushSendError');
-            if (banner) {
-                banner.textContent = msg;
-                banner.hidden = false;
-            } else {
-                toast(msg);
-            }
-            return;
-        }
+        const data = await submitPushAndWait(body, { loadingLabel: true });
         toast(buildPushDeliveryMessage(data));
         resetImmediatePushForm();
         loadPushHistory();
     } catch (e) {
-        const msg = (e && e.name === 'AbortError')
-            ? 'Invio non riuscito, riprova'
-            : (e.message || 'Invio non riuscito, riprova');
+        const msg = e.message || 'Invio non riuscito, riprova';
         const banner = document.getElementById('pushSendError');
         if (banner) {
             banner.textContent = msg;
@@ -6782,7 +6805,6 @@ async function sendImmediatePush() {
             toast(msg);
         }
     } finally {
-        clearTimeout(timeoutId);
         setPushSendLoading(false);
     }
 }
@@ -7315,13 +7337,7 @@ async function resendPushFromHistory(pushId) {
             update_pass: true
         };
         if (log.campaign_id) body.campaign_id = log.campaign_id;
-        const res = await fetch(`${API}/push/send`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.error) throw new Error(data.error || 'Reinvio non riuscito');
+        const data = await submitPushAndWait(body);
         alert(buildPushDeliveryMessage(data, 'Reinvio completato.'));
         toast('Push reinviata');
         await loadPushHistory();

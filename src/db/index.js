@@ -228,6 +228,19 @@ CREATE TABLE IF NOT EXISTS push_log (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS push_jobs (
+  id TEXT PRIMARY KEY,
+  brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'queued',
+  payload JSONB NOT NULL DEFAULT '{}',
+  result JSONB,
+  error TEXT,
+  progress JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ
+);
+
 CREATE TABLE IF NOT EXISTS audiences (
   id TEXT PRIMARY KEY,
   brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
@@ -1219,6 +1232,104 @@ async function updatePassInstance(id, data) {
 async function touchPass(id) {
   await pool.query('UPDATE pass_instances SET last_updated = NOW() WHERE id = $1', [id]);
   return { success: true };
+}
+
+async function touchPassesByIds(ids) {
+  const passIds = Array.isArray(ids) ? ids.filter(Boolean) : [];
+  if (!passIds.length) return { touched: 0 };
+  const result = await pool.query(
+    'UPDATE pass_instances SET last_updated = NOW() WHERE id = ANY($1::text[])',
+    [passIds]
+  );
+  return { touched: result.rowCount || 0 };
+}
+
+async function touchPassesForBrand(brandId, passIds = null) {
+  if (Array.isArray(passIds) && passIds.length) {
+    return touchPassesByIds(passIds);
+  }
+  const result = await pool.query(
+    'UPDATE pass_instances SET last_updated = NOW() WHERE brand_id = $1',
+    [brandId]
+  );
+  return { touched: result.rowCount || 0 };
+}
+
+async function markPassesPushDelivered(serialNumbers) {
+  const serials = Array.isArray(serialNumbers) ? serialNumbers.filter(Boolean) : [];
+  if (!serials.length) return { updated: 0 };
+  const result = await pool.query(
+    `UPDATE pass_instances
+     SET last_push_at = NOW(),
+         last_push_status = 'delivered',
+         push_count = COALESCE(push_count, 0) + 1
+     WHERE serial_number = ANY($1::text[])`,
+    [serials]
+  );
+  return { updated: result.rowCount || 0 };
+}
+
+async function markPassPushStatus(serialNumber, status) {
+  if (!serialNumber) return;
+  await pool.query(
+    `UPDATE pass_instances
+     SET last_push_at = NOW(),
+         last_push_status = $1,
+         push_count = COALESCE(push_count, 0) + 1
+     WHERE serial_number = $2`,
+    [status, serialNumber]
+  );
+}
+
+async function createPushJob({ brand_id, payload }) {
+  const id = uuidv4();
+  await pool.query(
+    `INSERT INTO push_jobs (id, brand_id, status, payload)
+     VALUES ($1, $2, 'queued', $3::jsonb)`,
+    [id, brand_id, JSON.stringify(payload || {})]
+  );
+  return getPushJob(id);
+}
+
+async function getPushJob(id) {
+  const result = await pool.query('SELECT * FROM push_jobs WHERE id = $1', [id]);
+  return result.rows[0] || null;
+}
+
+async function updatePushJob(id, fields = {}) {
+  const updates = [];
+  const values = [];
+  let p = 1;
+
+  if (fields.status !== undefined) {
+    updates.push(`status = $${p++}`);
+    values.push(fields.status);
+  }
+  if (fields.result !== undefined) {
+    updates.push(`result = $${p++}::jsonb`);
+    values.push(JSON.stringify(fields.result));
+  }
+  if (fields.error !== undefined) {
+    updates.push(`error = $${p++}`);
+    values.push(fields.error);
+  }
+  if (fields.progress !== undefined) {
+    updates.push(`progress = $${p++}::jsonb`);
+    values.push(JSON.stringify(fields.progress));
+  }
+  if (fields.started_at !== undefined) {
+    updates.push(`started_at = $${p++}`);
+    values.push(fields.started_at);
+  }
+  if (fields.completed_at !== undefined) {
+    updates.push(`completed_at = $${p++}`);
+    values.push(fields.completed_at);
+  }
+
+  if (!updates.length) return getPushJob(id);
+  values.push(id);
+  await pool.query(`UPDATE push_jobs SET ${updates.join(', ')} WHERE id = $${p}`, values);
+  return getPushJob(id);
 }
 
 /** Legacy DBs may have an old `members` table without HR columns (e.g. pass_id). */
@@ -2931,6 +3042,13 @@ module.exports = {
   getPassBySerial,
   updatePassInstance,
   touchPass,
+  touchPassesByIds,
+  touchPassesForBrand,
+  markPassesPushDelivered,
+  markPassPushStatus,
+  createPushJob,
+  getPushJob,
+  updatePushJob,
   getMemberForPass,
   listEmployeesForBrand,
   getEmployeeFieldOptionsForBrand,
