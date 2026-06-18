@@ -632,6 +632,131 @@
     };
   }
 
+  const A2W_MEDIA_TAB_ORDER = ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'];
+  const A2W_MEDIA_TAB_STORAGE_KEY = 'a2w-media-tab';
+
+  function a2wMediaBucketPanelId(type) {
+    const map = {
+      logo: 'a2wMediaLogoCard',
+      wallet_icon: 'a2wMediaWalletIconCard',
+      strip: 'a2wMediaStripCard',
+      thumbnail: 'a2wMediaThumbCard',
+      background: 'a2wMediaBackgroundCard'
+    };
+    return map[type] || map.logo;
+  }
+
+  function getA2wActiveMediaTabType() {
+    const active = document.querySelector('#a2wMediaTabs .a2w-media-tabs__tab.is-active');
+    if (active) return active.getAttribute('data-media-type') || 'logo';
+    const sel = document.getElementById('a2wMediaCategorySelect');
+    if (sel && sel.value) return sel.value;
+    return 'logo';
+  }
+
+  function a2wSwitchMediaTab(type, options) {
+    const opts = options || {};
+    if (A2W_MEDIA_TAB_ORDER.indexOf(type) === -1) type = 'logo';
+
+    document.querySelectorAll('#media-library .a2w-media-buckets-grid--tabs > .a2w-media-bucket').forEach((panel) => {
+      const panelType = panel.getAttribute('data-a2w-bucket-type');
+      const on = panelType === type;
+      panel.classList.toggle('is-active', on);
+      panel.hidden = !on;
+    });
+
+    document.querySelectorAll('#a2wMediaTabs .a2w-media-tabs__tab').forEach((tab) => {
+      const tabType = tab.getAttribute('data-media-type');
+      const on = tabType === type;
+      tab.classList.toggle('is-active', on);
+      tab.setAttribute('aria-selected', on ? 'true' : 'false');
+      tab.tabIndex = on ? 0 : -1;
+    });
+
+    const sel = document.getElementById('a2wMediaCategorySelect');
+    if (sel && sel.value !== type) sel.value = type;
+
+    if (!opts.skipPersist) {
+      try { sessionStorage.setItem(A2W_MEDIA_TAB_STORAGE_KEY, type); } catch (_) { /* ignore */ }
+    }
+  }
+
+  function a2wReadSavedMediaTab() {
+    try {
+      const saved = sessionStorage.getItem(A2W_MEDIA_TAB_STORAGE_KEY);
+      if (saved && A2W_MEDIA_TAB_ORDER.indexOf(saved) !== -1) return saved;
+    } catch (_) { /* ignore */ }
+    return 'logo';
+  }
+
+  function a2wOnMediaTabsClick(e) {
+    const tab = e.target.closest('.a2w-media-tabs__tab');
+    if (!tab) return;
+    const type = tab.getAttribute('data-media-type');
+    if (type) a2wSwitchMediaTab(type);
+  }
+
+  function a2wOnMediaTabsSelectChange(e) {
+    if (!e.target || e.target.id !== 'a2wMediaCategorySelect') return;
+    a2wSwitchMediaTab(e.target.value);
+  }
+
+  function a2wOnMediaTabsKeydown(e) {
+    const tab = e.target.closest('.a2w-media-tabs__tab');
+    if (!tab || !tab.closest('#a2wMediaTabs')) return;
+    const tabs = Array.from(document.querySelectorAll('#a2wMediaTabs .a2w-media-tabs__tab'));
+    const idx = tabs.indexOf(tab);
+    if (idx === -1) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = tabs[(idx + 1) % tabs.length];
+      a2wSwitchMediaTab(next.getAttribute('data-media-type'));
+      next.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
+      a2wSwitchMediaTab(prev.getAttribute('data-media-type'));
+      prev.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      a2wSwitchMediaTab(A2W_MEDIA_TAB_ORDER[0]);
+      tabs[0].focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      a2wSwitchMediaTab(A2W_MEDIA_TAB_ORDER[A2W_MEDIA_TAB_ORDER.length - 1]);
+      tabs[tabs.length - 1].focus();
+    }
+  }
+
+  function a2wEnsureMediaTabs(section) {
+    if (!section) return;
+    const tabsRoot = section.querySelector('#a2wMediaTabs');
+    const grid = section.querySelector('.a2w-media-buckets-grid--tabs');
+    if (!tabsRoot || !grid) return;
+
+    A2W_MEDIA_TAB_ORDER.forEach((type) => {
+      const panelId = a2wMediaBucketPanelId(type);
+      const panel = document.getElementById(panelId);
+      if (!panel) return;
+      panel.setAttribute('data-a2w-bucket-type', type);
+      panel.setAttribute('role', 'tabpanel');
+      panel.setAttribute('aria-labelledby', 'a2wMediaTab_' + type);
+    });
+
+    if (section.dataset.a2wMediaTabsBound !== '1') {
+      section.dataset.a2wMediaTabsBound = '1';
+      section.addEventListener('click', a2wOnMediaTabsClick);
+      section.addEventListener('change', a2wOnMediaTabsSelectChange);
+      section.addEventListener('keydown', a2wOnMediaTabsKeydown);
+    }
+
+    a2wSwitchMediaTab(a2wReadSavedMediaTab(), { skipPersist: true });
+  }
+
+  window.getA2wActiveMediaTabType = getA2wActiveMediaTabType;
+  window.a2wSwitchMediaTab = a2wSwitchMediaTab;
+
   function a2wMediaSection() {
     return document.getElementById('media-library');
   }
@@ -893,6 +1018,7 @@
       /Specifiche tecniche consigliate/i.test(card.textContent || '')
     );
     if (specsCard) specsCard.style.display = 'none';
+    a2wEnsureMediaTabs(section);
     a2wEnsureMediaDropzones(section);
     a2wReplaceLoadingWithSkeleton('mediaLogoBox', 'logo');
     a2wReplaceLoadingWithSkeleton('mediaWalletIconGrid', 'wallet');

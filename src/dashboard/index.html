@@ -1970,18 +1970,37 @@
                             <div><strong style="color:var(--text)">Background</strong>: PNG/JPG 360x440 px (event ticket).</div>
                         </div>
                     </div>
-                    <div class="a2w-media-buckets-grid">
-                        <div class="card a2w-media-bucket">
+                    <div class="a2w-media-tabs" id="a2wMediaTabs" data-a2w-component="media-tabs">
+                        <div class="a2w-media-tabs__select-wrap">
+                            <label class="a2w-media-tabs__select-label" for="a2wMediaCategorySelect">Categoria asset</label>
+                            <select id="a2wMediaCategorySelect" class="a2w-media-tabs__select" aria-label="Categoria asset">
+                                <option value="logo">Logo brand</option>
+                                <option value="wallet_icon">Icona notifiche</option>
+                                <option value="strip">Strip</option>
+                                <option value="thumbnail">Thumbnail</option>
+                                <option value="background">Background</option>
+                            </select>
+                        </div>
+                        <ul class="a2w-media-tabs__list" role="tablist" aria-label="Categorie asset">
+                            <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_logo" data-media-type="logo" aria-controls="a2wMediaLogoCard" aria-selected="true" tabindex="0">Logo brand</button></li>
+                            <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_wallet_icon" data-media-type="wallet_icon" aria-controls="a2wMediaWalletIconCard" aria-selected="false" tabindex="-1">Icona notifiche</button></li>
+                            <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_strip" data-media-type="strip" aria-controls="a2wMediaStripCard" aria-selected="false" tabindex="-1">Strip</button></li>
+                            <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_thumbnail" data-media-type="thumbnail" aria-controls="a2wMediaThumbCard" aria-selected="false" tabindex="-1">Thumbnail</button></li>
+                            <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_background" data-media-type="background" aria-controls="a2wMediaBackgroundCard" aria-selected="false" tabindex="-1">Background</button></li>
+                        </ul>
+                    </div>
+                    <div class="a2w-media-buckets-grid a2w-media-buckets-grid--tabs">
+                        <div class="card a2w-media-bucket is-active" id="a2wMediaLogoCard" data-a2w-bucket-type="logo" data-a2w-bucket="logo" role="tabpanel" aria-labelledby="a2wMediaTab_logo">
                             <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Logo brand</div>
                             <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Normalmente unico. Cambialo solo in caso di rebranding.</p>
                             <div id="mediaLogoBox"><p style="color:var(--text2)">Caricamento...</p></div>
                         </div>
-                        <div class="card a2w-media-bucket">
+                        <div class="card a2w-media-bucket" id="a2wMediaWalletIconCard" data-a2w-bucket-type="wallet_icon" data-a2w-bucket="wallet_icon" role="tabpanel" aria-labelledby="a2wMediaTab_wallet_icon" hidden>
                             <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Icona notifiche Wallet</div>
                             <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">512×512 px — icona mostrata nelle push notification iPhone.</p>
                             <div id="mediaWalletIconGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                         </div>
-                        <div class="card a2w-media-bucket">
+                        <div class="card a2w-media-bucket" id="a2wMediaStripCard" data-a2w-bucket-type="strip" data-a2w-bucket="strip" role="tabpanel" aria-labelledby="a2wMediaTab_strip" hidden>
                             <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
                                 <div class="sec-title" style="font-size:15px;margin:0;">Strip</div>
                                 <input id="mediaStripSearch" type="search" placeholder="Cerca per nome..." oninput="loadMediaLibrary()" style="max-width:220px;">
@@ -1989,12 +2008,12 @@
                             <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Puoi caricare più varianti (es. promo, evento, default) e sceglierle in push o nel template.</p>
                             <div id="mediaStripGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                         </div>
-                        <div class="card a2w-media-bucket">
+                        <div class="card a2w-media-bucket" id="a2wMediaThumbCard" data-a2w-bucket-type="thumbnail" data-a2w-bucket="thumbnail" role="tabpanel" aria-labelledby="a2wMediaTab_thumbnail" hidden>
                             <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Thumbnail</div>
                             <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">90x90 px — usato su Event Ticket (fronte pass).</p>
                             <div id="mediaThumbnailGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                         </div>
-                        <div class="card a2w-media-bucket">
+                        <div class="card a2w-media-bucket" id="a2wMediaBackgroundCard" data-a2w-bucket-type="background" data-a2w-bucket="background" role="tabpanel" aria-labelledby="a2wMediaTab_background" hidden>
                             <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Background</div>
                             <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">360x440 px — sfondo intero su Event Ticket.</p>
                             <div id="mediaBackgroundGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
@@ -12471,6 +12490,11 @@ async function openMediaUpload() {
     if (fileInput) {
         fileInput.value = '';
         fileInput.onchange = () => { mediaUploadEditedBase64 = null; };
+    }
+    const typeSelect = document.getElementById('mediaUploadType');
+    if (typeSelect && typeof getA2wActiveMediaTabType === 'function') {
+        const activeType = getA2wActiveMediaTabType();
+        if (activeType) typeSelect.value = activeType;
     }
     onMediaUploadTypeChange();
     document.getElementById('mediaUploadModal').classList.add('active');
