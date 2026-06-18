@@ -55,9 +55,32 @@ test('brand identity layout: form due colonne e riepilogo collassabile in fondo'
   assert.match(indexHtml, /id="a2wBiSummaryDisclosure"/);
   assert.match(indexHtml, /a2w-bi-summary-disclosure/);
   assert.doesNotMatch(indexHtml, /id="a2wBiPreviewMobileToggle"/);
-  assert.match(biCss, /\.a2w-bi-main[\s\S]*grid-template-columns:\s*1fr\s+1fr/);
+  assert.match(biCss, /\.a2w-bi-main[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(biCss, /\.a2w-bi-layout[\s\S]*flex-direction:\s*column/);
   assert.match(biCss, /\.a2w-bi-summary-disclosure/);
   assert.match(biCss, /\.a2w-bi-danger-zone[\s\S]*grid-column:\s*1\s*\/\s*-1/);
   assert.match(indexHtml, /a2wBiSummaryDisclosure[\s\S]*addEventListener\('toggle'/);
+});
+
+test('brand identity asset slots: compact library picker senza upload inline', () => {
+  assert.match(indexHtml, /a2w-bi-asset-slot/);
+  assert.match(indexHtml, /Scegli da libreria/);
+  assert.match(indexHtml, /a2wBiBindAssetSlotActions/);
+  assert.doesNotMatch(indexHtml, /a2wBiAssetBrowseBtn/);
+  assert.doesNotMatch(indexHtml, /a2wBiAssetUploadInput/);
+  assert.doesNotMatch(indexHtml, /a2w-bi-asset-dropzone/);
+  assert.doesNotMatch(indexHtml, /function a2wBiBindAssetDropzone/);
+  assert.doesNotMatch(indexHtml, /function a2wBiUploadAsset/);
+  assert.match(biCss, /\.a2w-bi-asset-slot/);
+  assert.match(biCss, /max-width:\s*1200px/);
+  assert.match(biCss, /\.a2w-bi-section--assets[\s\S]*grid-column:\s*1\s*\/\s*-1/);
+  assert.match(indexHtml, /a2w-bi-section--assets/);
+  assert.match(indexHtml, /Seleziona gli asset dalla Media Library/);
+});
+
+test('media library include bucket wallet_icon', () => {
+  assert.match(indexHtml, /id="mediaWalletIconGrid"/);
+  assert.match(indexHtml, /512×512 px/);
+  assert.match(indexHtml, /data-type="wallet_icon"/);
+  assert.match(indexHtml, /<option value="wallet_icon">Icona notifiche Wallet<\/option>/);
 });

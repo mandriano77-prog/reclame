@@ -1875,11 +1875,11 @@
                                 </div>
                             </section>
 
-                            <section class="card a2w-bi-section">
+                            <section class="card a2w-bi-section a2w-bi-section--assets">
                                 <div class="a2w-bi-section__head a2w-bi-section__head--row">
                                     <div>
                                         <h2>Logo e immagini chiave</h2>
-                                        <p>Carica o sostituisci gli asset principali. Per gestione avanzata usa la Media Library.</p>
+                                        <p>Seleziona gli asset dalla Media Library. Per caricare nuove immagini apri la Media Library.</p>
                                     </div>
                                     <button type="button" class="a2w-bi-link-btn fd-rbac-write" data-requires-write="brand-identity" id="a2wBiOpenMediaLibraryBtn">Apri Media Library</button>
                                 </div>
@@ -2022,6 +2022,7 @@
                     <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Specifiche tecniche consigliate</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;color:var(--text2);">
                         <div><strong style="color:var(--text)">Logo</strong>: PNG trasparente, max 320x100 px.</div>
+                        <div><strong style="color:var(--text)">Icona notifiche Wallet</strong>: PNG/JPG quadrata 512×512 px.</div>
                         <div><strong style="color:var(--text)">Strip</strong>: PNG/JPG 750x246 px.</div>
                         <div><strong style="color:var(--text)">Thumbnail</strong>: PNG/JPG 90x90 px (event ticket).</div>
                         <div><strong style="color:var(--text)">Background</strong>: PNG/JPG 360x440 px (event ticket).</div>
@@ -2032,6 +2033,11 @@
                         <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Logo brand</div>
                         <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Normalmente unico. Cambialo solo in caso di rebranding.</p>
                         <div id="mediaLogoBox"><p style="color:var(--text2)">Caricamento...</p></div>
+                    </div>
+                    <div class="card" style="margin:0;">
+                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Icona notifiche Wallet</div>
+                        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">512×512 px — icona mostrata nelle push notification iPhone.</p>
+                        <div id="mediaWalletIconGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                     </div>
                     <div class="card" style="margin:0;">
                         <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
@@ -2125,6 +2131,7 @@
                 <div id="mpFilters" style="margin-bottom:12px">
                   <button class="mp-filter active" data-type="all" onclick="mpFilter('all')">Tutti</button>
                   <button class="mp-filter" data-type="logo" onclick="mpFilter('logo')">Logo</button>
+                  <button class="mp-filter" data-type="wallet_icon" onclick="mpFilter('wallet_icon')">Icona Wallet</button>
                   <button class="mp-filter" data-type="strip" onclick="mpFilter('strip')">Strip</button>
                   <button class="mp-filter" data-type="thumbnail" onclick="mpFilter('thumbnail')">Thumbnail</button>
                   <button class="mp-filter" data-type="background" onclick="mpFilter('background')">Background</button>
@@ -2136,6 +2143,7 @@
                   <select id="mpTypeSelect" style="padding:6px;border-radius:6px;background:#222;color:#fff;border:1px solid #444">
                     <option value="generic">Generico</option>
                     <option value="logo">Logo</option>
+                    <option value="wallet_icon">Icona notifiche Wallet</option>
                     <option value="strip">Strip</option>
                     <option value="thumbnail">Thumbnail</option>
                     <option value="background">Background</option>
@@ -11630,45 +11638,9 @@ function a2wBiApplySelectedAssetsFromConfig(config) {
     });
 }
 
-function a2wBiBindAssetDropzone(type) {
-    const zone = document.querySelector(`#a2wBiAssetsGrid [data-a2w-dropzone="${type}"]`);
-    if (!zone || zone.dataset.bound === '1') return;
-    zone.dataset.bound = '1';
-    const prevent = (e) => { e.preventDefault(); e.stopPropagation(); };
-    zone.addEventListener('dragenter', prevent);
-    zone.addEventListener('dragover', (e) => {
-        prevent(e);
-        zone.classList.add('is-dragover');
-    });
-    zone.addEventListener('dragleave', () => zone.classList.remove('is-dragover'));
-    zone.addEventListener('drop', async (e) => {
-        prevent(e);
-        zone.classList.remove('is-dragover');
-        const file = e.dataTransfer?.files?.[0];
-        if (file) await a2wBiUploadAsset(type, file);
-    });
-    zone.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
-        const input = a2wBiField(`a2wBiAssetUploadInput_${type}`);
-        if (input) input.click();
-    });
-}
-
-function a2wBiBindAssetCardActions(type) {
-    const uploadInput = a2wBiField(`a2wBiAssetUploadInput_${type}`);
-    const browseBtn = a2wBiField(`a2wBiAssetBrowseBtn_${type}`);
+function a2wBiBindAssetSlotActions(type) {
     const pickBtn = a2wBiField(`a2wBiAssetPickBtn_${type}`);
     const removeBtn = a2wBiField(`a2wBiAssetRemoveBtn_${type}`);
-    a2wBiBindAssetDropzone(type);
-    if (browseBtn && uploadInput) browseBtn.onclick = (e) => { e.stopPropagation(); uploadInput.click(); };
-    if (uploadInput) {
-        uploadInput.onchange = async () => {
-            const file = uploadInput.files && uploadInput.files[0];
-            if (!file) return;
-            await a2wBiUploadAsset(type, file);
-            uploadInput.value = '';
-        };
-    }
     if (pickBtn) {
         pickBtn.onclick = () => {
             openMediaPicker((mediaId) => {
@@ -11690,64 +11662,32 @@ function a2wBiBindAssetCardActions(type) {
     }
 }
 
-async function a2wBiUploadAsset(type, file) {
-    if (!brandId) return toast('Seleziona un brand');
-    try {
-        const base64 = typeof normalizeMediaForUpload === 'function'
-            ? await normalizeMediaForUpload(file, type)
-            : await fileToBase64(file);
-        const res = await fetch(`${API}/media`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-            body: JSON.stringify({
-                brand_id: brandId,
-                type,
-                title: `${A2W_BRAND_IDENTITY_ASSET_SPECS[type].label} (${new Date().toISOString().slice(0, 10)})`,
-                image_base64: base64
-            })
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || 'Upload fallito');
-        }
-        await a2wBiLoadMediaByType();
-        brandIdentityState.selectedAssets[type] = (brandIdentityState.mediaByType[type] || [])[0] || null;
-        a2wBiRenderAssetsGrid();
-        a2wBiUpdatePreviewCard();
-        a2wBiSyncDirtyState();
-        toast('Asset caricato');
-    } catch (e) {
-        toast('Errore upload: ' + (e.message || 'sconosciuto'));
-    }
-}
-
 function a2wBiRenderAssetsGrid() {
     const host = a2wBiField('a2wBiAssetsGrid');
     if (!host) return;
     host.innerHTML = ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].map((type) => {
         const spec = A2W_BRAND_IDENTITY_ASSET_SPECS[type];
         const item = brandIdentityState.selectedAssets[type];
+        const isSquare = type === 'wallet_icon' || type === 'thumbnail';
         const preview = item
             ? `<img src="${a2wBiMediaImageUrl(item)}" alt="${esc(spec.label)}">`
-            : `<span class="a2w-bi-asset-placeholder">Nessun asset selezionato</span>`;
+            : `<span class="a2w-bi-asset-slot__placeholder" aria-hidden="true"></span>`;
+        const removeDisabled = item ? '' : ' disabled';
         return `
-          <article class="a2w-bi-asset-card" data-a2w-asset-type="${type}">
-            <h3 class="a2w-bi-asset-title">${esc(spec.label)}</h3>
-            <p class="a2w-bi-asset-spec">${esc(spec.hint)}</p>
-            <div class="a2w-bi-asset-dropzone" data-a2w-dropzone="${type}" role="button" tabindex="0" aria-label="Carica ${esc(spec.label)}">
-              <div class="a2w-bi-asset-preview">${preview}</div>
-              <p class="a2w-bi-asset-dropzone-hint">Trascina un file o clicca per caricare</p>
+          <article class="a2w-bi-asset-slot${isSquare ? ' a2w-bi-asset-slot--square' : ''}" data-a2w-asset-type="${type}">
+            <div class="a2w-bi-asset-slot__preview">${preview}</div>
+            <div class="a2w-bi-asset-slot__body">
+              <h3 class="a2w-bi-asset-slot__title">${esc(spec.label)}</h3>
+              <p class="a2w-bi-asset-slot__hint">${esc(spec.hint)}</p>
+              <div class="a2w-bi-asset-slot__actions">
+                <button type="button" class="btn sec small" id="a2wBiAssetPickBtn_${type}">Scegli da libreria</button>
+                <button type="button" class="btn sec small"${removeDisabled} id="a2wBiAssetRemoveBtn_${type}">Rimuovi</button>
+              </div>
             </div>
-            <div class="a2w-bi-asset-actions">
-              <button type="button" class="btn sec small" id="a2wBiAssetBrowseBtn_${type}">Sfoglia file</button>
-              <button type="button" class="btn sec small" id="a2wBiAssetPickBtn_${type}">Da libreria</button>
-              <button type="button" class="btn sec small" id="a2wBiAssetRemoveBtn_${type}">Rimuovi</button>
-            </div>
-            <input type="file" id="a2wBiAssetUploadInput_${type}" accept="image/*,.pdf" hidden>
           </article>
         `;
     }).join('');
-    ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].forEach(a2wBiBindAssetCardActions);
+    ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].forEach(a2wBiBindAssetSlotActions);
 }
 
 function a2wBiUpdatePreviewCard() {

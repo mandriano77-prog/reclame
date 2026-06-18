@@ -625,6 +625,7 @@
   function a2wMediaSpecsMap() {
     return {
       logo: 'PNG trasparente, max 320x100 px. Un logo chiaro migliora leggibilita nel pass.',
+      wallet_icon: 'PNG/JPG quadrata 512x512 px. Icona mostrata nelle push notification Wallet su iPhone.',
       strip: 'PNG/JPG 750x246 px. Usa immagini promozionali con testo minimo e focus visuale.',
       thumbnail: 'PNG/JPG 90x90 px. Usato nel fronte Event Ticket come miniatura.',
       background: 'PNG/JPG 360x440 px. Sfondo intero su Event Ticket, preferire contrasto alto.'
@@ -758,6 +759,8 @@
     const bucketKey = dropzone.getAttribute('data-a2w-media-type');
 
     dropzone.addEventListener('click', function a2wDropzoneClick() {
+      const typeSelect = document.getElementById('mediaUploadType');
+      if (typeSelect && bucketKey) typeSelect.value = bucketKey;
       if (typeof openMediaUpload === 'function') {
         openMediaUpload();
       }
@@ -785,6 +788,7 @@
     if (!section) return;
     const buckets = [
       { key: 'logo', hostId: 'mediaLogoBox', cardId: 'a2wMediaLogoCard' },
+      { key: 'wallet_icon', hostId: 'mediaWalletIconGrid', cardId: 'a2wMediaWalletIconCard' },
       { key: 'strip', hostId: 'mediaStripGrid', cardId: 'a2wMediaStripCard' },
       { key: 'thumbnail', hostId: 'mediaThumbnailGrid', cardId: 'a2wMediaThumbCard' },
       { key: 'background', hostId: 'mediaBackgroundGrid', cardId: 'a2wMediaBackgroundCard' }
@@ -834,7 +838,7 @@
   }
 
   function a2wEnhanceMediaCards() {
-    ['mediaLogoBox', 'mediaStripGrid', 'mediaThumbnailGrid', 'mediaBackgroundGrid'].forEach((id) => {
+    ['mediaLogoBox', 'mediaWalletIconGrid', 'mediaStripGrid', 'mediaThumbnailGrid', 'mediaBackgroundGrid'].forEach((id) => {
       const host = document.getElementById(id);
       if (!host) return;
       host.classList.add('a2w-media-host');
@@ -891,6 +895,7 @@
     if (specsCard) specsCard.style.display = 'none';
     a2wEnsureMediaDropzones(section);
     a2wReplaceLoadingWithSkeleton('mediaLogoBox', 'logo');
+    a2wReplaceLoadingWithSkeleton('mediaWalletIconGrid', 'wallet');
     a2wReplaceLoadingWithSkeleton('mediaStripGrid', 'strip');
     a2wReplaceLoadingWithSkeleton('mediaThumbnailGrid', 'thumb');
     a2wReplaceLoadingWithSkeleton('mediaBackgroundGrid', 'bg');
