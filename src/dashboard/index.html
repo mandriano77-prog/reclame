@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260617-media-library-tabs';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260617-media-library-tabs';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260618-media-library-fix';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260618-media-library-fix';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -1886,12 +1886,12 @@
                                 <div class="a2w-bi-assets-grid" id="a2wBiAssetsGrid"></div>
                             </section>
 
-                            <section class="card a2w-bi-section">
+                            <section class="card a2w-bi-section a2w-bi-section--contacts">
                                 <div class="a2w-bi-section__head">
                                     <h2>Contatti pubblici</h2>
                                     <p>Informazioni mostrate su pass, landing e canali di supporto.</p>
                                 </div>
-                                <div class="form-row">
+                                <div class="a2w-bi-contact-grid">
                                     <div class="form-group">
                                         <label class="form-label" for="biHomepage">Home page</label>
                                         <input type="url" id="biHomepage" placeholder="https://www.brand.com">
@@ -1902,19 +1902,17 @@
                                         <input type="email" id="biSupportEmail" placeholder="support@brand.com">
                                         <p class="a2w-bi-field-error" id="biSupportEmailError" role="alert"></p>
                                     </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="biSupportPhone">Telefono di supporto</label>
-                                    <input type="text" id="biSupportPhone" placeholder="+39 02 1234 5678">
-                                    <p class="a2w-bi-field-error" id="biSupportPhoneError" role="alert"></p>
-                                </div>
-                                <div class="form-row fd-bi-hr-contact-extra">
                                     <div class="form-group">
+                                        <label class="form-label" for="biSupportPhone">Telefono di supporto</label>
+                                        <input type="text" id="biSupportPhone" placeholder="+39 02 1234 5678">
+                                        <p class="a2w-bi-field-error" id="biSupportPhoneError" role="alert"></p>
+                                    </div>
+                                    <div class="form-group fd-bi-hr-contact-extra">
                                         <label class="form-label" for="biDpoEmail">Privacy / DPO email</label>
                                         <input type="email" id="biDpoEmail" placeholder="dpo@azienda.it">
                                         <p class="a2w-bi-field-error" id="biDpoEmailError" role="alert"></p>
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group fd-bi-hr-contact-extra">
                                         <label class="form-label" for="biEmergencyPhone">Emergenze (telefono)</label>
                                         <input type="text" id="biEmergencyPhone" placeholder="+39 ...">
                                         <p class="a2w-bi-field-error" id="biEmergencyPhoneError" role="alert"></p>
@@ -1922,7 +1920,7 @@
                                 </div>
                             </section>
 
-                            <section class="card a2w-bi-section">
+                            <section class="card a2w-bi-section a2w-bi-section--social">
                                 <button type="button" class="a2w-bi-accordion-trigger" id="a2wBiSocialToggle" aria-expanded="false" aria-controls="a2wBiSocialBody">
                                     Social (opzionale)
                                 </button>
@@ -1946,8 +1944,7 @@
                             </section>
                         </div>
 
-                        <aside class="a2w-bi-preview-column">
-                            <details class="a2w-bi-summary-disclosure" id="a2wBiSummaryDisclosure">
+                        <details class="a2w-bi-summary-disclosure" id="a2wBiSummaryDisclosure">
                                 <summary class="a2w-bi-summary-disclosure__trigger">
                                     <span class="a2w-bi-summary-disclosure__label">Riepilogo identità</span>
                                     <span class="a2w-bi-summary-disclosure__chevron" aria-hidden="true"></span>
@@ -1989,8 +1986,7 @@
                                         </p>
                                     </div>
                                 </div>
-                            </details>
-                        </aside>
+                        </details>
                     </div>
                 </div>
 
@@ -2011,51 +2007,53 @@
 
             <!-- MEDIA LIBRARY -->
             <div id="media-library" class="section" data-rbac-section="media-library">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <h1 class="sec-title page-title" style="margin-bottom:0">Media Library</h1>
-                    <div style="display:flex;gap:8px;">
-                        <button class="btn" data-requires-write="media-library" onclick="openMediaUpload()">+ Carica Immagine</button>
-                        <button class="btn sec fd-rbac-write" data-requires-write="media-library" style="color:#f66;border-color:#f66;" onclick="deleteAllMedia()">Svuota tutto</button>
-                    </div>
-                </div>
-                <div class="card" style="margin-bottom:14px;">
-                    <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Specifiche tecniche consigliate</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;color:var(--text2);">
-                        <div><strong style="color:var(--text)">Logo</strong>: PNG trasparente, max 320x100 px.</div>
-                        <div><strong style="color:var(--text)">Icona notifiche Wallet</strong>: PNG/JPG quadrata 512×512 px.</div>
-                        <div><strong style="color:var(--text)">Strip</strong>: PNG/JPG 750x246 px.</div>
-                        <div><strong style="color:var(--text)">Thumbnail</strong>: PNG/JPG 90x90 px (event ticket).</div>
-                        <div><strong style="color:var(--text)">Background</strong>: PNG/JPG 360x440 px (event ticket).</div>
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
-                    <div class="card" style="margin:0;">
-                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Logo brand</div>
-                        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Normalmente unico. Cambialo solo in caso di rebranding.</p>
-                        <div id="mediaLogoBox"><p style="color:var(--text2)">Caricamento...</p></div>
-                    </div>
-                    <div class="card" style="margin:0;">
-                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Icona notifiche Wallet</div>
-                        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">512×512 px — icona mostrata nelle push notification iPhone.</p>
-                        <div id="mediaWalletIconGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
-                    </div>
-                    <div class="card" style="margin:0;">
-                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
-                            <div class="sec-title" style="font-size:15px;margin:0;">Strip</div>
-                            <input id="mediaStripSearch" type="search" placeholder="Cerca per nome..." oninput="loadMediaLibrary()" style="max-width:220px;">
+                <div class="a2w-media-page">
+                    <div class="a2w-media-page-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h1 class="sec-title page-title" style="margin-bottom:0">Media Library</h1>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn" data-requires-write="media-library" onclick="openMediaUpload()">+ Carica Immagine</button>
+                            <button class="btn sec fd-rbac-write" data-requires-write="media-library" style="color:#f66;border-color:#f66;" onclick="deleteAllMedia()">Svuota tutto</button>
                         </div>
-                        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Puoi caricare più varianti (es. promo, evento, default) e sceglierle in push o nel template.</p>
-                        <div id="mediaStripGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                     </div>
-                    <div class="card" style="margin:0;">
-                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Thumbnail</div>
-                        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">90x90 px — usato su Event Ticket (fronte pass).</p>
-                        <div id="mediaThumbnailGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                    <div class="card a2w-media-specs-card" style="margin-bottom:14px;">
+                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Specifiche tecniche consigliate</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;color:var(--text2);">
+                            <div><strong style="color:var(--text)">Logo</strong>: PNG trasparente, max 320x100 px.</div>
+                            <div><strong style="color:var(--text)">Icona notifiche Wallet</strong>: PNG/JPG quadrata 512×512 px.</div>
+                            <div><strong style="color:var(--text)">Strip</strong>: PNG/JPG 750x246 px.</div>
+                            <div><strong style="color:var(--text)">Thumbnail</strong>: PNG/JPG 90x90 px (event ticket).</div>
+                            <div><strong style="color:var(--text)">Background</strong>: PNG/JPG 360x440 px (event ticket).</div>
+                        </div>
                     </div>
-                    <div class="card" style="margin:0;">
-                        <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Background</div>
-                        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">360x440 px — sfondo intero su Event Ticket.</p>
-                        <div id="mediaBackgroundGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                    <div class="a2w-media-buckets-grid">
+                        <div class="card a2w-media-bucket">
+                            <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Logo brand</div>
+                            <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Normalmente unico. Cambialo solo in caso di rebranding.</p>
+                            <div id="mediaLogoBox"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
+                        <div class="card a2w-media-bucket">
+                            <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Icona notifiche Wallet</div>
+                            <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">512×512 px — icona mostrata nelle push notification iPhone.</p>
+                            <div id="mediaWalletIconGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
+                        <div class="card a2w-media-bucket">
+                            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+                                <div class="sec-title" style="font-size:15px;margin:0;">Strip</div>
+                                <input id="mediaStripSearch" type="search" placeholder="Cerca per nome..." oninput="loadMediaLibrary()" style="max-width:220px;">
+                            </div>
+                            <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Puoi caricare più varianti (es. promo, evento, default) e sceglierle in push o nel template.</p>
+                            <div id="mediaStripGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
+                        <div class="card a2w-media-bucket">
+                            <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Thumbnail</div>
+                            <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">90x90 px — usato su Event Ticket (fronte pass).</p>
+                            <div id="mediaThumbnailGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
+                        <div class="card a2w-media-bucket">
+                            <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Background</div>
+                            <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">360x440 px — sfondo intero su Event Ticket.</p>
+                            <div id="mediaBackgroundGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
+                        </div>
                     </div>
                 </div>
             </div>

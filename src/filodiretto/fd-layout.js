@@ -105,20 +105,39 @@
   function positionFloatingMenu(trigger, panel) {
     if (!trigger || !panel) return;
     var collisionPadding = 16;
+    var gap = 6;
     panel.classList.add('fd-floating-menu-panel');
     panel.hidden = false;
+    panel.style.transform = 'none';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+
     var rect = trigger.getBoundingClientRect();
     var width = panel.offsetWidth || 168;
-    var idealLeft = rect.right - width;
+    var height = panel.offsetHeight || 120;
+
+    var contentMain = document.querySelector('.main-content, .content-area, main');
+    var contentLeft = contentMain ? contentMain.getBoundingClientRect().left : 0;
+    if (contentLeft < 64) contentLeft = 240;
+
+    var top = rect.bottom + gap;
+    var left = rect.left;
     var maxLeft = window.innerWidth - width - collisionPadding;
-    var left = Math.min(Math.max(collisionPadding, idealLeft), Math.max(collisionPadding, maxLeft));
-    var top = rect.bottom + 8;
-    var maxTop = window.innerHeight - panel.offsetHeight - collisionPadding;
-    if (top > maxTop) top = Math.max(collisionPadding, maxTop);
+
+    if (left + width > window.innerWidth - collisionPadding) {
+      left = rect.right - width;
+    }
+    left = Math.max(contentLeft + collisionPadding, left);
+    left = Math.min(left, Math.max(collisionPadding, maxLeft));
+
+    var maxTop = window.innerHeight - height - collisionPadding;
+    if (top > maxTop) {
+      top = Math.max(collisionPadding, rect.top - height - gap);
+    }
+
     panel.style.position = 'fixed';
     panel.style.top = top + 'px';
     panel.style.left = left + 'px';
-    panel.style.right = 'auto';
     panel.style.zIndex = '9200';
   }
 
