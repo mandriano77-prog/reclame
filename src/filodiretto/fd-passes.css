@@ -1,7 +1,82 @@
-html[data-app='filodiretto'] #passes.passes--fd-layout #passWalletTechAccordion,
-html[data-app='filodiretto'] #passes.passes--fd-layout #passWalletChannelsDiag {
-  margin-top: 20px;
-  margin-bottom: 0;
+/* Filo HR — Pass Emessi (FASE 4 — design system alignment) */
+
+html[data-app='filodiretto'] #passes.passes--fd-ds {
+  width: 100%;
+  max-width: var(--fd-layout-max-width, 1280px);
+  padding-bottom: var(--fd-space-7, 48px);
+}
+
+html[data-app='filodiretto'] #passes .fd-brand-pass-flow-host {
+  margin: 0 0 var(--fd-space-4, 16px);
+  width: 100%;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-header {
+  margin-bottom: var(--fd-space-3, 12px);
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-lead,
+html[data-app='filodiretto'] #passes .fd-page-header__lead {
+  max-width: 65ch;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-header__filters {
+  flex-shrink: 0;
+  align-items: center;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-campaign-select {
+  min-width: 160px;
+  width: auto;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-session-hint {
+  margin: 0 0 var(--fd-space-4, 16px);
+  font-size: var(--fd-font-size-caption, 11px);
+  color: var(--fd-color-text-muted, var(--text2));
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-content {
+  color: inherit;
+  min-width: 0;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-stat-grid {
+  margin-bottom: var(--fd-space-5, 24px);
+}
+
+html[data-app='filodiretto'] #passes .fd-stat-card--skeleton {
+  pointer-events: none;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-bulk-hint {
+  margin: 0 0 var(--fd-space-3, 12px);
+  font-size: var(--fd-font-size-sm, 12px);
+  color: var(--fd-color-text-secondary, var(--text2));
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-bulk-bar,
+html[data-app='filodiretto'] #passes .pass-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2, 8px);
+  margin-bottom: var(--fd-space-3, 12px);
+  padding: var(--fd-space-3, 12px) var(--fd-space-4, 16px);
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: var(--fd-radius-md, 12px);
+  background: var(--fd-color-surface-muted, #fafafa);
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-toolbar {
+  margin-bottom: var(--fd-space-3, 12px);
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-search {
+  flex: 1 1 220px;
+  max-width: 360px;
+  min-width: 0;
 }
 
 html[data-app='filodiretto'] #passes .fd-passes-cols-toggle {
@@ -10,6 +85,48 @@ html[data-app='filodiretto'] #passes .fd-passes-cols-toggle {
 
 html[data-app='filodiretto'] #passes:not(.passes--advanced-cols) .pass-col-advanced {
   display: none;
+}
+
+html[data-app='filodiretto'] #passes .pass-table-wrap.fd-table-wrap {
+  margin-bottom: 0;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fd-space-3, 12px);
+  margin-top: var(--fd-space-4, 16px);
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-pagination > div:first-child {
+  font-size: var(--fd-font-size-sm, 12px);
+  color: var(--fd-color-text-secondary, var(--text2));
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-pagination > div:last-child {
+  display: flex;
+  gap: var(--fd-space-2, 8px);
+  align-items: center;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-table-skeleton {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-skeleton {
+  min-height: 160px;
+}
+
+html[data-app='filodiretto'] #passes.passes--fd-layout #passWalletTechAccordion,
+html[data-app='filodiretto'] #passes.passes--fd-layout #passWalletChannelsDiag,
+html[data-app='filodiretto'] #passes .fd-passes-tech-accordion {
+  margin-top: var(--fd-space-5, 24px);
+  margin-bottom: 0;
 }
 
 html[data-app='filodiretto'] #passes .fd-pass-row-menu {
@@ -21,11 +138,11 @@ html[data-app='filodiretto'] #passes .fd-pass-row-menu__panel {
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  min-width: 160px;
-  background: var(--surface, #fff);
+  min-width: 168px;
+  background: var(--fd-color-surface, var(--surface, #fff));
   border: 1px solid var(--fd-border, var(--border));
-  border-radius: 8px;
-  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.12));
+  border-radius: var(--fd-radius-sm, 8px);
+  box-shadow: var(--fd-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.12));
   z-index: 40;
   padding: 4px;
 }
@@ -42,14 +159,25 @@ html[data-app='filodiretto'] #passes .fd-pass-row-menu__item {
   text-align: left;
   padding: 8px 10px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: var(--fd-font-size-body, 13px);
   cursor: pointer;
+  color: var(--fd-color-text, var(--text));
 }
 
 html[data-app='filodiretto'] #passes .fd-pass-row-menu__item:hover {
-  background: var(--bg-hover, #f3f4f6);
+  background: var(--fd-color-surface-muted, #f3f4f6);
 }
 
 html[data-app='filodiretto'] #passes .fd-pass-row-menu__item--danger {
-  color: #dc2626;
+  color: var(--fd-color-danger, #dc2626);
+}
+
+html[data-app='filodiretto'] #passes .fd-pass-row-menu__item--danger:hover {
+  background: #fef2f2;
+}
+
+@media (max-width: 720px) {
+  html[data-app='filodiretto'] #passes .fd-passes-stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
 }
