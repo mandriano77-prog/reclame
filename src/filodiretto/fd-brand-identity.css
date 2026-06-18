@@ -14,12 +14,48 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-breadcrumb {
 html[data-app='filodiretto'] #brand-identity .a2w-bi-header {
   position: sticky;
   top: 0;
-  z-index: 25;
+  z-index: var(--fd-z-sticky, 100);
   margin-bottom: var(--fd-space-5);
   padding: var(--fd-space-3) 0 var(--fd-space-4);
   background: color-mix(in srgb, var(--fd-color-bg-canvas) 92%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--fd-border);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-save-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fd-space-2) var(--fd-space-3);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-save-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--fd-space-1);
+  min-width: 0;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-save-meta__label {
+  font-size: var(--fd-font-size-caption);
+  font-weight: var(--fd-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fd-color-text-muted);
+  line-height: 1.2;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-state-badge {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-app='filodiretto'] #brand-identity #a2wBiSaveBtn.fd-btn--primary:disabled:not(.is-saving) {
+  opacity: 0.55;
 }
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-title {
@@ -45,7 +81,7 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-header__actions {
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-columns: minmax(0, 560px) minmax(280px, 1fr);
   gap: var(--fd-space-5);
   align-items: start;
 }
@@ -55,6 +91,63 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-main {
   flex-direction: column;
   gap: var(--fd-space-4);
   min-width: 0;
+  max-width: 560px;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fd-space-4);
+  min-width: 0;
+  position: sticky;
+  top: calc(var(--fd-space-6) + 88px);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside-card {
+  padding: var(--fd-space-4);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside__title {
+  margin: 0 0 var(--fd-space-2);
+  font-size: var(--fd-font-size-h3);
+  font-weight: var(--fd-font-weight-semibold);
+  color: var(--fd-color-text-primary);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside__lead {
+  margin: 0 0 var(--fd-space-3);
+  font-size: var(--fd-font-size-sm);
+  line-height: var(--fd-line-height-relaxed);
+  color: var(--fd-color-text-secondary);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside__hint {
+  margin: var(--fd-space-3) 0;
+  font-size: var(--fd-font-size-sm);
+  line-height: var(--fd-line-height-relaxed);
+  color: var(--fd-color-text-muted);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside-checklist {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: var(--fd-font-size-sm);
+  color: var(--fd-color-text-secondary);
+  line-height: var(--fd-line-height-relaxed);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside-checklist li + li {
+  margin-top: var(--fd-space-2);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-aside-card--help {
+  background: var(--fd-color-surface-muted);
 }
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-section.card {
@@ -404,13 +497,14 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-preview-qr {
   background: var(--fd-color-bg-subtle);
 }
 
-/* Zona pericolosa: visibile ma non dominante */
+/* Zona pericolosa: blocco dedicato sotto il layout */
 html[data-app='filodiretto'] #brand-identity .a2w-bi-danger-zone.fd-danger-zone {
-  margin-top: var(--fd-space-2);
+  margin-top: var(--fd-space-6);
   padding: var(--fd-space-4);
   border: 1px dashed var(--fd-color-danger-border);
-  background: var(--fd-color-bg-canvas);
+  background: var(--fd-color-danger-bg);
   border-radius: var(--fd-radius-md);
+  max-width: 560px;
 }
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-danger-zone.fd-danger-zone h2 {
@@ -431,6 +525,19 @@ html[data-app='filodiretto'] #brand-identity #a2wBiSaveBtn:not(:disabled) {
 @media (max-width: 1023px) {
   html[data-app='filodiretto'] #brand-identity .a2w-bi-layout {
     grid-template-columns: 1fr;
+  }
+
+  html[data-app='filodiretto'] #brand-identity .a2w-bi-main {
+    max-width: 100%;
+  }
+
+  html[data-app='filodiretto'] #brand-identity .fd-bi-aside {
+    position: static;
+    top: auto;
+  }
+
+  html[data-app='filodiretto'] #brand-identity .a2w-bi-danger-zone.fd-danger-zone {
+    max-width: 100%;
   }
 
   html[data-app='filodiretto'] #brand-identity .a2w-bi-preview-mobile-toggle {
