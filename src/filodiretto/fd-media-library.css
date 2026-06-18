@@ -1,17 +1,18 @@
-/* Filo HR — Media Library: layout semplificato, tutti i tipi asset visibili */
+/* Filo HR — Media Library (FASE 4 — design system alignment) */
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout {
-  max-width: 960px;
-  padding-bottom: 96px;
+  width: 100%;
+  max-width: var(--fd-layout-max-width, 1280px);
+  padding-bottom: var(--fd-space-7, 48px);
 }
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-grid {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  align-items: flex-start;
+  gap: var(--fd-space-5, 24px);
+  align-items: stretch;
   width: 100%;
-  max-width: 760px;
+  max-width: 100%;
 }
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-grid--tabs {
@@ -20,13 +21,10 @@ html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-g
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-section.card {
   margin: 0;
-  padding: 24px;
+  padding: var(--fd-space-5, 24px);
   width: 100%;
-  max-width: 760px;
+  max-width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--fd-border, var(--border));
-  border-radius: var(--fd-radius-md, 10px);
-  background: var(--surface, #fff);
 }
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-section--hidden {
@@ -51,8 +49,8 @@ html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-s
 /* Category tabs (segmented control) */
 html[data-app='filodiretto'] #media-library .fd-media-tabs {
   width: 100%;
-  max-width: 760px;
-  margin-bottom: 4px;
+  max-width: 100%;
+  margin-bottom: var(--fd-space-2, 8px);
 }
 
 html[data-app='filodiretto'] #media-library .fd-media-tabs__select-wrap {
@@ -153,16 +151,16 @@ html[data-app='filodiretto'] #media-library.media-library--fd-layout .a2w-media-
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--fd-space-4, 16px);
+  margin-bottom: var(--fd-space-5, 24px);
   overflow: visible;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 html[data-app='filodiretto'] #media-library .fd-brand-pass-flow-host {
-  margin: 0 0 16px;
+  margin: 0 0 var(--fd-space-4, 16px);
   width: 100%;
-  max-width: 760px;
+  max-width: 100%;
 }
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-header__copy {
@@ -174,18 +172,20 @@ html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-h
   margin-bottom: 6px;
 }
 
-html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-lead {
+html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-lead,
+html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-page-header__lead {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--fd-text-secondary, var(--text2));
-  max-width: none;
+  font-size: var(--fd-font-size-body, 14px);
+  line-height: var(--fd-line-height-relaxed, 1.6);
+  color: var(--fd-color-text-secondary, var(--text2));
+  max-width: 65ch;
 }
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-header__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2, 8px);
   flex-shrink: 0;
 }
 
@@ -195,11 +195,11 @@ html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-g
 }
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-specs {
-  margin-bottom: 16px;
+  margin-bottom: var(--fd-space-4, 16px);
+  padding: 0 var(--fd-space-4, 16px);
   border: 1px solid var(--fd-border, var(--border));
-  border-radius: var(--fd-radius-md, 10px);
-  background: var(--fd-surface-muted, #f8fafc);
-  padding: 0 14px;
+  border-radius: var(--fd-radius-md, 12px);
+  background: var(--fd-color-surface-muted, #f8fafc);
 }
 
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-specs summary {
@@ -437,6 +437,24 @@ html[data-app='filodiretto'] #media-library.media-library--fd-layout #mediaLogoB
   background: #fff;
 }
 
+html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-empty-state {
+  padding: var(--fd-space-4, 16px) 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-empty-state .fd-media-dropzone {
+  width: 100%;
+  margin-top: var(--fd-space-2, 8px);
+  text-align: center;
+}
+
+html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-skeleton {
+  padding: var(--fd-space-2, 8px) 0;
+  min-height: 72px;
+}
+
 html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-empty {
   font-size: 13px;
   color: var(--fd-text-secondary, var(--text2));
@@ -544,16 +562,17 @@ html[data-app='filodiretto'] .fd-media-dialog__actions {
 html[data-app='filodiretto'] .fd-media-bulk-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  margin-bottom: 8px;
-  padding: 10px 12px;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2, 8px);
+  margin-top: var(--fd-space-3, 12px);
+  margin-bottom: var(--fd-space-2, 8px);
+  padding: var(--fd-space-3, 12px) var(--fd-space-4, 16px);
   border: 1px solid var(--fd-border, var(--border));
-  border-radius: 10px;
-  background: #fafafa;
+  border-radius: var(--fd-radius-md, 12px);
+  background: var(--fd-color-surface-muted, #fafafa);
 }
 
-html[data-app='filodiretto'] .fd-media-bulk-bar .btn {
+html[data-app='filodiretto'] .fd-media-bulk-bar .fd-btn {
   min-width: 120px;
 }
 

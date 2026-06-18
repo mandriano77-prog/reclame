@@ -550,6 +550,74 @@
     if (typeof window.toast === 'function') window.toast('Export libreria disponibile a breve');
   };
 
+  function renderLoadingSkeleton() {
+    return (
+      '<div class="fd-media-skeleton" aria-busy="true" aria-live="polite">' +
+      '<span class="fd-skeleton fd-skeleton--title" style="width:55%;max-width:220px"></span>' +
+      '<span class="fd-skeleton fd-skeleton--text" style="width:80%;margin-top:10px"></span>' +
+      '<span class="fd-skeleton fd-skeleton--text" style="width:60%;margin-top:6px"></span>' +
+      '</div>'
+    );
+  }
+
+  function applyDsButtonClasses(root) {
+    var scope = root || document;
+    scope.querySelectorAll('#media-library .fd-media-header__actions button[onclick*="openMediaUpload"]').forEach(function (btn) {
+      btn.classList.add('fd-btn', 'fd-btn--primary');
+      btn.classList.remove('sec');
+    });
+    scope.querySelectorAll('#media-library .fd-media-upload-type').forEach(function (btn) {
+      btn.classList.add('fd-btn', 'fd-btn--secondary');
+    });
+    scope.querySelectorAll('#media-library #fdMediaBulkClearBtn').forEach(function (btn) {
+      btn.classList.add('fd-btn', 'fd-btn--secondary');
+    });
+    scope.querySelectorAll('#media-library #fdMediaBulkDeleteBtn').forEach(function (btn) {
+      btn.classList.add('fd-btn', 'fd-btn--danger');
+    });
+  }
+
+  function enhanceMediaHeaderDesign(header) {
+    if (!header || header.dataset.fdDsHeader === '1') return;
+    header.dataset.fdDsHeader = '1';
+    header.classList.add('fd-page-header');
+
+    var copy = header.querySelector('.fd-media-header__copy');
+    if (copy) copy.classList.add('fd-page-header__copy');
+    var h1 = header.querySelector('h1, .page-title');
+    if (h1) h1.classList.add('fd-page-header__title');
+    var lead = header.querySelector('.fd-media-lead');
+    if (lead) lead.classList.add('fd-page-header__lead');
+
+    var actions = header.querySelector('.fd-media-header__actions');
+    if (actions) actions.classList.add('fd-page-header__actions');
+
+    applyDsButtonClasses(header);
+  }
+
+  function ensureSpecsPanel(page) {
+    if (!page || page.querySelector('.fd-media-specs')) return;
+    var details = document.createElement('details');
+    details.className = 'fd-media-specs fd-card';
+    details.innerHTML =
+      '<summary>Specifiche tecniche consigliate</summary>' +
+      '<div class="fd-media-specs__body">' +
+      '<div><strong>Logo</strong> — PNG trasparente, max 320×100 px.</div>' +
+      '<div><strong>Icona notifiche</strong> — quadrata 512×512 px.</div>' +
+      '<div><strong>Strip</strong> — 750×246 px, più varianti possibili.</div>' +
+      '<div><strong>Thumbnail</strong> — 90×90 px (Event Ticket).</div>' +
+      '<div><strong>Background</strong> — 360×440 px (Event Ticket).</div>' +
+      '</div>';
+    var grid = page.querySelector('.fd-media-grid');
+    if (grid) page.insertBefore(details, grid);
+    else page.appendChild(details);
+  }
+
+  function enhanceSectionDesign(card) {
+    if (!card) return;
+    card.classList.add('fd-card', 'fd-form-section');
+  }
+
   function findBucketForType(type) {
     var hostId = HOST_ID_BY_TYPE[type];
     if (!hostId) return null;
@@ -573,7 +641,7 @@
     var meta = SECTION_META[type] || { title: type, hint: '', uploadLabel: 'Carica' };
     card.dataset.mediaType = type;
     card.dataset.fdMediaSection = '1';
-    card.classList.add('fd-media-section', 'card');
+    card.classList.add('fd-media-section', 'card', 'fd-card', 'fd-form-section');
     card.id = panelIdForType(type);
     card.setAttribute('role', 'tabpanel');
     card.setAttribute('aria-labelledby', 'fdMediaTab_' + type);
@@ -593,7 +661,7 @@
     } else if (type !== 'strip' || !actions.querySelector('#mediaStripSearch')) {
       actions.insertAdjacentHTML(
         'beforeend',
-        '<button type="button" class="btn sec small fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>'
+        '<button type="button" class="fd-btn fd-btn--secondary fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>'
       );
     }
     bindUploadButtons(actions);
@@ -619,10 +687,10 @@
       (type === 'strip'
         ? '<input id="mediaStripSearch" type="search" class="fd-media-section__search" placeholder="Cerca per nome…">'
         : '') +
-      '<button type="button" class="btn sec small fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>' +
+        '<button type="button" class="fd-btn fd-btn--secondary fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>' +
       '</div></div>' +
       '<div class="fd-media-section__body">' +
-      '<div id="' + hostId + '" class="strip-gallery"><p class="fd-media-empty">Caricamento…</p></div>' +
+      '<div id="' + hostId + '" class="strip-gallery">' + renderLoadingSkeleton() + '</div>' +
       '</div>';
     bindUploadButtons(card);
     if (type === 'strip') {
@@ -661,7 +729,7 @@
       '<p class="fd-media-section__hint">' + esc(meta.hint) + '</p>' +
       '</div>' +
       '<div class="fd-media-section__actions">' +
-      (stripSearch ? '' : '<button type="button" class="btn sec small fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>') +
+      (stripSearch ? '' : '<button type="button" class="fd-btn fd-btn--secondary fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>') +
       '</div>';
 
     if (stripSearch) {
@@ -670,7 +738,7 @@
       actions.appendChild(stripSearch);
       actions.insertAdjacentHTML(
         'beforeend',
-        '<button type="button" class="btn sec small fd-media-upload-type" data-upload-type="strip">Carica strip</button>'
+        '<button type="button" class="fd-btn fd-btn--secondary fd-media-upload-type" data-upload-type="strip">Carica strip</button>'
       );
     }
 
@@ -741,6 +809,7 @@
         window.fdRelocateBrandPassFlowBar(section);
       }
       ensureMediaCategoryTabs();
+      applyDsButtonClasses(section);
       return;
     }
 
@@ -768,6 +837,7 @@
           uploadBtn.textContent = 'Carica file';
           uploadBtn.classList.remove('sec');
         }
+        enhanceMediaHeaderDesign(header);
         if (!actions.querySelector('#fdMediaGlobalSearch')) {
           var search = document.createElement('input');
           search.type = 'search';
@@ -784,6 +854,7 @@
     page.querySelectorAll('.a2w-media-specs-card').forEach(function (specsCard) {
       specsCard.remove();
     });
+    ensureSpecsPanel(page);
 
     if (!grid) {
       grid = document.createElement('div');
@@ -808,8 +879,8 @@
       bulk.hidden = true;
       bulk.innerHTML =
         '<span id="fdMediaBulkCount">0 selezionati</span>' +
-        '<button type="button" class="btn sec" id="fdMediaBulkClearBtn">Deseleziona</button>' +
-        '<button type="button" class="btn danger" id="fdMediaBulkDeleteBtn">Elimina selezionati</button>';
+        '<button type="button" class="fd-btn fd-btn--secondary" id="fdMediaBulkClearBtn">Deseleziona</button>' +
+        '<button type="button" class="fd-btn fd-btn--danger" id="fdMediaBulkDeleteBtn">Elimina selezionati</button>';
       section.appendChild(bulk);
       document.getElementById('fdMediaBulkClearBtn').addEventListener('click', function () {
         selectedIds.clear();
@@ -834,6 +905,7 @@
 
     ensureUploadTypeOption();
     buildMediaDialogs();
+    applyDsButtonClasses(section);
     section.dataset.fdMediaLayout = '1';
   }
 
@@ -897,11 +969,13 @@
   function renderEmptyDropzone(type) {
     var m = SECTION_META[type];
     return (
-      '<button type="button" class="fd-media-dropzone" data-upload-type="' + esc(type) + '" aria-label="Carica ' + esc(m.title) + '">' +
-      '<div class="fd-media-dropzone__icon">' + fdIcon('upload', 20) + '</div>' +
-      '<div class="fd-media-dropzone__title">Trascina qui il tuo asset o clicca per caricare</div>' +
-      '<div class="fd-media-dropzone__spec">' + esc(m.hint) + '</div>' +
-      '</button>'
+      '<div class="fd-empty-state fd-media-empty-state">' +
+      '<p class="fd-empty-state__title">Nessun asset ' + esc(m.title.toLowerCase()) + '</p>' +
+      '<p class="fd-empty-state__desc">' + esc(m.hint) + '</p>' +
+      '<div class="fd-empty-state__actions">' +
+      '<button type="button" class="fd-media-dropzone fd-btn fd-btn--secondary" data-upload-type="' + esc(type) + '" aria-label="Carica ' + esc(m.title) + '">' +
+      '<span class="fd-media-dropzone__title">Trascina qui o clicca per caricare</span>' +
+      '</button></div></div>'
     );
   }
 
@@ -1071,6 +1145,14 @@
     window.__fdMediaLoadPatched = true;
     window.loadMediaLibrary = async function () {
       ensureMediaLayout();
+      document.querySelectorAll('#mediaLogoBox, #mediaWalletIconGrid, #mediaStripGrid, #mediaThumbnailGrid, #mediaBackgroundGrid').forEach(function (node) {
+        if (!node) return;
+        if (node.querySelector('.fd-media-skeleton') || node.querySelector('.fd-media-empty-state') || node.querySelector('.media-card--fd')) return;
+        var txt = (node.textContent || '').trim();
+        if (/caricamento/i.test(txt) || !txt) {
+          node.innerHTML = renderLoadingSkeleton();
+        }
+      });
       try {
         var brandId = getCurrentBrandId();
         if (!brandId) return;
