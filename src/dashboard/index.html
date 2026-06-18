@@ -73,6 +73,7 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-modal.css?v=20260527-contacts-v5">
     <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css?v=20260527-contacts-v5">
     <link rel="stylesheet" href="/dashboard/styles/a2w-brand-identity.css">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-template-modal.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-setup-checklist.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-contacts-refactor.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
@@ -3002,13 +3003,16 @@
 
 <!-- Template Modal -->
 <div id="templateModal" class="modal" data-rbac-section="templates">
-    <div class="modal-content" style="max-width:920px;width:96%;">
+    <div class="modal-content a2w-tpl-modal" style="max-width:960px;width:96%;">
         <button type="button" class="modal-close" onclick="closeModal('templateModal')" aria-label="Chiudi modale template">&times;</button>
-        <div class="modal-header" id="templateModalTitle">Nuovo Template</div>
+        <div class="a2w-tpl-modal__header">
+            <div class="modal-header" id="templateModalTitle">Nuovo Template</div>
+        </div>
         <input type="hidden" id="templateEditId">
-        <div style="display:flex;gap:28px;align-items:flex-start;">
+        <div class="a2w-tpl-modal__body">
+        <div class="a2w-tpl-modal__layout">
             <!-- LEFT: Form -->
-            <div style="flex:1;min-width:0;">
+            <div class="a2w-tpl-modal__form">
                 <div class="form-group"><label class="form-label">Nome</label><input type="text" id="tplName" placeholder="es. Coupon -20%" oninput="updatePassPreview()"></div>
                 <div class="form-row">
                     <div class="form-group" id="tplTypeSelectGroup"><label class="form-label">Tipo Pass <span class="pass-type-info-btn" onclick="togglePassTypeInfo()" title="Info sul tipo di pass">ⓘ</span></label>
@@ -3022,6 +3026,25 @@
                 </div>
                 <div id="passTypeInfoBox" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:12px;line-height:1.6;color:var(--text2);">
                     <div id="passTypeInfoContent"></div>
+                </div>
+
+                <div id="tplColorsSection" class="a2w-tpl-colors" style="display:none;">
+                    <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Colori pass</div>
+                    <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Sfondo, testo e label come nel pass Apple/Google Wallet. L’anteprima si aggiorna in tempo reale.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="tplColorBg">Sfondo</label>
+                            <input type="color" id="tplColorBg" class="a2w-tpl-color-input" value="#0D0B1A" oninput="updatePassPreview()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="tplColorFg">Testo</label>
+                            <input type="color" id="tplColorFg" class="a2w-tpl-color-input" value="#FFFFFF" oninput="updatePassPreview()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="tplColorLabel">Label</label>
+                            <input type="color" id="tplColorLabel" class="a2w-tpl-color-input" value="#A78BFA" oninput="updatePassPreview()">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Fronte — Campi</div>
@@ -3141,25 +3164,28 @@
                 </div>
                 <div class="form-group"><label class="form-label">Contatti</label><textarea id="tplContatti" rows="2" placeholder="Email, telefono, indirizzo..." oninput="updatePassPreview()" style="width:100%;"></textarea></div>
                 </div>
-
-                <button class="btn" onclick="saveTemplate()" style="margin-top:16px;">Salva Template</button>
             </div>
 
-            <!-- RIGHT: Pass Preview with 3D flip -->
-            <div style="width:280px;flex-shrink:0;position:sticky;top:0;">
-                <p style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:8px;">Passa il mouse per vedere il retro</p>
-                <div class="pass-flip-container" onmouseenter="this.classList.add('flipped')" onmouseleave="this.classList.remove('flipped')">
+            <!-- RIGHT: Pass Preview -->
+            <div class="a2w-tpl-modal__preview-col">
+                <div class="a2w-tpl-preview-toggle" role="tablist" aria-label="Vista anteprima pass">
+                    <button type="button" class="a2w-tpl-preview-toggle__btn is-active" role="tab" aria-selected="true" data-tpl-face="front">Fronte</button>
+                    <button type="button" class="a2w-tpl-preview-toggle__btn" role="tab" aria-selected="false" data-tpl-face="back">Retro</button>
+                </div>
+                <div class="pass-flip-container" id="tplPassFlip">
                     <div class="pass-flip-inner">
                         <!-- FRONT -->
                         <div class="pass-flip-face pass-front" id="passPreviewFront">
-                            <div class="pp-strip" id="ppStrip"></div>
-                            <div class="pp-header">
-                                <div class="pp-logo" id="ppLogo">BRAND</div>
-                                <div class="pp-header-field" id="ppHeaderField"></div>
-                            </div>
-                            <div class="pp-body">
-                                <div class="pp-secondary" id="ppSecondary"></div>
-                                <div class="pp-auxiliary" id="ppAuxiliary"></div>
+                            <div class="pp-strip-wrap"><div class="pp-strip" id="ppStrip"></div></div>
+                            <div class="pp-front-main">
+                                <div class="pp-header">
+                                    <div class="pp-logo" id="ppLogo">BRAND</div>
+                                    <div class="pp-header-field" id="ppHeaderField"></div>
+                                </div>
+                                <div class="pp-body">
+                                    <div class="pp-secondary" id="ppSecondary"></div>
+                                    <div class="pp-auxiliary" id="ppAuxiliary"></div>
+                                </div>
                             </div>
                             <div class="pp-barcode">
                                 <div class="pp-barcode-bar"></div>
@@ -3177,6 +3203,11 @@
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
+        <div class="a2w-tpl-modal__footer">
+            <p id="tplSaveStatus" class="a2w-tpl-save-status" aria-live="polite"></p>
+            <button type="button" class="btn a2w-btn-primary" id="tplSaveBtn" onclick="saveTemplate()">Salva Template</button>
         </div>
     </div>
 </div>
@@ -3336,6 +3367,7 @@
     <script src="/dashboard/js/a2w-setup-checklist.js"></script>
     <script src="/dashboard/js/a2w-shell.js"></script>
     <script src="/dashboard/js/a2w-push-ux.js"></script>
+    <script src="/dashboard/js/a2w-template-editor.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
 
 <script>
@@ -6192,6 +6224,7 @@ async function editTemplate(id) {
     document.body.classList.add('modal-open');
     populateStripPromoSelect();
     onPassTypeChange();
+    if (typeof a2wResetTplColorPickers === 'function') a2wResetTplColorPickers(t.style || {});
 }
 
 async function saveTemplate() {
@@ -6205,11 +6238,15 @@ async function saveTemplate() {
     }
     const headerLabel = document.getElementById('tplHeaderLabel').value.trim();
     const headerValue = document.getElementById('tplHeaderValue').value.trim();
+    const styleBase = { ...existingStyle, description: document.getElementById('tplDescription').value };
+    if (!isHrDashboard() && typeof a2wGetTemplatePreviewColors === 'function') {
+        Object.assign(styleBase, a2wGetTemplatePreviewColors());
+    }
     const body = {
         brand_id: brandId,
         name: document.getElementById('tplName').value,
         pass_type: templatePassTypeForSave(),
-        style: { ...existingStyle, description: document.getElementById('tplDescription').value },
+        style: styleBase,
         fields: {
             headerFields: (headerLabel || headerValue)
                 ? [{ key: 'header_info', label: headerLabel, value: headerValue }]
@@ -6233,10 +6270,15 @@ async function saveTemplate() {
         body.fields.contatti = document.getElementById('tplContatti').value;
     }
 
-    if (!body.name) return alert('Nome template obbligatorio');
+    if (!body.name) { throw new Error('Nome template obbligatorio'); }
     const url = editId ? `${API}/templates/${editId}` : `${API}/templates`;
     const method = editId ? 'PUT' : 'POST';
     const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) {
+        let msg = 'Errore salvataggio template';
+        try { const err = await res.json(); if (err.error || err.message) msg = err.error || err.message; } catch (_) {}
+        throw new Error(msg);
+    }
     const saved = await res.json();
     const tplId = editId || saved.id;
     // Upload images if any were selected
@@ -6474,9 +6516,13 @@ function updatePassTypeInfo() {
 function onPassTypeChange() {
     if (isHrDashboard()) {
         syncEmployeePassTypeUi();
+        const colorsSec = document.getElementById('tplColorsSection');
+        if (colorsSec) colorsSec.style.display = 'none';
         updatePassPreview();
         return;
     }
+    const colorsSec = document.getElementById('tplColorsSection');
+    if (colorsSec) colorsSec.style.display = document.documentElement.classList.contains('a2w-shell') ? '' : 'none';
     const type = document.getElementById('tplType').value;
     const slots = PASS_IMAGE_SLOTS[type] || PASS_IMAGE_SLOTS.storeCard;
     document.getElementById('tplImgStripRow').style.display = slots.strip ? '' : 'none';

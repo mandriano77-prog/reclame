@@ -1,0 +1,350 @@
+/**
+ * Ads2Wallet — Template Pass modal: layout, anteprima, upload, colori.
+ */
+
+html.a2w-shell #templateModal .modal-content.a2w-tpl-modal {
+  display: flex;
+  flex-direction: column;
+  max-width: 960px;
+  width: 96%;
+  max-height: min(92vh, 900px);
+  padding: 0;
+  overflow: hidden;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-modal__header {
+  flex-shrink: 0;
+  padding: var(--space-5, 20px) var(--space-6, 24px) var(--space-3, 12px);
+  border-bottom: 1px solid var(--a2w-border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+html.a2w-shell #templateModal .a2w-tpl-modal__header .modal-header {
+  margin-bottom: 0;
+  padding-right: 36px;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4, 16px) var(--space-6, 24px);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-modal__footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--space-4, 16px) var(--space-6, 24px);
+  border-top: 1px solid var(--a2w-border-subtle, rgba(255, 255, 255, 0.08));
+  background: rgba(0, 0, 0, 0.15);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-save-status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--a2w-text-secondary);
+  min-height: 1.2em;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-save-status.is-saving {
+  color: var(--a2w-text-secondary);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-save-status.is-ok {
+  color: var(--a2w-action-primary);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-save-status.is-error {
+  color: var(--a2w-destructive, #f87171);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-modal__layout {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-modal__form {
+  flex: 1;
+  min-width: 0;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-modal__preview-col {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-preview-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  justify-content: center;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-preview-toggle__btn {
+  flex: 1;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--a2w-border-default);
+  background: var(--a2w-action-secondary);
+  color: var(--a2w-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-preview-toggle__btn:hover {
+  background: var(--a2w-action-secondary-hover);
+  color: var(--a2w-text-primary);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-preview-toggle__btn.is-active {
+  border-color: var(--a2w-action-primary);
+  background: var(--a2w-accent-soft);
+  color: var(--a2w-action-primary);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-preview-toggle__btn:focus-visible {
+  outline: 2px solid var(--a2w-border-focus);
+  outline-offset: 2px;
+}
+
+/* ——— Pass preview (proporzioni wallet, no overlap) ——— */
+
+html.a2w-shell #templateModal .pass-flip-container {
+  width: 260px;
+  height: 408px;
+  perspective: 900px;
+  margin: 0 auto;
+  cursor: default;
+}
+
+html.a2w-shell #templateModal .pass-flip-inner {
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.a2w-shell #templateModal .pass-flip-container.a2w-tpl-show-back .pass-flip-inner {
+  transform: rotateY(180deg);
+}
+
+html.a2w-shell #templateModal .pass-front {
+  display: flex;
+  flex-direction: column;
+  background: #0d0b1a;
+  color: #fff;
+}
+
+html.a2w-shell #templateModal .pp-strip-wrap {
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 1125 / 432;
+  max-height: 88px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.a2w-shell #templateModal .pp-strip {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: linear-gradient(135deg, #2a2a35, #3d3d4a);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+html.a2w-shell #templateModal .pp-front-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+html.a2w-shell #templateModal .pp-header {
+  position: static;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px 4px;
+  z-index: auto;
+}
+
+html.a2w-shell #templateModal .pp-logo {
+  font-size: 12px;
+  font-weight: 700;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+html.a2w-shell #templateModal .pp-logo img {
+  display: block;
+  max-height: 22px;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+}
+
+html.a2w-shell #templateModal .pp-header-field {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+html.a2w-shell #templateModal .pp-header-field .pp-field-label,
+html.a2w-shell #templateModal .pp-body .pp-field-label {
+  font-size: 7px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--a2w-tpl-label-color, rgba(255, 255, 255, 0.55));
+}
+
+html.a2w-shell #templateModal .pp-header-field .pp-field-value,
+html.a2w-shell #templateModal .pp-body .pp-field-value {
+  font-size: 11px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--a2w-tpl-fg-color, #fff);
+}
+
+html.a2w-shell #templateModal .pp-body {
+  flex: 1;
+  padding: 4px 12px 8px;
+  gap: 6px;
+  min-height: 0;
+}
+
+html.a2w-shell #templateModal .pp-barcode {
+  flex-shrink: 0;
+  padding: 8px 18px 12px;
+  margin-top: auto;
+}
+
+html.a2w-shell #templateModal .pp-barcode-bar {
+  height: 40px;
+  opacity: 0.85;
+}
+
+html.a2w-shell #templateModal .pass-back {
+  background: #f2f2f7;
+}
+
+/* ——— Colori ——— */
+
+html.a2w-shell #templateModal .a2w-tpl-colors .form-row {
+  gap: 10px;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-color-input {
+  width: 100%;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--a2w-border-default);
+  border-radius: 8px;
+  background: var(--a2w-action-secondary);
+  cursor: pointer;
+}
+
+/* ——— Upload unificato ——— */
+
+html.a2w-shell #templateModal .a2w-tpl-upload {
+  margin-bottom: 4px;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload__zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px dashed var(--a2w-border-default);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--a2w-text-secondary);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload__zone:hover,
+html.a2w-shell #templateModal .a2w-tpl-upload__zone.is-dragover {
+  border-color: var(--a2w-action-primary);
+  background: var(--a2w-accent-soft);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload__zone:focus-visible {
+  outline: 2px solid var(--a2w-border-focus);
+  outline-offset: 2px;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload__thumb {
+  max-width: 100%;
+  max-height: 56px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload__thumb--square {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload__hint {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--a2w-text-tertiary);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload__error {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--a2w-destructive, #f87171);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-upload--enhanced > .form-label:first-child {
+  margin-bottom: 6px;
+}
+
+@media (max-width: 860px) {
+  html.a2w-shell #templateModal .a2w-tpl-modal__layout {
+    flex-direction: column;
+  }
+
+  html.a2w-shell #templateModal .a2w-tpl-modal__preview-col {
+    width: 100%;
+    position: static;
+  }
+}

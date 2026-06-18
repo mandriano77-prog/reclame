@@ -27,10 +27,10 @@ test('add-contact modal uses a2w-modal layer', () => {
   );
 });
 
-test('empty state prioritizes landing CTA', () => {
-  const block = indexHtml.match(/a2w-contacts-empty[\s\S]{0,1600}/)?.[0] || '';
-  assert.match(block, /a2w-contacts-empty__actions--primary/);
-  assert.match(block, /Crea la prima landing/);
-  assert.match(block, /a2w-contacts-empty__actions--secondary/);
-  assert.match(block, /Importa CSV/);
+test('empty state prioritizes campaign CTA', () => {
+  assert.match(indexHtml, /a2w-contacts-empty__actions--primary/);
+  assert.match(indexHtml, /Crea la prima campagna/);
+  assert.doesNotMatch(indexHtml, /Crea la prima landing/);
+  assert.match(indexHtml, /a2w-contacts-empty__actions--secondary/);
+  assert.match(indexHtml, /Importa CSV/);
 });
