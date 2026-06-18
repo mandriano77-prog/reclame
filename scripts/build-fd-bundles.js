@@ -16,7 +16,7 @@ const CSS_FILES = [
   'fd-layout.css', 'fd-wai.css', 'fd-brand-switcher.css', 'fd-nav.css', 'fd-brand-identity.css',
   'fd-brand-scope.css', 'fd-brand-pass-flow.css', 'fd-home.css', 'fd-users.css', 'fd-contacts.css',
   'fd-media-library.css', 'fd-templates.css', 'fd-passes.css',
-  'fd-destructive.css', 'fd-form-dirty.css', 'fd-form-help.css', 'fd-empty-states.css',
+  'fd-destructive.css', 'fd-form-dirty.css', 'fd-form-help.css', 'fd-empty-states.css', 'fd-page-states.css',
   'fd-danger-zone.css', 'fd-push.css', 'fd-reward-challenge.css', 'fd-analytics.css', 'fd-audiences.css', 'fd-activity-log.css', 'fd-responsive-tables.css', 'fd-rbac.css', 'fd-profile.css',
 ];
 
@@ -25,7 +25,7 @@ const JS_FILES = [
   'fd-icons.js', 'fd-nav.js', 'fd-legacy-campaigns.js', 'fd-hr-copy.js', 'fd-brand-scope.js', 'fd-brand-identity.js',
   'fd-brand-pass-flow.js', 'fd-home.js', 'fd-users.js', 'fd-contacts.js', 'fd-media-library.js',
   'fd-templates.js', 'fd-passes.js', 'fd-destructive.js', 'fd-form-dirty.js',
-  'fd-form-help.js', 'fd-form-a11y.js', 'fd-empty-states.js', 'fd-danger-zone.js',
+  'fd-form-help.js', 'fd-form-a11y.js', 'fd-empty-states.js', 'fd-page-states.js', 'fd-danger-zone.js',
   'fd-rbac.js', 'fd-push.js', 'fd-reward-challenge.js', 'fd-analytics.js', 'fd-audiences.js', 'fd-activity-log.js', 'fd-responsive-tables.js', 'fd-profile.js',
 ];
 

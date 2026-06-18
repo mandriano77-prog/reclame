@@ -1,0 +1,58 @@
+/**
+ * FD-DS FASE 5 — Loading, empty companion, and error state patterns.
+ * Scoped to [data-app="filodiretto"].
+ */
+
+html[data-app='filodiretto'] .fd-loading-region {
+  min-width: 0;
+}
+
+html[data-app='filodiretto'] .fd-loading-region[aria-busy='true'] {
+  cursor: progress;
+}
+
+html[data-app='filodiretto'] .fd-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--fd-space-2);
+  padding: var(--fd-space-5) var(--fd-space-4);
+  border: 1px solid var(--fd-color-danger-border);
+  border-radius: var(--fd-radius-md);
+  background: var(--fd-color-danger-bg);
+  color: var(--fd-color-danger);
+}
+
+html[data-app='filodiretto'] .fd-error-state__title {
+  margin: 0;
+  font-size: var(--fd-font-size-h2);
+  font-weight: var(--fd-font-weight-semibold);
+  color: var(--fd-color-danger);
+}
+
+html[data-app='filodiretto'] .fd-error-state__desc {
+  margin: 0;
+  max-width: 48ch;
+  font-size: var(--fd-font-size-body);
+  line-height: var(--fd-line-height-relaxed);
+  color: var(--fd-color-text-body);
+}
+
+html[data-app='filodiretto'] .fd-error-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2);
+  justify-content: center;
+  margin-top: var(--fd-space-3);
+}
+
+html[data-app='filodiretto'] td .fd-error-state,
+html[data-app='filodiretto'] .fd-table-error-row td {
+  padding-block: var(--fd-space-4);
+}
+
+html[data-app='filodiretto'] .table-error-row .fd-error-state {
+  margin-inline: auto;
+  max-width: 36rem;
+}

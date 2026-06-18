@@ -107,9 +107,20 @@
     };
   }
 
+  function ensureEmptyStateA11y(html) {
+    if (!html || html.indexOf('role=') >= 0) return html;
+    if (html.indexOf('empty-state') >= 0) {
+      return html.replace(/class="empty-state([^"]*)"/, 'class="empty-state fd-empty-state$1" role="status"');
+    }
+    if (html.indexOf('fd-empty-state') >= 0) {
+      return html.replace(/(<div class="fd-empty-state[^"]*")>/, '$1 role="status">');
+    }
+    return html;
+  }
+
   function renderFiloEmptyState(opts, baseRender) {
     opts = mergeEmptyOpts(opts || {});
-    var html = baseRender(opts);
+    var html = ensureEmptyStateA11y(baseRender(opts));
     if (!opts.helpHref) return html;
 
     var help = '<a class="fd-empty-state__help" href="' + esc(opts.helpHref) + '" target="_blank" rel="noopener noreferrer">' +
@@ -151,6 +162,7 @@
     var html = typeof window.renderEmptyState === 'function'
       ? window.renderEmptyState(opts)
       : '';
+    html = ensureEmptyStateA11y(html);
     var span = Math.max(1, parseInt(colspan, 10) || 1);
     return '<tr class="table-empty-row"><td colspan="' + span + '">' + html + '</td></tr>';
   }

@@ -2174,8 +2174,7 @@
   function renderLoading(root) {
     var welcome = document.getElementById('welcome');
     setHomeState(welcome, 'loading');
-    root.innerHTML =
-      '<div class="fd-home-skeleton" aria-live="polite" aria-busy="true">' +
+    var inner =
       '<div class="fd-skeleton fd-skeleton--title" style="max-width:280px;margin-bottom:20px"></div>' +
       '<div class="fd-skeleton fd-skeleton--text" style="max-width:420px;margin-bottom:24px"></div>' +
       '<div class="fd-stat-grid fd-home-kpi-grid">' +
@@ -2187,7 +2186,11 @@
       '<span class="fd-skeleton fd-skeleton--title" style="margin-top:10px;width:45%"></span></div>' +
       '<div class="fd-stat-card"><span class="fd-skeleton fd-skeleton--text"></span>' +
       '<span class="fd-skeleton fd-skeleton--title" style="margin-top:10px;width:45%"></span></div>' +
-      '</div></div>';
+      '</div>';
+    root.innerHTML =
+      typeof window.fdRenderLoadingRegion === 'function'
+        ? window.fdRenderLoadingRegion(inner, { className: 'fd-home-skeleton', label: 'Caricamento home' })
+        : '<div class="fd-home-skeleton fd-loading-region" aria-live="polite" aria-busy="true">' + inner + '</div>';
   }
   function buildHomeContext(data) {
     var a = data.analytics || {};
@@ -2557,10 +2560,14 @@
       } catch (e) {
         setHomeState(welcome, 'error');
         root.innerHTML =
-          '<div class="fd-home-skeleton" aria-live="polite">' +
-          '<p class="fd-empty-state__desc" style="color:var(--fd-color-danger,#dc2626)">Errore caricamento home: ' + esc(e.message) + '</p>' +
-          '<button type="button" class="fd-btn fd-btn--secondary" style="margin-top:12px" id="fdHomeRetryBtn">Riprova</button>' +
-          '</div>';
+          typeof window.fdRenderErrorState === 'function'
+            ? window.fdRenderErrorState(e.message || 'Caricamento fallito', {
+                title: 'Errore caricamento home',
+                retryId: 'fdHomeRetryBtn'
+              })
+            : '<div class="fd-error-state" role="alert"><p class="fd-error-state__desc">Errore caricamento home: ' +
+              esc(e.message) +
+              '</p><button type="button" class="fd-btn fd-btn--secondary" id="fdHomeRetryBtn">Riprova</button></div>';
         var retry = document.getElementById('fdHomeRetryBtn');
         if (retry && retry.dataset.fdBound !== '1') {
           retry.dataset.fdBound = '1';
@@ -4264,7 +4271,12 @@
           if (!node) return;
           var txt = (node.textContent || '').trim();
           if (/caricamento/i.test(txt) || !txt) {
-            node.innerHTML = '<p class="fd-media-empty">Errore caricamento. Riprova tra poco.</p>';
+            node.innerHTML =
+              typeof window.fdRenderErrorState === 'function'
+                ? window.fdRenderErrorState('Errore caricamento. Riprova tra poco.', {
+                    title: 'Media Library non disponibile'
+                  })
+                : '<p class="fd-media-empty">Errore caricamento. Riprova tra poco.</p>';
           }
         });
         if (typeof window.toast === 'function') window.toast('Media Library: errore caricamento');
@@ -5593,12 +5605,25 @@
     dlg.setAttribute('role', 'dialog');
     dlg.setAttribute('aria-modal', 'true');
   }
+  function ensureGlobalLiveRegion() {
+    if (document.getElementById('fdGlobalAriaLive')) return;
+    var node = document.createElement('div');
+    node.id = 'fdGlobalAriaLive';
+    node.className = 'sr-only';
+    node.setAttribute('aria-live', 'polite');
+    node.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(node);
+  }
   function run() {
     if (!isHr()) return;
     var main = document.getElementById('main-content') || document.body;
     wireFormLabels(main);
     fixPreviewImages(main);
     enhanceConfirmDialogA11y();
+    ensureGlobalLiveRegion();
+    if (typeof window.fdEnhanceLoadingRegions === 'function') {
+      window.fdEnhanceLoadingRegions(main);
+    }
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run);
@@ -5706,9 +5731,19 @@
       helpLabel: opts.helpLabel || 'Come funziona'
     };
   }
+  function ensureEmptyStateA11y(html) {
+    if (!html || html.indexOf('role=') >= 0) return html;
+    if (html.indexOf('empty-state') >= 0) {
+      return html.replace(/class="empty-state([^"]*)"/, 'class="empty-state fd-empty-state$1" role="status"');
+    }
+    if (html.indexOf('fd-empty-state') >= 0) {
+      return html.replace(/(<div class="fd-empty-state[^"]*")>/, '$1 role="status">');
+    }
+    return html;
+  }
   function renderFiloEmptyState(opts, baseRender) {
     opts = mergeEmptyOpts(opts || {});
-    var html = baseRender(opts);
+    var html = ensureEmptyStateA11y(baseRender(opts));
     if (!opts.helpHref) return html;
     var help = '<a class="fd-empty-state__help" href="' + esc(opts.helpHref) + '" target="_blank" rel="noopener noreferrer">' +
       esc(opts.helpLabel || 'Come funziona') + '</a>';
@@ -5742,6 +5777,7 @@
     var html = typeof window.renderEmptyState === 'function'
       ? window.renderEmptyState(opts)
       : '';
+    html = ensureEmptyStateA11y(html);
     var span = Math.max(1, parseInt(colspan, 10) || 1);
     return '<tr class="table-empty-row"><td colspan="' + span + '">' + html + '</td></tr>';
   }
@@ -5752,6 +5788,137 @@
   } else {
     initFdEmptyStates();
   }
+})();
+(function () {
+  'use strict';
+  var patchRetryTimer = null;
+  var patchRetryCount = 0;
+  var PATCH_RETRY_MAX = 80;
+  function isFiloApp() {
+    if (document.documentElement.classList.contains('a2w-shell')) return false;
+    try {
+      if (window.__2WALLET_PRODUCT_LOCK__ === 'hr') return true;
+    } catch (_) {}
+    return document.documentElement.getAttribute('data-app') === 'filodiretto';
+  }
+  function esc(s) {
+    if (typeof window.esc === 'function') return window.esc(s);
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+  function fdRenderLoadingRegion(innerHtml, opts) {
+    opts = opts || {};
+    var cls = 'fd-loading-region' + (opts.className ? ' ' + opts.className : '');
+    return (
+      '<div class="' + esc(cls) + '"' +
+      (opts.id ? ' id="' + esc(opts.id) + '"' : '') +
+      ' aria-busy="true" aria-live="polite"' +
+      ' aria-label="' + esc(opts.label || 'Caricamento in corso') + '">' +
+      (innerHtml || '') +
+      '</div>'
+    );
+  }
+  function fdRenderErrorState(message, opts) {
+    opts = opts || {};
+    var retry = '';
+    if (opts.retryOnclick) {
+      retry =
+        '<button type="button" class="fd-btn fd-btn--secondary fd-error-state__retry"' +
+        (opts.retryId ? ' id="' + esc(opts.retryId) + '"' : '') +
+        ' onclick="' + esc(opts.retryOnclick) + '">' +
+        esc(opts.retryLabel || 'Riprova') +
+        '</button>';
+    } else if (opts.retryId) {
+      retry =
+        '<button type="button" class="fd-btn fd-btn--secondary fd-error-state__retry" id="' +
+        esc(opts.retryId) +
+        '">' +
+        esc(opts.retryLabel || 'Riprova') +
+        '</button>';
+    }
+    return (
+      '<div class="fd-error-state"' +
+      (opts.id ? ' id="' + esc(opts.id) + '"' : '') +
+      ' role="alert">' +
+      '<p class="fd-error-state__title">' + esc(opts.title || 'Errore di caricamento') + '</p>' +
+      '<p class="fd-error-state__desc">' + esc(message || 'Si è verificato un errore.') + '</p>' +
+      (retry ? '<div class="fd-error-state__actions">' + retry + '</div>' : '') +
+      '</div>'
+    );
+  }
+  function fdRenderTableErrorRow(colspan, message, retryOnclick) {
+    var span = Math.max(1, parseInt(colspan, 10) || 1);
+    return (
+      '<tr class="table-error-row fd-table-error-row"><td colspan="' + span + '">' +
+      fdRenderErrorState(message, { retryOnclick: retryOnclick }) +
+      '</td></tr>'
+    );
+  }
+  function fdRenderTableErrorBlock(message, retryOnclick) {
+    return fdRenderErrorState(message, { retryOnclick: retryOnclick });
+  }
+  function patchTableErrorRenderers() {
+    if (window.__fdPageStatesPatched) return true;
+    if (typeof window.renderTableErrorRow !== 'function') return false;
+    window.__fdPageStatesPatched = true;
+    var baseRow = window.renderTableErrorRow;
+    var baseBlock =
+      typeof window.renderTableErrorBlock === 'function' ? window.renderTableErrorBlock : null;
+    window.renderTableErrorRow = function (colspan, message, retryOnclick) {
+      if (!isFiloApp()) return baseRow(colspan, message, retryOnclick);
+      return fdRenderTableErrorRow(colspan, message, retryOnclick);
+    };
+    if (baseBlock) {
+      window.renderTableErrorBlock = function (message, retryOnclick) {
+        if (!isFiloApp()) return baseBlock(message, retryOnclick);
+        return fdRenderTableErrorBlock(message, retryOnclick);
+      };
+    }
+    return true;
+  }
+  function schedulePatchRetry() {
+    if (patchTableErrorRenderers()) {
+      if (patchRetryTimer) clearTimeout(patchRetryTimer);
+      return;
+    }
+    patchRetryCount += 1;
+    if (patchRetryCount >= PATCH_RETRY_MAX) return;
+    patchRetryTimer = setTimeout(schedulePatchRetry, 50);
+  }
+  function enhanceLoadingRegions(root) {
+    if (!root) return;
+    root.querySelectorAll(
+      '[class*="skeleton"]:not([aria-busy]), [data-fd-loading]:not([aria-busy])'
+    ).forEach(function (el) {
+      if (el.classList.contains('fd-skeleton') && !el.querySelector('.fd-skeleton, [class*="skeleton"]')) {
+        return;
+      }
+      el.setAttribute('aria-busy', 'true');
+      if (!el.hasAttribute('aria-live')) el.setAttribute('aria-live', 'polite');
+      if (!el.classList.contains('fd-loading-region')) el.classList.add('fd-loading-region');
+    });
+  }
+  function initFdPageStates() {
+    if (!isFiloApp()) return;
+    schedulePatchRetry();
+    var root = document.getElementById('main-content') || document.body;
+    enhanceLoadingRegions(root);
+  }
+  window.fdRenderLoadingRegion = fdRenderLoadingRegion;
+  window.fdRenderErrorState = fdRenderErrorState;
+  window.fdRenderTableErrorRow = fdRenderTableErrorRow;
+  window.fdRenderTableErrorBlock = fdRenderTableErrorBlock;
+  window.fdEnhanceLoadingRegions = enhanceLoadingRegions;
+  window.fdInitPageStates = initFdPageStates;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFdPageStates);
+  } else {
+    initFdPageStates();
+  }
+  window.addEventListener('load', schedulePatchRetry);
 })();
 (function () {
   'use strict';
@@ -7694,7 +7861,7 @@
     return (
       '<tr class="table-skeleton-row" aria-hidden="true">' +
       '<td colspan="8">' +
-      '<div class="fd-reward-table-skeleton" aria-busy="true">' +
+      '<div class="fd-reward-table-skeleton fd-loading-region" aria-busy="true" aria-live="polite">' +
       '<span class="fd-skeleton" style="display:block;width:100%;height:160px;border-radius:12px"></span>' +
       '</div></td></tr>'
     );
@@ -7815,7 +7982,7 @@
     return (
       '<tr class="table-skeleton-row" aria-hidden="true">' +
       '<td colspan="8">' +
-      '<div class="fd-challenge-table-skeleton" aria-busy="true">' +
+      '<div class="fd-challenge-table-skeleton fd-loading-region" aria-busy="true" aria-live="polite">' +
       '<span class="fd-skeleton" style="display:block;width:100%;height:160px;border-radius:12px"></span>' +
       '</div></td></tr>'
     );

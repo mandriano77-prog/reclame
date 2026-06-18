@@ -10,4 +10,6 @@ test('fd-form-a11y wires label for attributes', () => {
   assert.match(src, /wireFormLabels/);
   assert.match(src, /setAttribute\('for'/);
   assert.match(src, /fixPreviewImages/);
+  assert.match(src, /ensureGlobalLiveRegion/);
+  assert.match(src, /fdEnhanceLoadingRegions/);
 });

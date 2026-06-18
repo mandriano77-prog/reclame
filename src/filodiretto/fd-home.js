@@ -155,8 +155,7 @@
   function renderLoading(root) {
     var welcome = document.getElementById('welcome');
     setHomeState(welcome, 'loading');
-    root.innerHTML =
-      '<div class="fd-home-skeleton" aria-live="polite" aria-busy="true">' +
+    var inner =
       '<div class="fd-skeleton fd-skeleton--title" style="max-width:280px;margin-bottom:20px"></div>' +
       '<div class="fd-skeleton fd-skeleton--text" style="max-width:420px;margin-bottom:24px"></div>' +
       '<div class="fd-stat-grid fd-home-kpi-grid">' +
@@ -168,7 +167,11 @@
       '<span class="fd-skeleton fd-skeleton--title" style="margin-top:10px;width:45%"></span></div>' +
       '<div class="fd-stat-card"><span class="fd-skeleton fd-skeleton--text"></span>' +
       '<span class="fd-skeleton fd-skeleton--title" style="margin-top:10px;width:45%"></span></div>' +
-      '</div></div>';
+      '</div>';
+    root.innerHTML =
+      typeof window.fdRenderLoadingRegion === 'function'
+        ? window.fdRenderLoadingRegion(inner, { className: 'fd-home-skeleton', label: 'Caricamento home' })
+        : '<div class="fd-home-skeleton fd-loading-region" aria-live="polite" aria-busy="true">' + inner + '</div>';
   }
 
   function buildHomeContext(data) {
@@ -562,10 +565,14 @@
       } catch (e) {
         setHomeState(welcome, 'error');
         root.innerHTML =
-          '<div class="fd-home-skeleton" aria-live="polite">' +
-          '<p class="fd-empty-state__desc" style="color:var(--fd-color-danger,#dc2626)">Errore caricamento home: ' + esc(e.message) + '</p>' +
-          '<button type="button" class="fd-btn fd-btn--secondary" style="margin-top:12px" id="fdHomeRetryBtn">Riprova</button>' +
-          '</div>';
+          typeof window.fdRenderErrorState === 'function'
+            ? window.fdRenderErrorState(e.message || 'Caricamento fallito', {
+                title: 'Errore caricamento home',
+                retryId: 'fdHomeRetryBtn'
+              })
+            : '<div class="fd-error-state" role="alert"><p class="fd-error-state__desc">Errore caricamento home: ' +
+              esc(e.message) +
+              '</p><button type="button" class="fd-btn fd-btn--secondary" id="fdHomeRetryBtn">Riprova</button></div>';
         var retry = document.getElementById('fdHomeRetryBtn');
         if (retry && retry.dataset.fdBound !== '1') {
           retry.dataset.fdBound = '1';

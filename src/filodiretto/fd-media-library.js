@@ -1185,7 +1185,12 @@
           if (!node) return;
           var txt = (node.textContent || '').trim();
           if (/caricamento/i.test(txt) || !txt) {
-            node.innerHTML = '<p class="fd-media-empty">Errore caricamento. Riprova tra poco.</p>';
+            node.innerHTML =
+              typeof window.fdRenderErrorState === 'function'
+                ? window.fdRenderErrorState('Errore caricamento. Riprova tra poco.', {
+                    title: 'Media Library non disponibile'
+                  })
+                : '<p class="fd-media-empty">Errore caricamento. Riprova tra poco.</p>';
           }
         });
         if (typeof window.toast === 'function') window.toast('Media Library: errore caricamento');

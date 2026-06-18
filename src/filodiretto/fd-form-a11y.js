@@ -59,12 +59,26 @@
     dlg.setAttribute('aria-modal', 'true');
   }
 
+  function ensureGlobalLiveRegion() {
+    if (document.getElementById('fdGlobalAriaLive')) return;
+    var node = document.createElement('div');
+    node.id = 'fdGlobalAriaLive';
+    node.className = 'sr-only';
+    node.setAttribute('aria-live', 'polite');
+    node.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(node);
+  }
+
   function run() {
     if (!isHr()) return;
     var main = document.getElementById('main-content') || document.body;
     wireFormLabels(main);
     fixPreviewImages(main);
     enhanceConfirmDialogA11y();
+    ensureGlobalLiveRegion();
+    if (typeof window.fdEnhanceLoadingRegions === 'function') {
+      window.fdEnhanceLoadingRegions(main);
+    }
   }
 
   if (document.readyState === 'loading') {

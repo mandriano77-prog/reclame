@@ -157,7 +157,7 @@
     return (
       '<tr class="table-skeleton-row" aria-hidden="true">' +
       '<td colspan="8">' +
-      '<div class="fd-reward-table-skeleton" aria-busy="true">' +
+      '<div class="fd-reward-table-skeleton fd-loading-region" aria-busy="true" aria-live="polite">' +
       '<span class="fd-skeleton" style="display:block;width:100%;height:160px;border-radius:12px"></span>' +
       '</div></td></tr>'
     );
@@ -290,7 +290,7 @@
     return (
       '<tr class="table-skeleton-row" aria-hidden="true">' +
       '<td colspan="8">' +
-      '<div class="fd-challenge-table-skeleton" aria-busy="true">' +
+      '<div class="fd-challenge-table-skeleton fd-loading-region" aria-busy="true" aria-live="polite">' +
       '<span class="fd-skeleton" style="display:block;width:100%;height:160px;border-radius:12px"></span>' +
       '</div></td></tr>'
     );
