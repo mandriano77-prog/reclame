@@ -74,6 +74,7 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-leads.css?v=20260527-contacts-v5">
     <link rel="stylesheet" href="/dashboard/styles/a2w-brand-identity.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-template-modal.css">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-template-campaigns.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-setup-checklist.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-contacts-refactor.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
@@ -5064,6 +5065,7 @@ async function saveCampaign(openStripUpload = false) {
         toast(editId ? 'Campagna aggiornata!' : 'Campagna creata!');
         invalidateBrandCache();
         await loadCampaigns();
+        if (isLegacyCampaignsUiEnabled()) await loadTemplates();
         if (openStripUpload && !editId && savedCampaign?.id) {
             nav('media-library');
             openMediaUpload(savedCampaign.id);
@@ -5078,6 +5080,7 @@ async function toggleCampaign(id, active) {
     toast(active ? 'Campagna attivata' : 'Campagna in pausa');
     invalidateBrandCache();
     loadCampaigns();
+    if (isLegacyCampaignsUiEnabled()) loadTemplates();
 }
 
 async function deleteCampaign(id) {
@@ -5086,6 +5089,7 @@ async function deleteCampaign(id) {
     toast('Campagna eliminata');
     invalidateBrandCache();
     loadCampaigns();
+    if (isLegacyCampaignsUiEnabled()) loadTemplates();
 }
 
 function getCampaignLandingUrl(id) {
@@ -5950,13 +5954,86 @@ async function deletePassInstance(id) {
 }
 
 // ==================== TEMPLATES ====================
+function formatCampaignStatusBadge(c) {
+    const isActive = c.status === 'active' || (c.status == null && c.active !== false);
+    return {
+        label: isActive ? 'Attiva' : 'Bozza',
+        cls: isActive ? 'a2w-badge--active' : 'a2w-badge--paused'
+    };
+}
+
+function renderTemplateCampaignsSection(templateId, allCampaigns) {
+    if (!isLegacyCampaignsUiEnabled()) return '';
+    const campaigns = (allCampaigns || []).filter(c => c.template_id === templateId);
+    const listHtml = campaigns.length
+        ? campaigns.map(c => {
+            const st = formatCampaignStatusBadge(c);
+            return `
+                <div class="a2w-tpl-campaign-item" data-campaign-id="${esc(c.id)}">
+                    <div class="a2w-tpl-campaign-item__head">
+                        <span class="a2w-tpl-campaign-item__name">${esc(c.name)}</span>
+                        <span class="a2w-badge ${st.cls}">${st.label}</span>
+                    </div>
+                    <div class="a2w-tpl-campaign-item__link">
+                        <code class="a2w-tpl-campaign-item__url" data-campaign-url-host="${esc(c.id)}">Caricamento link…</code>
+                    </div>
+                    <div class="a2w-tpl-campaign-item__actions">
+                        <button type="button" class="btn small sec" onclick="copyCampaignDirect('${esc(c.id)}')">Copia link</button>
+                        <button type="button" class="btn small sec" onclick="showCampaignQR('${esc(c.id)}')">QR</button>
+                    </div>
+                </div>`;
+        }).join('')
+        : `<div class="a2w-tpl-campaigns__empty">
+                <p class="a2w-tpl-campaigns__empty-text">Nessuna campagna usa ancora questo template.</p>
+                <button type="button" class="btn small a2w-btn-primary" onclick="openCampaignModalForTemplate('${esc(templateId)}')">+ Crea la prima campagna</button>
+           </div>`;
+    return `
+        <div class="a2w-tpl-campaigns" data-template-id="${esc(templateId)}">
+            <div class="a2w-tpl-campaigns__header">
+                <div class="a2w-tpl-campaigns__heading">
+                    <div class="a2w-tpl-campaigns__title">Campagne di questo pass</div>
+                    <p class="a2w-tpl-campaigns__subtitle">Lo stesso template può alimentare più campagne; ogni campagna ha il suo link e QR</p>
+                </div>
+                ${campaigns.length ? `<button type="button" class="btn small" onclick="openCampaignModalForTemplate('${esc(templateId)}')">+ Nuova campagna</button>` : ''}
+            </div>
+            <div class="a2w-tpl-campaigns__list">${listHtml}</div>
+        </div>`;
+}
+
+async function hydrateTemplateCampaignUrls() {
+    const hosts = document.querySelectorAll('#templatesList [data-campaign-url-host]');
+    await Promise.all([...hosts].map(async (host) => {
+        const id = host.getAttribute('data-campaign-url-host');
+        if (!id) return;
+        try {
+            const url = await getCampaignDirectUrl(id);
+            host.textContent = url || '—';
+            if (url) host.title = url;
+        } catch (_) {
+            host.textContent = '—';
+        }
+    }));
+}
+
+async function openCampaignModalForTemplate(templateId) {
+    openCampaignModal();
+    await loadTemplateSelectorForCampaign();
+    if (templateId) {
+        const sel = document.getElementById('campTemplate');
+        if (sel) sel.value = templateId;
+    }
+}
+
 async function loadTemplates() {
     if (!brandId) return;
     const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('templatesList');
     if (!templates.length) { el.innerHTML = renderEmptyState({ title: 'Nessun template', description: 'Crea un template riutilizzabile per i tuoi pass.', ctaLabel: 'Nuovo template', ctaOnclick: 'openTemplateModal()', icon: 'inbox' }); if (typeof fdRbacHook === 'function') fdRbacHook('templates'); return; }
+    if (isLegacyCampaignsUiEnabled()) {
+        campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
+    }
     el.innerHTML = templates.map(t => `
-        <div class="card">
+        <div class="card a2w-template-card">
             <div class="card-row">
                 <div class="card-icon">&#127915;</div>
                 <div class="card-info">
@@ -5968,8 +6045,10 @@ async function loadTemplates() {
                     <button class="btn small danger" onclick="deleteTemplate('${t.id}')">Elimina</button>
                 </div>
             </div>
+            ${renderTemplateCampaignsSection(t.id, campaignsCache)}
         </div>
     `).join('');
+    if (isLegacyCampaignsUiEnabled()) hydrateTemplateCampaignUrls();
     if (typeof fdRbacHook === 'function') fdRbacHook('templates');
 }
 

@@ -1,0 +1,130 @@
+/**
+ * Ads2Wallet — Campagne collegate ai template pass (sotto ogni card template).
+ */
+html[data-shell="dark"].a2w-shell #templates .a2w-template-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+html[data-shell="dark"].a2w-shell #templates .a2w-template-card > .card-row {
+  padding-bottom: 0;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaigns {
+  margin-top: 16px;
+  padding: 16px 18px 18px;
+  border-top: 1px solid var(--a2w-border-subtle, rgba(255, 255, 255, 0.08));
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 0 0 var(--radius-lg, 12px) var(--radius-lg, 12px);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaigns__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaigns__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--a2w-text-primary, #f8fafc);
+  margin: 0 0 4px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaigns__subtitle {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--a2w-text-secondary, rgba(248, 250, 252, 0.65));
+  max-width: 52ch;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaigns__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaign-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md, 10px);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--a2w-border-default, rgba(255, 255, 255, 0.1));
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaign-item__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  flex: 1 1 160px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaign-item__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--a2w-text-primary, #f8fafc);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaign-item__link {
+  flex: 2 1 220px;
+  min-width: 0;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaign-item__url {
+  display: block;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #34d8a8;
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: rgba(52, 216, 168, 0.08);
+  border: 1px solid rgba(52, 216, 168, 0.22);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaign-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaigns__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px dashed rgba(52, 216, 168, 0.35);
+  background: rgba(52, 216, 168, 0.06);
+}
+
+html[data-shell="dark"].a2w-shell .a2w-tpl-campaigns__empty-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--a2w-text-secondary, rgba(248, 250, 252, 0.65));
+}
+
+@media (max-width: 720px) {
+  html[data-shell="dark"].a2w-shell .a2w-tpl-campaign-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-shell="dark"].a2w-shell .a2w-tpl-campaign-item__actions {
+    justify-content: flex-start;
+  }
+}
