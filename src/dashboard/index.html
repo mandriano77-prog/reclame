@@ -26,8 +26,8 @@
                 var fdLegacyMediaHide = document.createElement('style');
                 fdLegacyMediaHide.textContent = "html[data-app='filodiretto'] #media-library #a2wMediaTabs{display:none!important}";
                 document.head.appendChild(fdLegacyMediaHide);
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260619-media-library-fix2';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260619-media-library-fix2';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260619-media-library-tabs';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260619-media-library-tabs';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-components.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-mobile-gate.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-page-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-analytics.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -143,16 +143,6 @@
             margin-bottom: var(--space-6);
             display: block;
             line-height: 1.25;
-        }
-        .logo small, .logo .chrome-byline {
-            font-size: var(--text-xs);
-            color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: none;
-            letter-spacing: 0;
-            display: block;
-            margin-top: var(--space-1);
-            opacity: 1;
         }
 
         .nav-label {
@@ -1380,7 +1370,7 @@
 <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 <div class="layout" id="mainLayout" style="display:none;">
     <aside class="sidebar" role="navigation" aria-label="Menu principale">
-        <div class="logo"><span class="chrome-product-title">Ads2Wallet</span><small class="chrome-byline">by Underdogs Group</small></div>
+        <div class="logo"><span class="chrome-product-title">Ads2Wallet</span></div>
         <div class="sidebar-nav">
             <div class="nav-item nav-item--standalone nav-item--icon-only active" id="navItemWelcome" data-section-id="welcome" onclick="nav('welcome')" role="button" tabindex="0" aria-label="Inizio" data-fd-tooltip="Inizio">Inizio</div>
 
@@ -1400,12 +1390,6 @@
                     <div class="nav-item" onclick="nav('push')" data-section-id="push" data-requires-perm="push" role="button" tabindex="0">Push &amp; Notifiche</div>
                     <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards" role="button" tabindex="0">Reward</div>
                     <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges" role="button" tabindex="0">Challenge</div>
-                </div>
-            </details>
-
-            <details class="nav-group" data-nav-group="database" open>
-                <summary class="nav-group-label">Database</summary>
-                <div class="nav-group-items">
                     <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-requires-perm="employees" data-menu-key="nav_leads" data-menu-default="Contatti" role="button" tabindex="0">Contatti <span id="navNoMatricolaBadge" class="nav-badge" style="display:none;" title="Dipendenti senza matricola"></span></div>
                 </div>
             </details>
@@ -1414,6 +1398,7 @@
                 <summary class="nav-group-label">Insights</summary>
                 <div class="nav-group-items">
                     <div class="nav-item" onclick="nav('analytics')" data-section-id="analytics" data-requires-perm="analytics" role="button" tabindex="0">Analytics</div>
+                    <div class="nav-item" onclick="nav('activity-log')" data-section-id="activity-log" data-requires-perm="activity_log" role="button" tabindex="0">Log Attività</div>
                 </div>
             </details>
 
@@ -1426,7 +1411,7 @@
         </div>
 
         <div class="sidebar-footer">
-            <div class="sidebar-footer-text"><span class="chrome-product-title">Ads2Wallet</span><br><span class="chrome-byline">by Underdogs Group</span></div>
+            <div class="sidebar-footer-text"><span class="chrome-product-title">Ads2Wallet</span></div>
         </div>
     </aside>
 
@@ -4082,9 +4067,9 @@ function syncSectionDocumentTitle(sectionId, tab) {
 }
 
 function syncNavAriaCurrent(sectionId, tab) {
-    const highlight = typeof navHighlightSection === 'function'
-        ? navHighlightSection(sectionId, tab)
-        : sectionId;
+    const highlight = typeof navItemHighlightId === 'function'
+        ? navItemHighlightId(sectionId, tab)
+        : (typeof navHighlightSection === 'function' ? navHighlightSection(sectionId, tab) : sectionId);
     document.querySelectorAll('.nav-item').forEach((n) => {
         const section = n.getAttribute('data-section-id')
             || (n.getAttribute('onclick') || '').match(/nav\('([^']+)'\)/)?.[1];
@@ -4292,7 +4277,9 @@ function nav(id, options) {
         sectionEl.removeAttribute('hidden');
         sectionEl.setAttribute('aria-hidden', 'false');
     }
-    const navHighlight = typeof navHighlightSection === 'function' ? navHighlightSection(id, tab) : id;
+    const navHighlight = typeof navItemHighlightId === 'function'
+        ? navItemHighlightId(id, tab)
+        : (typeof navHighlightSection === 'function' ? navHighlightSection(id, tab) : id);
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const navItem = Array.from(document.querySelectorAll('.nav-item'))
         .find(n => {
@@ -4798,20 +4785,10 @@ function syncProductLineSelector() {
             : 'Seleziona la linea per filtrare i brand disponibili');
 }
 
-function syncChromeByline() {
-    let byline = 'by Underdogs Group';
-    try {
-        if (typeof window.__2WALLET_CHROME_BYLINE__ === 'string') byline = window.__2WALLET_CHROME_BYLINE__.trim();
-    } catch (_) {}
-    document.querySelectorAll('.chrome-byline').forEach((el) => {
-        if (!byline) {
-            el.textContent = '';
-            el.style.display = 'none';
-        } else {
-            el.textContent = byline;
-            el.style.display = '';
-        }
-    });
+function syncChromeProductTitles(line) {
+    const title = getDashboardProductDisplayTitle(line);
+    document.querySelectorAll('.chrome-product-title').forEach((el) => { el.textContent = title; });
+    syncLoginGateCopy();
 }
 
 function bylineForTitle(productTitle) {
@@ -4884,13 +4861,6 @@ function syncLoginGateCopy() {
     } else {
         subtitle.textContent = `${title} — accedi con email e password.`;
     }
-}
-
-function syncChromeProductTitles(line) {
-    const title = getDashboardProductDisplayTitle(line);
-    document.querySelectorAll('.chrome-product-title').forEach((el) => { el.textContent = title; });
-    syncChromeByline();
-    syncLoginGateCopy();
 }
 
 function applyProductShellTheme(line) {

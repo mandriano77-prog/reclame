@@ -35,7 +35,8 @@ test('resolveNavTarget maps legacy section ids to parent + tab', () => {
   assert.equal(log.section, 'analytics');
   assert.equal(log.tab, 'activity-log');
   assert.equal(g.navHighlightSection('leads', 'audience'), 'leads');
-  assert.equal(g.navHighlightSection('analytics', 'activity-log'), 'analytics');
+  assert.equal(g.navHighlightSection('analytics', 'activity-log'), 'activity-log');
+  assert.equal(g.navHighlightSection('analytics', 'metrics'), 'analytics');
 });
 
 test('parseLocationRoute resolves contatti and analytics paths', () => {
@@ -69,8 +70,9 @@ test('sectionPath builds canonical dashboard URLs', () => {
 test('index.html sidebar has merged nav items and section tabs', () => {
   const html = read('src/dashboard/index.html');
   assert.match(html, /nav-group-label">Engagement<\/summary>/);
+  assert.doesNotMatch(html, /data-nav-group="database"/);
   assert.doesNotMatch(html, /nav-item[^>]+data-section-id="audiences"/);
-  assert.doesNotMatch(html, /nav-item[^>]+data-section-id="activity-log"/);
+  assert.match(html, /nav-item[^>]+data-section-id="activity-log"/);
   assert.match(html, /id="leadsSectionTabs"/);
   assert.match(html, /id="analyticsSectionTabs"/);
   assert.match(html, /switchLeadsSectionTab\('audience'\)/);
@@ -84,16 +86,17 @@ test('server exposes SPA routes for contatti and analytics subpaths', () => {
   assert.match(server, /\/dashboard\/analytics\/log/);
 });
 
-test('NAV catalog lists Contatti and Analytics only (no top-level Audience / Log)', () => {
+test('NAV catalog lists Contatti under Engagement and Analytics + Log under Insights', () => {
   const g = { document: { querySelectorAll: () => [] } };
   vm.runInNewContext(read('src/dashboard/lib/nav.js'), { ...g, window: g, global: g });
   const nav = g.FD_NAV.NAV;
   const engagement = nav.find((s) => s.id === 'comunicazione');
   assert.equal(engagement.label, 'Engagement');
-  const databaseItems = nav.find((s) => s.id === 'database').items.map((i) => i.id);
+  const engagementItems = engagement.items.map((i) => i.id);
+  assert.ok(engagementItems.includes('leads'));
+  assert.equal(nav.find((s) => s.id === 'database'), undefined);
   const insightsItems = nav.find((s) => s.id === 'insights').items.map((i) => i.id);
-  assert.equal(databaseItems.length, 1);
-  assert.equal(databaseItems[0], 'leads');
-  assert.equal(insightsItems.length, 1);
-  assert.equal(insightsItems[0], 'analytics');
+  assert.equal(insightsItems.length, 2);
+  assert.ok(insightsItems.includes('analytics'));
+  assert.ok(insightsItems.includes('activity-log'));
 });

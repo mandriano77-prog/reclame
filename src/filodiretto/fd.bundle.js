@@ -3415,26 +3415,31 @@
   }
   var SECTION_META = {
     logo: {
-      title: 'Logo',
-      hint: 'PNG trasparente, max 320×100 px — usato nel pass e in landing.',
+      tabLabel: 'Logo brand',
+      title: 'Logo brand',
+      hint: 'PNG trasparente, max 320×100 px — normalmente unico. Cambialo solo in caso di rebranding.',
       uploadLabel: 'Carica logo'
     },
     wallet_icon: {
-      title: 'Icona notifiche',
-      hint: 'Quadrata 512×512 px — compare nelle push iPhone al posto del logo orizzontale.',
+      tabLabel: 'Icona notifiche',
+      title: 'Icona notifiche Wallet',
+      hint: '512×512 px — icona mostrata nelle push notification Wallet su iPhone.',
       uploadLabel: 'Carica icona'
     },
     strip: {
+      tabLabel: 'Strip',
       title: 'Strip',
       hint: '750×246 px — banner in alto sul pass; puoi avere più varianti (default, promo, evento).',
       uploadLabel: 'Carica strip'
     },
     thumbnail: {
+      tabLabel: 'Thumbnail',
       title: 'Thumbnail',
-      hint: '90×90 px — fronte pass su layout Event Ticket.',
+      hint: '90×90 px — usato su Event Ticket (fronte pass).',
       uploadLabel: 'Carica thumbnail'
     },
     background: {
+      tabLabel: 'Background',
       title: 'Background',
       hint: '360×440 px — sfondo intero su layout Event Ticket.',
       uploadLabel: 'Carica background'
@@ -3442,6 +3447,13 @@
   };
   var CATEGORY_ORDER = ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'];
   var STORAGE_KEY = 'fdMediaCategory';
+  var BUCKET_ID_BY_TYPE = {
+    logo: 'fdMediaLogoCard',
+    wallet_icon: 'fdMediaWalletIconCard',
+    strip: 'fdMediaStripCard',
+    thumbnail: 'fdMediaThumbCard',
+    background: 'fdMediaBackgroundCard'
+  };
   var HOST_ID_BY_TYPE = {
     logo: 'mediaLogoBox',
     wallet_icon: 'mediaWalletIconGrid',
@@ -3451,7 +3463,18 @@
   };
   var activeCategory = 'logo';
   function panelIdForType(type) {
-    return 'fdMediaPanel_' + type;
+    return BUCKET_ID_BY_TYPE[type] || ('fdMediaPanel_' + type);
+  }
+  function tabLabelForType(type) {
+    var meta = SECTION_META[type];
+    return (meta && meta.tabLabel) || (meta && meta.title) || type;
+  }
+  function setBucketVisibility(panel, visible) {
+    if (!panel) return;
+    panel.classList.toggle('is-active', visible);
+    panel.classList.toggle('media-hidden', !visible);
+    panel.classList.toggle('fd-media-section--hidden', !visible);
+    panel.setAttribute('aria-hidden', visible ? 'false' : 'true');
   }
   function mediaTypeFromHash(slug) {
     var key = String(slug || '').toLowerCase();
@@ -3531,20 +3554,14 @@
     if (!activePanel) {
       console.warn('[fd-media-library] Panel not found for category:', type, '(expected #' + activePanelId + ')');
     }
-    document.querySelectorAll('#media-library .fd-media-grid .fd-media-section').forEach(function (panel) {
-      var on = panel.id === activePanelId;
-      panel.classList.toggle('fd-media-section--hidden', !on);
-      panel.classList.toggle('is-active', on);
-      panel.hidden = !on;
-      panel.style.display = on ? '' : 'none';
-      panel.setAttribute('aria-hidden', on ? 'false' : 'true');
+    document.querySelectorAll('#media-library .fd-media-grid .fd-media-section, #media-library .fd-media-grid .media-bucket').forEach(function (panel) {
+      setBucketVisibility(panel, panel.id === activePanelId);
     });
-    document.querySelectorAll('#media-library .a2w-media-bucket:not(.fd-media-section)').forEach(function (orphan) {
-      orphan.hidden = true;
-      orphan.style.display = 'none';
+    document.querySelectorAll('#media-library .a2w-media-bucket:not(.fd-media-section):not(.media-bucket)').forEach(function (orphan) {
+      setBucketVisibility(orphan, false);
       console.warn('[fd-media-library] Hiding orphan bucket outside tab panels:', orphan);
     });
-    document.querySelectorAll('#fdMediaTabs .fd-media-tabs__tab').forEach(function (tab) {
+    document.querySelectorAll('#fdMediaTabs .fd-media-tabs__tab, #fdMediaTabs .media-tabs__tab').forEach(function (tab) {
       var tabType = tab.getAttribute('data-media-type');
       var on = tabType === type;
       tab.classList.toggle('is-active', on);
@@ -3565,7 +3582,7 @@
   }
   window.switchMediaCategory = switchMediaCategory;
   function onMediaTabsClick(e) {
-    var tab = e.target.closest('.fd-media-tabs__tab');
+    var tab = e.target.closest('.fd-media-tabs__tab, .media-tabs__tab');
     if (!tab) return;
     var type = tab.getAttribute('data-media-type');
     if (type) switchMediaCategory(type);
@@ -3575,9 +3592,9 @@
     switchMediaCategory(e.target.value);
   }
   function onMediaTabsKeydown(e) {
-    var tab = e.target.closest('.fd-media-tabs__tab');
+    var tab = e.target.closest('.fd-media-tabs__tab, .media-tabs__tab');
     if (!tab || !tab.closest('#fdMediaTabs')) return;
-    var tabs = Array.from(document.querySelectorAll('#fdMediaTabs .fd-media-tabs__tab'));
+    var tabs = Array.from(document.querySelectorAll('#fdMediaTabs .fd-media-tabs__tab, #fdMediaTabs .media-tabs__tab'));
     var idx = tabs.indexOf(tab);
     if (idx === -1) return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
@@ -3602,24 +3619,24 @@
   }
   function buildMediaTabsMarkup() {
     var listItems = CATEGORY_ORDER.map(function (type) {
-      var meta = SECTION_META[type];
+      var label = tabLabelForType(type);
       return (
         '<li role="presentation">' +
-        '<button type="button" class="fd-media-tabs__tab" role="tab" id="fdMediaTab_' + type + '" data-media-type="' + type + '" aria-controls="' + panelIdForType(type) + '" aria-selected="false" tabindex="-1">' +
-        esc(meta.title) +
+        '<button type="button" class="fd-media-tabs__tab media-tabs__tab" role="tab" id="fdMediaTab_' + type + '" data-media-type="' + type + '" aria-controls="' + panelIdForType(type) + '" aria-selected="false" tabindex="-1">' +
+        esc(label) +
         '</button></li>'
       );
     }).join('');
     var selectOpts = CATEGORY_ORDER.map(function (type) {
-      return '<option value="' + type + '">' + esc(SECTION_META[type].title) + '</option>';
+      return '<option value="' + type + '">' + esc(tabLabelForType(type)) + '</option>';
     }).join('');
     return (
-      '<div class="fd-media-tabs__select-wrap">' +
-      '<label class="fd-media-tabs__select-label" for="fdMediaCategorySelect">Categoria asset</label>' +
-      '<select id="fdMediaCategorySelect" class="fd-media-tabs__select" aria-label="Categoria asset">' +
+      '<div class="fd-media-tabs__select-wrap media-tabs__select-wrap">' +
+      '<label class="fd-media-tabs__select-label media-tabs__select-label" for="fdMediaCategorySelect">Categoria asset</label>' +
+      '<select id="fdMediaCategorySelect" class="fd-media-tabs__select media-tabs__select" aria-label="Categoria asset">' +
       selectOpts +
       '</select></div>' +
-      '<ul class="fd-media-tabs__list" role="tablist" aria-label="Categorie asset">' +
+      '<ul class="fd-media-tabs__list media-tabs__list" role="tablist" aria-label="Categorie asset">' +
       listItems +
       '</ul>'
     );
@@ -3660,7 +3677,7 @@
     hideLegacyA2wMediaTabs(section);
     var grid = section.querySelector('.fd-media-grid');
     if (!grid) return;
-    grid.classList.add('fd-media-grid--tabs');
+    grid.classList.add('fd-media-grid--tabs', 'media-buckets');
     CATEGORY_ORDER.forEach(function (type) {
       var panel = document.getElementById(panelIdForType(type))
         || grid.querySelector('.fd-media-section[data-media-type="' + type + '"]');
@@ -3671,10 +3688,15 @@
     });
     if (!section.querySelector('#fdMediaTabs')) {
       var tabs = document.createElement('div');
-      tabs.className = 'fd-media-tabs';
+      tabs.className = 'fd-media-tabs media-tabs';
       tabs.id = 'fdMediaTabs';
+      tabs.setAttribute('data-component', 'media-tabs');
       tabs.innerHTML = buildMediaTabsMarkup();
       grid.parentNode.insertBefore(tabs, grid);
+    } else {
+      var existingTabs = section.querySelector('#fdMediaTabs');
+      existingTabs.classList.add('media-tabs');
+      existingTabs.setAttribute('data-component', 'media-tabs');
     }
     if (section.dataset.fdMediaTabsBound !== '1') {
       section.dataset.fdMediaTabsBound = '1';
@@ -3936,7 +3958,8 @@
     var meta = SECTION_META[type] || { title: type, hint: '', uploadLabel: 'Carica' };
     card.dataset.mediaType = type;
     card.dataset.fdMediaSection = '1';
-    card.classList.add('fd-media-section', 'card', 'fd-card', 'fd-form-section');
+    card.dataset.a2wBucketType = type;
+    card.classList.add('fd-media-section', 'media-bucket', 'card', 'fd-card', 'fd-form-section');
     card.id = panelIdForType(type);
     card.setAttribute('role', 'tabpanel');
     card.setAttribute('aria-labelledby', 'fdMediaTab_' + type);
@@ -3963,7 +3986,7 @@
     var meta = SECTION_META[type];
     var hostId = HOST_ID_BY_TYPE[type];
     var card = document.createElement('div');
-    card.className = 'card fd-media-section';
+    card.className = 'card fd-media-section media-bucket';
     card.dataset.mediaType = type;
     card.dataset.fdMediaSection = '1';
     card.id = panelIdForType(type);
@@ -4005,7 +4028,7 @@
     var stripSearch = card.querySelector('#mediaStripSearch');
     card.dataset.fdMediaSection = '1';
     card.dataset.mediaType = type;
-    card.classList.add('fd-media-section');
+    card.classList.add('fd-media-section', 'media-bucket');
     card.id = panelIdForType(type);
     card.setAttribute('role', 'tabpanel');
     card.setAttribute('aria-labelledby', 'fdMediaTab_' + type);
@@ -4084,6 +4107,8 @@
         window.fdRelocateBrandPassFlowBar(section);
       }
       ensureMediaCategoryTabs();
+      ensureBucketDropzones();
+      ensureCropModalsOutsideSection();
       applyDsButtonClasses(section);
       return;
     }
@@ -4141,6 +4166,8 @@
       window.fdRelocateBrandPassFlowBar(section);
     }
     ensureMediaCategoryTabs();
+    ensureBucketDropzones();
+    ensureCropModalsOutsideSection();
     if (!section.querySelector('#fdMediaBulkBar')) {
       var bulk = document.createElement('div');
       bulk.id = 'fdMediaBulkBar';
@@ -4227,16 +4254,88 @@
       '</article>'
     );
   }
+  function buildDropzoneMarkup(type) {
+    var meta = SECTION_META[type] || { title: type, tabLabel: type };
+    return (
+      '<div class="fd-media-dropzone media-dropzone" data-component="dropzone" data-upload-type="' + esc(type) + '" tabindex="0" role="button">' +
+      '<span class="fd-media-dropzone__title media-dropzone__title">Trascina o clicca per caricare</span>' +
+      '<span class="fd-media-dropzone__hint media-dropzone__hint">' + esc(meta.tabLabel || meta.title) + '</span>' +
+      '</div>'
+    );
+  }
+  function bindDropzoneElement(dropzone, type) {
+    if (!dropzone || dropzone.dataset.bound === '1') return;
+    dropzone.dataset.bound = '1';
+    dropzone.addEventListener('click', function () {
+      openUploadForType(type);
+    });
+    dropzone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openUploadForType(type);
+      }
+    });
+    ['dragenter', 'dragover'].forEach(function (evt) {
+      dropzone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        dropzone.classList.add('is-dragover');
+        announceDnD('Rilascia per caricare');
+      });
+    });
+    ['dragleave', 'dragend', 'drop'].forEach(function (evt) {
+      dropzone.addEventListener(evt, function () {
+        dropzone.classList.remove('is-dragover');
+      });
+    });
+    dropzone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!file) return;
+      openUploadForType(type);
+      var input = document.getElementById('mediaUploadFile');
+      try {
+        var dt = new DataTransfer();
+        dt.items.add(file);
+        if (input) input.files = dt.files;
+      } catch (_) {}
+      announceDnD('File pronto per il caricamento');
+    });
+  }
+  function ensureBucketDropzones() {
+    CATEGORY_ORDER.forEach(function (type) {
+      var panel = document.getElementById(panelIdForType(type));
+      if (!panel) return;
+      var body = panel.querySelector('.fd-media-section__body');
+      if (!body) return;
+      var hostId = HOST_ID_BY_TYPE[type];
+      var host = document.getElementById(hostId);
+      if (!host) return;
+      var dropzone = body.querySelector('.media-dropzone, .fd-media-dropzone');
+      if (!dropzone) {
+        var wrap = document.createElement('div');
+        wrap.innerHTML = buildDropzoneMarkup(type);
+        dropzone = wrap.firstChild;
+        body.insertBefore(dropzone, host);
+      }
+      bindDropzoneElement(dropzone, type);
+    });
+  }
+  function ensureCropModalsOutsideSection() {
+    var section = document.getElementById('media-library');
+    if (!section) return;
+    ['mediaUploadModal', 'mediaCropModal'].forEach(function (id) {
+      var modal = document.getElementById(id);
+      if (!modal) return;
+      if (section.contains(modal)) {
+        var main = document.getElementById('main-content') || document.body;
+        main.appendChild(modal);
+      }
+    });
+  }
   function renderEmptyDropzone(type) {
     var m = SECTION_META[type];
     return (
-      '<div class="fd-empty-state fd-media-empty-state">' +
-      '<p class="fd-empty-state__title">Nessun asset ' + esc(m.title.toLowerCase()) + '</p>' +
-      '<p class="fd-empty-state__desc">' + esc(m.hint) + '</p>' +
-      '<div class="fd-empty-state__actions">' +
-      '<button type="button" class="fd-media-dropzone fd-btn fd-btn--secondary" data-upload-type="' + esc(type) + '" aria-label="Carica ' + esc(m.title) + '">' +
-      '<span class="fd-media-dropzone__title">Trascina qui o clicca per caricare</span>' +
-      '</button></div></div>'
+      '<p class="fd-media-empty fd-media-empty-state__inline">Nessun asset ' + esc((m.tabLabel || m.title).toLowerCase()) + ' caricato.</p>'
     );
   }
   function bindAssetCardActions(scope) {
@@ -4295,12 +4394,9 @@
         });
       });
     });
-    scope.querySelectorAll('.fd-media-dropzone').forEach(function (btn) {
+    scope.querySelectorAll('.fd-media-dropzone, .media-dropzone').forEach(function (btn) {
       if (btn.dataset.bound === '1') return;
-      btn.dataset.bound = '1';
-      btn.addEventListener('click', function () {
-        openUploadForType(btn.getAttribute('data-upload-type'));
-      });
+      bindDropzoneElement(btn, btn.getAttribute('data-upload-type'));
     });
   }
   function announceDnD(message) {

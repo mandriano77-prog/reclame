@@ -18,13 +18,7 @@ export const NAV = [
         items: [
             { id: 'push', label: 'Push & Notifiche' },
             { id: 'instant-win', label: 'Reward' },
-            { id: 'gamification', label: 'Challenge' }
-        ]
-    },
-    {
-        id: 'database',
-        label: 'Database',
-        items: [
+            { id: 'gamification', label: 'Challenge' },
             { id: 'leads', label: 'Contatti' }
         ]
     },
@@ -32,7 +26,8 @@ export const NAV = [
         id: 'insights',
         label: 'Insights',
         items: [
-            { id: 'analytics', label: 'Analytics' }
+            { id: 'analytics', label: 'Analytics' },
+            { id: 'activity-log', label: 'Log Attività' }
         ]
     },
     {

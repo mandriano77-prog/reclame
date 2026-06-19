@@ -506,10 +506,6 @@ html[data-shell="dark"].a2w-shell .sidebar-footer-text {
   line-height: 1.45;
 }
 
-html[data-shell="dark"].a2w-shell .sidebar-footer-text .chrome-byline {
-  color: var(--a2w-text-tertiary);
-}
-
 html[data-shell="dark"].a2w-shell .a2w-sidebar-toggle-btn {
   width: 100%;
   min-height: 36px;

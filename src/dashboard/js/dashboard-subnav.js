@@ -55,10 +55,16 @@
     return null;
   }
 
-  function navHighlightSection(sectionId, tab) {
+  function navItemHighlightId(sectionId, tab) {
+    tab = normalizeTab(sectionId, tab);
     if (sectionId === 'leads' || sectionId === 'audiences') return 'leads';
-    if (sectionId === 'analytics' || sectionId === 'activity-log') return 'analytics';
+    if (sectionId === 'activity-log' || (sectionId === 'analytics' && tab === 'activity-log')) return 'activity-log';
+    if (sectionId === 'analytics') return 'analytics';
     return sectionId;
+  }
+
+  function navHighlightSection(sectionId, tab) {
+    return navItemHighlightId(sectionId, tab);
   }
 
   function breadcrumbLabel(sectionId, tab) {
@@ -144,6 +150,9 @@
     if (!options.skipBreadcrumb && typeof global.syncSectionDocumentTitle === 'function') {
       global.syncSectionDocumentTitle('leads', tab);
     }
+    if (!options.skipNavHighlight && typeof global.syncNavAriaCurrent === 'function') {
+      global.syncNavAriaCurrent('leads', tab);
+    }
     return tab;
   }
 
@@ -167,6 +176,9 @@
     }
     if (!options.skipBreadcrumb && typeof global.syncSectionDocumentTitle === 'function') {
       global.syncSectionDocumentTitle('analytics', tab);
+    }
+    if (!options.skipNavHighlight && typeof global.syncNavAriaCurrent === 'function') {
+      global.syncNavAriaCurrent('analytics', tab);
     }
     return tab;
   }
@@ -207,6 +219,7 @@
   global.DASHBOARD_SUBNAV = {
     resolveNavTarget: resolveNavTarget,
     parseLocationRoute: parseLocationRoute,
+    navItemHighlightId: navItemHighlightId,
     navHighlightSection: navHighlightSection,
     breadcrumbLabel: breadcrumbLabel,
     sectionPath: sectionPath,
@@ -216,6 +229,7 @@
 
   global.resolveNavTarget = resolveNavTarget;
   global.parseLocationRoute = parseLocationRoute;
+  global.navItemHighlightId = navItemHighlightId;
   global.navHighlightSection = navHighlightSection;
   global.breadcrumbLabel = breadcrumbLabel;
   global.sectionPath = sectionPath;

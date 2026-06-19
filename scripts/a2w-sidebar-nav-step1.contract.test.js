@@ -11,7 +11,7 @@ const shell = fs.readFileSync(path.join(root, 'src/dashboard/js/a2w-shell.js'), 
 const chrome = fs.readFileSync(path.join(root, 'src/dashboard/styles/a2w-chrome.css'), 'utf8');
 
 test('nav groups espansi di default nel markup', () => {
-  const groups = ['brand-pass', 'comunicazione', 'database', 'insights', 'setup'];
+  const groups = ['brand-pass', 'comunicazione', 'insights', 'setup'];
   groups.forEach((id) => {
     assert.match(indexHtml, new RegExp(`data-nav-group="${id}"[^>]*\\bopen\\b`));
   });
