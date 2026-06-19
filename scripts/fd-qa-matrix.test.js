@@ -4,6 +4,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('node:child_process');
 
 const ROOT = path.join(__dirname, '..');
 const FD = path.join(ROOT, 'src', 'filodiretto');
@@ -112,10 +113,22 @@ test('build-fd-bundles lists FASE 5–6 modules', () => {
   assert.match(build, /fd-mobile-gate\.js/);
 });
 
-test('index.html bundle cache references media-library-tabs tag', () => {
+test('fd.bundle.js is valid JavaScript after build', () => {
+  const bundlePath = path.join(ROOT, 'src', 'filodiretto', 'fd.bundle.js');
+  assert.doesNotThrow(() => {
+    execFileSync(process.execPath, ['--check', bundlePath], { stdio: 'pipe' });
+  });
+  const bundle = read('src/filodiretto/fd.bundle.js');
+  assert.ok(
+    bundle.includes('/^https?:\\/\\//i.test(value)'),
+    'bundle must preserve URL regex literal (minifier must not strip // inside regex)'
+  );
+});
+
+test('index.html bundle cache references bundle-syntax-fix2 tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260619-media-library-tabs/);
-  assert.match(html, /fd\.bundle\.js\?v=20260619-media-library-tabs/);
+  assert.match(html, /fd\.bundle\.css\?v=20260619-bundle-syntax-fix2/);
+  assert.match(html, /fd\.bundle\.js\?v=20260619-bundle-syntax-fix2/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
   assert.match(html, /fd-page-states\.js/);
   assert.match(html, /fd-mobile-gate\.js/);

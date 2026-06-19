@@ -40,7 +40,8 @@ function minifyCss(css) {
 function minifyJs(js) {
   return js
     .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+    // Strip whole-line // comments only — do not touch // inside strings/regex (e.g. https://).
+    .replace(/^\s*\/\/[^\n]*/gm, '')
     .replace(/\n\s*\n/g, '\n')
     .trim();
 }

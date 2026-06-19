@@ -4708,7 +4708,7 @@
     if (!rawValue) return '';
     var value = String(rawValue);
     if (value.indexOf('data:image/') === 0) return value;
-    if (value.length > 120 && !/^https?:\/\
+    if (value.length > 120 && !/^https?:\/\//i.test(value)) {
       return 'data:image/png;base64,' + value;
     }
     return apiBase() + '/templates/' + encodeURIComponent(templateId) + '/wallet-image/' + imageType;
@@ -5356,6 +5356,7 @@
       el.setAttribute('aria-hidden', 'true');
     });
   }
+  function enhancePassesDom() {
     var content = document.getElementById('passesContent');
     enhancePassesSectionDesign();
     ensurePassesLayout();

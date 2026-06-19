@@ -392,6 +392,7 @@
     });
   }
 
+  function enhancePassesDom() {
     var content = document.getElementById('passesContent');
     enhancePassesSectionDesign();
     ensurePassesLayout();
