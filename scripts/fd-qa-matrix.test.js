@@ -37,7 +37,7 @@ const SECTION_MATRIX = [
     sectionId: 'media-library',
     js: 'fd-media-library.js',
     css: 'fd-media-library.css',
-    patterns: ['fd-skeleton', 'fd-empty-state', 'fdRenderErrorState|fd-error-state']
+    patterns: ['fd-skeleton', 'media-tabs|fd-media-tabs', 'media-hidden|media-dropzone']
   },
   {
     label: 'Template Pass',
@@ -112,10 +112,10 @@ test('build-fd-bundles lists FASE 5–6 modules', () => {
   assert.match(build, /fd-mobile-gate\.js/);
 });
 
-test('index.html bundle cache references media-library-fix2 tag', () => {
+test('index.html bundle cache references media-library-tabs tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260619-media-library-fix2/);
-  assert.match(html, /fd\.bundle\.js\?v=20260619-media-library-fix2/);
+  assert.match(html, /fd\.bundle\.css\?v=20260619-media-library-tabs/);
+  assert.match(html, /fd\.bundle\.js\?v=20260619-media-library-tabs/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
   assert.match(html, /fd-page-states\.js/);
   assert.match(html, /fd-mobile-gate\.js/);
@@ -184,6 +184,9 @@ test('Filo media library hides legacy Ads2Wallet tabs markup', () => {
   assert.match(js, /hideLegacyA2wMediaTabs/);
   assert.match(js, /reconcileLegacyMediaTabs/);
   assert.match(js, /fdEnsureMediaLibraryLayout/);
+  assert.match(js, /setAttribute\('data-component', 'media-tabs'\)/);
+  assert.match(js, /media-hidden/);
+  assert.match(js, /fdMediaLogoCard/);
   assert.match(js, /#a2wMediaTabs/);
   assert.match(css, /#a2wMediaTabs/);
 });
