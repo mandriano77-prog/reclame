@@ -44,14 +44,14 @@ const SECTION_MATRIX = [
     sectionId: 'templates',
     js: 'fd-templates.js',
     css: 'fd-templates.css',
-    patterns: ['fd-skeleton', 'fd-tpl-list', 'aria-busy']
+    patterns: ['fd-skeleton', 'fd-tpl-list', 'fd-btn--secondary']
   },
   {
     label: 'Pass Emessi',
     sectionId: 'passes',
     js: 'fd-passes.js',
     css: 'fd-passes.css',
-    patterns: ['fd-skeleton', 'fd-stat-grid', 'fd-table-wrap|fd-toolbar']
+    patterns: ['fd-skeleton', 'fd-stat-grid', 'fd-passes-legend-hint|fd-table-wrap']
   },
   {
     label: 'Push',
@@ -87,6 +87,13 @@ const SECTION_MATRIX = [
     js: 'fd-users.js',
     css: 'fd-users.css',
     patterns: ['fd-page-header', 'renderTableErrorRow|fdRenderTableErrorRow', 'fd-table-wrap']
+  },
+  {
+    label: 'Contatti',
+    sectionId: 'leads',
+    js: 'fd-contacts.js',
+    css: 'fd-contacts.css',
+    patterns: ['fd-page-header', 'fd-contacts-table-wrap', 'fd-table']
   }
 ];
 
@@ -105,10 +112,10 @@ test('build-fd-bundles lists FASE 5–6 modules', () => {
   assert.match(build, /fd-mobile-gate\.js/);
 });
 
-test('index.html bundle cache references FASE 7 tag', () => {
+test('index.html bundle cache references gap-fix tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260619-design-system-f7-qa/);
-  assert.match(html, /fd\.bundle\.js\?v=20260619-design-system-f7-qa/);
+  assert.match(html, /fd\.bundle\.css\?v=20260619-design-system-gap-fix/);
+  assert.match(html, /fd\.bundle\.js\?v=20260619-design-system-gap-fix/);
   assert.match(html, /fd-page-states\.js/);
   assert.match(html, /fd-mobile-gate\.js/);
 });

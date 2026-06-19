@@ -147,6 +147,117 @@
     syncFiloExportMenuState();
   }
 
+  function enhanceContactsSectionDesign() {
+    var section = ensureLeadsSection();
+    if (!section || section.dataset.fdDsSection === '1') return;
+    section.dataset.fdDsSection = '1';
+    section.classList.add('leads--fd-ds');
+
+    var header = section.querySelector('.contacts-page-header');
+    if (header && !header.classList.contains('fd-page-header')) {
+      header.classList.add('fd-page-header', 'fd-contacts-header');
+      var copyDiv = header.querySelector(':scope > div:first-child');
+      if (copyDiv) copyDiv.classList.add('fd-page-header__copy');
+      var h1 = header.querySelector('h1');
+      if (h1) h1.classList.add('fd-page-header__title');
+      var blurb = header.querySelector('.contacts-page-blurb');
+      if (blurb) blurb.classList.add('fd-page-header__lead');
+      var actions = header.querySelector('.a2w-contacts-header-actions');
+      if (actions) actions.classList.add('fd-page-header__actions', 'fd-contacts-header__actions');
+    }
+
+    var cardA = document.getElementById('contactsCardA');
+    if (cardA) cardA.classList.add('fd-card', 'fd-contacts-card');
+
+    var tabs = section.querySelector('#leadsSectionTabs');
+    if (tabs) tabs.classList.add('fd-contacts-tabs');
+  }
+
+  function wrapLeadsTable() {
+    var table = document.getElementById('leadsTable');
+    if (!table || table.closest('.fd-table-wrap, .fd-contacts-table-wrap')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'fd-table-wrap fd-contacts-table-wrap';
+    table.parentNode.insertBefore(wrap, table);
+    wrap.appendChild(table);
+    table.classList.add('fd-table');
+  }
+
+  function applyContactsDsButtons() {
+    if (!isFiloContactsApp() || !isHrLeadsActive()) return;
+    var addBtn = document.getElementById('a2wContactsAddBtn');
+    if (addBtn) {
+      addBtn.classList.add('fd-btn', 'fd-btn--primary');
+      addBtn.classList.remove('a2w-btn-primary');
+    }
+    var importBtn = document.getElementById('a2wContactsImportBtn');
+    if (importBtn) importBtn.classList.add('fd-btn', 'fd-btn--secondary');
+
+    var toolbar = document.getElementById('contactsToolbarHost');
+    if (toolbar) {
+      toolbar.querySelectorAll('button.btn').forEach(function (btn) {
+        if (btn.classList.contains('danger')) {
+          btn.classList.add('fd-btn', 'fd-btn--danger', 'fd-btn--sm');
+        } else if (
+          btn.id === 'a2wLeadsSendActivationBtn' ||
+          (btn.textContent || '').indexOf('Invia') >= 0
+        ) {
+          btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-btn--sm');
+        } else {
+          btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+        }
+      });
+    }
+
+    var menuBtn = document.getElementById('contactsPageMenuBtn');
+    if (menuBtn) menuBtn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm');
+  }
+
+  function enhanceContactsKpiAsStatGrid() {
+    var host = document.getElementById('leadsStats');
+    if (!host || !host.querySelector('.contacts-kpi-strip__item')) return;
+    host.classList.add('fd-contacts-stat-grid');
+  }
+
+  function enhanceContactsDom() {
+    if (!isFiloContactsApp() || !isHrLeadsActive()) return;
+    enhanceContactsSectionDesign();
+    wrapLeadsTable();
+    enhanceContactsKpiAsStatGrid();
+    enhanceFiloKpiStrip();
+    enhanceFiloContactsToolbar();
+    applyContactsDsButtons();
+    if (typeof window.fdEnhanceResponsiveTables === 'function') {
+      window.fdEnhanceResponsiveTables();
+    }
+  }
+
+  function patchLoadLeadsForDs() {
+    if (window.__fdContactsLoadDsPatched || typeof window.loadLeads !== 'function') return;
+    window.__fdContactsLoadDsPatched = true;
+    var orig = window.loadLeads;
+    window.loadLeads = async function () {
+      if (isFiloContactsApp() && isHrLeadsActive()) enhanceContactsSectionDesign();
+      await orig.apply(this, arguments);
+      if (isFiloContactsApp() && isHrLeadsActive()) enhanceContactsDom();
+    };
+  }
+
+  function patchNavForContacts() {
+    if (window.__fdContactsNavPatched || typeof window.nav !== 'function') return;
+    window.__fdContactsNavPatched = true;
+    var origNav = window.nav;
+    window.nav = function (id) {
+      var r = origNav.apply(this, arguments);
+      var done = function () {
+        if (id === 'leads' && isFiloContactsApp()) enhanceContactsDom();
+      };
+      if (r && typeof r.then === 'function') return r.then(done);
+      setTimeout(done, 120);
+      return r;
+    };
+  }
+
   function patchLeadsRenderers() {
     if (window.__fdContactsPatched) return;
     window.__fdContactsPatched = true;
@@ -165,6 +276,7 @@
         origToolbar.apply(this, arguments);
         if (isFiloContactsApp()) {
           enhanceFiloContactsToolbar();
+          applyContactsDsButtons();
           setTimeout(simplifyCardHelp, 0);
         }
       };
@@ -182,12 +294,12 @@
   function initFdContacts() {
     if (!isFiloContactsApp()) return;
     patchLeadsRenderers();
+    patchLoadLeadsForDs();
+    patchNavForContacts();
     ensureLeadsSection();
     if (isHrLeadsActive()) {
       consolidateLeadsPageMenu();
-      enhanceFiloKpiStrip();
-      simplifyCardHelp();
-      syncFiloExportMenuState();
+      enhanceContactsDom();
     }
   }
 

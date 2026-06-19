@@ -176,6 +176,60 @@ html[data-app='filodiretto'] #passes .fd-pass-row-menu__item--danger:hover {
   background: #fef2f2;
 }
 
+html[data-app='filodiretto'] #passes .fd-passes-legend-hint {
+  position: relative;
+  margin-bottom: var(--fd-space-3, 12px);
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-legend-panel {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: var(--fd-z-dropdown, 200);
+  min-width: min(360px, 92vw);
+  max-width: 420px;
+  padding: var(--fd-space-3, 12px) var(--fd-space-4, 16px);
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: var(--fd-radius-md, 12px);
+  background: var(--fd-color-surface, #fff);
+  box-shadow: var(--fd-shadow-md, 0 8px 24px rgba(15, 23, 42, 0.12));
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-legend-panel[hidden] {
+  display: none !important;
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-legend-panel__title {
+  font-size: var(--fd-font-size-sm, 12px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fd-color-text-secondary, var(--text2));
+  margin-bottom: var(--fd-space-2, 8px);
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-legend-panel__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fd-font-size-sm, 12px);
+  line-height: 1.5;
+  color: var(--fd-color-text-body, var(--text));
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-legend-panel__list li {
+  padding: var(--fd-space-1, 4px) 0;
+  border-bottom: 1px solid var(--fd-border, var(--border));
+}
+
+html[data-app='filodiretto'] #passes .fd-passes-legend-panel__list li:last-child {
+  border-bottom: none;
+}
+
+html[data-app='filodiretto'] #passes .pass-table-legend[hidden] {
+  display: none !important;
+}
+
 @media (max-width: 720px) {
   html[data-app='filodiretto'] #passes .fd-passes-stat-grid {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

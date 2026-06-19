@@ -170,15 +170,6 @@ html[data-app='filodiretto'] #templates .fd-tpl-card__actions {
   flex-wrap: wrap;
 }
 
-html[data-app='filodiretto'] #templates .fd-tpl-card__delete {
-  color: var(--fd-color-danger, #b91c1c);
-}
-
-html[data-app='filodiretto'] #templates .fd-tpl-card__delete:hover:not(:disabled) {
-  color: #991b1b;
-  background: #fef2f2;
-}
-
 html[data-app='filodiretto'] #templates .fd-tpl-card--skeleton {
   pointer-events: none;
 }

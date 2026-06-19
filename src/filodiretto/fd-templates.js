@@ -159,10 +159,10 @@
       checksHtml +
       '</div>' +
       '<div class="fd-tpl-card__actions">' +
-      '<button type="button" class="fd-btn fd-btn--primary fd-btn--sm" onclick="editTemplate(\'' +
+      '<button type="button" class="fd-btn fd-btn--secondary fd-btn--sm" onclick="editTemplate(\'' +
       esc(t.id) +
       '\')">Modifica</button>' +
-      '<button type="button" class="fd-btn fd-btn--ghost fd-btn--sm fd-tpl-card__delete" onclick="deleteTemplate(\'' +
+      '<button type="button" class="fd-btn fd-btn--danger fd-btn--sm" onclick="deleteTemplate(\'' +
       esc(t.id) +
       '\')">Elimina</button>' +
       '</div></div></div></article>'

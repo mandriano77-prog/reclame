@@ -3219,6 +3219,105 @@
     simplifyCardHelp();
     syncFiloExportMenuState();
   }
+  function enhanceContactsSectionDesign() {
+    var section = ensureLeadsSection();
+    if (!section || section.dataset.fdDsSection === '1') return;
+    section.dataset.fdDsSection = '1';
+    section.classList.add('leads--fd-ds');
+    var header = section.querySelector('.contacts-page-header');
+    if (header && !header.classList.contains('fd-page-header')) {
+      header.classList.add('fd-page-header', 'fd-contacts-header');
+      var copyDiv = header.querySelector(':scope > div:first-child');
+      if (copyDiv) copyDiv.classList.add('fd-page-header__copy');
+      var h1 = header.querySelector('h1');
+      if (h1) h1.classList.add('fd-page-header__title');
+      var blurb = header.querySelector('.contacts-page-blurb');
+      if (blurb) blurb.classList.add('fd-page-header__lead');
+      var actions = header.querySelector('.a2w-contacts-header-actions');
+      if (actions) actions.classList.add('fd-page-header__actions', 'fd-contacts-header__actions');
+    }
+    var cardA = document.getElementById('contactsCardA');
+    if (cardA) cardA.classList.add('fd-card', 'fd-contacts-card');
+    var tabs = section.querySelector('#leadsSectionTabs');
+    if (tabs) tabs.classList.add('fd-contacts-tabs');
+  }
+  function wrapLeadsTable() {
+    var table = document.getElementById('leadsTable');
+    if (!table || table.closest('.fd-table-wrap, .fd-contacts-table-wrap')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'fd-table-wrap fd-contacts-table-wrap';
+    table.parentNode.insertBefore(wrap, table);
+    wrap.appendChild(table);
+    table.classList.add('fd-table');
+  }
+  function applyContactsDsButtons() {
+    if (!isFiloContactsApp() || !isHrLeadsActive()) return;
+    var addBtn = document.getElementById('a2wContactsAddBtn');
+    if (addBtn) {
+      addBtn.classList.add('fd-btn', 'fd-btn--primary');
+      addBtn.classList.remove('a2w-btn-primary');
+    }
+    var importBtn = document.getElementById('a2wContactsImportBtn');
+    if (importBtn) importBtn.classList.add('fd-btn', 'fd-btn--secondary');
+    var toolbar = document.getElementById('contactsToolbarHost');
+    if (toolbar) {
+      toolbar.querySelectorAll('button.btn').forEach(function (btn) {
+        if (btn.classList.contains('danger')) {
+          btn.classList.add('fd-btn', 'fd-btn--danger', 'fd-btn--sm');
+        } else if (
+          btn.id === 'a2wLeadsSendActivationBtn' ||
+          (btn.textContent || '').indexOf('Invia') >= 0
+        ) {
+          btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-btn--sm');
+        } else {
+          btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+        }
+      });
+    }
+    var menuBtn = document.getElementById('contactsPageMenuBtn');
+    if (menuBtn) menuBtn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm');
+  }
+  function enhanceContactsKpiAsStatGrid() {
+    var host = document.getElementById('leadsStats');
+    if (!host || !host.querySelector('.contacts-kpi-strip__item')) return;
+    host.classList.add('fd-contacts-stat-grid');
+  }
+  function enhanceContactsDom() {
+    if (!isFiloContactsApp() || !isHrLeadsActive()) return;
+    enhanceContactsSectionDesign();
+    wrapLeadsTable();
+    enhanceContactsKpiAsStatGrid();
+    enhanceFiloKpiStrip();
+    enhanceFiloContactsToolbar();
+    applyContactsDsButtons();
+    if (typeof window.fdEnhanceResponsiveTables === 'function') {
+      window.fdEnhanceResponsiveTables();
+    }
+  }
+  function patchLoadLeadsForDs() {
+    if (window.__fdContactsLoadDsPatched || typeof window.loadLeads !== 'function') return;
+    window.__fdContactsLoadDsPatched = true;
+    var orig = window.loadLeads;
+    window.loadLeads = async function () {
+      if (isFiloContactsApp() && isHrLeadsActive()) enhanceContactsSectionDesign();
+      await orig.apply(this, arguments);
+      if (isFiloContactsApp() && isHrLeadsActive()) enhanceContactsDom();
+    };
+  }
+  function patchNavForContacts() {
+    if (window.__fdContactsNavPatched || typeof window.nav !== 'function') return;
+    window.__fdContactsNavPatched = true;
+    var origNav = window.nav;
+    window.nav = function (id) {
+      var r = origNav.apply(this, arguments);
+      var done = function () {
+        if (id === 'leads' && isFiloContactsApp()) enhanceContactsDom();
+      };
+      if (r && typeof r.then === 'function') return r.then(done);
+      setTimeout(done, 120);
+      return r;
+    };
+  }
   function patchLeadsRenderers() {
     if (window.__fdContactsPatched) return;
     window.__fdContactsPatched = true;
@@ -3235,6 +3334,7 @@
         origToolbar.apply(this, arguments);
         if (isFiloContactsApp()) {
           enhanceFiloContactsToolbar();
+          applyContactsDsButtons();
           setTimeout(simplifyCardHelp, 0);
         }
       };
@@ -3250,12 +3350,12 @@
   function initFdContacts() {
     if (!isFiloContactsApp()) return;
     patchLeadsRenderers();
+    patchLoadLeadsForDs();
+    patchNavForContacts();
     ensureLeadsSection();
     if (isHrLeadsActive()) {
       consolidateLeadsPageMenu();
-      enhanceFiloKpiStrip();
-      simplifyCardHelp();
-      syncFiloExportMenuState();
+      enhanceContactsDom();
     }
   }
   window.fdInitContacts = initFdContacts;
@@ -4559,10 +4659,10 @@
       checksHtml +
       '</div>' +
       '<div class="fd-tpl-card__actions">' +
-      '<button type="button" class="fd-btn fd-btn--primary fd-btn--sm" onclick="editTemplate(\'' +
+      '<button type="button" class="fd-btn fd-btn--secondary fd-btn--sm" onclick="editTemplate(\'' +
       esc(t.id) +
       '\')">Modifica</button>' +
-      '<button type="button" class="fd-btn fd-btn--ghost fd-btn--sm fd-tpl-card__delete" onclick="deleteTemplate(\'' +
+      '<button type="button" class="fd-btn fd-btn--danger fd-btn--sm" onclick="deleteTemplate(\'' +
       esc(t.id) +
       '\')">Elimina</button>' +
       '</div></div></div></article>'
@@ -5048,7 +5148,75 @@
       });
     }
   }
-  function enhancePassesDom() {
+  function renderCompactPassLegendHtml() {
+    return (
+      '<div class="fd-passes-legend-hint">' +
+      '<button type="button" class="fd-btn fd-btn--ghost fd-btn--sm fd-passes-legend-trigger" ' +
+      'id="fdPassTableLegendBtn" aria-expanded="false" aria-controls="fdPassTableLegendPanel">' +
+      'Legenda colonne</button>' +
+      '<div class="fd-passes-legend-panel" id="fdPassTableLegendPanel" role="dialog" aria-label="Legenda tabella pass emessi" hidden>' +
+      '<div class="fd-passes-legend-panel__title">Legenda tabella</div>' +
+      '<ul class="fd-passes-legend-panel__list">' +
+      '<li><strong>Installato</strong> — salvato nel wallet vs solo generato</li>' +
+      '<li><strong>Apple</strong> — token push (APNs) attivo o assente</li>' +
+      '<li><strong>Google</strong> — GW salvato · GW° in attesa · — non usato</li>' +
+      '<li><strong>Samsung</strong> — SW salvato · SW° in attesa</li>' +
+      '<li><strong>Push (APNs)</strong> — ✔ consegnata · ✖ errore · Nx = numero invii</li>' +
+      '<li><strong>Pass ID</strong> — clic per copiare l’identificativo</li>' +
+      '<li><strong>Selezione</strong> — ☑ prima colonna → Elimina selezionati</li>' +
+      '</ul></div></div>'
+    );
+  }
+  function wirePassLegendPopover(scope) {
+    var root = scope || document.getElementById('passesContent');
+    if (!root) return;
+    var btn = root.querySelector('#fdPassTableLegendBtn');
+    var panel = root.querySelector('#fdPassTableLegendPanel');
+    if (!btn || !panel || btn.dataset.fdLegendWired === '1') return;
+    btn.dataset.fdLegendWired = '1';
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = panel.hidden;
+      document.querySelectorAll('.fd-passes-legend-panel').forEach(function (p) {
+        p.hidden = true;
+      });
+      document.querySelectorAll('.fd-passes-legend-trigger').forEach(function (t) {
+        t.setAttribute('aria-expanded', 'false');
+      });
+      if (open) {
+        panel.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+    if (!document.body.dataset.fdPassLegendDismiss) {
+      document.body.dataset.fdPassLegendDismiss = '1';
+      document.addEventListener('click', function () {
+        document.querySelectorAll('.fd-passes-legend-panel').forEach(function (p) {
+          p.hidden = true;
+        });
+        document.querySelectorAll('.fd-passes-legend-trigger').forEach(function (t) {
+          t.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+  }
+  function patchPassTableLegend() {
+    if (window.__fdPassLegendPatched || typeof window.renderPassTableLegendHtml !== 'function') return;
+    window.__fdPassLegendPatched = true;
+    var orig = window.renderPassTableLegendHtml;
+    window.renderPassTableLegendHtml = function () {
+      if (!isFiloPassesApp()) return orig();
+      return renderCompactPassLegendHtml();
+    };
+  }
+  function collapsePassTableLegend(scope) {
+    var root = scope || document.getElementById('passesContent');
+    if (!root) return;
+    root.querySelectorAll('.pass-table-legend').forEach(function (el) {
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+    });
+  }
     var content = document.getElementById('passesContent');
     enhancePassesSectionDesign();
     ensurePassesLayout();
@@ -5062,6 +5230,8 @@
     enhancePassesPagination(content);
     applyDsButtonClasses(content);
     enhancePassRowActions();
+    wirePassLegendPopover(content);
+    collapsePassTableLegend(content);
     if (typeof window.fdEnhanceResponsiveTables === 'function') {
       window.fdEnhanceResponsiveTables();
     }
@@ -5104,6 +5274,7 @@
   }
   function initFdPasses() {
     if (!isFiloPassesApp()) return;
+    patchPassTableLegend();
     ensurePassesLayout();
     patchLoadPasses();
     patchNavForPasses();

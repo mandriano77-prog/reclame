@@ -319,7 +319,79 @@
     }
   }
 
-  function enhancePassesDom() {
+  function renderCompactPassLegendHtml() {
+    return (
+      '<div class="fd-passes-legend-hint">' +
+      '<button type="button" class="fd-btn fd-btn--ghost fd-btn--sm fd-passes-legend-trigger" ' +
+      'id="fdPassTableLegendBtn" aria-expanded="false" aria-controls="fdPassTableLegendPanel">' +
+      'Legenda colonne</button>' +
+      '<div class="fd-passes-legend-panel" id="fdPassTableLegendPanel" role="dialog" aria-label="Legenda tabella pass emessi" hidden>' +
+      '<div class="fd-passes-legend-panel__title">Legenda tabella</div>' +
+      '<ul class="fd-passes-legend-panel__list">' +
+      '<li><strong>Installato</strong> — salvato nel wallet vs solo generato</li>' +
+      '<li><strong>Apple</strong> — token push (APNs) attivo o assente</li>' +
+      '<li><strong>Google</strong> — GW salvato · GW° in attesa · — non usato</li>' +
+      '<li><strong>Samsung</strong> — SW salvato · SW° in attesa</li>' +
+      '<li><strong>Push (APNs)</strong> — ✔ consegnata · ✖ errore · Nx = numero invii</li>' +
+      '<li><strong>Pass ID</strong> — clic per copiare l’identificativo</li>' +
+      '<li><strong>Selezione</strong> — ☑ prima colonna → Elimina selezionati</li>' +
+      '</ul></div></div>'
+    );
+  }
+
+  function wirePassLegendPopover(scope) {
+    var root = scope || document.getElementById('passesContent');
+    if (!root) return;
+    var btn = root.querySelector('#fdPassTableLegendBtn');
+    var panel = root.querySelector('#fdPassTableLegendPanel');
+    if (!btn || !panel || btn.dataset.fdLegendWired === '1') return;
+    btn.dataset.fdLegendWired = '1';
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = panel.hidden;
+      document.querySelectorAll('.fd-passes-legend-panel').forEach(function (p) {
+        p.hidden = true;
+      });
+      document.querySelectorAll('.fd-passes-legend-trigger').forEach(function (t) {
+        t.setAttribute('aria-expanded', 'false');
+      });
+      if (open) {
+        panel.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+    if (!document.body.dataset.fdPassLegendDismiss) {
+      document.body.dataset.fdPassLegendDismiss = '1';
+      document.addEventListener('click', function () {
+        document.querySelectorAll('.fd-passes-legend-panel').forEach(function (p) {
+          p.hidden = true;
+        });
+        document.querySelectorAll('.fd-passes-legend-trigger').forEach(function (t) {
+          t.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+  }
+
+  function patchPassTableLegend() {
+    if (window.__fdPassLegendPatched || typeof window.renderPassTableLegendHtml !== 'function') return;
+    window.__fdPassLegendPatched = true;
+    var orig = window.renderPassTableLegendHtml;
+    window.renderPassTableLegendHtml = function () {
+      if (!isFiloPassesApp()) return orig();
+      return renderCompactPassLegendHtml();
+    };
+  }
+
+  function collapsePassTableLegend(scope) {
+    var root = scope || document.getElementById('passesContent');
+    if (!root) return;
+    root.querySelectorAll('.pass-table-legend').forEach(function (el) {
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+    });
+  }
+
     var content = document.getElementById('passesContent');
     enhancePassesSectionDesign();
     ensurePassesLayout();
@@ -333,6 +405,8 @@
     enhancePassesPagination(content);
     applyDsButtonClasses(content);
     enhancePassRowActions();
+    wirePassLegendPopover(content);
+    collapsePassTableLegend(content);
     if (typeof window.fdEnhanceResponsiveTables === 'function') {
       window.fdEnhanceResponsiveTables();
     }
@@ -378,6 +452,7 @@
 
   function initFdPasses() {
     if (!isFiloPassesApp()) return;
+    patchPassTableLegend();
     ensurePassesLayout();
     patchLoadPasses();
     patchNavForPasses();
