@@ -23,8 +23,8 @@
             if (lock === 'hr') {
                 document.documentElement.setAttribute('data-shell', 'light');
                 document.documentElement.setAttribute('data-app', 'filodiretto');
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260619-design-system-gap-fix';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260619-design-system-gap-fix';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260619-login-media-fix';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260619-login-media-fix';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-components.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-mobile-gate.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-page-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-analytics.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -1331,6 +1331,11 @@
 <a href="#main-content" class="skip-link">Salta al contenuto</a>
 
 <div id="loginGate" class="login-gate" role="dialog" aria-labelledby="loginTitle">
+    <div class="login-gate__inner">
+    <header id="loginBrandBlock" class="login-brand" hidden>
+        <h1 class="login-brand__title" id="loginBrandTitle">Filo Diretto</h1>
+        <p class="login-brand__tagline" id="loginBrandTagline">Studio HR per pass dipendente, comunicazioni e analytics su Apple Wallet.</p>
+    </header>
     <div class="login-card card" id="loginPanel">
         <div class="sec-title" id="loginTitle">Accedi</div>
         <p id="loginSubtitle" style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.45;">Dashboard — accedi con email e password.</p>
@@ -1363,6 +1368,7 @@
         <p style="margin-top:14px;text-align:center;font-size:12px;">
             <button type="button" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:0;" onclick="showLoginPanel()">Torna al login</button>
         </p>
+    </div>
     </div>
 </div>
 
@@ -3369,6 +3375,49 @@ let authToken = null;
 let currentUser = null;
 window.currentUser = null;
 let passwordResetToken = null;
+const DASHBOARD_LOGIN_PATH = '/dashboard/login';
+
+function isDashboardLoginPath() {
+    const path = String(window.location.pathname || '').replace(/\/$/, '');
+    return path === DASHBOARD_LOGIN_PATH;
+}
+
+function getPostLoginDashboardPath() {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('redirect');
+    if (redirect && redirect.startsWith('/dashboard') && redirect !== DASHBOARD_LOGIN_PATH) {
+        return redirect;
+    }
+    if (typeof isHrDashboard === 'function' && isHrDashboard()) return '/dashboard/home';
+    return '/dashboard';
+}
+
+function syncDashboardLoginUrl(replace) {
+    if (typeof isHrDashboard === 'function' && !isHrDashboard()) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('redirect') && !isDashboardLoginPath()) {
+        const current = window.location.pathname + (window.location.search || '');
+        if (current !== DASHBOARD_LOGIN_PATH && current.startsWith('/dashboard')) {
+            params.set('redirect', current);
+        }
+    }
+    const qs = params.toString();
+    const next = DASHBOARD_LOGIN_PATH + (qs ? `?${qs}` : '');
+    if (window.location.pathname.replace(/\/$/, '') + (window.location.search || '') !== next) {
+        const fn = replace ? history.replaceState.bind(history) : history.pushState.bind(history);
+        fn({ login: true }, '', next);
+    }
+}
+
+function leaveDashboardLoginUrl() {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('redirect');
+    const qs = params.toString();
+    const next = getPostLoginDashboardPath() + (qs ? `?${qs}` : '');
+    if (window.location.pathname + (window.location.search || '') !== next) {
+        history.replaceState({}, '', next);
+    }
+}
 
 function setCurrentUser(user) {
     currentUser = user ? applyAllowlistOperatorUser(user) : null;
@@ -3621,6 +3670,9 @@ function logout() {
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
     if (pw) pw.value = '';
     showLoginPanel();
+    if (typeof isHrDashboard === 'function' && isHrDashboard()) {
+        syncDashboardLoginUrl(true);
+    }
     syncAuthUi();
 }
 
@@ -3778,6 +3830,9 @@ async function bootstrapSession() {
         if (gate) gate.style.display = 'flex';
         if (main) main.style.display = 'none';
         showLoginPanel();
+        if (typeof isHrDashboard === 'function' && isHrDashboard() && !passwordResetToken) {
+            syncDashboardLoginUrl(true);
+        }
         syncAuthUi();
         return;
     }
@@ -3793,6 +3848,7 @@ async function bootstrapSession() {
         syncAuthUi();
         if (gate) gate.style.display = 'none';
         if (main) main.style.display = 'grid';
+        if (isDashboardLoginPath()) leaveDashboardLoginUrl();
         await loadBrands();
     } catch (_) {
         logout();
@@ -3836,6 +3892,7 @@ async function submitLogin() {
         const main = document.getElementById('mainLayout');
         if (gate) gate.style.display = 'none';
         if (main) main.style.display = 'grid';
+        if (isDashboardLoginPath()) leaveDashboardLoginUrl();
         pwEl.value = '';
         await loadBrands();
     } finally {
@@ -4782,9 +4839,30 @@ function getDashboardLoginAllowlist() {
 
 function syncLoginGateCopy() {
     const subtitle = document.getElementById('loginSubtitle');
-    if (!subtitle) return;
+    const brandBlock = document.getElementById('loginBrandBlock');
+    const brandTitle = document.getElementById('loginBrandTitle');
+    const brandTagline = document.getElementById('loginBrandTagline');
     const title = getDashboardProductDisplayTitle(getDashboardProductLine());
     const allowlist = getDashboardLoginAllowlist();
+    const hr = typeof isHrDashboard === 'function' && isHrDashboard();
+
+    if (brandBlock) brandBlock.hidden = !hr;
+    if (hr && brandTitle) brandTitle.textContent = title;
+    if (hr && brandTagline) {
+        brandTagline.textContent =
+            'Studio HR per pass dipendente, comunicazioni mirate e analytics su Apple Wallet.';
+    }
+    if (!subtitle) return;
+    if (hr) {
+        if (allowlist && allowlist.length === 1) {
+            subtitle.textContent = 'Accesso riservato agli account autorizzati. Inserisci email e password aziendali.';
+        } else if (allowlist && allowlist.length > 1) {
+            subtitle.textContent = 'Solo utenti autorizzati possono accedere. Usa le credenziali fornite dal team HR.';
+        } else {
+            subtitle.textContent = 'Accedi con le credenziali aziendali per gestire brand, pass e comunicazioni ai dipendenti.';
+        }
+        return;
+    }
     if (allowlist && allowlist.length === 1) {
         subtitle.textContent = `${title} — accesso riservato agli account autorizzati.`;
     } else if (allowlist && allowlist.length > 1) {

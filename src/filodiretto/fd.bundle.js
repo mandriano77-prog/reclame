@@ -3648,9 +3648,15 @@
       }
     });
   }
+  function hideLegacyA2wMediaTabs(section) {
+    if (!section) return;
+    var legacy = section.querySelector('#a2wMediaTabs');
+    if (legacy) legacy.remove();
+  }
   function ensureMediaCategoryTabs() {
     var section = document.getElementById('media-library');
     if (!section) return;
+    hideLegacyA2wMediaTabs(section);
     var grid = section.querySelector('.fd-media-grid');
     if (!grid) return;
     grid.classList.add('fd-media-grid--tabs');
@@ -4068,6 +4074,7 @@
   function ensureMediaLayout() {
     var section = document.getElementById('media-library');
     if (!section) return;
+    hideLegacyA2wMediaTabs(section);
     var page = section.querySelector('.a2w-media-page') || section;
     var grid = page.querySelector('.a2w-media-buckets-grid, .fd-media-grid');
     if (section.dataset.fdMediaLayout === '1') {

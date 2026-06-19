@@ -46,6 +46,11 @@ html[data-app='filodiretto'] #media-library.media-library--fd-layout .fd-media-s
   }
 }
 
+/* Legacy Ads2Wallet tabs markup — hidden once Filo fdMediaTabs is active */
+html[data-app='filodiretto'] #media-library.media-library--fd-layout #a2wMediaTabs {
+  display: none !important;
+}
+
 /* Category tabs (segmented control) */
 html[data-app='filodiretto'] #media-library .fd-media-tabs {
   width: 100%;

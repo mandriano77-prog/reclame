@@ -112,10 +112,10 @@ test('build-fd-bundles lists FASE 5–6 modules', () => {
   assert.match(build, /fd-mobile-gate\.js/);
 });
 
-test('index.html bundle cache references gap-fix tag', () => {
+test('index.html bundle cache references login-media-fix tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260619-design-system-gap-fix/);
-  assert.match(html, /fd\.bundle\.js\?v=20260619-design-system-gap-fix/);
+  assert.match(html, /fd\.bundle\.css\?v=20260619-login-media-fix/);
+  assert.match(html, /fd\.bundle\.js\?v=20260619-login-media-fix/);
   assert.match(html, /fd-page-states\.js/);
   assert.match(html, /fd-mobile-gate\.js/);
 });
@@ -170,6 +170,14 @@ for (const section of SECTION_MATRIX) {
     assert.match(read('src/dashboard/index.html'), new RegExp('id="' + section.sectionId + '"'));
   });
 }
+
+test('Filo media library hides legacy Ads2Wallet tabs markup', () => {
+  const js = readFd('fd-media-library.js');
+  const css = readFd('fd-media-library.css');
+  assert.match(js, /hideLegacyA2wMediaTabs/);
+  assert.match(js, /#a2wMediaTabs/);
+  assert.match(css, /#a2wMediaTabs/);
+});
 
 test('fd-empty-states and fd-form-a11y integrate with page states', () => {
   const empty = readFd('fd-empty-states.js');

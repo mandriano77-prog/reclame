@@ -144,6 +144,40 @@ html[data-app='filodiretto'] .stat-card {
   max-width: 100%;
 }
 
+/* Login gate — keep card narrow (global .card max-width:100% would full-bleed) */
+html[data-app='filodiretto'] #loginGate .login-gate__inner {
+  width: 100%;
+  max-width: 440px;
+  margin-inline: auto;
+}
+
+html[data-app='filodiretto'] #loginGate .login-card {
+  max-width: 440px;
+  width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+html[data-app='filodiretto'] #loginGate .login-brand {
+  text-align: center;
+  margin-bottom: var(--fd-space-5, 20px);
+}
+
+html[data-app='filodiretto'] #loginGate .login-brand__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fd-text-primary, var(--text-primary));
+}
+
+html[data-app='filodiretto'] #loginGate .login-brand__tagline {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fd-text-secondary, var(--text-secondary));
+}
+
 /* ── Central page container (alias fd-page on sections) ── */
 html[data-app='filodiretto'] .fd-page,
 html[data-app='filodiretto'] .content > .section.active {
