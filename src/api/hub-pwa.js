@@ -112,6 +112,31 @@ function publicMerchant(row) {
   };
 }
 
+function publicExperience(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    key: row.key,
+    name: row.name,
+    description: row.description,
+    category: row.category,
+    coin_cost: row.coin_cost,
+    max_per_user_per_year: row.max_per_user_per_year,
+    max_total_per_month: row.max_total_per_month,
+    requires_booking: !!row.requires_booking,
+    internal: !!row.internal,
+    image_url: row.image_url,
+    display_order: row.display_order
+  };
+}
+
+function publicPgaSettings(settings) {
+  return {
+    enabled: !!settings?.enabled,
+    welcome_message: settings?.welcome_message || null
+  };
+}
+
 function employeeDisplayName(profile) {
   const parts = [profile?.first_name, profile?.last_name].filter(Boolean);
   return parts.length ? parts.join(' ') : (profile?.email || 'Dipendente');
@@ -170,11 +195,22 @@ function registerHubPwaRoutes(router) {
       if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
 
       const merchants = await db.listActiveMerchantsForHub(auth.claims.brand_id);
+      const pgaSettings = await db.getPgaSettings(auth.claims.brand_id);
+      let coinBalance = 0;
+      let experiences = [];
+      if (pgaSettings.enabled) {
+        const bal = await db.getPassCoinBalance(auth.claims.brand_id, auth.claims.pass_serial);
+        coinBalance = Number(bal.balance || 0);
+        experiences = await db.listExperiences(auth.claims.brand_id, { active: true });
+      }
       res.json({
         profile: ctx.profile,
         brand: publicBrand(ctx.brand),
         settings: publicSettings(ctx.settings),
-        merchants: merchants.map(publicMerchant)
+        pga_settings: publicPgaSettings(pgaSettings),
+        coin_balance: coinBalance,
+        merchants: merchants.map(publicMerchant),
+        experiences: experiences.map(publicExperience)
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -402,6 +438,53 @@ function registerHubPwaRoutes(router) {
       res.status(500).json({ error: err.message });
     }
   });
+
+  router.get('/hub/me', async (req, res) => {
+    try {
+      const auth = resolveHubAuth(req);
+      if (auth.error) return res.status(auth.error.status).json({ error: auth.error.message });
+
+      const ctx = await loadHubContext(auth.claims);
+      if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
+
+      const pgaSettings = await db.getPgaSettings(auth.claims.brand_id);
+      const bal = await db.getPassCoinBalance(auth.claims.brand_id, auth.claims.pass_serial);
+      const ledger = pgaSettings.enabled
+        ? await db.listCoinLedgerForPass(auth.claims.brand_id, auth.claims.pass_serial, 50)
+        : [];
+      const bookings = pgaSettings.enabled
+        ? await db.listBookingsForPass(auth.claims.brand_id, auth.claims.pass_serial, 20)
+        : [];
+
+      res.json({
+        profile: ctx.profile,
+        brand: publicBrand(ctx.brand),
+        pga_settings: publicPgaSettings(pgaSettings),
+        coin_balance: Number(bal.balance || 0),
+        ledger,
+        bookings
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.get('/hub/experiences', async (req, res) => {
+    try {
+      const auth = resolveHubAuth(req);
+      if (auth.error) return res.status(auth.error.status).json({ error: auth.error.message });
+
+      const pgaSettings = await db.getPgaSettings(auth.claims.brand_id);
+      if (!pgaSettings.enabled) {
+        return res.json({ experiences: [] });
+      }
+
+      const experiences = await db.listExperiences(auth.claims.brand_id, { active: true });
+      res.json({ experiences: experiences.map(publicExperience) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 }
 
 module.exports = {
@@ -411,6 +494,8 @@ module.exports = {
   publicMerchant,
   publicSettings,
   publicBrand,
+  publicExperience,
+  publicPgaSettings,
   buildScanValidation,
   employeeDisplayName
 };

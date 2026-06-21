@@ -4080,6 +4080,33 @@ async function listMembersWithBirthdayToday() {
   return res.rows;
 }
 
+async function listCoinLedgerForPass(brandId, passSerial, limit = 50) {
+  const lim = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+  const res = await pool.query(
+    `SELECT id, action_key, coin_amount, description, created_at
+     FROM coin_ledger
+     WHERE brand_id = $1 AND pass_serial = $2
+     ORDER BY created_at DESC
+     LIMIT $3`,
+    [brandId, passSerial, lim]
+  );
+  return res.rows;
+}
+
+async function listBookingsForPass(brandId, passSerial, limit = 20) {
+  const lim = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50);
+  const res = await pool.query(
+    `SELECT b.*, e.name AS experience_name, e.key AS experience_key
+     FROM experience_bookings b
+     JOIN experiences_catalog e ON e.id = b.experience_id
+     WHERE b.brand_id = $1 AND b.pass_serial = $2
+     ORDER BY b.created_at DESC
+     LIMIT $3`,
+    [brandId, passSerial, lim]
+  );
+  return res.rows;
+}
+
 module.exports = {
   getDb,
   saveDb,
@@ -4269,6 +4296,8 @@ module.exports = {
   hasCoinGrantToday,
   listMembersWithHireAnniversaryToday,
   listMembersWithBirthdayToday,
+  listCoinLedgerForPass,
+  listBookingsForPass,
   // Employee portal (see src/db/portal.js)
   ...require('./portal')
 };

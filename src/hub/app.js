@@ -21,6 +21,10 @@
     profile: null,
     brand: null,
     settings: null,
+    pga_settings: null,
+    coin_balance: 0,
+    experiences: [],
+    meData: null,
     merchants: [],
     category: '',
     search: '',
@@ -102,15 +106,73 @@
       subtitle.textContent = state.brand.name;
       subtitle.classList.remove('hidden');
     }
+    updateCoinWidget();
+  }
+
+  function pgaEnabled() {
+    return !!state.pga_settings?.enabled;
+  }
+
+  function updateCoinWidget() {
+    const pill = $('#hub-coin-pill');
+    if (!pill) return;
+    if (!pgaEnabled()) {
+      pill.classList.add('hidden');
+      return;
+    }
+    pill.classList.remove('hidden');
+    const val = $('#hub-coin-value');
+    if (val) val.textContent = String(state.coin_balance ?? 0);
+  }
+
+  function setTabbarPadding(on) {
+    const main = $('#hub-main');
+    if (!main) return;
+    main.classList.toggle('has-tabbar', on && pgaEnabled());
+  }
+
+  function renderTabBar(active) {
+    const bar = $('#hub-tabbar');
+    if (!bar) return;
+    if (!pgaEnabled() || active == null) {
+      bar.classList.add('hidden');
+      bar.innerHTML = '';
+      return;
+    }
+    bar.classList.remove('hidden');
+    bar.innerHTML = `
+      <a href="#" class="hub-tab${active === 'conv' ? ' active' : ''}" data-tab="conv">Convenzioni</a>
+      <a href="#" class="hub-tab${active === 'pga' ? ' active' : ''}" data-tab="pga">PGA</a>
+      <a href="#" class="hub-tab${active === 'me' ? ' active' : ''}" data-tab="me">Profilo</a>
+    `;
+    bar.querySelectorAll('[data-tab]').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tab = link.getAttribute('data-tab');
+        if (tab === 'conv') navigate('/conv');
+        else if (tab === 'pga') navigate('/pga');
+        else if (tab === 'me') navigate('/me');
+      });
+    });
   }
 
   function parseRoute() {
     const path = window.location.pathname.replace(BASE, '') || '/';
     const parts = path.split('/').filter(Boolean);
     if (parts[0] === 'error') return { name: 'error' };
-    if (parts[0] === 'qr' && parts[1]) return { name: 'qr', id: parts[1] };
-    if (parts[0] === 'merchants' && parts[1]) return { name: 'detail', id: parts[1] };
-    if (parts[0] === 'merchants' || parts.length === 0) return { name: 'list' };
+    if (parts[0] === 'me') return { name: 'me' };
+    if (parts[0] === 'pga' && parts[1]) return { name: 'pga-detail', id: parts[1] };
+    if (parts[0] === 'pga') return { name: 'pga' };
+    if (parts[0] === 'qr') {
+      const id = parts[1] === 'conv' ? parts[2] : parts[1];
+      if (id) return { name: 'qr', id };
+    }
+    if ((parts[0] === 'conv' || parts[0] === 'merchants') && parts[1]) {
+      return { name: 'detail', id: parts[1] };
+    }
+    if (parts[0] === 'conv' || parts[0] === 'merchants' || parts.length === 0) {
+      return { name: 'list' };
+    }
     return { name: 'list' };
   }
 
@@ -149,6 +211,9 @@
       state.profile = data.profile;
       state.brand = data.brand;
       state.settings = data.settings;
+      state.pga_settings = data.pga_settings || null;
+      state.coin_balance = Number(data.coin_balance || 0);
+      state.experiences = Array.isArray(data.experiences) ? data.experiences : [];
       state.merchants = Array.isArray(data.merchants) ? data.merchants : [];
       state.bootstrapped = true;
 
@@ -157,6 +222,9 @@
           profile: state.profile,
           brand: state.brand,
           settings: state.settings,
+          pga_settings: state.pga_settings,
+          coin_balance: state.coin_balance,
+          experiences: state.experiences,
           merchants: state.merchants,
           saved_at: Date.now()
         }));
@@ -166,7 +234,7 @@
 
       const route = parseRoute();
       if (route.name === 'list' && (window.location.pathname === BASE || window.location.pathname === `${BASE}/`)) {
-        navigate('/merchants');
+        navigate('/conv');
         return;
       }
       renderRoute();
@@ -177,6 +245,9 @@
           state.profile = cached.profile;
           state.brand = cached.brand;
           state.settings = cached.settings;
+          state.pga_settings = cached.pga_settings || null;
+          state.coin_balance = Number(cached.coin_balance || 0);
+          state.experiences = Array.isArray(cached.experiences) ? cached.experiences : [];
           state.merchants = cached.merchants;
           state.bootstrapped = true;
           applyWhiteLabel();
@@ -324,6 +395,20 @@
     }
   }
 
+  function formatDateTime(value) {
+    if (!value) return null;
+    try {
+      return new Date(value).toLocaleString('it-IT', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return value;
+    }
+  }
+
   function renderLoading() {
     $('#hub-back')?.classList.add('hidden');
     $('#hub-title').textContent = 'Convenzioni';
@@ -430,7 +515,7 @@
     $('#hub-main').addEventListener('click', (e) => {
       const card = e.target.closest('[data-merchant-id]');
       if (!card) return;
-      navigate(`/merchants/${card.getAttribute('data-merchant-id')}`);
+      navigate(`/conv/${card.getAttribute('data-merchant-id')}`);
     }, { once: true });
   }
 
@@ -528,8 +613,126 @@
     });
 
     $('#hub-show-qr')?.addEventListener('click', () => {
-      navigate(`/qr/${merchant.id}`);
+      navigate(`/qr/conv/${merchant.id}`);
     });
+  }
+
+  function renderPga() {
+    $('#hub-back')?.classList.add('hidden');
+    $('#hub-title').textContent = 'PGA Marketplace';
+
+    if (!pgaEnabled()) {
+      $('#hub-main').innerHTML = '<div class="hub-empty">PGA non attivo per la tua azienda.</div>';
+      return;
+    }
+
+    const welcome = state.pga_settings?.welcome_message
+      ? `<div class="hub-welcome">${esc(state.pga_settings.welcome_message)}</div>`
+      : '';
+
+    const rows = Array.isArray(state.experiences) ? state.experiences : [];
+    const cards = rows.length
+      ? rows.map((e) => `<button type="button" class="hub-pga-card" data-exp-id="${esc(e.id)}">
+          <strong>${esc(e.name)}</strong>
+          ${e.description ? `<p class="hub-meta">${esc(e.description)}</p>` : ''}
+          <span class="hub-pga-cost">${esc(String(e.coin_cost))} coin</span>
+        </button>`).join('')
+      : '<div class="hub-empty">Nessuna esperienza disponibile.</div>';
+
+    $('#hub-main').innerHTML = `${welcome}${cards}`;
+    $('#hub-main').addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-exp-id]');
+      if (!btn) return;
+      navigate(`/pga/${btn.getAttribute('data-exp-id')}`);
+    }, { once: true });
+  }
+
+  function renderPgaDetail(id) {
+    $('#hub-back')?.classList.remove('hidden');
+    $('#hub-title').textContent = 'Esperienza';
+
+    const exp = (state.experiences || []).find((e) => e.id === id);
+    if (!exp) {
+      $('#hub-main').innerHTML = '<div class="hub-empty">Esperienza non trovata.</div>';
+      return;
+    }
+
+    $('#hub-main').innerHTML = `
+      <section class="hub-section">
+        <h2 style="margin-top:0">${esc(exp.name)}</h2>
+        ${exp.description ? `<p>${esc(exp.description)}</p>` : ''}
+        <span class="hub-pga-cost">${esc(String(exp.coin_cost))} coin</span>
+        <p class="hub-meta">${exp.requires_booking
+          ? 'Richiede prenotazione — riscatto disponibile a breve.'
+          : 'Riscatto disponibile a breve.'}</p>
+      </section>
+    `;
+  }
+
+  async function renderMe() {
+    $('#hub-back')?.classList.add('hidden');
+    $('#hub-title').textContent = 'Profilo';
+    $('#hub-main').innerHTML = '<div class="hub-loading"><div class="hub-spinner"></div><div>Caricamento…</div></div>';
+
+    if (!pgaEnabled()) {
+      $('#hub-main').innerHTML = '<div class="hub-empty">PGA non attivo per la tua azienda.</div>';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiBase()}/hub/me?token=${encodeURIComponent(getToken())}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Errore profilo');
+
+      state.meData = data;
+      state.coin_balance = Number(data.coin_balance || 0);
+      updateCoinWidget();
+
+      const profileName = [data.profile?.first_name, data.profile?.last_name]
+        .filter(Boolean)
+        .join(' ') || 'Dipendente';
+      const ledger = Array.isArray(data.ledger) ? data.ledger : [];
+      const bookings = Array.isArray(data.bookings) ? data.bookings : [];
+
+      const ledgerHtml = ledger.length
+        ? `<ul class="hub-ledger-list">${ledger.map((row) => {
+          const amt = Number(row.coin_amount || 0);
+          const cls = amt >= 0 ? 'positive' : 'negative';
+          const sign = amt >= 0 ? '+' : '';
+          const when = formatDateTime(row.created_at);
+          return `<li class="hub-ledger-item ${cls}">
+            <div class="hub-ledger-row">
+              <span>${esc(row.description || row.action_key || 'Movimento')}</span>
+              <span class="hub-ledger-amount">${sign}${amt}</span>
+            </div>
+            ${when ? `<p class="hub-meta">${esc(when)}</p>` : ''}
+          </li>`;
+        }).join('')}</ul>`
+        : '<div class="hub-empty">Nessun movimento ancora.</div>';
+
+      const bookingsHtml = bookings.length
+        ? `<ul class="hub-booking-list">${bookings.map((b) => {
+          const when = formatDateTime(b.created_at);
+          const status = b.status || 'pending';
+          return `<li class="hub-booking-item">
+            <strong>${esc(b.experience_name || 'Esperienza')}</strong>
+            <p class="hub-meta">${esc(status)}${when ? ` · ${esc(when)}` : ''}</p>
+          </li>`;
+        }).join('')}</ul>`
+        : '';
+
+      $('#hub-main').innerHTML = `
+        <p class="hub-meta" style="margin-top:0">${esc(profileName)}</p>
+        <div class="hub-me-balance">
+          <div class="hub-me-balance-value">${esc(String(data.coin_balance ?? 0))}</div>
+          <div class="hub-me-balance-label">Coin disponibili</div>
+        </div>
+        <section class="hub-section"><h2>Ultimi movimenti</h2>${ledgerHtml}</section>
+        ${bookings.length ? `<section class="hub-section"><h2>Prenotazioni</h2>${bookingsHtml}</section>` : ''}
+      `;
+    } catch (err) {
+      $('#hub-main').innerHTML = `<div class="hub-empty">${esc(err.message || 'Impossibile caricare il profilo')}</div>`;
+    }
   }
 
   async function renderQr(merchantId) {
@@ -579,30 +782,66 @@
       return;
     }
     const route = parseRoute();
+    updateCoinWidget();
+
     if (route.name === 'error') {
+      renderTabBar(null);
+      setTabbarPadding(false);
       renderError();
       return;
     }
+    if (route.name === 'me') {
+      renderTabBar('me');
+      setTabbarPadding(true);
+      renderMe();
+      return;
+    }
+    if (route.name === 'pga') {
+      renderTabBar('pga');
+      setTabbarPadding(true);
+      renderPga();
+      return;
+    }
+    if (route.name === 'pga-detail') {
+      renderTabBar('pga');
+      setTabbarPadding(true);
+      renderPgaDetail(route.id);
+      return;
+    }
     if (route.name === 'detail') {
+      renderTabBar('conv');
+      setTabbarPadding(true);
       renderDetail(route.id);
       return;
     }
     if (route.name === 'qr') {
+      renderTabBar(null);
+      setTabbarPadding(false);
       renderQr(route.id);
       return;
     }
+    renderTabBar('conv');
+    setTabbarPadding(true);
     renderList();
   }
 
   $('#hub-back')?.addEventListener('click', () => {
     const route = parseRoute();
     if (route.name === 'qr') {
-      const merchantId = route.id;
-      navigate(`/merchants/${merchantId}`);
+      navigate(`/conv/${route.id}`);
       return;
     }
-    navigate('/merchants');
+    if (route.name === 'pga-detail') {
+      navigate('/pga');
+      return;
+    }
+    if (route.name === 'detail') {
+      navigate('/conv');
+      return;
+    }
+    navigate('/conv');
   });
+  $('#hub-coin-link')?.addEventListener('click', () => navigate('/me'));
   window.addEventListener('popstate', renderRoute);
 
   registerSw();
