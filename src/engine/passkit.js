@@ -445,6 +445,9 @@ function generatePassJson(template, instance, brand, options = {}) {
   // Read colors from brand.config first, then template.style, then defaults
   const brandConfig = { ...(brand.config || {}) };
   if (hubLocations && hubLocations.length) {
+    // HUB Convenzioni: active merchant_locations merged into pass.json locations[] for native
+    // iOS geofencing (lock-screen pass surfacing). Optional APNs cron fallback in scheduler.js
+    // is deferred for v1 — Apple Wallet handles entry detection when locations[] is present.
     brandConfig.locations = mergePassLocationSources(brandConfig.locations, hubLocations);
   }
   const { foregroundColor, backgroundColor, labelColor } = resolvePassColors(template, brandConfig);

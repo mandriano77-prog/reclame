@@ -3337,6 +3337,100 @@ const HUB_ACTIVATION_TYPES = new Set([
   'view', 'search_found', 'click_site', 'copy_code', 'show_qr', 'scan_qr', 'geofence_push'
 ]);
 
+/** Haversine distance in km between two WGS84 points. */
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const r = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Group SQL rows with distance_km into merchants within maxRadius km. */
+function groupNearbyMerchantRows(rows, maxRadius) {
+  const byMerchant = new Map();
+  for (const row of rows) {
+    const distance = Math.round(parseFloat(row.distance_km) * 100) / 100;
+    if (distance > maxRadius) continue;
+
+    const loc = {
+      id: row.location_id,
+      address: row.address,
+      city: row.city,
+      province: row.province,
+      postal_code: row.postal_code,
+      country: row.country,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      geofence_radius_m: row.geofence_radius_m,
+      distance_km: distance
+    };
+
+    if (!byMerchant.has(row.id)) {
+      byMerchant.set(row.id, {
+        id: row.id,
+        brand_id: row.brand_id,
+        name: row.name,
+        category: row.category,
+        logo_url: row.logo_url,
+        description: row.description,
+        discount_label: row.discount_label,
+        conditions: row.conditions,
+        valid_from: row.valid_from,
+        valid_until: row.valid_until,
+        online_enabled: row.online_enabled,
+        online_url: row.online_url,
+        online_promo_code: row.online_promo_code,
+        physical_enabled: row.physical_enabled,
+        distance_km: distance,
+        locations: [loc]
+      });
+    } else {
+      const entry = byMerchant.get(row.id);
+      entry.locations.push(loc);
+      if (distance < entry.distance_km) entry.distance_km = distance;
+    }
+  }
+
+  return Array.from(byMerchant.values()).sort((a, b) => a.distance_km - b.distance_km);
+}
+
+async function findMerchantsNearby(brandId, lat, lon, radiusKm = 5) {
+  const latNum = parseFloat(lat);
+  const lonNum = parseFloat(lon);
+  const radius = parseFloat(radiusKm);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) {
+    throw new Error('lat e lon devono essere numerici');
+  }
+  const maxRadius = Number.isFinite(radius) && radius > 0 ? radius : 5;
+
+  const res = await pool.query(
+    `SELECT m.*,
+            ml.id AS location_id, ml.address, ml.city, ml.province, ml.postal_code,
+            ml.country, ml.latitude, ml.longitude, ml.geofence_radius_m,
+            (
+              6371 * acos(LEAST(1.0, GREATEST(-1.0,
+                cos(radians($2::double precision)) * cos(radians(ml.latitude::double precision))
+                * cos(radians(ml.longitude::double precision) - radians($3::double precision))
+                + sin(radians($2::double precision)) * sin(radians(ml.latitude::double precision))
+              )))
+            ) AS distance_km
+     FROM merchants m
+     INNER JOIN merchant_locations ml ON ml.merchant_id = m.id
+     WHERE m.brand_id = $1
+       AND m.active = TRUE
+       AND (m.valid_from IS NULL OR m.valid_from <= CURRENT_DATE)
+       AND (m.valid_until IS NULL OR m.valid_until >= CURRENT_DATE)
+       AND ml.latitude IS NOT NULL AND ml.longitude IS NOT NULL
+     ORDER BY distance_km ASC`,
+    [brandId, latNum, lonNum]
+  );
+
+  return groupNearbyMerchantRows(res.rows, maxRadius);
+}
+
 async function listActiveMerchantsForHub(brandId, { category, search } = {}) {
   const clauses = [
     'brand_id = $1',
@@ -3559,6 +3653,9 @@ module.exports = {
   getHubSettings,
   upsertHubSettings,
   listActiveMerchantsForHub,
+  findMerchantsNearby,
+  groupNearbyMerchantRows,
+  haversineKm,
   logConventionActivation,
   // Employee portal (see src/db/portal.js)
   ...require('./portal')

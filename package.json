@@ -10,7 +10,7 @@
     "db:init": "node src/db/init.js",
     "portal:backfill": "node --env-file=.env scripts/backfill-portal-pass-link.js",
     "build:fd-bundles": "node scripts/build-fd-bundles.js",
-    "test:ui": "node --test scripts/a2w-ui-components.test.js scripts/a2w-contacts-ux.test.js scripts/a2w-contacts-page.contract.test.js scripts/samsung-wallet.test.js scripts/google-wallet-class-id.test.js scripts/push-send.test.js scripts/fetch-cache.test.js scripts/modal-a11y.test.js scripts/fd-form-a11y.test.js scripts/fd-qa-matrix.test.js scripts/rbac.test.js scripts/hub-merchants.test.js scripts/hub-pwa.test.js",
+    "test:ui": "node --test scripts/a2w-ui-components.test.js scripts/a2w-contacts-ux.test.js scripts/a2w-contacts-page.contract.test.js scripts/samsung-wallet.test.js scripts/google-wallet-class-id.test.js scripts/push-send.test.js scripts/fetch-cache.test.js scripts/modal-a11y.test.js scripts/fd-form-a11y.test.js scripts/fd-qa-matrix.test.js scripts/rbac.test.js scripts/hub-merchants.test.js scripts/hub-pwa.test.js scripts/hub-sprint3.test.js",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
     "gwallet:issuer": "node scripts/google-wallet-admin.js issuer:get",

@@ -14,6 +14,7 @@
 
   const STORAGE_KEY = 'hub_bootstrap_v1';
   const TOKEN_KEY = 'hub_token';
+  const GEO_CONSENT_KEY = 'hub_geo_consent_v1';
 
   let state = {
     token: '',
@@ -24,7 +25,14 @@
     category: '',
     search: '',
     detail: null,
-    bootstrapped: false
+    bootstrapped: false,
+    nearbyEnabled: false,
+    userLat: null,
+    userLon: null,
+    nearbyMap: {},
+    geoConsent: false,
+    geoError: null,
+    geoLoading: false
   };
 
   let searchTimer = null;
@@ -100,6 +108,7 @@
     const path = window.location.pathname.replace(BASE, '') || '/';
     const parts = path.split('/').filter(Boolean);
     if (parts[0] === 'error') return { name: 'error' };
+    if (parts[0] === 'qr' && parts[1]) return { name: 'qr', id: parts[1] };
     if (parts[0] === 'merchants' && parts[1]) return { name: 'detail', id: parts[1] };
     if (parts[0] === 'merchants' || parts.length === 0) return { name: 'list' };
     return { name: 'list' };
@@ -192,6 +201,95 @@
     } catch (_) {}
   }
 
+  function formatDistance(km) {
+    if (km == null || !Number.isFinite(km)) return null;
+    if (km < 1) return `${Math.round(km * 1000)} m`;
+    return `${km.toFixed(1)} km`;
+  }
+
+  function loadGeoConsent() {
+    try {
+      state.geoConsent = localStorage.getItem(GEO_CONSENT_KEY) === '1';
+    } catch (_) {
+      state.geoConsent = false;
+    }
+  }
+
+  function saveGeoConsent() {
+    try {
+      localStorage.setItem(GEO_CONSENT_KEY, '1');
+    } catch (_) {}
+    state.geoConsent = true;
+  }
+
+  async function requestGeolocation() {
+    if (!navigator.geolocation) {
+      state.geoError = 'Geolocalizzazione non supportata';
+      return false;
+    }
+    state.geoLoading = true;
+    state.geoError = null;
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          state.userLat = pos.coords.latitude;
+          state.userLon = pos.coords.longitude;
+          state.geoLoading = false;
+          resolve(true);
+        },
+        (err) => {
+          state.geoLoading = false;
+          state.geoError = err.code === 1
+            ? 'Permesso posizione negato'
+            : 'Impossibile ottenere la posizione';
+          resolve(false);
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+      );
+    });
+  }
+
+  async function fetchNearbyMerchants() {
+    if (state.userLat == null || state.userLon == null) return;
+    const token = getToken();
+    const qs = new URLSearchParams({
+      token,
+      lat: String(state.userLat),
+      lon: String(state.userLon),
+      radius_km: '5'
+    });
+    try {
+      const res = await fetch(`${apiBase()}/hub/merchants/nearby?${qs}`);
+      const data = await res.json().catch(() => []);
+      if (!res.ok) throw new Error('nearby failed');
+      state.nearbyMap = {};
+      (Array.isArray(data) ? data : []).forEach((m) => {
+        state.nearbyMap[m.id] = m.distance_km;
+      });
+    } catch (_) {
+      state.geoError = 'Errore nel caricamento delle convenzioni vicine';
+    }
+  }
+
+  async function enableNearby() {
+    if (!state.geoConsent) return;
+    state.nearbyEnabled = true;
+    const ok = await requestGeolocation();
+    if (!ok) {
+      state.nearbyEnabled = false;
+      return;
+    }
+    await fetchNearbyMerchants();
+    renderRoute();
+  }
+
+  function disableNearby() {
+    state.nearbyEnabled = false;
+    state.nearbyMap = {};
+    state.geoError = null;
+    renderRoute();
+  }
+
   function filteredMerchants() {
     let rows = state.merchants.slice();
     if (state.category) {
@@ -204,6 +302,11 @@
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(q))
       );
+    }
+    if (state.nearbyEnabled) {
+      rows = rows
+        .filter((m) => state.nearbyMap[m.id] != null)
+        .sort((a, b) => (state.nearbyMap[a.id] || 999) - (state.nearbyMap[b.id] || 999));
     }
     return rows;
   }
@@ -247,14 +350,35 @@
         const logo = m.logo_url
           ? `<img class="hub-card-logo" src="${esc(m.logo_url)}" alt="">`
           : `<div class="hub-card-logo placeholder">${esc(merchantInitial(m.name))}</div>`;
+        const dist = state.nearbyEnabled ? formatDistance(state.nearbyMap[m.id]) : null;
+        const distHtml = dist ? `<p class="hub-card-distance">${esc(dist)}</p>` : '';
         return `<button type="button" class="hub-card" data-merchant-id="${esc(m.id)}">
           ${logo}
           <p class="hub-card-name">${esc(m.name)}</p>
           <p class="hub-card-discount">${esc(m.discount_label)}</p>
           <p class="hub-card-cat">${esc(CATEGORY_LABELS[m.category] || m.category || '')}</p>
+          ${distHtml}
         </button>`;
       }).join('')
-      : '<div class="hub-empty">Nessuna convenzione trovata.</div>';
+      : `<div class="hub-empty">${state.nearbyEnabled ? 'Nessuna convenzione entro 5 km.' : 'Nessuna convenzione trovata.'}</div>`;
+
+    const geoBanner = !state.geoConsent ? `
+      <div class="hub-geo-banner" id="hub-geo-banner">
+        <p><strong>Posizione (GDPR)</strong> — Per mostrarti le convenzioni vicine usiamo la posizione del dispositivo solo mentre l'app è aperta. Non memorizziamo coordinate permanenti.</p>
+        <button type="button" class="hub-btn" id="hub-geo-accept">Accetto e attiva</button>
+      </div>
+    ` : '';
+
+    const nearbyToggle = `
+      <div class="hub-nearby-row">
+        <label class="hub-toggle">
+          <input type="checkbox" id="hub-nearby-toggle" ${state.nearbyEnabled ? 'checked' : ''} ${!state.geoConsent ? 'disabled' : ''}>
+          <span>Vicino a me</span>
+        </label>
+        ${state.geoLoading ? '<span class="hub-meta">Localizzazione…</span>' : ''}
+        ${state.geoError ? `<span class="hub-meta hub-error-text">${esc(state.geoError)}</span>` : ''}
+      </div>
+    `;
 
     const welcome = state.settings?.welcome_message
       ? `<div class="hub-welcome">${esc(state.settings.welcome_message)}</div>`
@@ -262,12 +386,31 @@
 
     $('#hub-main').innerHTML = `
       ${welcome}
+      ${geoBanner}
+      ${nearbyToggle}
       <div class="hub-search-wrap">
         <input class="hub-search" id="hub-search" type="search" placeholder="Cerca convenzioni…" value="${esc(state.search)}" autocomplete="off">
       </div>
       <div class="hub-chips" id="hub-chips">${chips}</div>
       <div class="hub-grid">${cards}</div>
     `;
+
+    $('#hub-geo-accept')?.addEventListener('click', async () => {
+      saveGeoConsent();
+      await enableNearby();
+    });
+
+    $('#hub-nearby-toggle')?.addEventListener('change', async (e) => {
+      if (e.target.checked) {
+        if (!state.geoConsent) {
+          e.target.checked = false;
+          return;
+        }
+        await enableNearby();
+      } else {
+        disableNearby();
+      }
+    });
 
     $('#hub-search')?.addEventListener('input', (e) => {
       clearTimeout(searchTimer);
@@ -326,16 +469,20 @@
     ` : '';
 
     const locations = Array.isArray(merchant.locations) && merchant.locations.length
-      ? `<ul class="hub-locations">${merchant.locations.map((loc) =>
-        `<li>${esc(loc.address || '')}${loc.city ? ` · ${esc(loc.city)}` : ''}</li>`
-      ).join('')}</ul>`
+      ? `<ul class="hub-locations">${merchant.locations.map((loc) => {
+        const dist = loc.distance_km != null
+          ? formatDistance(loc.distance_km)
+          : (state.nearbyMap[merchant.id] != null ? formatDistance(state.nearbyMap[merchant.id]) : null);
+        const distSuffix = dist ? ` <span class="hub-loc-distance">· ${esc(dist)}</span>` : '';
+        return `<li>${esc(loc.address || '')}${loc.city ? ` · ${esc(loc.city)}` : ''}${distSuffix}</li>`;
+      }).join('')}</ul>`
       : '<p class="hub-meta">Nessuna sede registrata.</p>';
 
     const physical = merchant.physical_enabled ? `
       <section class="hub-section">
         <h2>In negozio</h2>
         ${locations}
-        <button type="button" class="hub-btn secondary" disabled title="Disponibile a breve">Mostra QR</button>
+        <button type="button" class="hub-btn" id="hub-show-qr">Mostra QR</button>
       </section>
     ` : '';
 
@@ -379,6 +526,40 @@
         showToast('Impossibile copiare automaticamente');
       }
     });
+
+    $('#hub-show-qr')?.addEventListener('click', () => {
+      navigate(`/qr/${merchant.id}`);
+    });
+  }
+
+  async function renderQr(merchantId) {
+    $('#hub-back')?.classList.remove('hidden');
+    $('#hub-title').textContent = 'QR convenzione';
+    $('#hub-main').innerHTML = '<div class="hub-loading"><div class="hub-spinner"></div><div>Generazione QR…</div></div>';
+
+    try {
+      const qs = new URLSearchParams({
+        token: getToken(),
+        merchant_id: merchantId
+      });
+      const res = await fetch(`${apiBase()}/hub/qr-token?${qs}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'QR non disponibile');
+
+      const expires = data.expires_at
+        ? new Date(data.expires_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+        : null;
+
+      $('#hub-main').innerHTML = `
+        <div class="hub-qr-screen">
+          <img class="hub-qr-image" src="${esc(data.qr_url)}" alt="QR convenzione">
+          <p class="hub-qr-hint">Mostra questo QR al banco per attivare la convenzione.</p>
+          ${expires ? `<p class="hub-meta">Valido fino alle ${esc(expires)}</p>` : ''}
+        </div>
+      `;
+    } catch (err) {
+      $('#hub-main').innerHTML = `<div class="hub-empty">${esc(err.message || 'Impossibile generare il QR')}</div>`;
+    }
   }
 
   function renderError() {
@@ -406,12 +587,25 @@
       renderDetail(route.id);
       return;
     }
+    if (route.name === 'qr') {
+      renderQr(route.id);
+      return;
+    }
     renderList();
   }
 
-  $('#hub-back')?.addEventListener('click', () => navigate('/merchants'));
+  $('#hub-back')?.addEventListener('click', () => {
+    const route = parseRoute();
+    if (route.name === 'qr') {
+      const merchantId = route.id;
+      navigate(`/merchants/${merchantId}`);
+      return;
+    }
+    navigate('/merchants');
+  });
   window.addEventListener('popstate', renderRoute);
 
   registerSw();
+  loadGeoConsent();
   bootstrap();
 })();

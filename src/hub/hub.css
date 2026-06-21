@@ -399,3 +399,80 @@ input {
   font-size: 0.88rem;
   line-height: 1.45;
 }
+
+.hub-nearby-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.hub-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.hub-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--hub-accent);
+}
+
+.hub-geo-banner {
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: var(--hub-radius);
+  background: var(--hub-surface);
+  border: 1px solid var(--hub-border);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.hub-geo-banner .hub-btn {
+  margin-top: 10px;
+}
+
+.hub-card-distance {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--hub-accent);
+  font-family: var(--hub-mono);
+}
+
+.hub-loc-distance {
+  color: var(--hub-accent);
+  font-family: var(--hub-mono);
+  font-size: 0.82rem;
+}
+
+.hub-error-text {
+  color: #f87171;
+}
+
+.hub-qr-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0 24px;
+}
+
+.hub-qr-image {
+  width: min(320px, 80vw);
+  height: auto;
+  border-radius: 16px;
+  background: #fff;
+  padding: 12px;
+}
+
+.hub-qr-hint {
+  text-align: center;
+  color: var(--hub-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  max-width: 28rem;
+}

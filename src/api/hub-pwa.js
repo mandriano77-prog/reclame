@@ -1,6 +1,8 @@
 'use strict';
 
+const QRCode = require('qrcode');
 const { verifyHubToken } = require('../engine/hub-jwt');
+const { signScanUrl, verifyScanSignature, getPartnerBaseUrl } = require('../engine/hub-qr');
 const db = require('../db');
 
 const HUB_EVENT_TYPES = new Set([
@@ -110,6 +112,54 @@ function publicMerchant(row) {
   };
 }
 
+function employeeDisplayName(profile) {
+  const parts = [profile?.first_name, profile?.last_name].filter(Boolean);
+  return parts.length ? parts.join(' ') : (profile?.email || 'Dipendente');
+}
+
+async function buildScanValidation(serial, merchantId) {
+  const pass = await db.getPassBySerial(serial);
+  if (!pass || pass.status !== 'active') {
+    return { valid: false, reason: 'Pass non valido' };
+  }
+
+  const merchant = await db.getMerchant(merchantId, pass.brand_id);
+  if (!merchant || !merchant.active) {
+    return { valid: false, reason: 'Merchant non attivo' };
+  }
+
+  const todayOk = (
+    (!merchant.valid_from || new Date(merchant.valid_from) <= new Date())
+    && (!merchant.valid_until || new Date(merchant.valid_until) >= new Date(new Date().toDateString()))
+  );
+  if (!todayOk) {
+    return { valid: false, reason: 'Convenzione scaduta' };
+  }
+
+  const [brand, member] = await Promise.all([
+    db.getBrand(pass.brand_id),
+    db.getMemberForPass(pass.id)
+  ]);
+
+  const fieldValues = parseFieldValues(pass.field_values);
+  const profile = {
+    first_name: member?.first_name || fieldValues.first_name || fieldValues.nome || null,
+    last_name: member?.last_name || fieldValues.last_name || fieldValues.cognome || null,
+    email: member?.email || fieldValues.email || null
+  };
+
+  return {
+    valid: true,
+    pass,
+    merchant,
+    brand,
+    profile,
+    employee_name: employeeDisplayName(profile),
+    company: brand?.name || 'Azienda',
+    discount_label: merchant.discount_label
+  };
+}
+
 function registerHubPwaRoutes(router) {
   router.get('/hub/bootstrap', async (req, res) => {
     try {
@@ -147,6 +197,31 @@ function registerHubPwaRoutes(router) {
     }
   });
 
+  router.get('/hub/merchants/nearby', async (req, res) => {
+    try {
+      const auth = resolveHubAuth(req);
+      if (auth.error) return res.status(auth.error.status).json({ error: auth.error.message });
+
+      const ctx = await loadHubContext(auth.claims);
+      if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
+
+      const { lat, lon, radius_km } = req.query;
+      if (lat == null || lon == null) {
+        return res.status(400).json({ error: 'lat e lon sono obbligatori' });
+      }
+
+      const radius = radius_km != null ? parseFloat(radius_km) : 5;
+      const merchants = await db.findMerchantsNearby(auth.claims.brand_id, lat, lon, radius);
+      res.json(merchants.map((row) => ({
+        ...publicMerchant(row),
+        distance_km: row.distance_km,
+        locations: row.locations || []
+      })));
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   router.get('/hub/merchants/:id', async (req, res) => {
     try {
       const auth = resolveHubAuth(req);
@@ -173,6 +248,122 @@ function registerHubPwaRoutes(router) {
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.get('/hub/qr-token', async (req, res) => {
+    try {
+      const auth = resolveHubAuth(req);
+      if (auth.error) return res.status(auth.error.status).json({ error: auth.error.message });
+
+      const ctx = await loadHubContext(auth.claims);
+      if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
+
+      const { merchant_id } = req.query;
+      if (!merchant_id) {
+        return res.status(400).json({ error: 'merchant_id obbligatorio' });
+      }
+
+      const merchant = await db.getMerchant(merchant_id, auth.claims.brand_id);
+      if (!merchant || !merchant.active || !merchant.physical_enabled) {
+        return res.status(404).json({ error: 'Merchant non trovato o attivazione fisica non abilitata' });
+      }
+
+      const signed = signScanUrl({
+        pass_serial: auth.claims.pass_serial,
+        merchant_id,
+        brand_id: auth.claims.brand_id
+      });
+
+      const qr_url = await QRCode.toDataURL(signed.scan_url, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 320
+      });
+
+      await db.logConventionActivation({
+        brand_id: auth.claims.brand_id,
+        merchant_id,
+        pass_serial: auth.claims.pass_serial,
+        user_id: auth.claims.user_id,
+        activation_type: 'show_qr',
+        metadata: { expires_at: signed.expires_at }
+      });
+
+      res.json({
+        qr_url,
+        scan_url: signed.scan_url,
+        expires_at: signed.expires_at
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.get('/hub/scan', async (req, res) => {
+    try {
+      const { serial, merchant, t, sig } = req.query;
+      if (!serial || !merchant || !t || !sig) {
+        const payload = { valid: false, reason: 'Parametri mancanti' };
+        if (req.accepts('json')) return res.status(400).json(payload);
+        return res.redirect(302, `${getPartnerBaseUrl()}/scan?${new URLSearchParams(req.query).toString()}`);
+      }
+
+      const pass = await db.getPassBySerial(serial);
+      if (!pass) {
+        const payload = { valid: false, reason: 'Pass non valido' };
+        if (req.accepts('json')) return res.status(404).json(payload);
+        return res.redirect(302, `${getPartnerBaseUrl()}/scan?${new URLSearchParams(req.query).toString()}`);
+      }
+
+      const sigCheck = verifyScanSignature({
+        serial,
+        merchant,
+        t,
+        sig,
+        brand_id: pass.brand_id
+      });
+      if (!sigCheck.valid) {
+        const payload = { valid: false, reason: sigCheck.reason };
+        if (req.accepts('json')) return res.status(403).json(payload);
+        return res.redirect(302, `${getPartnerBaseUrl()}/scan?${new URLSearchParams(req.query).toString()}`);
+      }
+
+      const validation = await buildScanValidation(serial, merchant);
+      if (!validation.valid) {
+        const payload = { valid: false, reason: validation.reason };
+        if (req.accepts('json')) return res.status(403).json(payload);
+        return res.redirect(302, `${getPartnerBaseUrl()}/scan?${new URLSearchParams(req.query).toString()}`);
+      }
+
+      await db.logConventionActivation({
+        brand_id: validation.pass.brand_id,
+        merchant_id: merchant,
+        pass_serial: serial,
+        user_id: null,
+        activation_type: 'scan_qr',
+        metadata: { scanned_at: new Date().toISOString() }
+      });
+
+      const payload = {
+        valid: true,
+        employee_name: validation.employee_name,
+        company: validation.company,
+        discount_label: validation.discount_label
+      };
+      if (req.accepts('json')) return res.json(payload);
+
+      const partnerQs = new URLSearchParams({
+        serial,
+        merchant,
+        t,
+        sig,
+        ok: '1'
+      });
+      return res.redirect(302, `${getPartnerBaseUrl()}/scan?${partnerQs.toString()}`);
+    } catch (err) {
+      if (req.accepts('json')) return res.status(500).json({ valid: false, reason: err.message });
+      return res.status(500).send('Errore di validazione');
     }
   });
 
@@ -219,5 +410,7 @@ module.exports = {
   extractHubToken,
   publicMerchant,
   publicSettings,
-  publicBrand
+  publicBrand,
+  buildScanValidation,
+  employeeDisplayName
 };

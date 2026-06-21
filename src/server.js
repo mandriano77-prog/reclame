@@ -148,7 +148,7 @@ function sendHubSpa(req, res) {
 }
 
 app.use('/hub', express.static(hubDir));
-app.get(['/hub', '/hub/', '/hub/merchants', '/hub/merchants/:id', '/hub/error'], sendHubSpa);
+app.get(['/hub', '/hub/', '/hub/merchants', '/hub/merchants/:id', '/hub/qr/:merchantId', '/hub/error'], sendHubSpa);
 
 app.use((req, res, next) => {
   if (!isHubSubdomain(req)) return next();
@@ -158,9 +158,40 @@ app.use((req, res, next) => {
   express.static(hubDir)(req, res, next);
 });
 
-app.get(['/merchants', '/merchants/:id', '/error'], (req, res, next) => {
+app.get(['/merchants', '/merchants/:id', '/qr/:merchantId', '/error'], (req, res, next) => {
   if (!isHubSubdomain(req)) return next();
   sendHubSpa(req, res);
+});
+
+// Filodiretto Partner — merchant QR scan validation UI
+const partnerDir = path.join(__dirname, 'partner');
+const partnerIndex = path.join(partnerDir, 'index.html');
+
+function isPartnerSubdomain(req) {
+  const host = String(req.get('host') || '').split(':')[0].toLowerCase();
+  return host.startsWith('partner.');
+}
+
+function sendPartnerSpa(req, res) {
+  res.set('Cache-Control', 'no-store');
+  if (fs.existsSync(partnerIndex)) return res.sendFile(partnerIndex);
+  res.status(503).send('Partner scan in preparazione.');
+}
+
+app.use('/partner', express.static(partnerDir));
+app.get(['/partner', '/partner/', '/partner/scan', '/partner/scan/'], sendPartnerSpa);
+
+app.use((req, res, next) => {
+  if (!isPartnerSubdomain(req)) return next();
+  if (req.path.startsWith('/api') || req.path.startsWith('/debug') || req.path.startsWith('/health')) {
+    return next();
+  }
+  express.static(partnerDir)(req, res, next);
+});
+
+app.get(['/scan', '/scan/'], (req, res, next) => {
+  if (!isPartnerSubdomain(req)) return next();
+  sendPartnerSpa(req, res);
 });
 
 // Dashboard boot: product line lock from deploy env (e.g. studio.filodiretto.app → DASHBOARD_PRODUCT_LINE=hr)
