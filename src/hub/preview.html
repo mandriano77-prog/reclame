@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8B5CF6">
+  <title>FiloDiretto HUB — Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="hub.css">
+  <style>
+    .hub-preview-banner {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: var(--hub-radius);
+      border: 1px dashed var(--hub-border);
+      background: var(--hub-surface);
+      color: var(--hub-muted);
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="hub-app">
+    <header class="hub-header">
+      <div class="hub-header-inner">
+        <img class="hub-logo" src="icon.svg" alt="">
+        <div class="hub-header-text">
+          <h1 class="hub-title">Convenzioni</h1>
+          <p class="hub-subtitle">Nuova Telefonia Italiana</p>
+        </div>
+      </div>
+    </header>
+    <main class="hub-main">
+      <div class="hub-preview-banner">Anteprima statica — dati demo (preview locale, non produzione)</div>
+      <div class="hub-welcome">Benvenuto nell'Hub convenzioni aziendali. Sconti riservati ai dipendenti.</div>
+      <div class="hub-nearby-row">
+        <label class="hub-toggle">
+          <input type="checkbox">
+          <span>Vicino a me</span>
+        </label>
+      </div>
+      <div class="hub-search-wrap">
+        <input class="hub-search" type="search" placeholder="Cerca convenzioni…" value="">
+      </div>
+      <div class="hub-chips">
+        <button type="button" class="hub-chip active">Tutte</button>
+        <button type="button" class="hub-chip">Food</button>
+        <button type="button" class="hub-chip">Fitness</button>
+        <button type="button" class="hub-chip">Retail</button>
+        <button type="button" class="hub-chip">Salute</button>
+      </div>
+      <div class="hub-grid">
+        <a href="preview-detail.html" class="hub-card" style="text-decoration:none;color:inherit;">
+          <div class="hub-card-logo placeholder">V</div>
+          <p class="hub-card-name">Virgin Active</p>
+          <p class="hub-card-discount">-15% abbonamento annuale</p>
+          <p class="hub-card-cat">Fitness</p>
+        </a>
+        <button type="button" class="hub-card">
+          <div class="hub-card-logo placeholder">M</div>
+          <p class="hub-card-name">Mondadori</p>
+          <p class="hub-card-discount">-10% su libri e eBook</p>
+          <p class="hub-card-cat">Retail</p>
+        </button>
+        <button type="button" class="hub-card">
+          <div class="hub-card-logo placeholder">F</div>
+          <p class="hub-card-name">Feltrinelli</p>
+          <p class="hub-card-discount">-12% in negozio</p>
+          <p class="hub-card-cat">Retail</p>
+        </button>
+        <button type="button" class="hub-card">
+          <div class="hub-card-logo placeholder">E</div>
+          <p class="hub-card-name">Esselunga</p>
+          <p class="hub-card-discount">Buono €50 mensile</p>
+          <p class="hub-card-cat">Food</p>
+          <p class="hub-card-distance">1,2 km</p>
+        </button>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
