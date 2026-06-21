@@ -26,10 +26,10 @@
                 var fdLegacyMediaHide = document.createElement('style');
                 fdLegacyMediaHide.textContent = "html[data-app='filodiretto'] #media-library #a2wMediaTabs{display:none!important}";
                 document.head.appendChild(fdLegacyMediaHide);
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260619-brand-identity-cols';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260619-brand-identity-cols';
-                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-components.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-mobile-gate.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-page-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-analytics.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
-                var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260621-hub-convenzioni-s4';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260621-hub-convenzioni-s4';
+                var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-components.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-mobile-gate.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-page-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-analytics.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-conventions.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
+                var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-conventions.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
                 if (useFdBundle) {
                     var bundleCss = document.createElement('link');
@@ -1391,6 +1391,7 @@
                     <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards" role="button" tabindex="0">Reward</div>
                     <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges" role="button" tabindex="0">Challenge</div>
                     <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-requires-perm="employees" data-menu-key="nav_leads" data-menu-default="Contatti" role="button" tabindex="0">Contatti <span id="navNoMatricolaBadge" class="nav-badge" style="display:none;" title="Dipendenti senza matricola"></span></div>
+                    <div class="nav-item" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">Convenzioni</div>
                 </div>
             </details>
 
@@ -2868,6 +2869,104 @@
                 </div>
             </div>
 
+            <!-- HUB CONVENZIONI -->
+            <div id="conventions" class="section" data-rbac-section="conventions" hidden aria-hidden="true">
+                <h1 class="sec-title page-title">Convenzioni</h1>
+                <div class="tabs-bar a2w-section-tabs fd-conventions-tabs" role="tablist" aria-label="Sezione Convenzioni" id="conventionsSectionTabs">
+                    <button type="button" class="tabs-bar__tab active" role="tab" id="conventionsTab_merchants" aria-selected="true" aria-controls="conventionsTabPanel_merchants" onclick="switchConventionsTab('merchants')">Merchant</button>
+                    <button type="button" class="tabs-bar__tab" role="tab" id="conventionsTab_settings" aria-selected="false" aria-controls="conventionsTabPanel_settings" onclick="switchConventionsTab('settings')">Impostazioni Hub</button>
+                    <button type="button" class="tabs-bar__tab" role="tab" id="conventionsTab_guide" aria-selected="false" aria-controls="conventionsTabPanel_guide" onclick="switchConventionsTab('guide')">Guida</button>
+                </div>
+
+                <div id="conventionsTabPanel_merchants" class="a2w-section-tab-panel" role="tabpanel" aria-labelledby="conventionsTab_merchants">
+                    <div class="fd-conventions-toolbar">
+                        <div class="fd-conventions-filters">
+                            <select id="hubMerchantCategoryFilter" class="fd-conventions-control" aria-label="Filtra per categoria">
+                                <option value="">Tutte le categorie</option>
+                            </select>
+                            <input type="search" id="hubMerchantSearch" class="fd-conventions-control" placeholder="Cerca merchant…" aria-label="Cerca merchant">
+                        </div>
+                        <div class="fd-conventions-toolbar__actions">
+                            <button type="button" class="btn sec small fd-rbac-write" id="hubMerchantTemplateBtn" data-allow-readonly="true">Scarica template</button>
+                            <button type="button" class="btn sec small fd-rbac-write" id="hubMerchantImportBtn">Importa CSV</button>
+                            <input type="file" id="hubMerchantCsvInput" accept=".csv,text/csv" hidden>
+                            <button type="button" class="btn fd-rbac-write" id="hubMerchantAddBtn">Aggiungi</button>
+                        </div>
+                    </div>
+                    <div id="hubConventionsKpis" class="fd-conventions-kpi-grid" aria-live="polite"></div>
+                    <div class="card fd-conventions-card">
+                        <div class="sec-title" style="font-size:16px;margin-bottom:12px;">Top 10 merchant (30 giorni)</div>
+                        <div id="hubConventionsTop10"></div>
+                    </div>
+                    <div class="fd-conventions-table-wrap">
+                        <table class="table" id="hubMerchantsTable">
+                            <caption class="sr-only">Elenco merchant convenzionati</caption>
+                            <thead><tr>
+                                <th>Nome</th><th>Categoria</th><th>Sconto</th><th>Stato</th><th>Stats 30d</th><th></th>
+                            </tr></thead>
+                            <tbody><tr><td colspan="6" style="color:var(--text2)">Caricamento…</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="conventionsTabPanel_settings" class="a2w-section-tab-panel" role="tabpanel" aria-labelledby="conventionsTab_settings" hidden>
+                    <div class="card fd-conventions-card">
+                        <h2 class="sec-title" style="font-size:16px;margin-bottom:16px;">White-label Hub PWA</h2>
+                        <form id="hubSettingsForm" class="fd-conventions-settings-grid">
+                            <div class="form-group">
+                                <label class="form-label" for="hubSettingsLogoUrl">Logo URL</label>
+                                <input type="url" id="hubSettingsLogoUrl" placeholder="https://…">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="hubSettingsAccentColor">Colore accent</label>
+                                <input type="color" id="hubSettingsAccentColor" value="#8B5CF6">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="hubSettingsWelcomeMessage">Messaggio di benvenuto</label>
+                                <textarea id="hubSettingsWelcomeMessage" rows="3" placeholder="Benvenuto nell'Hub convenzioni aziendali"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Categorie abilitate</label>
+                                <div id="hubSettingsCategories" class="fd-conventions-categories"></div>
+                            </div>
+                            <div class="form-group">
+                                <label><input type="checkbox" id="hubSettingsGeofencing" checked> Geofencing attivo</label>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn fd-rbac-write">Salva impostazioni</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="conventionsTabPanel_guide" class="a2w-section-tab-panel" role="tabpanel" aria-labelledby="conventionsTab_guide" hidden>
+                    <div class="fd-conventions-guide-steps">
+                        <div class="fd-conventions-guide-step">
+                            <span class="fd-conventions-guide-step__num">1</span>
+                            <div>
+                                <strong>Scarica il template CSV</strong>
+                                <p style="margin:8px 0 12px;color:var(--text2);font-size:13px">Usa il file modello con le colonne richieste (nome, categoria, sconto, indirizzo, ecc.).</p>
+                                <button type="button" class="btn sec small" id="hubGuideTemplateBtn">Scarica template CSV</button>
+                            </div>
+                        </div>
+                        <div class="fd-conventions-guide-step">
+                            <span class="fd-conventions-guide-step__num">2</span>
+                            <div>
+                                <strong>Importa i merchant</strong>
+                                <p style="margin:8px 0 0;color:var(--text2);font-size:13px">Compila il CSV con le convenzioni aziendali e importalo dalla tab Merchant. Puoi anche aggiungere merchant singoli manualmente.</p>
+                            </div>
+                        </div>
+                        <div class="fd-conventions-guide-step">
+                            <span class="fd-conventions-guide-step__num">3</span>
+                            <div>
+                                <strong>Personalizza e monitora</strong>
+                                <p style="margin:8px 0 0;color:var(--text2);font-size:13px">Configura logo e colori in Impostazioni Hub. I dipendenti accedono dall'Hub nel pass wallet; qui vedi statistiche aggregate per merchant (senza dati individuali).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- PROFILE -->
             <div class="section" id="profile" hidden aria-hidden="true">
                 <h1 class="sec-title page-title">Profilo</h1>
@@ -2971,6 +3070,67 @@
                 <p class="a2w-campaign-modal-actions__hint">Come «Salva campagna», più upload immediato della strip promozionale per il pass.</p>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- HUB Merchant Modal -->
+<div id="hubMerchantModal" class="modal" data-rbac-section="conventions" style="display:none;">
+    <div class="modal-content" style="max-width:640px;width:96%;">
+        <button type="button" class="modal-close" data-hub-modal-close aria-label="Chiudi">&times;</button>
+        <div class="modal-header" id="hubMerchantModalTitle">Aggiungi merchant</div>
+        <form id="hubMerchantForm">
+            <div class="fd-conventions-form-grid">
+                <div class="form-group form-group--full">
+                    <label class="form-label" for="hubMerchantName">Nome *</label>
+                    <input type="text" id="hubMerchantName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="hubMerchantCategory">Categoria *</label>
+                    <select id="hubMerchantCategory" name="category" required></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="hubMerchantDiscount">Sconto *</label>
+                    <input type="text" id="hubMerchantDiscount" name="discount_label" required placeholder="-15% abbonamento">
+                </div>
+                <div class="form-group form-group--full">
+                    <label class="form-label" for="hubMerchantLogo">Logo URL</label>
+                    <input type="url" id="hubMerchantLogo" name="logo_url">
+                </div>
+                <div class="form-group form-group--full">
+                    <label class="form-label" for="hubMerchantDesc">Descrizione</label>
+                    <textarea id="hubMerchantDesc" name="description" rows="2"></textarea>
+                </div>
+                <div class="form-group form-group--full">
+                    <label class="form-label" for="hubMerchantConditions">Condizioni</label>
+                    <textarea id="hubMerchantConditions" name="conditions" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="hubMerchantValidUntil">Valido fino a</label>
+                    <input type="date" id="hubMerchantValidUntil" name="valid_until">
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" name="active" checked> Attivo</label>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" name="online_enabled"> Attivazione online</label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="hubMerchantOnlineUrl">URL sito</label>
+                    <input type="url" id="hubMerchantOnlineUrl" name="online_url">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="hubMerchantPromoCode">Codice promo</label>
+                    <input type="text" id="hubMerchantPromoCode" name="online_promo_code">
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" name="physical_enabled"> Attivazione fisica (QR)</label>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+                <button type="button" class="btn sec" data-hub-modal-close>Annulla</button>
+                <button type="submit" class="btn fd-rbac-write">Salva</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -4347,6 +4507,9 @@ function nav(id, options) {
         users: loadUsers,
         profile: () => {
             if (typeof fdLoadProfile === 'function') fdLoadProfile();
+        },
+        conventions: () => {
+            if (typeof loadConventionsHub === 'function') loadConventionsHub();
         }
     };
     if (loaders[id]) loaders[id]();

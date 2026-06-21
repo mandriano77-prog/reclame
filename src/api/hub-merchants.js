@@ -11,6 +11,7 @@ const {
   listMerchantLocations,
   deleteMerchantLocation,
   getMerchantAnalytics,
+  getHubBrandAnalytics,
   getHubSettings,
   upsertHubSettings,
   findMerchantByNameAndBrand,
@@ -199,6 +200,17 @@ function registerHubMerchantRoutes(router, { requireBrandId, requireOwnedBrandPk
       if (!requireBrandId(req, res, merchant.brand_id)) return;
       const days = parseInt(req.query.days, 10) || 30;
       const analytics = await getMerchantAnalytics(req.params.id, merchant.brand_id, days);
+      res.json(analytics);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.get('/brands/:id/hub-analytics', async (req, res) => {
+    try {
+      if (!requireOwnedBrandPk(req, res, req.params.id)) return;
+      const days = parseInt(req.query.days, 10) || 30;
+      const analytics = await getHubBrandAnalytics(req.params.id, days);
       res.json(analytics);
     } catch (err) {
       res.status(500).json({ error: err.message });

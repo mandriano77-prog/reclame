@@ -127,8 +127,8 @@ test('fd.bundle.js is valid JavaScript after build', () => {
 
 test('index.html bundle cache references brand-identity-cols tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260619-brand-identity-cols/);
-  assert.match(html, /fd\.bundle\.js\?v=20260619-brand-identity-cols/);
+  assert.match(html, /fd\.bundle\.css\?v=20260621-hub-convenzioni-s4/);
+  assert.match(html, /fd\.bundle\.js\?v=20260621-hub-convenzioni-s4/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
   assert.match(html, /fd-page-states\.js/);
   assert.match(html, /fd-mobile-gate\.js/);

@@ -3281,6 +3281,106 @@ async function getMerchantAnalytics(merchantId, brandId, days = 30) {
   return { days, by_type: res.rows, totals };
 }
 
+/** HR dashboard aggregate analytics — no pass_serial (GDPR art. 88). */
+async function getHubBrandAnalytics(brandId, days = 30) {
+  const daysStr = String(Math.min(Math.max(parseInt(days, 10) || 30, 1), 365));
+
+  const [byTypeRes, byMerchantRes, byCategoryRes, dailyRes] = await Promise.all([
+    pool.query(
+      `SELECT activation_type, COUNT(*)::int AS count
+       FROM convention_activations
+       WHERE brand_id = $1 AND created_at >= NOW() - ($2 || ' days')::interval
+       GROUP BY activation_type`,
+      [brandId, daysStr]
+    ),
+    pool.query(
+      `SELECT m.id AS merchant_id, m.name,
+        COUNT(*) FILTER (WHERE ca.activation_type = 'view')::int AS views,
+        COUNT(*) FILTER (WHERE ca.activation_type = 'click_site')::int AS click_site,
+        COUNT(*) FILTER (WHERE ca.activation_type = 'copy_code')::int AS copy_code,
+        COUNT(*) FILTER (WHERE ca.activation_type = 'show_qr')::int AS show_qr,
+        COUNT(*) FILTER (WHERE ca.activation_type = 'scan_qr')::int AS scan_qr,
+        COUNT(*)::int AS total
+       FROM merchants m
+       LEFT JOIN convention_activations ca ON ca.merchant_id = m.id
+         AND ca.brand_id = $1 AND ca.created_at >= NOW() - ($2 || ' days')::interval
+       WHERE m.brand_id = $1
+       GROUP BY m.id, m.name
+       ORDER BY m.name ASC`,
+      [brandId, daysStr]
+    ),
+    pool.query(
+      `SELECT m.category, COUNT(*)::int AS count
+       FROM convention_activations ca
+       INNER JOIN merchants m ON m.id = ca.merchant_id AND m.brand_id = $1
+       WHERE ca.brand_id = $1 AND ca.created_at >= NOW() - ($2 || ' days')::interval
+       GROUP BY m.category
+       ORDER BY count DESC`,
+      [brandId, daysStr]
+    ),
+    pool.query(
+      `SELECT DATE(created_at) AS day, activation_type, COUNT(*)::int AS count
+       FROM convention_activations
+       WHERE brand_id = $1 AND created_at >= NOW() - ($2 || ' days')::interval
+       GROUP BY day, activation_type
+       ORDER BY day ASC`,
+      [brandId, daysStr]
+    )
+  ]);
+
+  const total_events = {};
+  let grandTotal = 0;
+  for (const row of byTypeRes.rows) {
+    total_events[row.activation_type] = row.count;
+    grandTotal += row.count;
+  }
+  total_events.total = grandTotal;
+
+  const by_category = {};
+  for (const row of byCategoryRes.rows) {
+    by_category[row.category] = row.count;
+  }
+
+  const top_10 = [...byMerchantRes.rows]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10)
+    .filter((m) => m.total > 0);
+
+  const dailyMap = new Map();
+  for (const row of dailyRes.rows) {
+    const dayKey = row.day instanceof Date
+      ? row.day.toISOString().slice(0, 10)
+      : String(row.day).slice(0, 10);
+    if (!dailyMap.has(dayKey)) {
+      dailyMap.set(dayKey, {
+        date: dayKey,
+        view: 0,
+        search_found: 0,
+        click_site: 0,
+        copy_code: 0,
+        show_qr: 0,
+        scan_qr: 0,
+        geofence_push: 0,
+        total: 0
+      });
+    }
+    const entry = dailyMap.get(dayKey);
+    if (Object.prototype.hasOwnProperty.call(entry, row.activation_type)) {
+      entry[row.activation_type] = row.count;
+    }
+    entry.total += row.count;
+  }
+
+  return {
+    days: parseInt(daysStr, 10),
+    total_events,
+    by_merchant: byMerchantRes.rows,
+    by_category,
+    top_10,
+    daily: Array.from(dailyMap.values())
+  };
+}
+
 async function getHubSettings(brandId) {
   const res = await pool.query('SELECT * FROM hub_settings WHERE brand_id = $1', [brandId]);
   if (res.rows[0]) return res.rows[0];
@@ -3650,6 +3750,7 @@ module.exports = {
   deleteMerchantLocation,
   listMerchantGeofenceLocationsForBrand,
   getMerchantAnalytics,
+  getHubBrandAnalytics,
   getHubSettings,
   upsertHubSettings,
   listActiveMerchantsForHub,

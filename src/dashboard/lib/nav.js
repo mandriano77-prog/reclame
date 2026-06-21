@@ -25,7 +25,8 @@
                 { id: 'push', label: 'Push & Notifiche' },
                 { id: 'instant-win', label: 'Reward' },
                 { id: 'gamification', label: 'Challenge' },
-                { id: 'leads', label: 'Contatti' }
+                { id: 'leads', label: 'Contatti' },
+                { id: 'conventions', label: 'Convenzioni' }
             ]
         },
         {

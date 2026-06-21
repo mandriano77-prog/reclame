@@ -13,7 +13,8 @@
     { match: /\/dashboard\/contatti\/audience\/?$/i, section: 'leads', tab: 'audience' },
     { match: /\/dashboard\/contatti\/?$/i, section: 'leads', tab: 'contacts' },
     { match: /\/dashboard\/analytics\/log\/?$/i, section: 'analytics', tab: 'activity-log' },
-    { match: /\/dashboard\/analytics\/?$/i, section: 'analytics', tab: 'metrics' }
+    { match: /\/dashboard\/analytics\/?$/i, section: 'analytics', tab: 'metrics' },
+    { match: /\/dashboard\/convenzioni\/?$/i, section: 'conventions', tab: '' }
   ];
 
   var HASH_ALIASES = {
@@ -82,6 +83,9 @@
     }
     if (sectionId === 'analytics') {
       return tab === 'activity-log' ? '/dashboard/analytics/log' : '/dashboard/analytics';
+    }
+    if (sectionId === 'conventions') {
+      return '/dashboard/convenzioni';
     }
     return global.location.pathname;
   }

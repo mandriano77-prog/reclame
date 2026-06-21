@@ -1,0 +1,187 @@
+/**
+ * FD — HUB Convenzioni (Sprint 4): DS layout for HR merchant management.
+ */
+
+html[data-app='filodiretto'] #conventions.conventions--fd-ds {
+  width: 100%;
+  max-width: var(--fd-layout-max-width, 1280px);
+  padding-bottom: var(--fd-space-7, 48px);
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-header {
+  margin-bottom: var(--fd-space-4, 16px);
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-lead {
+  max-width: 65ch;
+  color: var(--fd-color-text-secondary, var(--text2));
+  font-size: var(--fd-font-size-sm, 13px);
+  margin: var(--fd-space-2, 8px) 0 0;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-tabs {
+  margin-bottom: var(--fd-space-4, 16px);
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fd-space-3, 12px);
+  margin-bottom: var(--fd-space-4, 16px);
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2, 8px);
+  margin-left: auto;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2, 8px);
+  align-items: center;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-control {
+  min-height: 36px;
+  padding: var(--fd-space-2, 8px) var(--fd-space-3, 12px);
+  border: 1px solid var(--fd-border-strong, var(--border));
+  border-radius: var(--fd-radius-sm, 8px);
+  font-size: var(--fd-font-size-sm, 13px);
+  background: var(--fd-color-bg-canvas, var(--surface));
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--fd-space-3, 12px);
+  margin-bottom: var(--fd-space-4, 16px);
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-kpi {
+  padding: var(--fd-space-3, 12px) var(--fd-space-4, 16px);
+  border: 1px solid var(--fd-border-subtle, var(--border));
+  border-radius: var(--fd-radius-md, 12px);
+  background: var(--fd-color-bg-elevated, var(--surface));
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-kpi__label {
+  font-size: var(--fd-font-size-xs, 11px);
+  color: var(--fd-color-text-secondary, var(--text2));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-kpi__value {
+  font-size: var(--fd-font-size-xl, 22px);
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-card {
+  padding: var(--fd-space-5, 24px);
+  margin-bottom: var(--fd-space-4, 16px);
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-table-wrap {
+  overflow-x: auto;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-stats-cell {
+  font-size: var(--fd-font-size-xs, 11px);
+  color: var(--fd-color-text-secondary, var(--text2));
+  white-space: nowrap;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--fd-font-size-xs, 11px);
+  font-weight: 600;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-badge--active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-badge--inactive {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--fd-color-text-secondary, var(--text2));
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-guide-steps {
+  display: grid;
+  gap: var(--fd-space-4, 16px);
+  max-width: 48rem;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-guide-step {
+  display: flex;
+  gap: var(--fd-space-4, 16px);
+  padding: var(--fd-space-4, 16px);
+  border: 1px solid var(--fd-border-subtle, var(--border));
+  border-radius: var(--fd-radius-md, 12px);
+  background: var(--fd-color-bg-elevated, var(--surface));
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-guide-step__num {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent, #2563eb);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--fd-font-size-sm, 13px);
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-settings-grid {
+  display: grid;
+  gap: var(--fd-space-4, 16px);
+  max-width: 36rem;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fd-space-2, 8px);
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--fd-border-strong, var(--border));
+  border-radius: var(--fd-radius-sm, 8px);
+  font-size: var(--fd-font-size-sm, 13px);
+  cursor: pointer;
+}
+
+html[data-app='filodiretto'] #conventions .fd-conventions-cat-chip input {
+  margin: 0;
+}
+
+html[data-app='filodiretto'] #hubMerchantModal .fd-conventions-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--fd-space-3, 12px);
+}
+
+html[data-app='filodiretto'] #hubMerchantModal .fd-conventions-form-grid .form-group--full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  html[data-app='filodiretto'] #hubMerchantModal .fd-conventions-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

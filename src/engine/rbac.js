@@ -21,6 +21,7 @@ const SECTION_PERMS = Object.freeze({
     activity_log: 'none',
     users: 'none',
     welcome: 'full',
+    conventions: 'full',
   },
   sender: {
     brand_identity: 'none',
@@ -36,6 +37,7 @@ const SECTION_PERMS = Object.freeze({
     activity_log: 'none',
     users: 'none',
     welcome: 'read',
+    conventions: 'none',
   },
   reporter: {
     brand_identity: 'read',
@@ -51,6 +53,7 @@ const SECTION_PERMS = Object.freeze({
     activity_log: 'read',
     users: 'none',
     welcome: 'read',
+    conventions: 'read',
   },
 });
 
@@ -70,6 +73,7 @@ const UI_SECTION_MAP = Object.freeze({
   'activity-log': 'activity_log',
   users: 'users',
   campaigns: 'push',
+  conventions: 'conventions',
 });
 
 const DEFAULT_LANDING = Object.freeze({
@@ -154,6 +158,12 @@ function classifyApiRoute(method, path) {
   if (/^\/events\//.test(p)) return { section: 'activity_log', write: false };
 
   if (/^\/analytics\//.test(p)) return { section: 'analytics', write: false };
+
+  if (/^\/merchants(?:\/|$)/.test(p)) return { section: 'conventions', write };
+  if (/^\/locations\/[^/]+$/.test(p) && m !== 'GET') return { section: 'conventions', write: true };
+  if (/^\/brands\/[^/]+\/hub-(settings|analytics)/.test(p)) {
+    return { section: 'conventions', write: write && /hub-settings/.test(p) };
+  }
 
   if (/^\/push(?:\/|$)/.test(p)) return { section: 'push', write };
   if (/^\/brands\/[^/]+\/geofencing$/.test(p)) return { section: 'push', write };

@@ -1,0 +1,3 @@
+merchant_name;category;discount_label;logo_url;description;conditions;valid_until;online_enabled;online_url;online_promo_code;physical_enabled;address;city;latitude;longitude
+Virgin Active;fitness;-15% abbonamento annuale;;Palestra convenzionata;Valido per nuovi iscritti;2026-12-31;true;https://www.virginactive.it;FILODIR15;true;Via Sarca 22;Milano;;
+Mondadori;retail;-10% su libri;;Sconto libreria;Escluso periodici;2026-12-31;true;https://www.mondadoristore.it;FILO10;false;Corso Buenos Aires 50;Milano;;

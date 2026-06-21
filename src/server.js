@@ -243,6 +243,10 @@ app.get(['/dashboard/analytics/log', '/dashboard/analytics/log/'], (req, res) =>
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
 });
+app.get(['/dashboard/convenzioni', '/dashboard/convenzioni/'], (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
+});
 app.get(['/dashboard/login', '/dashboard/login/'], (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));

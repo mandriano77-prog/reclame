@@ -1,6 +1,10 @@
 /**
  * FD — W.AI: single entry pattern for FiloDiretto (FAB + contextual link only).
  * No-op on Ads2Wallet / non-Filo shells.
+ *
+ * Sprint 4 HUB Convenzioni — future intents (not wired yet):
+ * - hub_import_merchants: guide CSV import from conventions section
+ * - hub_merchant_stats: summarize top merchants from hub-analytics
  */
 (function () {
   'use strict';
