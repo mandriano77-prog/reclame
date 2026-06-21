@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8B5CF6">
+  <title>Virgin Active — HUB Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="hub.css">
+  <style>
+    .hub-preview-banner {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: var(--hub-radius);
+      border: 1px dashed var(--hub-border);
+      background: var(--hub-surface);
+      color: var(--hub-muted);
+      font-size: 0.82rem;
+    }
+    .hub-locations {
+      margin: 0 0 8px;
+      padding-left: 18px;
+      color: var(--hub-muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .hub-loc-distance {
+      color: var(--hub-accent);
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="hub-app">
+    <header class="hub-header">
+      <div class="hub-header-inner">
+        <a href="preview.html" class="hub-back" aria-label="Indietro">←</a>
+        <img class="hub-logo" src="icon.svg" alt="">
+        <div class="hub-header-text">
+          <h1 class="hub-title">Dettaglio</h1>
+          <p class="hub-subtitle">Nuova Telefonia Italiana</p>
+        </div>
+      </div>
+    </header>
+    <main class="hub-main">
+      <div class="hub-preview-banner">Anteprima statica — dettaglio merchant demo</div>
+
+      <div class="hub-detail-hero">
+        <div class="hub-detail-logo placeholder">V</div>
+        <div>
+          <h2 style="margin:0;font-size:1.1rem;">Virgin Active</h2>
+          <span class="hub-discount-badge">-15% abbonamento annuale</span>
+        </div>
+      </div>
+
+      <section class="hub-section">
+        <h2>Descrizione</h2>
+        <p>Sconto riservato ai dipendenti su abbonamento annuale Virgin Active. Valido su tutte le sedi aderenti in Lombardia.</p>
+      </section>
+
+      <section class="hub-section">
+        <h2>Condizioni</h2>
+        <p>Presentare badge aziendale o codice promo al momento dell'iscrizione. Non cumulabile con altre promozioni in corso.</p>
+      </section>
+
+      <p class="hub-meta">Valida fino al 31/12/2026</p>
+
+      <section class="hub-section">
+        <h2>Online</h2>
+        <div class="hub-promo">NTI-VIRGIN15</div>
+        <button type="button" class="hub-btn">Vai al sito</button>
+        <button type="button" class="hub-btn secondary">Copia codice</button>
+      </section>
+
+      <section class="hub-section">
+        <h2>In negozio</h2>
+        <ul class="hub-locations">
+          <li>Via Monte Rosa 91 · Milano <span class="hub-loc-distance">· 1,2 km</span></li>
+          <li>Corso Sempione 33 · Milano <span class="hub-loc-distance">· 3,4 km</span></li>
+          <li>Via Mazzini 12 · Monza <span class="hub-loc-distance">· 8,1 km</span></li>
+        </ul>
+        <button type="button" class="hub-btn">Mostra QR</button>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -25,3 +25,14 @@ test('fd-templates.css applies flip transform for Filo template modal', () => {
   assert.match(css, /html\[data-app='filodiretto'\] #templateModal \.pass-flip-container\.a2w-tpl-show-back \.pass-flip-inner/);
   assert.match(css, /rotateY\(180deg\)/);
 });
+
+test('index.html HR pass preview includes HUB CONVENZIONI back link', () => {
+  const html = read('src/dashboard/index.html');
+  assert.match(html, /function previewHubUrl\(\)/);
+  assert.match(html, /TOKEN_AUTOMATICO/);
+  assert.match(html, /addBackLink\('HUB CONVENZIONI', previewHubUrl\(\)\)/);
+  assert.match(html, /addBackLink\('PROFILO PERSONALE'/);
+  const hubIdx = html.indexOf("addBackLink('HUB CONVENZIONI', previewHubUrl())");
+  const portalIdx = html.indexOf("addBackLink('PROFILO PERSONALE'");
+  assert.ok(hubIdx > -1 && portalIdx > -1 && hubIdx < portalIdx, 'HUB CONVENZIONI must appear before PROFILO PERSONALE');
+});
