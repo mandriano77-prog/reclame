@@ -882,6 +882,72 @@ async function getDb() {
       WHERE m.pass_id = pi.id AND pi.member_id IS NULL
     `).catch(() => {});
 
+    // HUB Convenzioni
+    await pool.query(`CREATE TABLE IF NOT EXISTS merchants (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      logo_url TEXT,
+      description TEXT,
+      discount_label TEXT NOT NULL,
+      conditions TEXT,
+      valid_from DATE,
+      valid_until DATE,
+      active BOOLEAN DEFAULT TRUE,
+      online_enabled BOOLEAN DEFAULT FALSE,
+      online_url TEXT,
+      online_promo_code TEXT,
+      physical_enabled BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_merchants_brand ON merchants(brand_id)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_merchants_active ON merchants(brand_id, active) WHERE active = TRUE`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_merchants_category ON merchants(brand_id, category)`).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS merchant_locations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      merchant_id UUID NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+      address TEXT NOT NULL,
+      city TEXT,
+      province TEXT,
+      postal_code TEXT,
+      country TEXT DEFAULT 'IT',
+      latitude DECIMAL(10, 8),
+      longitude DECIMAL(11, 8),
+      geofence_radius_m INTEGER DEFAULT 150,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_merchant_locations_merchant ON merchant_locations(merchant_id)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_merchant_locations_geo ON merchant_locations(latitude, longitude)`).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS convention_activations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      merchant_id UUID NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+      pass_serial TEXT NOT NULL,
+      user_id TEXT,
+      activation_type TEXT NOT NULL,
+      location_id UUID REFERENCES merchant_locations(id),
+      metadata JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_activations_brand_merchant ON convention_activations(brand_id, merchant_id)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_activations_pass ON convention_activations(pass_serial)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_activations_created ON convention_activations(created_at DESC)`).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS hub_settings (
+      brand_id TEXT PRIMARY KEY REFERENCES brands(id) ON DELETE CASCADE,
+      logo_url TEXT,
+      accent_color TEXT DEFAULT '#8B5CF6',
+      welcome_message TEXT,
+      categories_enabled JSONB DEFAULT '["food","fitness","retail","salute","viaggi","tech","servizi"]'::jsonb,
+      geofencing_enabled BOOLEAN DEFAULT TRUE,
+      geofencing_max_per_day INTEGER DEFAULT 3,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+
     // Seed admin
     await seedAdminUser();
     await ensureAllowlistPlatformAdmins();
@@ -3024,6 +3090,311 @@ async function finalizeWalletCallbackEvent(id, data = {}) {
   await pool.query(`UPDATE wallet_callback_events SET ${fields.join(', ')} WHERE id = $${idx}`, values);
 }
 
+// ── HUB Convenzioni — merchants ─────────────────────────────────────────────
+
+async function createMerchant(data) {
+  const {
+    brand_id, name, category, logo_url, description, discount_label, conditions,
+    valid_from, valid_until, active = true,
+    online_enabled = false, online_url, online_promo_code, physical_enabled = false
+  } = data;
+  if (!brand_id || !name || !category || !discount_label) {
+    throw new Error('brand_id, name, category e discount_label sono obbligatori');
+  }
+  const res = await pool.query(
+    `INSERT INTO merchants (
+      brand_id, name, category, logo_url, description, discount_label, conditions,
+      valid_from, valid_until, active, online_enabled, online_url, online_promo_code, physical_enabled
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+    RETURNING *`,
+    [
+      brand_id, name, category, logo_url || null, description || null, discount_label,
+      conditions || null, valid_from || null, valid_until || null, active !== false,
+      !!online_enabled, online_url || null, online_promo_code || null, !!physical_enabled
+    ]
+  );
+  return res.rows[0];
+}
+
+async function getMerchant(id, brandId = null) {
+  const params = [id];
+  let sql = 'SELECT * FROM merchants WHERE id = $1';
+  if (brandId != null) {
+    sql += ' AND brand_id = $2';
+    params.push(brandId);
+  }
+  const res = await pool.query(sql, params);
+  return res.rows[0] || null;
+}
+
+async function findMerchantByNameAndBrand(brandId, name) {
+  const res = await pool.query(
+    `SELECT * FROM merchants WHERE brand_id = $1 AND LOWER(TRIM(name)) = LOWER(TRIM($2)) LIMIT 1`,
+    [brandId, name]
+  );
+  return res.rows[0] || null;
+}
+
+async function listMerchants(brandId, { category, active, search } = {}) {
+  const clauses = ['brand_id = $1'];
+  const params = [brandId];
+  let idx = 2;
+  if (category) {
+    clauses.push(`category = $${idx++}`);
+    params.push(category);
+  }
+  if (active === true || active === 'true') {
+    clauses.push('active = TRUE');
+  } else if (active === false || active === 'false') {
+    clauses.push('active = FALSE');
+  }
+  if (search && String(search).trim()) {
+    clauses.push(`(name ILIKE $${idx} OR description ILIKE $${idx})`);
+    params.push(`%${String(search).trim()}%`);
+    idx++;
+  }
+  const res = await pool.query(
+    `SELECT * FROM merchants WHERE ${clauses.join(' AND ')} ORDER BY name ASC`,
+    params
+  );
+  return res.rows;
+}
+
+const MERCHANT_MUTABLE_FIELDS = [
+  'name', 'category', 'logo_url', 'description', 'discount_label', 'conditions',
+  'valid_from', 'valid_until', 'active', 'online_enabled', 'online_url',
+  'online_promo_code', 'physical_enabled'
+];
+
+async function updateMerchant(id, brandId, fields) {
+  const sets = [];
+  const vals = [];
+  let i = 1;
+  for (const [k, v] of Object.entries(fields || {})) {
+    if (!MERCHANT_MUTABLE_FIELDS.includes(k)) continue;
+    sets.push(`${k} = $${i++}`);
+    vals.push(v);
+  }
+  if (!sets.length) return getMerchant(id, brandId);
+  sets.push('updated_at = NOW()');
+  vals.push(id, brandId);
+  const res = await pool.query(
+    `UPDATE merchants SET ${sets.join(', ')} WHERE id = $${i} AND brand_id = $${i + 1} RETURNING *`,
+    vals
+  );
+  return res.rows[0] || null;
+}
+
+async function softDeleteMerchant(id, brandId) {
+  return updateMerchant(id, brandId, { active: false });
+}
+
+async function createMerchantLocation(merchantId, data) {
+  const {
+    address, city, province, postal_code, country = 'IT',
+    latitude, longitude, geofence_radius_m = 150
+  } = data;
+  if (!address) throw new Error('address obbligatorio');
+  const merchant = await pool.query('SELECT brand_id FROM merchants WHERE id = $1', [merchantId]);
+  if (!merchant.rows[0]) throw new Error('Merchant non trovato');
+  const res = await pool.query(
+    `INSERT INTO merchant_locations (
+      merchant_id, address, city, province, postal_code, country, latitude, longitude, geofence_radius_m
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+    [
+      merchantId, address, city || null, province || null, postal_code || null,
+      country || 'IT', latitude ?? null, longitude ?? null, geofence_radius_m || 150
+    ]
+  );
+  return res.rows[0];
+}
+
+async function listMerchantLocations(merchantId, brandId = null) {
+  if (brandId != null) {
+    const res = await pool.query(
+      `SELECT ml.* FROM merchant_locations ml
+       JOIN merchants m ON m.id = ml.merchant_id
+       WHERE ml.merchant_id = $1 AND m.brand_id = $2
+       ORDER BY ml.created_at ASC`,
+      [merchantId, brandId]
+    );
+    return res.rows;
+  }
+  const res = await pool.query(
+    'SELECT * FROM merchant_locations WHERE merchant_id = $1 ORDER BY created_at ASC',
+    [merchantId]
+  );
+  return res.rows;
+}
+
+async function deleteMerchantLocation(locationId, brandId = null) {
+  if (brandId != null) {
+    const res = await pool.query(
+      `DELETE FROM merchant_locations ml
+       USING merchants m
+       WHERE ml.id = $1 AND ml.merchant_id = m.id AND m.brand_id = $2
+       RETURNING ml.id`,
+      [locationId, brandId]
+    );
+    return res.rowCount > 0;
+  }
+  const res = await pool.query('DELETE FROM merchant_locations WHERE id = $1 RETURNING id', [locationId]);
+  return res.rowCount > 0;
+}
+
+async function listMerchantGeofenceLocationsForBrand(brandId) {
+  const defaultRadius = parseInt(process.env.GEOFENCING_DEFAULT_RADIUS_M, 10) || 150;
+  const res = await pool.query(
+    `SELECT ml.latitude, ml.longitude, ml.geofence_radius_m, ml.address, ml.city, m.name AS merchant_name
+     FROM merchant_locations ml
+     JOIN merchants m ON m.id = ml.merchant_id
+     WHERE m.brand_id = $1 AND m.active = TRUE
+       AND ml.latitude IS NOT NULL AND ml.longitude IS NOT NULL
+     ORDER BY m.name ASC, ml.created_at ASC
+     LIMIT 10`,
+    [brandId]
+  );
+  return res.rows.map((row) => ({
+    latitude: parseFloat(row.latitude),
+    longitude: parseFloat(row.longitude),
+    radius: row.geofence_radius_m || defaultRadius,
+    relevantText: `${row.merchant_name}${row.city ? ` · ${row.city}` : ''}`.slice(0, 200),
+    name: row.merchant_name
+  }));
+}
+
+async function getMerchantAnalytics(merchantId, brandId, days = 30) {
+  const res = await pool.query(
+    `SELECT activation_type, COUNT(*)::int AS count
+     FROM convention_activations
+     WHERE merchant_id = $1 AND brand_id = $2
+       AND created_at >= NOW() - ($3 || ' days')::interval
+     GROUP BY activation_type
+     ORDER BY activation_type`,
+    [merchantId, brandId, String(days)]
+  );
+  const totals = res.rows.reduce((acc, row) => {
+    acc[row.activation_type] = row.count;
+    acc.total = (acc.total || 0) + row.count;
+    return acc;
+  }, { total: 0 });
+  return { days, by_type: res.rows, totals };
+}
+
+async function getHubSettings(brandId) {
+  const res = await pool.query('SELECT * FROM hub_settings WHERE brand_id = $1', [brandId]);
+  if (res.rows[0]) return res.rows[0];
+  return {
+    brand_id: brandId,
+    logo_url: null,
+    accent_color: '#8B5CF6',
+    welcome_message: null,
+    categories_enabled: ['food', 'fitness', 'retail', 'salute', 'viaggi', 'tech', 'servizi'],
+    geofencing_enabled: true,
+    geofencing_max_per_day: parseInt(process.env.GEOFENCING_MAX_PER_DAY, 10) || 3
+  };
+}
+
+async function upsertHubSettings(brandId, fields = {}) {
+  const existing = await getHubSettings(brandId);
+  const payload = {
+    logo_url: fields.logo_url !== undefined ? fields.logo_url : existing.logo_url,
+    accent_color: fields.accent_color !== undefined ? fields.accent_color : existing.accent_color,
+    welcome_message: fields.welcome_message !== undefined ? fields.welcome_message : existing.welcome_message,
+    categories_enabled: fields.categories_enabled !== undefined
+      ? JSON.stringify(fields.categories_enabled)
+      : JSON.stringify(existing.categories_enabled || []),
+    geofencing_enabled: fields.geofencing_enabled !== undefined
+      ? !!fields.geofencing_enabled
+      : existing.geofencing_enabled !== false,
+    geofencing_max_per_day: fields.geofencing_max_per_day !== undefined
+      ? fields.geofencing_max_per_day
+      : existing.geofencing_max_per_day
+  };
+  const res = await pool.query(
+    `INSERT INTO hub_settings (
+      brand_id, logo_url, accent_color, welcome_message, categories_enabled,
+      geofencing_enabled, geofencing_max_per_day, updated_at
+    ) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,NOW())
+    ON CONFLICT (brand_id) DO UPDATE SET
+      logo_url = EXCLUDED.logo_url,
+      accent_color = EXCLUDED.accent_color,
+      welcome_message = EXCLUDED.welcome_message,
+      categories_enabled = EXCLUDED.categories_enabled,
+      geofencing_enabled = EXCLUDED.geofencing_enabled,
+      geofencing_max_per_day = EXCLUDED.geofencing_max_per_day,
+      updated_at = NOW()
+    RETURNING *`,
+    [
+      brandId, payload.logo_url, payload.accent_color, payload.welcome_message,
+      payload.categories_enabled, payload.geofencing_enabled, payload.geofencing_max_per_day
+    ]
+  );
+  return res.rows[0];
+}
+
+const HUB_ACTIVATION_TYPES = new Set([
+  'view', 'search_found', 'click_site', 'copy_code', 'show_qr', 'scan_qr', 'geofence_push'
+]);
+
+async function listActiveMerchantsForHub(brandId, { category, search } = {}) {
+  const clauses = [
+    'brand_id = $1',
+    'active = TRUE',
+    '(valid_from IS NULL OR valid_from <= CURRENT_DATE)',
+    '(valid_until IS NULL OR valid_until >= CURRENT_DATE)'
+  ];
+  const params = [brandId];
+  let idx = 2;
+  if (category) {
+    clauses.push(`category = $${idx++}`);
+    params.push(category);
+  }
+  if (search && String(search).trim()) {
+    clauses.push(`(name ILIKE $${idx} OR description ILIKE $${idx} OR category ILIKE $${idx})`);
+    params.push(`%${String(search).trim()}%`);
+    idx++;
+  }
+  const res = await pool.query(
+    `SELECT * FROM merchants WHERE ${clauses.join(' AND ')} ORDER BY name ASC`,
+    params
+  );
+  return res.rows;
+}
+
+async function logConventionActivation({
+  brand_id,
+  merchant_id,
+  pass_serial,
+  user_id = null,
+  activation_type,
+  location_id = null,
+  metadata = null
+}) {
+  if (!brand_id || !merchant_id || !pass_serial || !activation_type) {
+    throw new Error('brand_id, merchant_id, pass_serial e activation_type sono obbligatori');
+  }
+  if (!HUB_ACTIVATION_TYPES.has(activation_type)) {
+    throw new Error(`activation_type non valido: ${activation_type}`);
+  }
+  const res = await pool.query(
+    `INSERT INTO convention_activations (
+      brand_id, merchant_id, pass_serial, user_id, activation_type, location_id, metadata
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb)
+    RETURNING *`,
+    [
+      brand_id,
+      merchant_id,
+      pass_serial,
+      user_id != null ? String(user_id) : null,
+      activation_type,
+      location_id || null,
+      metadata != null ? JSON.stringify(metadata) : null
+    ]
+  );
+  return res.rows[0];
+}
+
 module.exports = {
   getDb,
   saveDb,
@@ -3173,6 +3544,22 @@ module.exports = {
   updatePassDeviceId,
   registerWalletCallbackEvent,
   finalizeWalletCallbackEvent,
+  // HUB Convenzioni
+  createMerchant,
+  getMerchant,
+  findMerchantByNameAndBrand,
+  listMerchants,
+  updateMerchant,
+  softDeleteMerchant,
+  createMerchantLocation,
+  listMerchantLocations,
+  deleteMerchantLocation,
+  listMerchantGeofenceLocationsForBrand,
+  getMerchantAnalytics,
+  getHubSettings,
+  upsertHubSettings,
+  listActiveMerchantsForHub,
+  logConventionActivation,
   // Employee portal (see src/db/portal.js)
   ...require('./portal')
 };

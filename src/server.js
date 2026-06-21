@@ -132,6 +132,37 @@ app.use(
   express.static(path.join(__dirname, 'portal'))
 );
 
+// HUB Convenzioni PWA
+const hubDir = path.join(__dirname, 'hub');
+const hubIndex = path.join(hubDir, 'index.html');
+
+function isHubSubdomain(req) {
+  const host = String(req.get('host') || '').split(':')[0].toLowerCase();
+  return host.startsWith('hub.');
+}
+
+function sendHubSpa(req, res) {
+  res.set('Cache-Control', 'no-store');
+  if (fs.existsSync(hubIndex)) return res.sendFile(hubIndex);
+  res.status(503).send('HUB Convenzioni in preparazione.');
+}
+
+app.use('/hub', express.static(hubDir));
+app.get(['/hub', '/hub/', '/hub/merchants', '/hub/merchants/:id', '/hub/error'], sendHubSpa);
+
+app.use((req, res, next) => {
+  if (!isHubSubdomain(req)) return next();
+  if (req.path.startsWith('/api') || req.path.startsWith('/debug') || req.path.startsWith('/health')) {
+    return next();
+  }
+  express.static(hubDir)(req, res, next);
+});
+
+app.get(['/merchants', '/merchants/:id', '/error'], (req, res, next) => {
+  if (!isHubSubdomain(req)) return next();
+  sendHubSpa(req, res);
+});
+
 // Dashboard boot: product line lock from deploy env (e.g. studio.filodiretto.app → DASHBOARD_PRODUCT_LINE=hr)
 const VALID_DASHBOARD_PRODUCT_LINES = ['ads', 'hr', 'engage', 'live'];
 function getDeployDashboardProductLine() {
@@ -236,6 +267,7 @@ app.get('/health', async (req, res) => {
 
 // Root redirect
 app.get('/', (req, res) => {
+  if (isHubSubdomain(req)) return sendHubSpa(req, res);
   res.redirect('/dashboard/');
 });
 

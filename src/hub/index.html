@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8B5CF6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FiloDiretto HUB</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="hub.css">
+</head>
+<body>
+  <div id="app" class="hub-app">
+    <header class="hub-header" id="hub-header">
+      <div class="hub-header-inner">
+        <button type="button" class="hub-back hidden" id="hub-back" aria-label="Indietro">←</button>
+        <img class="hub-logo hidden" id="hub-logo" alt="">
+        <div class="hub-header-text">
+          <h1 class="hub-title" id="hub-title">Convenzioni</h1>
+          <p class="hub-subtitle hidden" id="hub-subtitle"></p>
+        </div>
+      </div>
+    </header>
+    <main class="hub-main" id="hub-main" tabindex="-1"></main>
+    <div class="hub-toast hidden" id="hub-toast" role="status" aria-live="polite"></div>
+  </div>
+  <script src="app.js" defer></script>
+</body>
+</html>
