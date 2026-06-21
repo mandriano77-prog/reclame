@@ -15,10 +15,12 @@ const INDEX_SOURCE = fs.readFileSync(path.join(__dirname, '../src/dashboard/inde
 const SERVER_SOURCE = fs.readFileSync(path.join(__dirname, '../src/server.js'), 'utf8');
 const SUBNAV_SOURCE = fs.readFileSync(path.join(__dirname, '../src/dashboard/js/dashboard-subnav.js'), 'utf8');
 
-test('nav catalog includes conventions under Engagement', () => {
+test('nav catalog includes conventions under Growth Activation and leads under Brand & Pass', () => {
   assert.match(NAV_SOURCE, /id:\s*'conventions'/);
   assert.match(NAV_SOURCE, /label:\s*'Convenzioni'/);
+  assert.match(NAV_SOURCE, /label:\s*'Growth Activation'/);
   assert.match(NAV_SOURCE, /id:\s*'comunicazione'[\s\S]*conventions/);
+  assert.match(NAV_SOURCE, /id:\s*'brand-pass'[\s\S]*id:\s*'leads'/);
 });
 
 test('hub-analytics endpoint registered with aggregate handler', () => {

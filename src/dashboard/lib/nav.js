@@ -15,17 +15,17 @@
                 { id: 'brand-identity', label: 'Identità Brand' },
                 { id: 'media-library', label: 'Media Library' },
                 { id: 'templates', label: 'Template Pass' },
-                { id: 'passes', label: 'Pass Emessi' }
+                { id: 'passes', label: 'Pass Emessi' },
+                { id: 'leads', label: 'Contatti' }
             ]
         },
         {
             id: 'comunicazione',
-            label: 'Engagement',
+            label: 'Growth Activation',
             items: [
                 { id: 'push', label: 'Push & Notifiche' },
                 { id: 'instant-win', label: 'Reward' },
                 { id: 'gamification', label: 'Challenge' },
-                { id: 'leads', label: 'Contatti' },
                 { id: 'conventions', label: 'Convenzioni' },
                 { id: 'pga-catalog', label: 'PGA Catalog' },
                 { id: 'pga-engagement', label: 'Engagement Coin' }

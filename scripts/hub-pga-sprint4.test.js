@@ -15,12 +15,19 @@ const INDEX_SOURCE = fs.readFileSync(path.join(__dirname, '../src/dashboard/inde
 const FD_PGA_SOURCE = fs.readFileSync(path.join(__dirname, '../src/filodiretto/fd-pga.js'), 'utf8');
 const FD_ENG_SOURCE = fs.readFileSync(path.join(__dirname, '../src/filodiretto/fd-pga-engagement.js'), 'utf8');
 
-test('nav catalog includes pga-catalog and pga-engagement under Engagement', () => {
+test('nav catalog includes pga-catalog and pga-engagement under Growth Activation', () => {
   assert.match(NAV_SOURCE, /id:\s*'pga-catalog'/);
   assert.match(NAV_SOURCE, /label:\s*'PGA Catalog'/);
   assert.match(NAV_SOURCE, /id:\s*'pga-engagement'/);
   assert.match(NAV_SOURCE, /label:\s*'Engagement Coin'/);
+  assert.match(NAV_SOURCE, /label:\s*'Growth Activation'/);
   assert.match(NAV_SOURCE, /id:\s*'comunicazione'[\s\S]*pga-catalog/);
+});
+
+test('fd-nav.js includes icons for PGA menu items', () => {
+  const navJs = fs.readFileSync(path.join(__dirname, '../src/filodiretto/fd-nav.js'), 'utf8');
+  assert.match(navJs, /'pga-catalog':/);
+  assert.match(navJs, /'pga-engagement':/);
 });
 
 test('index.html wires PGA sections and nav loaders', () => {
