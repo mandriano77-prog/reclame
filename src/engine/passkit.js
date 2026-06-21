@@ -411,6 +411,23 @@ function resolveTemplateLinkSlots(tplFields) {
   return slots;
 }
 
+function mergePassLocationSources(brandLocations, hubLocations) {
+  const combined = [...(hubLocations || []), ...(brandLocations || [])];
+  const seen = new Set();
+  const out = [];
+  for (const loc of combined) {
+    const lat = parseFloat(loc.latitude);
+    const lon = parseFloat(loc.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const key = `${lat.toFixed(5)}:${lon.toFixed(5)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(loc);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
 /**
  * Generate the pass.json content for Apple Wallet
  */
@@ -420,11 +437,16 @@ function generatePassJson(template, instance, brand, options = {}) {
     passTypeIdentifier = process.env.PASS_TYPE_IDENTIFIER || `pass.com.nudj.${brand.slug}`,
     teamIdentifier = process.env.TEAM_IDENTIFIER || 'XXXXXXXXXX',
     portalUrl = null,
-    member = null
+    hubUrl = null,
+    member = null,
+    hubLocations = null
   } = options;
 
   // Read colors from brand.config first, then template.style, then defaults
-  const brandConfig = brand.config || {};
+  const brandConfig = { ...(brand.config || {}) };
+  if (hubLocations && hubLocations.length) {
+    brandConfig.locations = mergePassLocationSources(brandConfig.locations, hubLocations);
+  }
   const { foregroundColor, backgroundColor, labelColor } = resolvePassColors(template, brandConfig);
 
   // ── Build field arrays ──────────────────────────────────────────
@@ -639,6 +661,10 @@ function generatePassJson(template, instance, brand, options = {}) {
     orderedBackFields.push(makeBackLinkField('portal_link', 'Il mio profilo', portalUrl));
   }
 
+  if (hubUrl) {
+    orderedBackFields.push(makeBackLinkField('hub_convenzioni', 'HUB CONVENZIONI', hubUrl));
+  }
+
   // 5. Any remaining template back fields (fallback)
   backFields.forEach(f => {
     // Skip if already covered by backContent or link slots
@@ -671,7 +697,8 @@ function generatePassJson(template, instance, brand, options = {}) {
       member,
       brandConfig,
       apiBase,
-      portalUrl
+      portalUrl,
+      hubUrl
     });
     const apple = toApplePass(employeePass);
     passStructure = apple.passStructure;
@@ -974,8 +1001,34 @@ async function createPkpass(template, instance, brand, options = {}) {
     }
   }
 
+  let hubUrl = null;
+  let hubLocations = [];
+  if (hrBrand && instance?.serial_number && (process.env.JWT_HUB_SECRET || process.env.JWT_SECRET)) {
+    try {
+      const { signHubToken, buildHubUrl } = require('./hub-jwt');
+      const { listMerchantGeofenceLocationsForBrand } = require('../db');
+      const userId = member?.id || instance.member_id || null;
+      const token = signHubToken({
+        user_id: userId,
+        pass_serial: instance.serial_number,
+        brand_id: brand.id
+      });
+      hubUrl = buildHubUrl(token, brand.slug);
+      hubLocations = await listMerchantGeofenceLocationsForBrand(brand.id);
+    } catch (err) {
+      console.warn('[hub] pass back link skipped:', err.message);
+    }
+  }
+
   // Generate pass.json
-  const passJson = generatePassJson(template, instance, brand, { ...options, baseUrl, portalUrl, member });
+  const passJson = generatePassJson(template, instance, brand, {
+    ...options,
+    baseUrl,
+    portalUrl,
+    hubUrl,
+    hubLocations,
+    member
+  });
 
   // Generate images - use brand.config colors first, then template.style, then defaults
   const brandCfg = brand.config || {};

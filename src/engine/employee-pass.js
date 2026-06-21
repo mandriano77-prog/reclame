@@ -228,12 +228,22 @@ function buildAnnouncementBackSection(brandConfig) {
   };
 }
 
-function buildBackSections({ brand, template, instance, member, brandConfig = {}, portalUrl = null }) {
+function buildBackSections({ brand, template, instance, member, brandConfig = {}, portalUrl = null, hubUrl = null }) {
   const sections = [];
   const hrBack = resolveHrBackSource(template, brand);
 
   const announcement = buildAnnouncementBackSection(brandConfig);
   if (announcement) sections.push(announcement);
+
+  if (hubUrl) {
+    sections.push({
+      kind: 'link',
+      key: 'hub_convenzioni',
+      label: 'HUB CONVENZIONI',
+      url: hubUrl,
+      linkText: 'Apri convenzioni'
+    });
+  }
 
   if (hrBack.hr_email) {
     sections.push({
@@ -287,7 +297,7 @@ function walletImageUrls({ apiBase, brand, template }) {
 /**
  * Build unified employee_pass from DB rows.
  */
-function buildEmployeePass({ brand, template, instance, member, brandConfig, apiBase, portalUrl = null }) {
+function buildEmployeePass({ brand, template, instance, member, brandConfig, apiBase, portalUrl = null, hubUrl = null }) {
   const cfg = brandConfig || brand?.config || {};
   const profile = resolveMemberProfile(member, instance);
   const colors = resolveEmployeePassColors(template, cfg);
@@ -321,7 +331,8 @@ function buildEmployeePass({ brand, template, instance, member, brandConfig, api
     instance,
     member,
     brandConfig: cfg,
-    portalUrl
+    portalUrl,
+    hubUrl
   });
 
   const barcodeValue = instance?.serial_number || '';

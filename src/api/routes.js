@@ -96,6 +96,7 @@ const { execFile } = require('child_process');
 const os = require('os');
 
 const router = express.Router();
+const { registerHubMerchantRoutes } = require('./hub-merchants');
 
 const DEPLOY_PRODUCT_LINES = ['ads', 'hr', 'engage', 'live'];
 /** When set (e.g. hr on hr.2wallet.app), API only exposes brands for that product line. */
@@ -1478,6 +1479,12 @@ function isJwtBypassRoute(req) {
 router.use((req, res, next) => {
   if (isJwtBypassRoute(req)) return next();
   return authMiddleware(req, res, () => rbacApiMiddleware(req, res, next));
+});
+
+registerHubMerchantRoutes(router, {
+  requireBrandId,
+  requireOwnedBrandPk,
+  requireWriteAccess
 });
 
 // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Auth (authenticated) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
