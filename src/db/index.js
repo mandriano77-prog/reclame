@@ -948,6 +948,100 @@ async function getDb() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )`).catch(() => {});
 
+    // PGA — People Growth Activator
+    await pool.query(`CREATE TABLE IF NOT EXISTS coin_actions_config (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      action_key TEXT NOT NULL,
+      coin_amount INTEGER NOT NULL,
+      description TEXT,
+      active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(brand_id, action_key)
+    )`).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS coin_ledger (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      pass_serial TEXT NOT NULL,
+      user_id TEXT,
+      action_key TEXT NOT NULL,
+      coin_amount INTEGER NOT NULL,
+      description TEXT,
+      related_entity_type TEXT,
+      related_entity_id UUID,
+      metadata JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_coin_ledger_pass ON coin_ledger(pass_serial, created_at DESC)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_coin_ledger_brand ON coin_ledger(brand_id, created_at DESC)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_coin_ledger_action ON coin_ledger(brand_id, action_key)`).catch(() => {});
+
+    await pool.query(`
+      CREATE OR REPLACE VIEW pass_coin_balance AS
+      SELECT
+        pass_serial,
+        brand_id,
+        COALESCE(SUM(coin_amount), 0) AS balance,
+        MAX(created_at) AS last_activity,
+        COUNT(*) FILTER (WHERE coin_amount > 0) AS total_accruals,
+        COUNT(*) FILTER (WHERE coin_amount < 0) AS total_redemptions
+      FROM coin_ledger
+      GROUP BY pass_serial, brand_id
+    `).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS experiences_catalog (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      key TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      category TEXT NOT NULL,
+      coin_cost INTEGER NOT NULL,
+      max_per_user_per_year INTEGER,
+      max_total_per_month INTEGER,
+      internal BOOLEAN DEFAULT TRUE,
+      external_provider TEXT,
+      external_cost_eur DECIMAL(10,2),
+      requires_booking BOOLEAN DEFAULT TRUE,
+      active BOOLEAN DEFAULT TRUE,
+      image_url TEXT,
+      display_order INTEGER DEFAULT 100,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(brand_id, key)
+    )`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_experiences_brand_active ON experiences_catalog(brand_id, active) WHERE active = TRUE`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_experiences_category ON experiences_catalog(brand_id, category)`).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS experience_bookings (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      experience_id UUID NOT NULL REFERENCES experiences_catalog(id) ON DELETE CASCADE,
+      pass_serial TEXT NOT NULL,
+      user_id TEXT,
+      coin_amount INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      scheduled_at TIMESTAMPTZ,
+      notes TEXT,
+      metadata JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_bookings_brand ON experience_bookings(brand_id, status)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_bookings_pass ON experience_bookings(pass_serial, created_at DESC)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_bookings_experience ON experience_bookings(experience_id, status)`).catch(() => {});
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS pga_settings (
+      brand_id TEXT PRIMARY KEY REFERENCES brands(id) ON DELETE CASCADE,
+      enabled BOOLEAN DEFAULT FALSE,
+      welcome_message TEXT,
+      annual_budget_external_eur DECIMAL(10,2),
+      annual_budget_used_eur DECIMAL(10,2) DEFAULT 0,
+      notify_hr_on_booking BOOLEAN DEFAULT TRUE,
+      notify_hr_email TEXT,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(() => {});
+
     // Seed admin
     await seedAdminUser();
     await ensureAllowlistPlatformAdmins();
@@ -3589,6 +3683,85 @@ async function logConventionActivation({
   return res.rows[0];
 }
 
+// ── PGA — coin ledger & settings ─────────────────────────────────────────────
+
+async function getCoinActionConfig(brandId, actionKey) {
+  const res = await pool.query(
+    `SELECT * FROM coin_actions_config
+     WHERE brand_id = $1 AND action_key = $2 AND active = TRUE
+     LIMIT 1`,
+    [brandId, actionKey]
+  );
+  return res.rows[0] || null;
+}
+
+async function insertCoinLedgerEntry({
+  brand_id,
+  pass_serial,
+  user_id = null,
+  action_key,
+  coin_amount,
+  description = null,
+  related_entity_type = null,
+  related_entity_id = null,
+  metadata = null
+}) {
+  if (!brand_id || !pass_serial || !action_key || coin_amount == null) {
+    throw new Error('brand_id, pass_serial, action_key e coin_amount sono obbligatori');
+  }
+  const res = await pool.query(
+    `INSERT INTO coin_ledger (
+      brand_id, pass_serial, user_id, action_key, coin_amount, description,
+      related_entity_type, related_entity_id, metadata
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
+    RETURNING *`,
+    [
+      brand_id,
+      pass_serial,
+      user_id != null ? String(user_id) : null,
+      action_key,
+      coin_amount,
+      description || null,
+      related_entity_type || null,
+      related_entity_id || null,
+      metadata != null ? JSON.stringify(metadata) : null
+    ]
+  );
+  return res.rows[0];
+}
+
+async function getPassCoinBalance(brandId, passSerial) {
+  const res = await pool.query(
+    `SELECT balance, last_activity, total_accruals, total_redemptions
+     FROM pass_coin_balance
+     WHERE brand_id = $1 AND pass_serial = $2`,
+    [brandId, passSerial]
+  );
+  if (res.rows[0]) return res.rows[0];
+  return {
+    pass_serial: passSerial,
+    brand_id: brandId,
+    balance: 0,
+    last_activity: null,
+    total_accruals: 0,
+    total_redemptions: 0
+  };
+}
+
+async function getPgaSettings(brandId) {
+  const res = await pool.query('SELECT * FROM pga_settings WHERE brand_id = $1', [brandId]);
+  if (res.rows[0]) return res.rows[0];
+  return {
+    brand_id: brandId,
+    enabled: false,
+    welcome_message: null,
+    annual_budget_external_eur: null,
+    annual_budget_used_eur: 0,
+    notify_hr_on_booking: true,
+    notify_hr_email: null
+  };
+}
+
 module.exports = {
   getDb,
   saveDb,
@@ -3758,6 +3931,10 @@ module.exports = {
   groupNearbyMerchantRows,
   haversineKm,
   logConventionActivation,
+  getCoinActionConfig,
+  insertCoinLedgerEntry,
+  getPassCoinBalance,
+  getPgaSettings,
   // Employee portal (see src/db/portal.js)
   ...require('./portal')
 };
