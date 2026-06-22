@@ -23,7 +23,7 @@ function getHubBaseUrl() {
     .trim()
     .replace(/^https?:\/\//i, '')
     .replace(/\/+$/, '');
-  if (customDomain) return `https://hub.${customDomain.replace(/^studio\./, '')}`;
+  if (customDomain) return `https://${customDomain}/hub`;
 
   return 'https://hub.filodiretto.app';
 }

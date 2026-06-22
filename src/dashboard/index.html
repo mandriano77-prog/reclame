@@ -6804,7 +6804,7 @@ function previewHubAppUrl(subPath) {
     if (host === 'localhost' || host === '127.0.0.1') {
         base = `${window.location.origin}/hub`;
     } else if (host.startsWith('studio.')) {
-        base = `https://hub.${host.slice('studio.'.length)}`;
+        base = `${window.location.origin}/hub`;
     } else {
         base = 'https://hub.filodiretto.app';
     }
