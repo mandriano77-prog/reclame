@@ -566,35 +566,29 @@
       '1) Importa merchant in <a href="#" data-pga-nav-conventions>Convenzioni</a> · ' +
       '2) <a href="#" data-pga-nav-enable>Attiva PGA</a> in Catalogo · ' +
       '3) <a href="#" data-pga-nav-experiences>Rivedi le esperienze</a> nel catalogo.';
-    var linkConv = host.querySelector('[data-pga-nav-conventions]');
-    if (linkConv) {
-      linkConv.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (typeof global.nav === 'function') global.nav('conventions');
-      });
+  }
+
+  function handleOnboardingBannerClick(e) {
+    var link = e.target.closest('[data-pga-nav-conventions], [data-pga-nav-enable], [data-pga-nav-experiences]');
+    if (!link) return;
+    e.preventDefault();
+    if (link.hasAttribute('data-pga-nav-conventions')) {
+      if (typeof global.nav === 'function') global.nav('conventions');
+      return;
     }
-    var linkEnable = host.querySelector('[data-pga-nav-enable]');
-    if (linkEnable) {
-      linkEnable.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (typeof global.nav === 'function') global.nav('pga-catalog');
-        switchPgaTab('catalog');
-        var cb = document.getElementById('pgaEnabledCheckbox');
-        if (cb) {
-          cb.focus();
-          cb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }
-      });
+    if (typeof global.nav === 'function') global.nav('pga-catalog');
+    switchPgaTab('catalog');
+    if (link.hasAttribute('data-pga-nav-enable')) {
+      var cb = document.getElementById('pgaEnabledCheckbox');
+      if (cb) {
+        cb.focus();
+        cb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      return;
     }
-    var linkExp = host.querySelector('[data-pga-nav-experiences]');
-    if (linkExp) {
-      linkExp.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (typeof global.nav === 'function') global.nav('pga-catalog');
-        switchPgaTab('catalog');
-        var table = document.getElementById('pgaExperiencesTable');
-        if (table) table.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      });
+    if (link.hasAttribute('data-pga-nav-experiences')) {
+      var table = document.getElementById('pgaExperiencesTable');
+      if (table) table.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }
 
@@ -686,6 +680,12 @@
       modal.querySelectorAll('[data-pga-modal-close]').forEach(function (btn) {
         btn.addEventListener('click', closeExperienceModal);
       });
+    }
+
+    var onboardingHost = document.getElementById('pgaOnboardingBanner');
+    if (onboardingHost && onboardingHost.dataset.fdBannerDelegated !== '1') {
+      onboardingHost.dataset.fdBannerDelegated = '1';
+      onboardingHost.addEventListener('click', handleOnboardingBannerClick);
     }
   }
 

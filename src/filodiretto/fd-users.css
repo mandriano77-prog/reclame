@@ -91,6 +91,7 @@ html[data-app='filodiretto'] .fd-users-brand__id {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: copy;
 }
 
 html[data-app='filodiretto'] .fd-users-copy {

@@ -25,13 +25,29 @@ const samsungWallet = require('./samsung-wallet');
 
 const activeJobIds = new Set();
 
+const PUSH_CHANNEL_KEYS = ['apple', 'google', 'samsung'];
+
+function normalizePushChannelList(channel) {
+  const raw = String(channel || 'apple').trim().toLowerCase();
+  if (!raw) return ['apple'];
+  if (raw === 'both') return ['apple', 'google'];
+  if (raw === 'all') return [...PUSH_CHANNEL_KEYS];
+  if (raw.includes(',')) {
+    const parts = raw.split(',').map((s) => s.trim()).filter((k) => PUSH_CHANNEL_KEYS.includes(k));
+    return parts.length ? [...new Set(parts)] : null;
+  }
+  return PUSH_CHANNEL_KEYS.includes(raw) ? [raw] : null;
+}
+
 function parseWalletPushFlags(channel) {
-  const c = channel || 'apple';
-  const legacyBoth = c === 'both';
+  const parts = normalizePushChannelList(channel);
+  if (!parts || !parts.length) {
+    return { sendApple: true, sendGoogle: false, sendSamsung: false };
+  }
   return {
-    sendApple: c === 'apple' || legacyBoth || c === 'all',
-    sendGoogle: c === 'google' || legacyBoth || c === 'all',
-    sendSamsung: c === 'samsung' || c === 'all',
+    sendApple: parts.includes('apple'),
+    sendGoogle: parts.includes('google'),
+    sendSamsung: parts.includes('samsung'),
   };
 }
 

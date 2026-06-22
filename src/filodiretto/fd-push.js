@@ -11,8 +11,7 @@
   var CHANNELS = [
     { value: 'apple', label: 'Apple Wallet', icon: '', tip: 'Invio tramite APNs (Apple Push Notification service)' },
     { value: 'google', label: 'Google Wallet', icon: '', tip: 'Aggiornamento messaggio su Google Wallet' },
-    { value: 'samsung', label: 'Samsung Wallet', icon: '', tip: 'Aggiornamento contenuto su Samsung Wallet' },
-    { value: 'all', label: 'Tutti i canali', icon: '⇄', tip: 'Apple APNs + Google Wallet + Samsung Wallet' }
+    { value: 'samsung', label: 'Samsung Wallet', icon: '', tip: 'Aggiornamento contenuto su Samsung Wallet' }
   ];
 
   function getApiBase() {
@@ -139,19 +138,27 @@
     if (!active.length) return 'apple';
     if (active.length >= 3) return 'all';
     if (active.length === 1) return active[0];
-    return 'all';
+    return active.join(',');
   }
 
   function setChannelSelectionFromValue(value) {
-    if (value === 'all') {
+    var raw = String(value || 'apple').trim().toLowerCase();
+    if (raw === 'all') {
       channelKeys().forEach(function (k) {
         channelSelection[k] = true;
       });
       return;
     }
-    channelKeys().forEach(function (k) {
-      channelSelection[k] = k === value;
-    });
+    if (raw.indexOf(',') !== -1) {
+      var parts = raw.split(',').map(function (s) { return s.trim(); });
+      channelKeys().forEach(function (k) {
+        channelSelection[k] = parts.indexOf(k) !== -1;
+      });
+    } else {
+      channelKeys().forEach(function (k) {
+        channelSelection[k] = k === raw;
+      });
+    }
     if (!channelKeys().some(function (k) {
       return channelSelection[k];
     })) {
@@ -167,48 +174,39 @@
     var allOn = isAllChannelsSelected();
     document.querySelectorAll('.fd-push-channel-seg__btn').forEach(function (btn) {
       var ch = btn.getAttribute('data-channel');
-      var on = ch === 'all' ? allOn : !!channelSelection[ch];
+      var on = !!channelSelection[ch];
       btn.classList.toggle('is-active', on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
 
     var help = document.getElementById('fdPushChannelHelp');
     if (help) {
-      if (allOn) {
-        help.textContent = CHANNELS.find(function (c) {
-          return c.value === 'all';
-        }).tip;
-      } else {
-        var labels = channelKeys()
-          .filter(function (k) {
-            return channelSelection[k];
-          })
-          .map(function (k) {
-            var ch = CHANNELS.find(function (c) {
-              return c.value === k;
-            });
-            return ch ? ch.label : k;
+      var labels = channelKeys()
+        .filter(function (k) {
+          return channelSelection[k];
+        })
+        .map(function (k) {
+          var ch = CHANNELS.find(function (c) {
+            return c.value === k;
           });
-        help.textContent = labels.length
-          ? 'Invio su: ' + labels.join(', ')
-          : 'Seleziona almeno un canale';
+          return ch ? ch.label : k;
+        });
+      if (allOn) {
+        help.textContent = 'Invio su tutti i canali Wallet (Apple, Google, Samsung)';
+      } else if (labels.length) {
+        help.textContent = 'Invio su: ' + labels.join(', ');
+      } else {
+        help.textContent = 'Seleziona almeno un canale';
       }
     }
   }
 
   function toggleChannel(ch) {
-    if (ch === 'all') {
-      var turnAllOn = !isAllChannelsSelected();
-      channelKeys().forEach(function (k) {
-        channelSelection[k] = turnAllOn;
-      });
-    } else {
-      channelSelection[ch] = !channelSelection[ch];
-      if (!channelKeys().some(function (k) {
-        return channelSelection[k];
-      })) {
-        channelSelection[ch] = true;
-      }
+    channelSelection[ch] = !channelSelection[ch];
+    if (!channelKeys().some(function (k) {
+      return channelSelection[k];
+    })) {
+      channelSelection[ch] = true;
     }
     syncChannelUi();
   }
@@ -716,11 +714,24 @@
     return !!(p.samsung_wallet_ref_id && passSamsungSavedLocal(p)) || passSamsungPendingLocal(p);
   }
 
+  function parseSelectedChannels(channel) {
+    var raw = String(channel || 'apple').trim().toLowerCase();
+    if (raw === 'all') return channelKeys().slice();
+    if (raw.indexOf(',') !== -1) {
+      return raw.split(',').map(function (s) { return s.trim(); }).filter(function (k) {
+        return channelKeys().indexOf(k) !== -1;
+      });
+    }
+    return [raw];
+  }
+
   function countRecipients(passes, channel) {
     var apple = 0;
     var google = 0;
     var samsung = 0;
     var any = 0;
+    var selected = parseSelectedChannels(channel);
+    var total = 0;
     passes.forEach(function (p) {
       var a = isAppleReachable(p);
       var g = isGoogleReachable(p);
@@ -729,11 +740,19 @@
       if (g) google += 1;
       if (s) samsung += 1;
       if (a || g || s) any += 1;
+      var reachable =
+        (selected.indexOf('apple') !== -1 && a) ||
+        (selected.indexOf('google') !== -1 && g) ||
+        (selected.indexOf('samsung') !== -1 && s);
+      if (reachable) total += 1;
     });
-    if (channel === 'apple') return { total: apple, apple: apple, google: 0, samsung: 0, any: any };
-    if (channel === 'google') return { total: google, apple: 0, google: google, samsung: 0, any: any };
-    if (channel === 'samsung') return { total: samsung, apple: 0, google: 0, samsung: samsung, any: any };
-    return { total: any, apple: apple, google: google, samsung: samsung, any: any };
+    if (selected.length === 1) {
+      var k = selected[0];
+      if (k === 'apple') return { total: apple, apple: apple, google: 0, samsung: 0, any: any, selected: selected };
+      if (k === 'google') return { total: google, apple: 0, google: google, samsung: 0, any: any, selected: selected };
+      if (k === 'samsung') return { total: samsung, apple: 0, google: 0, samsung: samsung, any: any, selected: selected };
+    }
+    return { total: total, apple: apple, google: google, samsung: samsung, any: any, selected: selected };
   }
 
   async function fetchRecipientCounts(channel) {
@@ -775,22 +794,35 @@
   }
 
   function channelLabel(value) {
-    var ch = CHANNELS.find(function (c) { return c.value === value; });
+    var raw = String(value || 'apple').trim().toLowerCase();
+    if (raw === 'all') return 'Tutti i canali';
+    if (raw.indexOf(',') !== -1) {
+      return raw.split(',').map(function (part) {
+        var ch = CHANNELS.find(function (c) { return c.value === part.trim(); });
+        return ch ? ch.label : part.trim();
+      }).join(' + ');
+    }
+    var ch = CHANNELS.find(function (c) { return c.value === raw; });
     return ch ? ch.label : value;
   }
 
   function renderRecipientLines(counts, channel) {
     if (!counts) return '<li><strong>Destinatari</strong>Conteggio non disponibile</li>';
-    if (channel === 'all') {
+    var selected = counts.selected || parseSelectedChannels(channel);
+    var names = { apple: 'Apple', google: 'Google', samsung: 'Samsung' };
+    if (selected.length > 1) {
+      var parts = selected.map(function (k) {
+        return names[k] + ': ' + (counts[k] || 0);
+      });
       return (
         '<li><strong>Destinatari raggiungibili</strong>' +
-        'Apple: ' + counts.apple + ' · Google: ' + counts.google + ' · Samsung: ' + counts.samsung +
+        parts.join(' · ') +
         ' (totale unico: ' + counts.total + ')</li>'
       );
     }
-    var names = { apple: 'Apple', google: 'Google', samsung: 'Samsung' };
+    var single = selected[0] || channel;
     return '<li><strong>Destinatari raggiungibili</strong>' +
-      (names[channel] || channel) + ': ' + counts.total + ' pass</li>';
+      (names[single] || single) + ': ' + counts.total + ' pass</li>';
   }
 
   async function openPushSendConfirm(trigger) {

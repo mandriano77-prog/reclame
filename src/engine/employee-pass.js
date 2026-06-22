@@ -464,6 +464,13 @@ function googleImageRef(uri, description) {
 
 function buildGoogleFrontTextModules(employeePass) {
   const modules = [];
+  if (employeePass.headerHint && (employeePass.headerHint.label || employeePass.headerHint.value)) {
+    modules.push({
+      id: 'header_hint',
+      header: employeePass.headerHint.label || 'INFO',
+      body: String(employeePass.headerHint.value || '').slice(0, 500)
+    });
+  }
   (employeePass.front.secondary || []).forEach((f, i) => {
     modules.push({
       id: `front_sec_${i}`,
@@ -485,15 +492,16 @@ function buildGoogleFrontTextModules(employeePass) {
 function toGooglePass(employeePass, { passKind = 'generic' } = {}) {
   const textModulesData = [];
   const linksModuleData = { uris: [] };
+  const hasFrontAnnouncement = (employeePass.front.auxiliary || []).some((f) => f.key === 'announcement');
 
   employeePass.backSections.forEach((s, idx) => {
     if (s.kind === 'link') {
       linksModuleData.uris.push({
         id: s.key || `link_${idx}`,
         uri: s.url,
-        description: s.label
+        description: String(s.linkText || s.label || '').slice(0, 100)
       });
-    } else if (s.body) {
+    } else if (s.body && !(s.key === 'announcement_full' && hasFrontAnnouncement)) {
       textModulesData.push({
         id: s.key || `text_${idx}`,
         header: s.label,
@@ -532,9 +540,16 @@ function toGooglePass(employeePass, { passKind = 'generic' } = {}) {
   if (passKind === 'loyalty') {
     objectPatch.accountName = (employeePass.profile.full_name || 'Membro').slice(0, 64);
   } else {
-    objectPatch.cardTitle = { defaultValue: { language: 'it', value: 'Pass dipendente' } };
+    objectPatch.cardTitle = {
+      defaultValue: {
+        language: 'it',
+        value: (employeePass.programName || employeePass.brandName || 'Pass dipendente').slice(0, 64)
+      }
+    };
     objectPatch.subheader = { defaultValue: { language: 'it', value: employeePass.brandName } };
-    objectPatch.header = { defaultValue: { language: 'it', value: employeePass.profile.full_name || 'Membro' } };
+    objectPatch.header = {
+      defaultValue: { language: 'it', value: employeePass.profile.full_name || 'Membro' }
+    };
     if (thumbUri && employeePass.hasTemplateImages.thumbnail) {
       objectPatch.mainImage = googleImageRef(thumbUri, 'Thumbnail');
     }

@@ -29,9 +29,40 @@
     if (!table) return;
     var thead = table.querySelector('thead');
     if (!thead) return;
-    var hasData = tableHasDataRows(tableId);
+    var emptyHost = tableId === 'gamTable' ? document.getElementById('gamEmptyHost') : null;
+    var emptyHostVisible = !!(emptyHost && !emptyHost.hidden && emptyHost.innerHTML.trim());
+    var tableHidden = table.hidden === true;
+    var hasData = !emptyHostVisible && !tableHidden && tableHasDataRows(tableId);
     thead.hidden = !hasData;
     table.classList.toggle('fd-table--empty', !hasData);
+    if (emptyHostVisible) table.hidden = true;
+  }
+
+  function challengeStatusMeta(status) {
+    var key = String(status || '').toLowerCase();
+    var map = {
+      active: { label: 'Attiva', cls: 'fd-challenge-status--active' },
+      draft: { label: 'Bozza', cls: 'fd-challenge-status--draft' },
+      paused: { label: 'In pausa', cls: 'fd-challenge-status--paused' },
+      ended: { label: 'Terminata', cls: 'fd-challenge-status--ended' },
+      inactive: { label: 'Inattiva', cls: 'fd-challenge-status--inactive' }
+    };
+    return map[key] || { label: status || '—', cls: 'fd-challenge-status--neutral' };
+  }
+
+  function enhanceChallengeStatusBadges(scope) {
+    var root = scope || document.getElementById('gamification');
+    if (!root) return;
+    root.querySelectorAll('#gamTable tbody tr').forEach(function (row) {
+      var badge = row.querySelector('td .badge');
+      if (!badge || badge.dataset.fdStatusLocalized === '1') return;
+      var raw = (badge.textContent || '').trim();
+      var meta = challengeStatusMeta(raw);
+      badge.dataset.fdStatusLocalized = '1';
+      badge.textContent = meta.label;
+      badge.classList.remove('active', 'inactive');
+      badge.classList.add('fd-challenge-status', meta.cls);
+    });
   }
 
   function formatRedemptionRate(stats) {
@@ -97,6 +128,10 @@
       tip.classList.add('fd-th-help-tip--above');
     } else {
       tip.classList.remove('fd-th-help-tip--above');
+    }
+
+    if (left + width > window.innerWidth - collision) {
+      left = Math.max(collision, window.innerWidth - width - collision);
     }
 
     tip.style.position = 'fixed';
@@ -250,8 +285,8 @@
     var modal = document.getElementById('iwModal');
     if (!modal || modal.dataset.fdDsModal === '1') return;
     modal.dataset.fdDsModal = '1';
-    modal.classList.add('fd-reward-modal-overlay');
-    var panel = modal.querySelector(':scope > div');
+    if (!modal.classList.contains('modal')) modal.classList.add('modal');
+    var panel = modal.querySelector('.modal-content');
     if (panel) panel.classList.add('fd-card', 'fd-reward-modal');
     modal.querySelectorAll('[onclick*="closeIwModal"]').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm');
@@ -259,8 +294,6 @@
     });
     modal.querySelectorAll('[onclick*="saveIwCampaign"]').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-reward-modal-save');
-      btn.style.width = '';
-      btn.style.marginTop = '';
     });
   }
 
@@ -385,8 +418,8 @@
     var modal = document.getElementById('gamModal');
     if (!modal || modal.dataset.fdDsModal === '1') return;
     modal.dataset.fdDsModal = '1';
-    modal.classList.add('fd-challenge-modal-overlay');
-    var panel = modal.querySelector(':scope > div');
+    if (!modal.classList.contains('modal')) modal.classList.add('modal');
+    var panel = modal.querySelector('.modal-content');
     if (panel) panel.classList.add('fd-card', 'fd-challenge-modal');
     modal.querySelectorAll('[onclick*="closeGamModal"]').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm');
@@ -394,8 +427,6 @@
     });
     modal.querySelectorAll('[onclick*="saveGamCampaign"]').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-challenge-modal-save');
-      btn.style.width = '';
-      btn.style.marginTop = '';
     });
   }
 
@@ -452,6 +483,7 @@
     enhanceChallengeRowActions();
     enhanceTableHeaders();
     bindThHelpTooltips();
+    enhanceChallengeStatusBadges();
     updateGamStatsCompact();
     syncEngagementTableHead('gamTable');
     if (typeof window.fdEnhanceResponsiveTables === 'function') {

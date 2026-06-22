@@ -134,8 +134,8 @@ test('fd.bundle.js is valid JavaScript after build', () => {
 
 test('index.html bundle cache references contacts-header tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260622-ux-checklist/);
-  assert.match(html, /fd\.bundle\.js\?v=20260622-ux-checklist/);
+  assert.match(html, /fd\.bundle\.css\?v=20260622-growth-insights-gw/);
+  assert.match(html, /fd\.bundle\.js\?v=20260622-growth-insights-gw/);
   assert.match(html, /\/dashboard\/lib\/public-url\.js/);
   assert.match(html, /function a2wPublicUrlBase/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
@@ -304,4 +304,38 @@ test('Filo engagement KPIs use visible skeleton and clear loading class', () => 
   assert.match(js, /classList\.remove\('fd-pga-kpi-grid--loading'\)/);
   assert.doesNotMatch(css, /fd-pga-kpi-grid--loading[\s\S]*color:\s*transparent/);
   assert.match(css, /fd-pga-kpi__value-skeleton/);
+});
+
+test('Push channel multi-select maps pairs to comma-separated API values', () => {
+  const js = readFd('fd-push.js');
+  assert.match(js, /return active\.join\(',',?\)/);
+  assert.doesNotMatch(js, /value: 'all', label: 'Tutti i canali'/);
+  const routes = read('src/api/routes.js');
+  assert.match(routes, /normalizePushChannelList/);
+  assert.match(routes, /apple,google/);
+});
+
+test('Challenge hides table head when gamEmptyHost is visible', () => {
+  const js = readFd('fd-reward-challenge.js');
+  const css = readFd('fd-reward-challenge.css');
+  assert.match(js, /gamEmptyHost/);
+  assert.match(js, /enhanceChallengeStatusBadges/);
+  assert.match(css, /#gamEmptyHost:not\(\[hidden\]\)/);
+});
+
+test('PGA onboarding banner uses delegated click handler', () => {
+  const js = readFd('fd-pga.js');
+  assert.match(js, /handleOnboardingBannerClick/);
+  assert.match(js, /data-pga-nav-enable/);
+  assert.match(js, /data-pga-nav-experiences/);
+});
+
+test('Google Wallet HR pass resolves hub links like passkit', () => {
+  const gw = read('src/engine/google-wallet.js');
+  const ep = read('src/engine/employee-pass.js');
+  assert.match(gw, /async function buildPassObject/);
+  assert.match(gw, /resolveHrPassOptions/);
+  assert.match(gw, /hubUrl: hrOpts\.hubUrl/);
+  assert.match(ep, /linkText \|\| s\.label/);
+  assert.match(ep, /announcement_full/);
 });

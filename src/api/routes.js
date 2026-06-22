@@ -202,18 +202,41 @@ function rejectIfDeployOperatorNotAllowed(req, res) {
   return false;
 }
 
-/** Canali ammessi su API/dashboard (solo singoli + all). Legacy `both` resta nei record DB ma non è più selezionabile. */
-const PUSH_CHANNELS = ['apple', 'google', 'samsung', 'all'];
-function assertPushChannel(ch) {
-  return PUSH_CHANNELS.includes(ch);
+/** Canali wallet singoli. Legacy `both` resta nei record DB ma non è più selezionabile in UI. */
+const PUSH_CHANNEL_KEYS = ['apple', 'google', 'samsung'];
+const PUSH_CHANNELS = [
+  'apple', 'google', 'samsung', 'all',
+  'apple,google', 'apple,samsung', 'google,samsung'
+];
+
+function normalizePushChannelList(channel) {
+  const raw = String(channel || 'apple').trim().toLowerCase();
+  if (!raw) return ['apple'];
+  if (raw === 'both') return ['apple', 'google'];
+  if (raw === 'all') return [...PUSH_CHANNEL_KEYS];
+  if (raw.includes(',')) {
+    const parts = raw.split(',').map((s) => s.trim()).filter((k) => PUSH_CHANNEL_KEYS.includes(k));
+    return parts.length ? [...new Set(parts)] : null;
+  }
+  return PUSH_CHANNEL_KEYS.includes(raw) ? [raw] : null;
 }
+
+function assertPushChannel(ch) {
+  if (ch === 'both') return true;
+  if (PUSH_CHANNELS.includes(String(ch || '').trim().toLowerCase())) return true;
+  const parts = normalizePushChannelList(ch);
+  return !!(parts && parts.length >= 1 && parts.length <= PUSH_CHANNEL_KEYS.length);
+}
+
 function parseWalletPushFlags(channel) {
-  const c = channel || 'apple';
-  const legacyBoth = c === 'both';
+  const parts = normalizePushChannelList(channel);
+  if (!parts || !parts.length) {
+    return { sendApple: true, sendGoogle: false, sendSamsung: false };
+  }
   return {
-    sendApple: c === 'apple' || legacyBoth || c === 'all',
-    sendGoogle: c === 'google' || legacyBoth || c === 'all',
-    sendSamsung: c === 'samsung' || c === 'all'
+    sendApple: parts.includes('apple'),
+    sendGoogle: parts.includes('google'),
+    sendSamsung: parts.includes('samsung')
   };
 }
 
@@ -680,7 +703,7 @@ router.post('/signup/google-wallet', async (req, res) => {
     if (campaign_id) await incrementCampaignDownloads(campaign_id);
 
     // Create/update class + object first. In Generic mode this ensures class/object exist before save link.
-    const passObject = googleWallet.buildPassObject(brand, template, passInstance, passInstance.customer_data || {});
+    const passObject = await googleWallet.buildPassObject(brand, template, passInstance, passInstance.customer_data || {});
     await googleWallet.ensurePassReadyOnServer(brand, template, passObject);
 
     const saveLink = googleWallet.generateSaveLink(brand, template, passObject);
@@ -2356,7 +2379,7 @@ router.post('/push/send', async (req, res) => {
     if (!brand_id || !title || !message) return res.status(400).json({ error: 'brand_id, title, message richiesti' });
     if (!requireBrandId(req, res, brand_id)) return;
     if (!assertPushChannel(channel)) {
-      return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
+      return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all o combinazioni apple,google)' });
     }
 
     let resolvedStripBase64 = null;
@@ -2458,7 +2481,7 @@ router.post('/push/scheduled', async (req, res) => {
   try {
     if (!requireBrandId(req, res, req.body.brand_id)) return;
     if (req.body.channel && !assertPushChannel(req.body.channel)) {
-      return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
+      return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all o combinazioni apple,google)' });
     }
     const body = { ...req.body };
     if (Array.isArray(body.days) && body.days.length && (!body.schedule_days || String(body.schedule_days).trim() === '')) {
@@ -2481,7 +2504,7 @@ router.put('/push/scheduled/:id', async (req, res) => {
     if (!prev) return res.status(404).json({ error: 'Push pianificato non trovato' });
     if (!requireBrandId(req, res, prev.brand_id)) return;
     if (req.body.channel && !assertPushChannel(req.body.channel)) {
-      return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
+      return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all o combinazioni apple,google)' });
     }
     const item = await updateScheduledPush(req.params.id, req.body);
     res.json(item);
@@ -2587,7 +2610,7 @@ router.put('/brands/:id/geofencing', async (req, res) => {
     if (!requireOwnedBrandPk(req, res, req.params.id)) return;
     const { locations, maxDistance, channel = 'apple' } = req.body;
     if (!assertPushChannel(channel)) {
-      return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all)' });
+      return res.status(400).json({ error: 'channel non valido (apple|google|samsung|all o combinazioni apple,google)' });
     }
     const { sendApple, sendGoogle, sendSamsung } = parseWalletPushFlags(channel);
     const brand = await getBrand(req.params.id);
@@ -4662,7 +4685,7 @@ router.get('/google-wallet/pass/:id', async (req, res) => {
       return res.status(404).json({ error: 'Template o brand non trovato' });
     }
 
-    const passObject = googleWallet.buildPassObject(brand, template, instance, instance.customer_data);
+    const passObject = await googleWallet.buildPassObject(brand, template, instance, instance.customer_data);
     await googleWallet.ensurePassReadyOnServer(brand, template, passObject);
     await updatePassInstance(instance.id, {
       google_wallet_object_id: passObject.id,

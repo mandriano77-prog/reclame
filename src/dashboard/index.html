@@ -27,8 +27,8 @@
                 var fdLegacyMediaHide = document.createElement('style');
                 fdLegacyMediaHide.textContent = "html[data-app='filodiretto'] #media-library #a2wMediaTabs{display:none!important}";
                 document.head.appendChild(fdLegacyMediaHide);
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260622-ux-checklist';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260622-ux-checklist';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260622-growth-insights-gw';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260622-growth-insights-gw';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-components.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-mobile-gate.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-page-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-analytics.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-conventions.css', '/filodiretto/fd-pga.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-conventions.js', '/filodiretto/fd-pga.js', '/filodiretto/fd-pga-engagement.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -2346,12 +2346,10 @@
                 </table>
 
                 <!-- IW Modal -->
-                <div id="iwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
-                  <div style="background:var(--card);border-radius:16px;padding:28px;max-width:520px;width:95%;max-height:90vh;overflow-y:auto;border:1px solid var(--border);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                      <h2 id="iwModalTitle" class="block-title" style="margin:0;font-size:20px;">Nuova Campagna</h2>
-                      <button type="button" class="btn sec" onclick="closeIwModal()" style="font-size:18px;padding:4px 12px;" aria-label="Chiudi modale Reward">✕</button>
-                    </div>
+                <div id="iwModal" class="modal" data-rbac-section="instant-win">
+                  <div class="modal-content">
+                    <button type="button" class="modal-close" onclick="closeIwModal()" aria-label="Chiudi modale Reward">&times;</button>
+                    <div class="modal-header" id="iwModalTitle">Nuova Campagna</div>
                     <input type="hidden" id="iwEditId">
                     <div class="form-group"><label class="form-label">Nome campagna</label><input id="iwName" placeholder="es. Vinci un aperitivo"></div>
                     <div class="form-group"><label class="form-label">Tipo gioco</label>
@@ -2374,7 +2372,7 @@
                       <div class="form-group"><label class="form-label">Data fine</label><input type="date" id="iwEndDate"></div>
                     </div>
                     <div class="form-group"><label class="form-label">Messaggio push (opzionale)</label><input id="iwPushMsg" placeholder="es. Hai un premio da scoprire!"></div>
-                    <button class="btn" onclick="saveIwCampaign()" style="width:100%;margin-top:12px;">Salva Campagna</button>
+                    <button class="btn" onclick="saveIwCampaign()">Salva Campagna</button>
                   </div>
                 </div>
             </div>
@@ -2402,19 +2400,17 @@
                 </table>
 
                 <!-- Gamification Modal -->
-                <div id="gamModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
-                  <div style="background:var(--card);border-radius:16px;padding:28px;max-width:560px;width:95%;max-height:90vh;overflow-y:auto;border:1px solid var(--border);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                      <h2 id="gamModalTitle" class="block-title" style="margin:0;font-size:20px;">Nuova Campagna Challenge</h3>
-                      <button type="button" class="btn sec" onclick="closeGamModal()" style="font-size:18px;padding:4px 12px;" aria-label="Chiudi modale Challenge">✕</button>
-                    </div>
+                <div id="gamModal" class="modal" data-rbac-section="gamification">
+                  <div class="modal-content">
+                    <button type="button" class="modal-close" onclick="closeGamModal()" aria-label="Chiudi modale Challenge">&times;</button>
+                    <div class="modal-header" id="gamModalTitle">Nuova Campagna Challenge</div>
                     <input type="hidden" id="gamEditId">
                     <div class="form-group"><label class="form-label">Nome campagna</label><input id="gamName" placeholder="es. Quiz Natale 2026"></div>
                     <div class="form-group"><label class="form-label">Tipo gioco</label>
                       <select id="gamGameType"><option value="quiz">Quiz</option><option value="memory">Memory Match</option><option value="puzzle">Puzzle</option></select>
                     </div>
 
-                    <div style="background:var(--bg2);border-radius:12px;padding:16px;margin:16px 0;border:1px solid var(--border);">
+                    <div class="fd-challenge-prize-tiers">
                       <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Fasce Premio (in base al tempo)</div>
                       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                         <div class="form-group"><label class="form-label">🥇 Soglia Oro (secondi)</label><input type="number" id="gamGoldSecs" min="1" value="15" step="1"></div>
@@ -2441,7 +2437,7 @@
                       <div class="form-group"><label class="form-label">Data fine</label><input type="date" id="gamEndDate"></div>
                     </div>
                     <div class="form-group"><label class="form-label">Messaggio push (opzionale)</label><input id="gamPushMsg" placeholder="es. Una nuova sfida ti aspetta!"></div>
-                    <button class="btn" onclick="saveGamCampaign()" style="width:100%;margin-top:12px;">Salva Campagna</button>
+                    <button class="btn" onclick="saveGamCampaign()">Salva Campagna</button>
                   </div>
                 </div>
             </div>
@@ -8333,9 +8329,11 @@ function openIwModal(campaign) {
     document.getElementById('iwEndDate').value = campaign?.end_date ? campaign.end_date.split('T')[0] : '';
     document.getElementById('iwPushMsg').value = campaign ? (campaign.push_message || '') : '';
     document.getElementById('iwModalTitle').textContent = campaign ? 'Modifica Campagna' : 'Nuova Campagna';
-    document.getElementById('iwModal').style.display = 'flex';
+    if (typeof prepareModalOpen === 'function') prepareModalOpen('iwModal');
+    document.getElementById('iwModal').classList.add('active');
+    document.body.classList.add('modal-open');
 }
-function closeIwModal() { document.getElementById('iwModal').style.display = 'none'; }
+function closeIwModal() { closeModal('iwModal'); }
 
 async function saveIwCampaign() {
     const editId = document.getElementById('iwEditId').value;
@@ -10679,9 +10677,11 @@ function openGamModal(editId) {
         document.getElementById('gamEndDate').value = '';
         document.getElementById('gamPushMsg').value = '';
     }
-    document.getElementById('gamModal').style.display = 'flex';
+    if (typeof prepareModalOpen === 'function') prepareModalOpen('gamModal');
+    document.getElementById('gamModal').classList.add('active');
+    document.body.classList.add('modal-open');
 }
-function closeGamModal() { document.getElementById('gamModal').style.display = 'none'; }
+function closeGamModal() { closeModal('gamModal'); }
 
 async function saveGamCampaign() {
     const editId = document.getElementById('gamEditId').value;

@@ -478,19 +478,78 @@ function formatGoogleWalletError(err) {
 
 // ── Pass Object (instance) ────────────────────────────────────────────
 
-function buildPassObject(brand, template, instance, member) {
+async function resolveHrPassOptions(brand, instance, memberHint) {
+  let member = memberHint && (memberHint.first_name || memberHint.last_name || memberHint.id)
+    ? memberHint
+    : null;
+  if (!member && instance?.id) {
+    try {
+      const { getMemberForPass } = require('../db');
+      member = await getMemberForPass(instance.id);
+    } catch (err) {
+      console.warn('[GoogleWallet] member lookup skipped:', err.message);
+    }
+  }
+
+  let portalUrl = null;
+  let hubUrl = null;
+  let pgaUrl = null;
+  let meUrl = null;
+  let coinBalance = null;
+
+  if (isHrEmployeePass(brand) && instance?.serial_number && (process.env.JWT_HUB_SECRET || process.env.JWT_SECRET)) {
+    try {
+      const { signHubToken, buildHubUrl, buildHubAppUrl } = require('./hub-jwt');
+      const { getPgaSettings } = require('../db');
+      const { getCurrentBalance } = require('./coins');
+      const userId = member?.id || instance.member_id || null;
+      const token = signHubToken({
+        user_id: userId,
+        pass_serial: instance.serial_number,
+        brand_id: brand.id
+      });
+      hubUrl = buildHubUrl(token, brand.slug);
+      meUrl = buildHubAppUrl(token, brand.slug, 'me');
+      const pgaSettings = await getPgaSettings(brand.id);
+      if (pgaSettings?.enabled) {
+        pgaUrl = buildHubAppUrl(token, brand.slug, 'pga');
+        coinBalance = await getCurrentBalance(brand.id, instance.serial_number);
+      }
+    } catch (err) {
+      console.warn('[GoogleWallet] hub links skipped:', err.message);
+    }
+  }
+
+  if (!portalUrl && instance?.id) {
+    try {
+      const { resolvePortalLinkForPass } = require('./portal-pass-link');
+      const link = await resolvePortalLinkForPass(instance.id, { rotate: false });
+      portalUrl = link?.portal_url || null;
+    } catch (_) {}
+  }
+
+  return { member, portalUrl, hubUrl, pgaUrl, meUrl, coinBalance };
+}
+
+async function buildPassObject(brand, template, instance, memberHint) {
   const passKind = getPassKind();
   const classId = buildClassId(brand, template);
   const objectId = buildObjectId(instance.serial_number);
 
   if (isHrEmployeePass(brand)) {
+    const hrOpts = await resolveHrPassOptions(brand, instance, memberHint);
     const employeePass = buildEmployeePass({
       brand,
       template,
       instance,
-      member,
+      member: hrOpts.member,
       brandConfig: brand.config,
-      apiBase: API_BASE
+      apiBase: API_BASE,
+      portalUrl: hrOpts.portalUrl,
+      hubUrl: hrOpts.hubUrl,
+      pgaUrl: hrOpts.pgaUrl,
+      meUrl: hrOpts.meUrl,
+      coinBalance: hrOpts.coinBalance
     });
     const { objectPatch } = toGooglePass(employeePass, { passKind });
     const obj = passKind === 'loyalty'
@@ -522,8 +581,8 @@ function buildPassObject(brand, template, instance, member) {
     return obj;
   }
 
-  const firstName = member?.first_name || instance.customer_data?.name || 'Guest';
-  const lastName = member?.last_name || '';
+  const firstName = memberHint?.first_name || instance.customer_data?.name || 'Guest';
+  const lastName = memberHint?.last_name || '';
 
   const { buildIdentifyingQrBarcode } = require('./passkit');
   const { message: barcodeValue, altText: barcodeAlt } = buildIdentifyingQrBarcode(instance);

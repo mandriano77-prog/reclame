@@ -2957,12 +2957,13 @@
       if (e.key === 'Escape') closeAllMenus();
     });
   }
-  function copyText(text) {
+  function copyText(text, label) {
     var value = String(text || '');
     if (!value) return;
+    var msg = label ? label + ' copiato' : 'ID copiato';
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(value).then(function () {
-        toast('ID copiato');
+        toast(msg);
       }).catch(function () {
         toast('Copia non riuscita');
       });
@@ -3190,8 +3191,8 @@
       '<td class="fd-users-brand">' +
       '<span class="fd-users-brand__name">' + esc(name) + '</span>' +
       '<span class="fd-users-brand__id-row">' +
-      '<code class="fd-users-brand__id" title="' + esc(id) + '">' + esc(id.slice(0, 8)) + '…</code>' +
-      '<button type="button" class="fd-users-copy" data-copy-id="' + esc(id) + '" aria-label="Copia ID brand" title="Copia ID brand">⧉</button>' +
+      '<code class="fd-users-brand__id" title="Brand ID: ' + esc(id) + '">' + esc(id.slice(0, 8)) + '…</code>' +
+      '<button type="button" class="fd-users-copy" data-copy-id="' + esc(id) + '" data-copy-label="Brand ID" aria-label="Copia Brand ID completo" title="Copia Brand ID: ' + esc(id) + '">⧉</button>' +
       '</span></td>'
     );
   }
@@ -3215,7 +3216,16 @@
       btn.dataset.fdBound = '1';
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
-        copyText(btn.getAttribute('data-copy-id'));
+        copyText(btn.getAttribute('data-copy-id'), btn.getAttribute('data-copy-label') || 'Brand ID');
+      });
+    });
+    tbody.querySelectorAll('.fd-users-brand__id').forEach(function (code) {
+      if (code.dataset.fdBound === '1') return;
+      code.dataset.fdBound = '1';
+      code.addEventListener('click', function () {
+        var row = code.closest('.fd-users-brand__id-row');
+        var btn = row ? row.querySelector('.fd-users-copy') : null;
+        if (btn) copyText(btn.getAttribute('data-copy-id'), 'Brand ID');
       });
     });
     tbody.querySelectorAll('.fd-users-kebab').forEach(function (btn) {
@@ -7657,8 +7667,7 @@
   var CHANNELS = [
     { value: 'apple', label: 'Apple Wallet', icon: '', tip: 'Invio tramite APNs (Apple Push Notification service)' },
     { value: 'google', label: 'Google Wallet', icon: '', tip: 'Aggiornamento messaggio su Google Wallet' },
-    { value: 'samsung', label: 'Samsung Wallet', icon: '', tip: 'Aggiornamento contenuto su Samsung Wallet' },
-    { value: 'all', label: 'Tutti i canali', icon: '⇄', tip: 'Apple APNs + Google Wallet + Samsung Wallet' }
+    { value: 'samsung', label: 'Samsung Wallet', icon: '', tip: 'Aggiornamento contenuto su Samsung Wallet' }
   ];
   function getApiBase() {
     if (typeof window.API === 'string' && window.API) return window.API;
@@ -7771,18 +7780,26 @@
     if (!active.length) return 'apple';
     if (active.length >= 3) return 'all';
     if (active.length === 1) return active[0];
-    return 'all';
+    return active.join(',');
   }
   function setChannelSelectionFromValue(value) {
-    if (value === 'all') {
+    var raw = String(value || 'apple').trim().toLowerCase();
+    if (raw === 'all') {
       channelKeys().forEach(function (k) {
         channelSelection[k] = true;
       });
       return;
     }
-    channelKeys().forEach(function (k) {
-      channelSelection[k] = k === value;
-    });
+    if (raw.indexOf(',') !== -1) {
+      var parts = raw.split(',').map(function (s) { return s.trim(); });
+      channelKeys().forEach(function (k) {
+        channelSelection[k] = parts.indexOf(k) !== -1;
+      });
+    } else {
+      channelKeys().forEach(function (k) {
+        channelSelection[k] = k === raw;
+      });
+    }
     if (!channelKeys().some(function (k) {
       return channelSelection[k];
     })) {
@@ -7796,46 +7813,37 @@
     var allOn = isAllChannelsSelected();
     document.querySelectorAll('.fd-push-channel-seg__btn').forEach(function (btn) {
       var ch = btn.getAttribute('data-channel');
-      var on = ch === 'all' ? allOn : !!channelSelection[ch];
+      var on = !!channelSelection[ch];
       btn.classList.toggle('is-active', on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     var help = document.getElementById('fdPushChannelHelp');
     if (help) {
-      if (allOn) {
-        help.textContent = CHANNELS.find(function (c) {
-          return c.value === 'all';
-        }).tip;
-      } else {
-        var labels = channelKeys()
-          .filter(function (k) {
-            return channelSelection[k];
-          })
-          .map(function (k) {
-            var ch = CHANNELS.find(function (c) {
-              return c.value === k;
-            });
-            return ch ? ch.label : k;
+      var labels = channelKeys()
+        .filter(function (k) {
+          return channelSelection[k];
+        })
+        .map(function (k) {
+          var ch = CHANNELS.find(function (c) {
+            return c.value === k;
           });
-        help.textContent = labels.length
-          ? 'Invio su: ' + labels.join(', ')
-          : 'Seleziona almeno un canale';
+          return ch ? ch.label : k;
+        });
+      if (allOn) {
+        help.textContent = 'Invio su tutti i canali Wallet (Apple, Google, Samsung)';
+      } else if (labels.length) {
+        help.textContent = 'Invio su: ' + labels.join(', ');
+      } else {
+        help.textContent = 'Seleziona almeno un canale';
       }
     }
   }
   function toggleChannel(ch) {
-    if (ch === 'all') {
-      var turnAllOn = !isAllChannelsSelected();
-      channelKeys().forEach(function (k) {
-        channelSelection[k] = turnAllOn;
-      });
-    } else {
-      channelSelection[ch] = !channelSelection[ch];
-      if (!channelKeys().some(function (k) {
-        return channelSelection[k];
-      })) {
-        channelSelection[ch] = true;
-      }
+    channelSelection[ch] = !channelSelection[ch];
+    if (!channelKeys().some(function (k) {
+      return channelSelection[k];
+    })) {
+      channelSelection[ch] = true;
     }
     syncChannelUi();
   }
@@ -8303,11 +8311,23 @@
   function isSamsungReachable(p) {
     return !!(p.samsung_wallet_ref_id && passSamsungSavedLocal(p)) || passSamsungPendingLocal(p);
   }
+  function parseSelectedChannels(channel) {
+    var raw = String(channel || 'apple').trim().toLowerCase();
+    if (raw === 'all') return channelKeys().slice();
+    if (raw.indexOf(',') !== -1) {
+      return raw.split(',').map(function (s) { return s.trim(); }).filter(function (k) {
+        return channelKeys().indexOf(k) !== -1;
+      });
+    }
+    return [raw];
+  }
   function countRecipients(passes, channel) {
     var apple = 0;
     var google = 0;
     var samsung = 0;
     var any = 0;
+    var selected = parseSelectedChannels(channel);
+    var total = 0;
     passes.forEach(function (p) {
       var a = isAppleReachable(p);
       var g = isGoogleReachable(p);
@@ -8316,11 +8336,19 @@
       if (g) google += 1;
       if (s) samsung += 1;
       if (a || g || s) any += 1;
+      var reachable =
+        (selected.indexOf('apple') !== -1 && a) ||
+        (selected.indexOf('google') !== -1 && g) ||
+        (selected.indexOf('samsung') !== -1 && s);
+      if (reachable) total += 1;
     });
-    if (channel === 'apple') return { total: apple, apple: apple, google: 0, samsung: 0, any: any };
-    if (channel === 'google') return { total: google, apple: 0, google: google, samsung: 0, any: any };
-    if (channel === 'samsung') return { total: samsung, apple: 0, google: 0, samsung: samsung, any: any };
-    return { total: any, apple: apple, google: google, samsung: samsung, any: any };
+    if (selected.length === 1) {
+      var k = selected[0];
+      if (k === 'apple') return { total: apple, apple: apple, google: 0, samsung: 0, any: any, selected: selected };
+      if (k === 'google') return { total: google, apple: 0, google: google, samsung: 0, any: any, selected: selected };
+      if (k === 'samsung') return { total: samsung, apple: 0, google: 0, samsung: samsung, any: any, selected: selected };
+    }
+    return { total: total, apple: apple, google: google, samsung: samsung, any: any, selected: selected };
   }
   async function fetchRecipientCounts(channel) {
     var brandId = syncBrandIdForPush();
@@ -8358,21 +8386,34 @@
     return opt ? opt.textContent.trim() : sel.value;
   }
   function channelLabel(value) {
-    var ch = CHANNELS.find(function (c) { return c.value === value; });
+    var raw = String(value || 'apple').trim().toLowerCase();
+    if (raw === 'all') return 'Tutti i canali';
+    if (raw.indexOf(',') !== -1) {
+      return raw.split(',').map(function (part) {
+        var ch = CHANNELS.find(function (c) { return c.value === part.trim(); });
+        return ch ? ch.label : part.trim();
+      }).join(' + ');
+    }
+    var ch = CHANNELS.find(function (c) { return c.value === raw; });
     return ch ? ch.label : value;
   }
   function renderRecipientLines(counts, channel) {
     if (!counts) return '<li><strong>Destinatari</strong>Conteggio non disponibile</li>';
-    if (channel === 'all') {
+    var selected = counts.selected || parseSelectedChannels(channel);
+    var names = { apple: 'Apple', google: 'Google', samsung: 'Samsung' };
+    if (selected.length > 1) {
+      var parts = selected.map(function (k) {
+        return names[k] + ': ' + (counts[k] || 0);
+      });
       return (
         '<li><strong>Destinatari raggiungibili</strong>' +
-        'Apple: ' + counts.apple + ' · Google: ' + counts.google + ' · Samsung: ' + counts.samsung +
+        parts.join(' · ') +
         ' (totale unico: ' + counts.total + ')</li>'
       );
     }
-    var names = { apple: 'Apple', google: 'Google', samsung: 'Samsung' };
+    var single = selected[0] || channel;
     return '<li><strong>Destinatari raggiungibili</strong>' +
-      (names[channel] || channel) + ': ' + counts.total + ' pass</li>';
+      (names[single] || single) + ': ' + counts.total + ' pass</li>';
   }
   async function openPushSendConfirm(trigger) {
     if (typeof window.clearPushFieldErrors === 'function') window.clearPushFieldErrors();
@@ -8859,9 +8900,38 @@
     if (!table) return;
     var thead = table.querySelector('thead');
     if (!thead) return;
-    var hasData = tableHasDataRows(tableId);
+    var emptyHost = tableId === 'gamTable' ? document.getElementById('gamEmptyHost') : null;
+    var emptyHostVisible = !!(emptyHost && !emptyHost.hidden && emptyHost.innerHTML.trim());
+    var tableHidden = table.hidden === true;
+    var hasData = !emptyHostVisible && !tableHidden && tableHasDataRows(tableId);
     thead.hidden = !hasData;
     table.classList.toggle('fd-table--empty', !hasData);
+    if (emptyHostVisible) table.hidden = true;
+  }
+  function challengeStatusMeta(status) {
+    var key = String(status || '').toLowerCase();
+    var map = {
+      active: { label: 'Attiva', cls: 'fd-challenge-status--active' },
+      draft: { label: 'Bozza', cls: 'fd-challenge-status--draft' },
+      paused: { label: 'In pausa', cls: 'fd-challenge-status--paused' },
+      ended: { label: 'Terminata', cls: 'fd-challenge-status--ended' },
+      inactive: { label: 'Inattiva', cls: 'fd-challenge-status--inactive' }
+    };
+    return map[key] || { label: status || '—', cls: 'fd-challenge-status--neutral' };
+  }
+  function enhanceChallengeStatusBadges(scope) {
+    var root = scope || document.getElementById('gamification');
+    if (!root) return;
+    root.querySelectorAll('#gamTable tbody tr').forEach(function (row) {
+      var badge = row.querySelector('td .badge');
+      if (!badge || badge.dataset.fdStatusLocalized === '1') return;
+      var raw = (badge.textContent || '').trim();
+      var meta = challengeStatusMeta(raw);
+      badge.dataset.fdStatusLocalized = '1';
+      badge.textContent = meta.label;
+      badge.classList.remove('active', 'inactive');
+      badge.classList.add('fd-challenge-status', meta.cls);
+    });
   }
   function formatRedemptionRate(stats) {
     if (!stats) return '—';
@@ -8918,6 +8988,9 @@
       tip.classList.add('fd-th-help-tip--above');
     } else {
       tip.classList.remove('fd-th-help-tip--above');
+    }
+    if (left + width > window.innerWidth - collision) {
+      left = Math.max(collision, window.innerWidth - width - collision);
     }
     tip.style.position = 'fixed';
     tip.style.top = top + 'px';
@@ -9055,8 +9128,8 @@
     var modal = document.getElementById('iwModal');
     if (!modal || modal.dataset.fdDsModal === '1') return;
     modal.dataset.fdDsModal = '1';
-    modal.classList.add('fd-reward-modal-overlay');
-    var panel = modal.querySelector(':scope > div');
+    if (!modal.classList.contains('modal')) modal.classList.add('modal');
+    var panel = modal.querySelector('.modal-content');
     if (panel) panel.classList.add('fd-card', 'fd-reward-modal');
     modal.querySelectorAll('[onclick*="closeIwModal"]').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm');
@@ -9064,8 +9137,6 @@
     });
     modal.querySelectorAll('[onclick*="saveIwCampaign"]').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-reward-modal-save');
-      btn.style.width = '';
-      btn.style.marginTop = '';
     });
   }
   function renderRewardTableSkeleton() {
@@ -9178,8 +9249,8 @@
     var modal = document.getElementById('gamModal');
     if (!modal || modal.dataset.fdDsModal === '1') return;
     modal.dataset.fdDsModal = '1';
-    modal.classList.add('fd-challenge-modal-overlay');
-    var panel = modal.querySelector(':scope > div');
+    if (!modal.classList.contains('modal')) modal.classList.add('modal');
+    var panel = modal.querySelector('.modal-content');
     if (panel) panel.classList.add('fd-card', 'fd-challenge-modal');
     modal.querySelectorAll('[onclick*="closeGamModal"]').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm');
@@ -9187,8 +9258,6 @@
     });
     modal.querySelectorAll('[onclick*="saveGamCampaign"]').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-challenge-modal-save');
-      btn.style.width = '';
-      btn.style.marginTop = '';
     });
   }
   function renderChallengeTableSkeleton() {
@@ -9240,6 +9309,7 @@
     enhanceChallengeRowActions();
     enhanceTableHeaders();
     bindThHelpTooltips();
+    enhanceChallengeStatusBadges();
     updateGamStatsCompact();
     syncEngagementTableHead('gamTable');
     if (typeof window.fdEnhanceResponsiveTables === 'function') {
@@ -10882,35 +10952,28 @@
       '1) Importa merchant in <a href="#" data-pga-nav-conventions>Convenzioni</a> · ' +
       '2) <a href="#" data-pga-nav-enable>Attiva PGA</a> in Catalogo · ' +
       '3) <a href="#" data-pga-nav-experiences>Rivedi le esperienze</a> nel catalogo.';
-    var linkConv = host.querySelector('[data-pga-nav-conventions]');
-    if (linkConv) {
-      linkConv.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (typeof global.nav === 'function') global.nav('conventions');
-      });
+  }
+  function handleOnboardingBannerClick(e) {
+    var link = e.target.closest('[data-pga-nav-conventions], [data-pga-nav-enable], [data-pga-nav-experiences]');
+    if (!link) return;
+    e.preventDefault();
+    if (link.hasAttribute('data-pga-nav-conventions')) {
+      if (typeof global.nav === 'function') global.nav('conventions');
+      return;
     }
-    var linkEnable = host.querySelector('[data-pga-nav-enable]');
-    if (linkEnable) {
-      linkEnable.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (typeof global.nav === 'function') global.nav('pga-catalog');
-        switchPgaTab('catalog');
-        var cb = document.getElementById('pgaEnabledCheckbox');
-        if (cb) {
-          cb.focus();
-          cb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }
-      });
+    if (typeof global.nav === 'function') global.nav('pga-catalog');
+    switchPgaTab('catalog');
+    if (link.hasAttribute('data-pga-nav-enable')) {
+      var cb = document.getElementById('pgaEnabledCheckbox');
+      if (cb) {
+        cb.focus();
+        cb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      return;
     }
-    var linkExp = host.querySelector('[data-pga-nav-experiences]');
-    if (linkExp) {
-      linkExp.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (typeof global.nav === 'function') global.nav('pga-catalog');
-        switchPgaTab('catalog');
-        var table = document.getElementById('pgaExperiencesTable');
-        if (table) table.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      });
+    if (link.hasAttribute('data-pga-nav-experiences')) {
+      var table = document.getElementById('pgaExperiencesTable');
+      if (table) table.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }
   async function savePgaSettings(e) {
@@ -10994,6 +11057,11 @@
       modal.querySelectorAll('[data-pga-modal-close]').forEach(function (btn) {
         btn.addEventListener('click', closeExperienceModal);
       });
+    }
+    var onboardingHost = document.getElementById('pgaOnboardingBanner');
+    if (onboardingHost && onboardingHost.dataset.fdBannerDelegated !== '1') {
+      onboardingHost.dataset.fdBannerDelegated = '1';
+      onboardingHost.addEventListener('click', handleOnboardingBannerClick);
     }
   }
   async function reloadPgaData() {

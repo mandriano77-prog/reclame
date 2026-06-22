@@ -57,12 +57,13 @@
     });
   }
 
-  function copyText(text) {
+  function copyText(text, label) {
     var value = String(text || '');
     if (!value) return;
+    var msg = label ? label + ' copiato' : 'ID copiato';
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(value).then(function () {
-        toast('ID copiato');
+        toast(msg);
       }).catch(function () {
         toast('Copia non riuscita');
       });
@@ -317,8 +318,8 @@
       '<td class="fd-users-brand">' +
       '<span class="fd-users-brand__name">' + esc(name) + '</span>' +
       '<span class="fd-users-brand__id-row">' +
-      '<code class="fd-users-brand__id" title="' + esc(id) + '">' + esc(id.slice(0, 8)) + '…</code>' +
-      '<button type="button" class="fd-users-copy" data-copy-id="' + esc(id) + '" aria-label="Copia ID brand" title="Copia ID brand">⧉</button>' +
+      '<code class="fd-users-brand__id" title="Brand ID: ' + esc(id) + '">' + esc(id.slice(0, 8)) + '…</code>' +
+      '<button type="button" class="fd-users-copy" data-copy-id="' + esc(id) + '" data-copy-label="Brand ID" aria-label="Copia Brand ID completo" title="Copia Brand ID: ' + esc(id) + '">⧉</button>' +
       '</span></td>'
     );
   }
@@ -344,7 +345,17 @@
       btn.dataset.fdBound = '1';
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
-        copyText(btn.getAttribute('data-copy-id'));
+        copyText(btn.getAttribute('data-copy-id'), btn.getAttribute('data-copy-label') || 'Brand ID');
+      });
+    });
+
+    tbody.querySelectorAll('.fd-users-brand__id').forEach(function (code) {
+      if (code.dataset.fdBound === '1') return;
+      code.dataset.fdBound = '1';
+      code.addEventListener('click', function () {
+        var row = code.closest('.fd-users-brand__id-row');
+        var btn = row ? row.querySelector('.fd-users-copy') : null;
+        if (btn) copyText(btn.getAttribute('data-copy-id'), 'Brand ID');
       });
     });
 
