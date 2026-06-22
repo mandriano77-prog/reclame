@@ -81,12 +81,35 @@
     };
   }
 
+  function applyFiloProductBranding() {
+    if (!isFiloHr()) return;
+    var title = (function () {
+      try {
+        return (window.__2WALLET_PRODUCT_TITLE__ || 'FiloDiretto').trim();
+      } catch (_) {
+        return 'FiloDiretto';
+      }
+    })();
+    document.querySelectorAll('.chrome-product-title').forEach(function (el) {
+      if ((el.textContent || '').trim() === 'Ads2Wallet') el.textContent = title;
+    });
+    var headerBrand = document.getElementById('headerBrandName');
+    if (headerBrand && !window.brandId && (headerBrand.textContent || '').trim() === 'Ads2Wallet') {
+      headerBrand.textContent = title;
+    }
+    var breadcrumbBrand = document.getElementById('breadcrumbBrand');
+    if (breadcrumbBrand && !window.brandId && (breadcrumbBrand.textContent || '').trim() === 'Ads2Wallet') {
+      breadcrumbBrand.textContent = title;
+    }
+  }
+
   function boot() {
     if (!isFiloHr()) return;
     patchMenuCopy();
     patchNav();
     applyLeadsChrome();
     applyTemplatesSubtitle();
+    applyFiloProductBranding();
   }
 
   if (document.readyState === 'loading') {

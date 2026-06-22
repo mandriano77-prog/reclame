@@ -116,10 +116,13 @@
     }
     var fullUrl = slugPreviewUrl(slugPart);
     return (
-      '<div class="a2w-bi-identity-summary__row">' +
+      '<div class="a2w-bi-identity-summary__row a2w-bi-identity-summary__row--slug">' +
       '<dt>Slug landing</dt>' +
-      '<dd><a class="a2w-bi-identity-summary__slug-link" href="' + esc(fullUrl) + '" target="_blank" rel="noopener noreferrer" title="' + esc(LANDING_TOOLTIP) + '">' + esc(slugPart) + '</a></dd>' +
-      '</div>'
+      '<dd class="a2w-bi-identity-summary__slug-cell">' +
+      '<a class="a2w-bi-identity-summary__slug-link" href="' + esc(fullUrl) + '" target="_blank" rel="noopener noreferrer" title="' + esc(LANDING_TOOLTIP) + '">' + esc(slugPart) + '</a>' +
+      '<button type="button" class="fd-btn fd-btn--ghost fd-btn--sm fd-bi-slug-copy" data-fd-copy-url="' + esc(fullUrl) + '" aria-label="Copia URL landing" title="Copia URL">' +
+      '<span aria-hidden="true">⧉</span></button>' +
+      '</dd></div>'
     );
   }
 
@@ -250,11 +253,26 @@
 
   function syncChecklist() {
     var list = document.getElementById('fdBiChecklist');
+    var status = document.getElementById('fdBiChecklistStatus');
     if (!list) return;
     var data = collectFormSnapshot();
-    list.innerHTML = CHECKLIST_DEF.map(function (item) {
+    var itemsHtml = CHECKLIST_DEF.map(function (item) {
       return renderChecklistItem(item, data);
     }).join('');
+    var allDone = CHECKLIST_DEF.every(function (item) { return item.isComplete(data); });
+    if (allDone) {
+      list.innerHTML =
+        '<li class="fd-bi-checklist__item fd-bi-checklist__item--complete-all is-done">' +
+        '<span class="fd-bi-checklist__mark fd-bi-checklist__mark--done" aria-hidden="true">✓</span>' +
+        '<span class="fd-bi-checklist__label">Identità completata ✓</span></li>' +
+        itemsHtml;
+    } else {
+      list.innerHTML = itemsHtml;
+    }
+    if (status) {
+      status.textContent = allDone ? 'Tutti i passi completati' : '';
+      status.hidden = !allDone;
+    }
   }
 
   var checklistTemplateTimer = null;
@@ -292,6 +310,12 @@
     if (!root || root.dataset.fdChecklistBound === '1') return;
     root.dataset.fdChecklistBound = '1';
     root.addEventListener('click', function (e) {
+      var copyBtn = e.target.closest('[data-fd-copy-url]');
+      if (copyBtn) {
+        e.preventDefault();
+        copyLandingUrl(copyBtn.getAttribute('data-fd-copy-url'));
+        return;
+      }
       var btn = e.target.closest('[data-fd-checklist]');
       if (!btn) return;
       e.preventDefault();
@@ -381,6 +405,7 @@
       '<div class="fd-card fd-bi-aside-card fd-bi-aside-card--checklist">' +
       '<h2 class="fd-bi-aside__title">Checklist setup</h2>' +
       '<p class="fd-bi-aside__lead">Passi per completare l\'identità del brand.</p>' +
+      '<p class="fd-bi-checklist-status" id="fdBiChecklistStatus" hidden></p>' +
       '<ul class="fd-bi-checklist" id="fdBiChecklist" aria-live="polite"></ul>' +
       '</div></div>';
 
@@ -644,9 +669,17 @@
     };
   }
 
+  function hideLegacyLandingPreview() {
+    document.querySelectorAll('#brand-identity .fd-bi-landing-preview, #brand-identity .a2w-bi-preview-column').forEach(function (el) {
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+    });
+  }
+
   function enhanceBrandIdentityChrome() {
     enhanceHeader();
     ensureAsidePanel();
+    hideLegacyLandingPreview();
     repositionDangerZone();
     enhanceFormSections();
     enhanceSocialSection();

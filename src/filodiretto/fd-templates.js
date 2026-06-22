@@ -162,61 +162,89 @@
       '<button type="button" class="fd-btn fd-btn--primary fd-btn--sm" onclick="editTemplate(\'' +
       esc(t.id) +
       '\')">Modifica</button>' +
-      '<div class="fd-tpl-card-menu" data-tpl-id="' +
+      '<button type="button" class="fd-btn fd-btn--danger fd-btn--sm fd-tpl-card-delete" data-tpl-id="' +
       esc(t.id) +
-      '">' +
-      '<button type="button" class="fd-tpl-card-menu__trigger fd-btn fd-btn--ghost fd-btn--sm" aria-haspopup="menu" aria-expanded="false" aria-label="Altre azioni template">⋯</button>' +
-      '<div class="fd-tpl-card-menu__panel" role="menu" hidden>' +
-      '<button type="button" class="fd-tpl-card-menu__item fd-tpl-card-menu__item--danger" role="menuitem" data-action="delete">Elimina</button>' +
-      '</div></div></div></div></div></article>'
+      '" data-tpl-name="' +
+      esc(t.name) +
+      '" data-rbac-write="templates">Elimina</button>' +
+      '</div></div></div></article>'
     );
   }
 
-  function bindTemplateCardMenus(scope) {
-    (scope || document).querySelectorAll('.fd-tpl-card-menu').forEach(function (menu) {
-      if (menu.dataset.bound === '1') return;
-      menu.dataset.bound = '1';
-      var tplId = menu.getAttribute('data-tpl-id');
-      var trigger = menu.querySelector('.fd-tpl-card-menu__trigger');
-      var panel = menu.querySelector('.fd-tpl-card-menu__panel');
-      if (!trigger || !panel) return;
-
-      trigger.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var open = panel.hidden;
-        document.querySelectorAll('.fd-tpl-card-menu__panel').forEach(function (p) {
-          p.hidden = true;
-        });
-        document.querySelectorAll('.fd-tpl-card-menu__trigger').forEach(function (t) {
-          t.setAttribute('aria-expanded', 'false');
-        });
-        if (open) {
-          panel.hidden = false;
-          trigger.setAttribute('aria-expanded', 'true');
+  function bindTemplateDeleteButtons(scope) {
+    (scope || document).querySelectorAll('.fd-tpl-card-delete').forEach(function (btn) {
+      if (btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', function () {
+        var tplId = btn.getAttribute('data-tpl-id');
+        var tplName = btn.getAttribute('data-tpl-name') || '';
+        if (typeof window.fdDeleteTemplateWithConfirm === 'function') {
+          window.fdDeleteTemplateWithConfirm(tplId, tplName);
+        } else if (typeof window.deleteTemplate === 'function') {
+          window.deleteTemplate(tplId);
         }
       });
-
-      var delBtn = panel.querySelector('[data-action="delete"]');
-      if (delBtn) {
-        delBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          panel.hidden = true;
-          trigger.setAttribute('aria-expanded', 'false');
-          if (typeof window.deleteTemplate === 'function') window.deleteTemplate(tplId);
-        });
-      }
     });
+  }
 
-    if (!document.body.dataset.fdTplMenuDismiss) {
-      document.body.dataset.fdTplMenuDismiss = '1';
-      document.addEventListener('click', function () {
-        document.querySelectorAll('.fd-tpl-card-menu__panel').forEach(function (p) {
-          p.hidden = true;
+  function patchDeleteTemplateFlow() {
+    if (window.__fdTplDeletePatched) return;
+    window.__fdTplDeletePatched = true;
+
+    async function executeTemplateDelete(id) {
+      try {
+        var res = await fetch(apiBase() + '/templates/' + encodeURIComponent(id), {
+          method: 'DELETE',
+          headers: typeof window.getAuthHeaders === 'function' ? window.getAuthHeaders() : {}
         });
-        document.querySelectorAll('.fd-tpl-card-menu__trigger').forEach(function (t) {
-          t.setAttribute('aria-expanded', 'false');
+        if (!res.ok) {
+          var err = await res.json().catch(function () { return {}; });
+          throw new Error(err.error || 'Errore eliminazione');
+        }
+        if (typeof window.toast === 'function') window.toast('Template eliminato');
+        if (typeof window.invalidateBrandCache === 'function') window.invalidateBrandCache();
+        if (typeof window.loadTemplates === 'function') window.loadTemplates();
+      } catch (err) {
+        if (typeof window.alert === 'function') window.alert('Errore: ' + err.message);
+      }
+    }
+
+    window.fdDeleteTemplateWithConfirm = async function (id, templateName) {
+      var name = String(templateName || '').trim();
+      var important = name.length > 0;
+      if (typeof window.appConfirm === 'function') {
+        var ok = await window.appConfirm({
+          title: 'Elimina template',
+          message: important
+            ? 'Eliminare il template «' + name + '»? Verranno eliminati anche i pass collegati.'
+            : 'Eliminare questo template? Verranno eliminati anche i pass collegati.',
+          confirmLabel: 'Elimina',
+          tone: 'danger'
         });
-      });
+        if (!ok) return;
+      }
+      if (important) {
+        var typed = window.prompt('Conferma definitiva: digita il nome del template per procedere.', '');
+        if (String(typed || '').trim() !== name) {
+          if (typeof window.toast === 'function') window.toast('Eliminazione annullata');
+          return;
+        }
+      } else {
+        var guard = window.prompt('Conferma definitiva: scrivi ELIMINA per procedere.');
+        if (guard !== 'ELIMINA') {
+          if (typeof window.toast === 'function') window.toast('Eliminazione annullata');
+          return;
+        }
+      }
+      await executeTemplateDelete(id);
+    };
+
+    if (typeof window.deleteTemplate === 'function') {
+      var orig = window.deleteTemplate;
+      window.deleteTemplate = async function (id) {
+        if (!isFiloTplApp()) return orig(id);
+        return window.fdDeleteTemplateWithConfirm(id, '');
+      };
     }
   }
 
@@ -385,7 +413,7 @@
             })
             .join('') +
           '</div>';
-        bindTemplateCardMenus(el);
+        bindTemplateDeleteButtons(el);
         if (typeof window.fdRbacHook === 'function') window.fdRbacHook('templates');
       } catch (e) {
         console.error('fd-templates loadTemplates', e);
@@ -461,6 +489,7 @@
 
   function initFdTemplates() {
     if (!isFiloTplApp()) return;
+    patchDeleteTemplateFlow();
     patchLoadTemplates();
     patchNavForTemplates();
     patchTemplateModalFlip();

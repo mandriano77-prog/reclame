@@ -121,6 +121,11 @@
     if (state.analyticsError && !a) {
       items.forEach(function (item) {
         item.value = '—';
+        item.hint = 'Dati non disponibili';
+      });
+    } else if (a && !a.coins_granted && !a.coins_redeemed && !a.grant_events && !a.redemption_events) {
+      items.forEach(function (item) {
+        item.hint = (item.hint || '') + ' · Nessun dato nel periodo selezionato';
       });
     }
     host.innerHTML = items.map(function (item) {

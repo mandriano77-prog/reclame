@@ -562,10 +562,34 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__tagline {
   color: var(--fd-color-text-secondary);
 }
 
-html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview {
-  margin-top: var(--fd-space-4);
-  padding-top: var(--fd-space-4);
-  border-top: 1px solid var(--fd-border);
+html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__slug-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-slug-copy {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-checklist__item--complete-all .fd-bi-checklist__label {
+  font-weight: 600;
+  color: var(--fd-color-success, #059669);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-checklist-status {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fd-color-success, #059669);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview,
+html[data-app='filodiretto'] #brand-identity .a2w-bi-preview-column {
+  display: none !important;
 }
 
 html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__label-row {

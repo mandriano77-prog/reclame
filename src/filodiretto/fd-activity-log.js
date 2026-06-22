@@ -455,6 +455,10 @@
     if (typeof window.fdSyncAnalyticsHrChrome === 'function') {
       window.fdSyncAnalyticsHrChrome('activity-log');
     }
+    var h1 = document.querySelector(
+      '#analytics h1.page-title, #analytics h1.sec-title, #analytics h1.fd-page-header__title, #analytics .fd-page-header__title'
+    );
+    if (h1) h1.textContent = 'Log Attività';
   }
 
   function patchNav() {

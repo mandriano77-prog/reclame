@@ -640,13 +640,6 @@
 
   function applyDsButtonClasses(root) {
     var scope = root || document;
-    scope.querySelectorAll('#media-library .fd-media-header__actions button[onclick*="openMediaUpload"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--primary');
-      btn.classList.remove('sec');
-    });
-    scope.querySelectorAll('#media-library .fd-media-upload-type').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary');
-    });
     scope.querySelectorAll('#media-library #fdMediaBulkClearBtn').forEach(function (btn) {
       btn.classList.add('fd-btn', 'fd-btn--secondary');
     });
@@ -721,19 +714,8 @@
     if (hintEl) hintEl.textContent = meta.hint;
 
     var actions = card.querySelector('.fd-media-section__actions');
-    if (!actions) return;
-    var uploadBtn = actions.querySelector('.fd-media-upload-type[data-upload-type="' + type + '"]')
-      || actions.querySelector('.fd-media-upload-type');
-    if (uploadBtn) {
-      uploadBtn.setAttribute('data-upload-type', type);
-      uploadBtn.textContent = meta.uploadLabel;
-    } else if (type !== 'strip' || !actions.querySelector('.fd-media-upload-type')) {
-      actions.insertAdjacentHTML(
-        'beforeend',
-        '<button type="button" class="fd-btn fd-btn--secondary fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>'
-      );
-    }
-    bindUploadButtons(actions);
+    if (actions) actions.remove();
+    bindUploadButtons(card);
   }
 
   function buildSectionShell(type) {
@@ -751,9 +733,6 @@
       '<div class="fd-media-section__copy">' +
       '<h2 class="fd-media-section__title">' + esc(meta.title) + '</h2>' +
       '<p class="fd-media-section__hint">' + esc(meta.hint) + '</p>' +
-      '</div>' +
-      '<div class="fd-media-section__actions">' +
-        '<button type="button" class="fd-btn fd-btn--secondary fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>' +
       '</div></div>' +
       '<div class="fd-media-section__body">' +
       '<div id="' + hostId + '" class="strip-gallery">' + renderLoadingSkeleton() + '</div>' +
@@ -786,9 +765,6 @@
       '<div class="fd-media-section__copy">' +
       '<h2 class="fd-media-section__title">' + esc(meta.title) + '</h2>' +
       '<p class="fd-media-section__hint">' + esc(meta.hint) + '</p>' +
-      '</div>' +
-      '<div class="fd-media-section__actions">' +
-      '<button type="button" class="fd-btn fd-btn--secondary fd-media-upload-type" data-upload-type="' + esc(type) + '">' + esc(meta.uploadLabel) + '</button>' +
       '</div>';
 
     if (oldTitle) oldTitle.remove();
@@ -890,11 +866,7 @@
         header.insertBefore(copy, actions);
         actions.classList.add('fd-media-header__actions');
         actions.querySelectorAll('button[onclick*="deleteAllMedia"]').forEach(function (btn) { btn.remove(); });
-        var uploadBtn = actions.querySelector('button[onclick*="openMediaUpload"]');
-        if (uploadBtn) {
-          uploadBtn.textContent = 'Carica file';
-          uploadBtn.classList.remove('sec');
-        }
+        actions.querySelectorAll('button[onclick*="openMediaUpload"]').forEach(function (btn) { btn.remove(); });
         enhanceMediaHeaderDesign(header);
       }
     }

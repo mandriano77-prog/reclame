@@ -45,7 +45,7 @@ const SECTION_MATRIX = [
     sectionId: 'templates',
     js: 'fd-templates.js',
     css: 'fd-templates.css',
-    patterns: ['fd-skeleton', 'fd-tpl-list', 'fd-btn--primary|fd-tpl-card-menu']
+    patterns: ['fd-skeleton', 'fd-tpl-list', 'fd-btn--primary|fd-tpl-card-delete']
   },
   {
     label: 'Pass Emessi',
@@ -134,8 +134,8 @@ test('fd.bundle.js is valid JavaScript after build', () => {
 
 test('index.html bundle cache references contacts-header tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260622-bi-save-footer/);
-  assert.match(html, /fd\.bundle\.js\?v=20260622-bi-save-footer/);
+  assert.match(html, /fd\.bundle\.css\?v=20260622-studio-ux/);
+  assert.match(html, /fd\.bundle\.js\?v=20260622-studio-ux/);
   assert.match(html, /\/dashboard\/lib\/public-url\.js/);
   assert.match(html, /function a2wPublicUrlBase/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
@@ -204,22 +204,27 @@ test('Filo brand identity uses bottom save bar and public landing URL', () => {
   const dirty = readFd('fd-form-dirty.js');
   const bi = readFd('fd-brand-identity.js');
   const biCss = readFd('fd-brand-identity.css');
+  const dirtyCss = readFd('fd-form-dirty.css');
   const html = read('src/dashboard/index.html');
   assert.match(dirty, /brand-identity--fd-bottom-save/);
   assert.match(dirty, /fd-bi-bottom-bar/);
-  assert.match(dirty, /fdBiFormFooter/);
+  assert.match(dirty, /fdBiStickyBar/);
   assert.match(dirty, /relocateBrandSaveButton/);
   assert.match(dirty, /a2wBiSaveBtn/);
+  assert.match(dirty, /bar\.hidden = false/);
   assert.doesNotMatch(dirty, /id="fdBiStickySaveBtn"/);
   assert.match(dirty, /showSavedFlash/);
   assert.match(bi, /summarySlugLink/);
+  assert.match(bi, /fd-bi-slug-copy/);
   assert.match(bi, /a2w-bi-identity-summary__slug-link/);
   assert.match(bi, /fd-bi-checklist/);
   assert.match(bi, /fdBiChecklist/);
+  assert.match(bi, /Identità completata/);
   assert.match(bi, /isNameSlugComplete/);
   assert.match(biCss, /\.a2w-bi-identity-summary__slug-link/);
   assert.match(biCss, /\.fd-bi-aside-grid/);
   assert.match(biCss, /grid-template-columns: minmax\(0, 42%\)/);
+  assert.match(dirtyCss, /z-index: 50/);
   assert.match(html, /getPublicLandingUrl/);
 });
 
@@ -238,10 +243,11 @@ test('Filo media library uses single contextual search', () => {
   assert.match(js, /removeLegacyMediaSearches/);
 });
 
-test('Filo template delete moved to kebab menu', () => {
+test('Filo template delete uses direct button with confirm flow', () => {
   const js = readFd('fd-templates.js');
-  assert.match(js, /fd-tpl-card-menu/);
-  assert.doesNotMatch(js, /fd-btn--danger fd-btn--sm" onclick="deleteTemplate/);
+  assert.match(js, /fd-tpl-card-delete/);
+  assert.match(js, /fdDeleteTemplateWithConfirm/);
+  assert.doesNotMatch(js, /fd-tpl-card-menu__trigger/);
 });
 
 test('Filo passes localize status badges and copy icon', () => {
@@ -269,12 +275,14 @@ test('contacts help popover uses floating panel positioning', () => {
   assert.match(help, /maxWidth/);
 });
 
-test('Filo contacts hides duplicate header actions and moves export/tour to toolbar menu', () => {
+test('Filo contacts overflow menu has export and tour only', () => {
   const js = readFd('fd-contacts.js');
   const css = readFd('fd-contacts.css');
   assert.match(js, /stripLeadsHeaderDuplicates/);
   assert.match(js, /fdContactsOverflowExportBtn/);
   assert.match(js, /fdContactsOverflowTourBtn/);
+  assert.match(js, /panel\.innerHTML = ''/);
+  assert.doesNotMatch(js, /data-fd-toolbar-dynamic/);
   assert.match(css, /#contactsPageMenu/);
   assert.match(css, /fd-contacts-toolbar-overflow--always/);
 });

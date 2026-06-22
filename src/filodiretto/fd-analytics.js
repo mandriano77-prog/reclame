@@ -254,7 +254,12 @@
     var orig = window.switchAnalyticsSectionTab;
     window.switchAnalyticsSectionTab = function (tab, options) {
       var active = orig.apply(this, arguments);
-      if (isFiloAnalyticsApp()) syncAnalyticsHrChrome(active || tab);
+      if (isFiloAnalyticsApp()) {
+        syncAnalyticsHrChrome(active || tab);
+        requestAnimationFrame(function () {
+          syncAnalyticsHrChrome(active || tab);
+        });
+      }
       return active;
     };
   }

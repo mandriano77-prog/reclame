@@ -75,140 +75,88 @@
   function ensureToolbarOverflowMenu() {
     if (!isFiloContactsApp() || !isHrLeadsActive()) return;
     var host = document.getElementById('contactsToolbarHost');
-    if (!host || host.dataset.fdOverflowBound === '1') return;
+    if (!host) return;
     var actions = host.querySelector('.contacts-toolbar__actions, .a2w-contacts-toolbar-actions');
     if (!actions) return;
-    host.dataset.fdOverflowBound = '1';
 
-    var overflowBtn = document.createElement('button');
-    overflowBtn.type = 'button';
-    overflowBtn.id = 'fdContactsToolbarOverflowBtn';
-    overflowBtn.className = 'fd-btn fd-btn--ghost fd-btn--sm fd-contacts-toolbar-overflow';
-    overflowBtn.textContent = '•••';
-    overflowBtn.setAttribute('aria-haspopup', 'menu');
-    overflowBtn.setAttribute('aria-expanded', 'false');
-    overflowBtn.setAttribute('aria-label', 'Altre azioni anagrafica');
-    overflowBtn.classList.add('fd-contacts-toolbar-overflow--always');
+    var overflowBtn = document.getElementById('fdContactsToolbarOverflowBtn');
+    var panel = document.getElementById('fdContactsToolbarOverflowPanel');
 
-    var panel = document.createElement('div');
-    panel.id = 'fdContactsToolbarOverflowPanel';
-    panel.className = 'fd-contacts-toolbar-overflow-panel';
-    panel.hidden = true;
-    panel.setAttribute('role', 'menu');
+    if (!overflowBtn) {
+      overflowBtn = document.createElement('button');
+      overflowBtn.type = 'button';
+      overflowBtn.id = 'fdContactsToolbarOverflowBtn';
+      overflowBtn.className = 'fd-btn fd-btn--ghost fd-btn--sm fd-contacts-toolbar-overflow fd-contacts-toolbar-overflow--always';
+      overflowBtn.textContent = '•••';
+      overflowBtn.setAttribute('aria-haspopup', 'menu');
+      overflowBtn.setAttribute('aria-expanded', 'false');
+      overflowBtn.setAttribute('aria-label', 'Altre azioni anagrafica');
+      actions.appendChild(overflowBtn);
+    }
 
-    actions.appendChild(overflowBtn);
-    actions.appendChild(panel);
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'fdContactsToolbarOverflowPanel';
+      panel.className = 'fd-contacts-toolbar-overflow-panel';
+      panel.hidden = true;
+      panel.setAttribute('role', 'menu');
+      actions.appendChild(panel);
+    }
 
-    ensureToolbarOverflowStaticItems(panel);
-
-    overflowBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var open = panel.hidden;
-      closeToolbarOverflowMenu();
-      if (open) {
-        panel.hidden = false;
-        overflowBtn.setAttribute('aria-expanded', 'true');
-      }
-    });
-
-    document.addEventListener('click', function (e) {
-      if (!panel.hidden && !panel.contains(e.target) && e.target !== overflowBtn) {
+    if (host.dataset.fdOverflowBound !== '1') {
+      host.dataset.fdOverflowBound = '1';
+      overflowBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = panel.hidden;
         closeToolbarOverflowMenu();
-      }
-    });
-
-    var movable = [];
-    actions.querySelectorAll('button').forEach(function (btn) {
-      if (btn === overflowBtn) return;
-      if (btn.id === 'leadsExportBtn') return;
-      movable.push(btn);
-    });
-
-    function clearDynamicOverflowItems() {
-      panel.querySelectorAll('[data-fd-toolbar-dynamic="1"]').forEach(function (node) {
-        node.remove();
+        if (open) {
+          panel.hidden = false;
+          overflowBtn.setAttribute('aria-expanded', 'true');
+        }
       });
-    }
 
-    function rebalanceToolbar() {
-      movable.forEach(function (btn) {
-        btn.hidden = false;
-        btn.removeAttribute('data-fd-toolbar-overflowed');
-      });
-      clearDynamicOverflowItems();
-      closeToolbarOverflowMenu();
-
-      var available = host.clientWidth - 12;
-      if (!available) return;
-      if (host.scrollWidth <= available) return;
-
-      for (var i = movable.length - 1; i >= 0; i--) {
-        var btn = movable[i];
-        btn.hidden = true;
-        btn.dataset.fdToolbarOverflowed = '1';
-        if (host.scrollWidth <= available) break;
-      }
-
-      movable.forEach(function (btn) {
-        if (btn.dataset.fdToolbarOverflowed !== '1') return;
-        var item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'fd-contacts-toolbar-overflow-panel__item';
-        item.setAttribute('role', 'menuitem');
-        item.setAttribute('data-fd-toolbar-dynamic', '1');
-        item.textContent = (btn.textContent || '').replace(/^\s*[✨✉⬇+]+\s*/, '').trim() || btn.getAttribute('aria-label') || 'Azione';
-        item.disabled = !!btn.disabled;
-        item.addEventListener('click', function (e) {
-          e.stopPropagation();
+      document.addEventListener('click', function (e) {
+        if (!panel.hidden && !panel.contains(e.target) && e.target !== overflowBtn) {
           closeToolbarOverflowMenu();
-          if (!btn.disabled) btn.click();
-        });
-        panel.appendChild(item);
+        }
       });
     }
 
-    if (typeof ResizeObserver !== 'undefined') {
-      new ResizeObserver(rebalanceToolbar).observe(host);
-    }
-    window.addEventListener('resize', rebalanceToolbar);
-    setTimeout(rebalanceToolbar, 0);
+    panel.innerHTML = '';
+    ensureToolbarOverflowStaticItems(panel);
   }
 
   function ensureToolbarOverflowStaticItems(panel) {
     if (!panel) return;
 
-    if (!document.getElementById('fdContactsOverflowExportBtn')) {
-      var exportItem = document.createElement('button');
-      exportItem.type = 'button';
-      exportItem.role = 'menuitem';
-      exportItem.className = 'fd-contacts-toolbar-overflow-panel__item';
-      exportItem.id = 'fdContactsOverflowExportBtn';
-      exportItem.textContent = 'Esporta CSV dipendenti';
-      exportItem.addEventListener('click', function (e) {
-        e.stopPropagation();
-        closeToolbarOverflowMenu();
-        if (exportItem.disabled) return;
-        if (typeof window.exportLeadsCSV === 'function') window.exportLeadsCSV();
-      });
-      panel.appendChild(exportItem);
-    }
+    var exportItem = document.createElement('button');
+    exportItem.type = 'button';
+    exportItem.role = 'menuitem';
+    exportItem.className = 'fd-contacts-toolbar-overflow-panel__item';
+    exportItem.id = 'fdContactsOverflowExportBtn';
+    exportItem.textContent = 'Esporta CSV dipendenti';
+    exportItem.addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeToolbarOverflowMenu();
+      if (exportItem.disabled) return;
+      if (typeof window.exportLeadsCSV === 'function') window.exportLeadsCSV();
+    });
+    panel.appendChild(exportItem);
 
-    if (!document.getElementById('fdContactsOverflowTourBtn')) {
-      var tourItem = document.createElement('button');
-      tourItem.type = 'button';
-      tourItem.role = 'menuitem';
-      tourItem.className = 'fd-contacts-toolbar-overflow-panel__item';
-      tourItem.id = 'fdContactsOverflowTourBtn';
-      tourItem.textContent = 'Mostra tour';
-      tourItem.addEventListener('click', function (e) {
-        e.stopPropagation();
-        closeToolbarOverflowMenu();
-        if (window.ContactsPage && typeof window.ContactsPage.showTour === 'function') {
-          window.ContactsPage.showTour();
-        }
-      });
-      panel.appendChild(tourItem);
-    }
+    var tourItem = document.createElement('button');
+    tourItem.type = 'button';
+    tourItem.role = 'menuitem';
+    tourItem.className = 'fd-contacts-toolbar-overflow-panel__item';
+    tourItem.id = 'fdContactsOverflowTourBtn';
+    tourItem.textContent = 'Mostra tour';
+    tourItem.addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeToolbarOverflowMenu();
+      if (window.ContactsPage && typeof window.ContactsPage.showTour === 'function') {
+        window.ContactsPage.showTour();
+      }
+    });
+    panel.appendChild(tourItem);
   }
 
   function wireContactsHelpPopover() {
@@ -424,9 +372,7 @@
     var origToolbar = window.renderLeadsToolbar;
     if (typeof origToolbar === 'function') {
       window.renderLeadsToolbar = function () {
-        var host = document.getElementById('contactsToolbarHost');
         origToolbar.apply(this, arguments);
-        if (host) delete host.dataset.fdOverflowBound;
         if (isFiloContactsApp()) {
           enhanceFiloContactsToolbar();
           applyContactsDsButtons();

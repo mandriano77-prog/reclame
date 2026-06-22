@@ -20,6 +20,11 @@
     return false;
   }
 
+  function isBrandIdentityActive() {
+    var section = document.getElementById('brand-identity');
+    return !!(section && section.classList.contains('active'));
+  }
+
   function patchBrandIdentityV2Flag() {
     if (window.__fdBiV2Patched) return;
     window.__fdBiV2Patched = true;
@@ -153,73 +158,28 @@
     }
   }
 
+  function hideLegacyFormFooter() {
+    var footer = document.getElementById('fdBiFormFooter');
+    if (footer) footer.hidden = true;
+  }
+
   function showSavedFlash(label) {
     clearSavedFlash();
     relocateBrandSaveButton();
-    var footer = document.getElementById('fdBiFormFooter');
-    if (footer) {
-      footer.classList.remove('is-dirty', 'is-saving');
-      footer.classList.add('is-saved-flash');
-    }
     var bar = document.getElementById('fdBiStickyBar');
-    if (bar) bar.hidden = true;
-    setBottomBarVisible(false);
+    if (bar) {
+      bar.hidden = false;
+      bar.classList.remove('is-dirty', 'is-saving');
+      bar.classList.add('is-saved-flash');
+      var hint = document.getElementById('fdBiStickyHint');
+      if (hint) hint.textContent = label || 'Salvato ✓';
+    }
+    setBottomBarVisible(isBrandIdentityActive());
     savedFlashTimer = setTimeout(function () {
       savedFlashTimer = null;
-      if (footer) footer.classList.remove('is-saved-flash');
+      if (bar) bar.classList.remove('is-saved-flash');
       syncBrandIdentityStickyBar();
     }, 2800);
-  }
-
-  function ensureBrandIdentityFormFooter() {
-    var footer = document.getElementById('fdBiFormFooter');
-    if (!footer) {
-      footer = document.createElement('footer');
-      footer.id = 'fdBiFormFooter';
-      footer.className = 'fd-bi-form-footer';
-      footer.setAttribute('role', 'region');
-      footer.setAttribute('aria-label', 'Salvataggio identità brand');
-      footer.innerHTML =
-        '<div class="fd-bi-form-footer__inner">' +
-        '<div class="fd-bi-form-footer__meta" id="fdBiFormFooterMeta"></div>' +
-        '<div class="fd-bi-form-footer__actions" id="fdBiFormFooterActions"></div>' +
-        '</div>';
-      var layout = document.querySelector('#brand-identity .a2w-bi-layout');
-      if (layout) layout.insertAdjacentElement('afterend', footer);
-      else document.querySelector('#brand-identity .a2w-bi-page')?.appendChild(footer);
-    }
-    return footer;
-  }
-
-  function relocateBrandSaveButton() {
-    var footer = ensureBrandIdentityFormFooter();
-    var actions = document.getElementById('fdBiFormFooterActions');
-    var meta = document.getElementById('fdBiFormFooterMeta');
-    var saveBtn = document.getElementById('a2wBiSaveBtn');
-    var badge = document.getElementById('a2wBiSaveStateBadge');
-    if (!footer || !actions || !saveBtn) return;
-
-    var srWrap = document.getElementById('fdBiSaveStateWrap');
-    if (srWrap) {
-      srWrap.classList.remove('fd-bi-save-meta--sr');
-      srWrap.remove();
-    }
-
-    if (badge && meta && !meta.contains(badge)) {
-      badge.classList.add('fd-badge', 'fd-bi-state-badge', 'fd-bi-form-footer__badge');
-      meta.appendChild(badge);
-    }
-
-    if (saveBtn.dataset.fdRelocated === '1' && actions.contains(saveBtn)) return;
-
-    saveBtn.dataset.fdRelocated = '1';
-    saveBtn.classList.add('fd-btn', 'fd-btn--primary', 'fd-bi-form-footer__save');
-    saveBtn.hidden = false;
-    saveBtn.style.display = '';
-    actions.appendChild(saveBtn);
-
-    var duplicate = document.getElementById('fdBiStickySaveBtn');
-    if (duplicate) duplicate.remove();
   }
 
   function ensureBrandIdentityStickyBar() {
@@ -228,12 +188,11 @@
       bar = document.createElement('div');
       bar.id = 'fdBiStickyBar';
       bar.className = 'fd-bi-sticky-bar fd-bi-bottom-bar';
-      bar.hidden = true;
       bar.setAttribute('role', 'region');
       bar.setAttribute('aria-label', 'Salvataggio modifiche brand');
       bar.innerHTML =
         '<div class="fd-bi-bottom-bar__inner">' +
-        '<span class="fd-bi-sticky-bar__hint" id="fdBiStickyHint">Modifiche non salvate</span>' +
+        '<span class="fd-bi-sticky-bar__hint" id="fdBiStickyHint">Salvato</span>' +
         '<div class="fd-bi-sticky-bar__actions">' +
         '<button type="button" class="btn sec fd-btn fd-btn--secondary" id="fdBiStickyCancelBtn">Annulla</button>' +
         '</div></div>';
@@ -244,7 +203,35 @@
       });
     }
     relocateBrandSaveButton();
+    hideLegacyFormFooter();
     return bar;
+  }
+
+  function relocateBrandSaveButton() {
+    var bar = ensureBrandIdentityStickyBar();
+    var actions = bar.querySelector('.fd-bi-sticky-bar__actions');
+    var saveBtn = document.getElementById('a2wBiSaveBtn');
+    var badge = document.getElementById('a2wBiSaveStateBadge');
+    if (!bar || !actions || !saveBtn) return;
+
+    if (badge) {
+      badge.classList.add('fd-badge', 'fd-bi-state-badge', 'fd-bi-save-meta--sr');
+      badge.setAttribute('aria-hidden', 'true');
+    }
+
+    saveBtn.dataset.fdRelocated = '1';
+    saveBtn.classList.add('fd-btn', 'fd-btn--primary', 'fd-bi-bottom-save-btn');
+    saveBtn.hidden = false;
+    saveBtn.style.display = '';
+    if (!actions.contains(saveBtn)) {
+      actions.insertBefore(saveBtn, actions.firstChild);
+    }
+
+    var duplicate = document.getElementById('fdBiStickySaveBtn');
+    if (duplicate) duplicate.remove();
+
+    var footer = document.getElementById('fdBiFormFooter');
+    if (footer) footer.hidden = true;
   }
 
   function isSectionReadOnly() {
@@ -254,15 +241,27 @@
     return document.body && document.body.classList.contains('fd-rbac-readonly');
   }
 
+  function resolveBarHint(state, dirty, saving) {
+    if (saving) return 'Salvataggio…';
+    if (dirty) return 'Modifiche non salvate';
+    var badge = document.getElementById('a2wBiSaveStateBadge');
+    if (badge && badge.textContent && badge.textContent.trim()) {
+      return badge.textContent.trim();
+    }
+    return 'Salvato';
+  }
+
   function syncBrandIdentityStickyBar() {
     if (!isFiloFormDirtyApp()) return;
     if (savedFlashTimer) return;
-    if (isSectionReadOnly()) {
-      var barReadonly = document.getElementById('fdBiStickyBar');
-      if (barReadonly) barReadonly.hidden = true;
+
+    if (isSectionReadOnly() || !isBrandIdentityActive()) {
+      var barHidden = document.getElementById('fdBiStickyBar');
+      if (barHidden) barHidden.hidden = true;
       setBottomBarVisible(false);
       return;
     }
+
     var bar = ensureBrandIdentityStickyBar();
     if (!bar) return;
     var state = window.brandIdentityState || {};
@@ -278,32 +277,20 @@
 
     prevBiBarState = { dirty: dirty, saving: saving };
 
-    var showBar = dirty || saving;
-    bar.hidden = !showBar;
-    setBottomBarVisible(showBar);
+    bar.hidden = false;
+    setBottomBarVisible(true);
     bar.classList.toggle('is-saving', saving);
     bar.classList.toggle('is-dirty', dirty && !saving);
+    bar.classList.toggle('is-clean', !dirty && !saving);
     bar.classList.remove('is-saved-flash');
 
     var hint = document.getElementById('fdBiStickyHint');
-    if (hint) {
-      if (saving) {
-        hint.textContent = 'Salvataggio in corso…';
-      } else {
-        hint.textContent = 'Modifiche non salvate';
-      }
-    }
+    if (hint) hint.textContent = resolveBarHint(state, dirty, saving);
 
     var actions = bar.querySelector('.fd-bi-sticky-bar__actions');
     if (actions) actions.hidden = false;
 
     relocateBrandSaveButton();
-
-    var footer = document.getElementById('fdBiFormFooter');
-    if (footer) {
-      footer.classList.toggle('is-dirty', dirty && !saving);
-      footer.classList.toggle('is-saving', saving);
-    }
 
     var cancelBtn = document.getElementById('fdBiStickyCancelBtn');
     if (cancelBtn) cancelBtn.disabled = saving;
@@ -320,8 +307,6 @@
     if (window.__fdBiStickyPatched || typeof window.a2wBiUpdateSaveButton !== 'function') return;
     window.__fdBiStickyPatched = true;
     hideHeaderSaveChrome();
-    ensureBrandIdentityFormFooter();
-    relocateBrandSaveButton();
     ensureBrandIdentityStickyBar();
     var origRefresh = window.a2wBiRefreshSaveUi;
     if (typeof origRefresh === 'function') {
@@ -337,11 +322,27 @@
     };
   }
 
+  function patchNavForBrandBar() {
+    if (window.__fdBiNavBarPatched || typeof window.nav !== 'function') return;
+    window.__fdBiNavBarPatched = true;
+    var orig = window.nav;
+    window.nav = function (id) {
+      var out = orig.apply(this, arguments);
+      var done = function () {
+        syncBrandIdentityStickyBar();
+      };
+      if (out && typeof out.then === 'function') return out.then(done);
+      setTimeout(done, 80);
+      return out;
+    };
+  }
+
   function initFdFormDirty() {
     if (!isFiloFormDirtyApp()) return;
     patchBrandIdentityV2Flag();
     patchTemplateFlows();
     patchBrandIdentitySaveUi();
+    patchNavForBrandBar();
     bindTemplateModalDirty();
     document.getElementById('brand-identity')?.classList.add('brand-identity--fd-dirty');
     syncBrandIdentityStickyBar();

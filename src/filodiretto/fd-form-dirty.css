@@ -79,12 +79,7 @@ html[data-app='filodiretto'] #templateModal #fdTplSaveBtn:disabled {
 }
 
 html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer {
-  margin-top: var(--fd-space-5);
-  padding: var(--fd-space-4);
-  border: 1px solid var(--fd-border, var(--border));
-  border-radius: var(--fd-radius-md);
-  background: var(--fd-color-surface, #fff);
-  box-shadow: var(--fd-shadow-sm);
+  display: none !important;
 }
 
 html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer__inner {
@@ -147,14 +142,20 @@ html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: calc(var(--fd-z-sticky, 100) + 5);
+  z-index: 50;
   margin: 0;
   padding: 0;
   border: none;
   border-radius: 0;
-  border-top: 1px solid var(--fd-color-warning-border, #f59e0b);
-  background: var(--fd-color-warning-bg, #fffbeb);
+  border-top: 1px solid var(--fd-border, #e2e8f0);
+  background: var(--fd-color-surface, #fff);
   box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.12);
+}
+
+html[data-app='filodiretto'] .fd-bi-bottom-bar.is-dirty,
+html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar.is-dirty {
+  border-top-color: var(--fd-color-warning-border, #f59e0b);
+  background: var(--fd-color-warning-bg, #fffbeb);
 }
 
 html[data-app='filodiretto'] #brand-identity .fd-bi-bottom-bar__inner,
@@ -170,8 +171,9 @@ html[data-app='filodiretto'] .fd-bi-bottom-bar .fd-bi-bottom-bar__inner {
   padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
 }
 
-html[data-app='filodiretto'] body.fd-bi-bottom-bar-visible {
-  padding-bottom: 72px;
+html[data-app='filodiretto'] body.fd-bi-bottom-bar-visible #brand-identity .a2w-bi-page,
+html[data-app='filodiretto'] body.fd-bi-bottom-bar-visible #brand-identity .a2w-bi-danger-zone {
+  padding-bottom: 80px;
 }
 
 html[data-app='filodiretto'] .fd-bi-bottom-bar.is-saved-flash {
@@ -187,6 +189,11 @@ html[data-app='filodiretto'] .fd-bi-bottom-bar.is-saved-flash .fd-bi-sticky-bar_
 html[data-app='filodiretto'] .fd-bi-bottom-bar[hidden],
 html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar[hidden] {
   display: none !important;
+}
+
+html[data-app='filodiretto'] .fd-bi-bottom-bar.is-clean .fd-bi-sticky-bar__hint {
+  color: var(--fd-color-text-secondary, #64748b);
+  font-weight: 500;
 }
 
 html[data-app='filodiretto'] .fd-bi-bottom-bar.is-saving,
