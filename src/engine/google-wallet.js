@@ -389,20 +389,91 @@ async function createOrUpdatePassClass(brand, template) {
   }
 
   const classObj = buildPassClass(brand, template);
+  console.log(`[GoogleWallet] ensure class issuerId=${ISSUER_ID} classId=${classObj.id}`);
   try {
-    const existing = await walletApiGet(`/genericClass/${classObj.id}`);
+    const existing = await walletApiGet(`/genericClass/${encodeURIComponent(classObj.id)}`);
     if (existing && existing.id) {
-      const updated = await walletApiPatch(`/genericClass/${classObj.id}`, classObj);
+      const updated = await walletApiPatch(`/genericClass/${encodeURIComponent(classObj.id)}`, classObj);
       console.log(`[GoogleWallet] Updated generic class ${classObj.id}`);
       return updated;
     }
   } catch (e) {
-    // 404 means class does not exist yet.
+    if (e.statusCode !== 404) throw e;
   }
 
   const created = await walletApiPost('/genericClass', classObj);
   console.log(`[GoogleWallet] Created generic class ${classObj.id}`);
   return created;
+}
+
+async function getClassRegistration(brand, template) {
+  const classId = buildClassId(brand, template);
+  const passKind = getPassKind();
+  if (passKind === 'loyalty') {
+    return {
+      class_id: classId,
+      issuer_id: ISSUER_ID || null,
+      registered: null,
+      note: 'Loyalty mode embeds class in JWT (no pre-registration check)'
+    };
+  }
+  try {
+    const existing = await walletApiGet(`/genericClass/${encodeURIComponent(classId)}`);
+    return {
+      class_id: classId,
+      issuer_id: ISSUER_ID || null,
+      registered: !!(existing && existing.id),
+      review_status: existing?.reviewStatus || null
+    };
+  } catch (e) {
+    if (e.statusCode === 404) {
+      return { class_id: classId, issuer_id: ISSUER_ID || null, registered: false };
+    }
+    return {
+      class_id: classId,
+      issuer_id: ISSUER_ID || null,
+      registered: null,
+      error: e.message
+    };
+  }
+}
+
+/**
+ * Generic mode: upsert class, then create/update object on Google servers.
+ */
+async function ensurePassReadyOnServer(brand, template, passObject) {
+  await createOrUpdatePassClass(brand, template);
+  return createPassObjectOnServer(passObject);
+}
+
+function formatGoogleWalletError(err) {
+  const msg = String(err?.message || err || 'Google Wallet error');
+  const reason = err?.body?.error?.errors?.[0]?.reason
+    || err?.body?.error?.status
+    || '';
+  const combined = `${msg} ${reason}`.toLowerCase();
+
+  if (combined.includes('classnotfound') || reason === 'classNotFound') {
+    return {
+      status: 422,
+      code: 'class_not_found',
+      error: 'Template non ancora registrato su Google Wallet. Riprova tra qualche secondo.'
+    };
+  }
+  if (err?.statusCode === 403 || combined.includes('permission') || combined.includes('issuer')) {
+    return {
+      status: 403,
+      code: 'issuer_mismatch',
+      error: 'Credenziali Google Wallet non valide o issuerId non corrispondente al service account.'
+    };
+  }
+  if (err?.statusCode === 404) {
+    return { status: 404, code: 'not_found', error: 'Risorsa Google Wallet non trovata.' };
+  }
+  const status = Number.isFinite(err?.statusCode) && err.statusCode >= 400 && err.statusCode < 600
+    ? err.statusCode
+    : 500;
+  return { status, code: 'google_wallet_error', error: msg };
 }
 
 // ── Pass Object (instance) ────────────────────────────────────────────
@@ -614,17 +685,19 @@ function generateSaveLinkLegacy(passObject) {
 async function createPassObjectOnServer(passObject) {
   const passKind = getPassKind();
   const objectPath = passKind === 'loyalty' ? 'loyaltyObject' : 'genericObject';
+  const objectUrl = `/${objectPath}/${encodeURIComponent(passObject.id)}`;
   try {
-    const existing = await walletApiGet(`/${objectPath}/${passObject.id}`);
+    const existing = await walletApiGet(objectUrl);
     if (existing && existing.id) {
-      const updated = await walletApiPatch(`/${objectPath}/${passObject.id}`, passObject);
+      const updated = await walletApiPatch(objectUrl, passObject);
       console.log(`[GoogleWallet] Updated object ${passObject.id}`);
       return updated;
     }
   } catch (e) {
     const status = e?.statusCode || null;
     if (status && status !== 404) {
-      console.warn(`[GoogleWallet] lookup loyaltyObject failed for ${passObject.id}: ${e.message}`);
+      console.warn(`[GoogleWallet] lookup ${objectPath} failed for ${passObject.id}: ${e.message}`);
+      throw e;
     }
   }
 
@@ -779,6 +852,7 @@ function getStatusInfo() {
     pass_kind: getPassKind(),
     review_status: getReviewStatus(),
     issuer_id: ISSUER_ID || null,
+    service_account_email: SERVICE_ACCOUNT_JSON?.client_email || null,
     custom_domain: domain || null,
     callback_url: base ? `${base}/google-wallet/callback` : null,
     callback_path: '/api/v1/google-wallet/callback',
@@ -799,6 +873,9 @@ module.exports = {
   buildLoyaltyClassId,
   buildPassClass,
   createOrUpdatePassClass, // deprecated, kept for compatibility
+  getClassRegistration,
+  ensurePassReadyOnServer,
+  formatGoogleWalletError,
   buildPassObject,
   generateSaveLink,
   generateSaveLinkLegacy,

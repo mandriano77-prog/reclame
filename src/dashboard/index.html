@@ -6323,21 +6323,33 @@ function downloadPass(id) {
 
 async function openGoogleWalletSaveLink(passId) {
     try {
-        const res = await fetch(`${API}/google-wallet/pass/${passId}`);
+        const res = await fetch(`${API}/google-wallet/pass/${passId}`, { headers: getAuthHeaders() });
         const data = await res.json().catch(() => ({}));
         if (res.status === 501) {
             toast('Google Wallet non configurato sul server');
             return;
         }
-        if (!res.ok) throw new Error(data.error || res.statusText);
+        if (!res.ok) {
+            const msg = data.error
+                || (data.code === 'class_not_found'
+                    ? 'Template non ancora registrato su Google Wallet'
+                    : null)
+                || (data.code === 'issuer_mismatch'
+                    ? 'Credenziali Google Wallet non valide (issuer / service account)'
+                    : null)
+                || res.statusText
+                || 'Errore Google Wallet';
+            toast(msg);
+            return;
+        }
         if (data.save_link) {
             window.open(data.save_link, '_blank');
             toast('Apri il link per aggiungere il pass a Google Wallet');
         } else {
-            toast('Link non disponibile');
+            toast('Link Google Wallet non disponibile');
         }
     } catch (e) {
-        toast('Errore: ' + (e.message || e));
+        toast('Errore Google Wallet: ' + (e.message || e));
     }
 }
 

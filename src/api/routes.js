@@ -87,6 +87,15 @@ const { sendPushUpdate, sendPushBatch, shouldPruneApnsRegistration } = require('
 const { executeWalletPush, enqueuePushJob } = require('../engine/push-dispatch');
 const { syncGoogleWalletObjectsForPasses } = require('../engine/google-wallet-sync');
 const { computeInitialScheduledRun } = require('../engine/scheduler');
+
+async function syncGoogleWalletClassForTemplate(brand, template) {
+  if (!googleWallet.isConfigured() || !brand || !template) return;
+  try {
+    await googleWallet.createOrUpdatePassClass(brand, template);
+  } catch (err) {
+    console.error('[GoogleWallet] template class sync failed:', template.id, err.message);
+  }
+}
 const { generateLandingCopy, generateCreativeCopy } = require('../engine/ai-copy');
 const { planScheduledPush } = require('../engine/push-assistant');
 const { askWai, EXECUTABLE_INTENTS, validateWaiResponse } = require('../engine/wai');
@@ -671,10 +680,8 @@ router.post('/signup/google-wallet', async (req, res) => {
     if (campaign_id) await incrementCampaignDownloads(campaign_id);
 
     // Create/update class + object first. In Generic mode this ensures class/object exist before save link.
-    await googleWallet.createOrUpdatePassClass(brand, template);
-
     const passObject = googleWallet.buildPassObject(brand, template, passInstance, passInstance.customer_data || {});
-    await googleWallet.createPassObjectOnServer(passObject);
+    await googleWallet.ensurePassReadyOnServer(brand, template, passObject);
 
     const saveLink = googleWallet.generateSaveLink(brand, template, passObject);
 
@@ -2091,6 +2098,7 @@ router.post('/templates', async (req, res) => {
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
     validateTemplateBackPayload(req.body);
     const template = await createTemplate(await normalizeTemplateBodyForBrand(req.body, brand, req));
+    await syncGoogleWalletClassForTemplate(brand, template);
     res.json(template);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -2115,6 +2123,7 @@ router.put('/templates/:id', async (req, res) => {
       req.params.id,
       await normalizeTemplateBodyForBrand(req.body, brand, req)
     );
+    await syncGoogleWalletClassForTemplate(brand, template);
     const { touched } = await touchPassesForTemplate(req.params.id);
     let wallet_push_sent = 0;
     const devices = await getDevicesForTemplate(req.params.id);
@@ -4641,7 +4650,7 @@ router.post('/samsung-wallet/cards/:cardId/:refId', async (req, res) => {
 router.get('/google-wallet/pass/:id', async (req, res) => {
   try {
     if (!googleWallet.isConfigured()) {
-      return res.status(501).json({ error: 'Google Wallet not configured' });
+      return res.status(501).json({ error: 'Google Wallet not configured', code: 'not_configured' });
     }
 
     const instance = await getPassInstance(req.params.id);
@@ -4649,10 +4658,12 @@ router.get('/google-wallet/pass/:id', async (req, res) => {
 
     const template = await getTemplate(instance.template_id);
     const brand = await getBrand(instance.brand_id);
+    if (!template || !brand) {
+      return res.status(404).json({ error: 'Template o brand non trovato' });
+    }
 
     const passObject = googleWallet.buildPassObject(brand, template, instance, instance.customer_data);
-
-    await googleWallet.createPassObjectOnServer(passObject);
+    await googleWallet.ensurePassReadyOnServer(brand, template, passObject);
     await updatePassInstance(instance.id, {
       google_wallet_object_id: passObject.id,
       google_wallet_saved: false,
@@ -4671,15 +4682,31 @@ router.get('/google-wallet/pass/:id', async (req, res) => {
     res.json({ save_link: saveLink });
   } catch (err) {
     console.error('[GoogleWallet] Error:', err);
-    res.status(500).json({ error: err.message });
+    const mapped = googleWallet.formatGoogleWalletError(err);
+    res.status(mapped.status).json({ error: mapped.error, code: mapped.code });
   }
 });
 
 /**
- * GET /api/v1/google-wallet/status - Config + URL callback effettivo (come in createOrUpdatePassClass)
+ * GET /api/v1/google-wallet/status - Config + optional class registration check
+ * Query: ?brand_id=&template_id= to verify genericClass exists on Google
  */
-router.get('/google-wallet/status', (req, res) => {
-  res.json(googleWallet.getStatusInfo());
+router.get('/google-wallet/status', async (req, res) => {
+  try {
+    const info = googleWallet.getStatusInfo();
+    const { brand_id, template_id } = req.query || {};
+    if (googleWallet.isConfigured() && brand_id && template_id) {
+      const brand = await getBrand(String(brand_id));
+      const template = await getTemplate(String(template_id));
+      if (brand && template && String(template.brand_id) === String(brand.id)) {
+        info.class_registration = await googleWallet.getClassRegistration(brand, template);
+      }
+    }
+    res.json(info);
+  } catch (err) {
+    console.error('[GoogleWallet] status error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /** Diagnostica Apple Wallet (PassKit web service + firma) — nessun segreto nei valori. */

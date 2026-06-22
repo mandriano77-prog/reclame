@@ -40,7 +40,7 @@ async function syncGoogleWalletObjectsForPasses({
           continue;
         }
         const passObject = googleWallet.buildPassObject(brand, template, pass, pass.customer_data || {});
-        await googleWallet.createPassObjectOnServer(passObject);
+        await googleWallet.ensurePassReadyOnServer(brand, template, passObject);
         if (message) {
           await googleWallet.updatePassMessage(pass.serial_number, message);
         }

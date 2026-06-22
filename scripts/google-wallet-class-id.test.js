@@ -71,3 +71,25 @@ test('getReviewStatus respects env and falls back', () => {
     restore2();
   }
 });
+
+test('formatGoogleWalletError maps classNotFound to 422', () => {
+  const { mod, restore } = loadGoogleWallet({ GOOGLE_WALLET_ISSUER_ID: '1' });
+  try {
+    const err = new Error('Google Wallet API 404: {"error":{"errors":[{"reason":"classNotFound"}]}}');
+    err.statusCode = 404;
+    err.body = { error: { errors: [{ reason: 'classNotFound' }] } };
+    const mapped = mod.formatGoogleWalletError(err);
+    assert.equal(mapped.status, 422);
+    assert.equal(mapped.code, 'class_not_found');
+    assert.match(mapped.error, /Template non ancora registrato/i);
+  } finally {
+    restore();
+  }
+});
+
+test('pass route ensures class before object', () => {
+  const fs = require('fs');
+  const routes = fs.readFileSync(path.join(__dirname, '../src/api/routes.js'), 'utf8');
+  assert.match(routes, /ensurePassReadyOnServer\(brand, template, passObject\)/);
+  assert.match(routes, /syncGoogleWalletClassForTemplate/);
+});
