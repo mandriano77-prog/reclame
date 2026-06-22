@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Filodiretto · Powered by 2Wallet Technology — Memo Round F&F 2026</title>
+<meta name="description" content="Filodiretto — Il filo diretto HR-dipendente, powered by 2Wallet Technology. Memo confidenziale Round F&F 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;
+  --bg-2:#141414;
+  --bg-3:#1a1a1a;
+  --ink:#f4ede2;
+  --ink-dim:rgba(244,237,226,.62);
+  --ink-faint:rgba(244,237,226,.32);
+  --line:rgba(244,237,226,.12);
+  --line-bold:rgba(244,237,226,.24);
+  --accent:#8B5CF6;
+  --accent-dim:rgba(139,92,246,.16);
+  --accent-deep:#6D28D9;
+}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;line-height:1.6;font-weight:400;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1280px;margin:0 auto;padding:0 28px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);font-weight:500}
+h1,h2,h3{font-family:'Anton',sans-serif;font-weight:400;letter-spacing:-.015em;line-height:.95;text-transform:uppercase}
+h1{font-size:clamp(56px,11vw,168px)}
+h2{font-size:clamp(40px,7vw,96px)}
+h3{font-size:clamp(22px,2.6vw,32px)}
+p{color:var(--ink-dim);max-width:62ch}
+p strong{color:var(--ink);font-weight:600}
+p em{color:var(--accent);font-style:italic;font-weight:400}
+a{color:inherit;text-decoration:none}
+section{padding:120px 0;border-bottom:1px solid var(--line);position:relative}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(180deg,rgba(10,10,10,.92) 0%,rgba(10,10,10,.65) 80%,transparent 100%);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;padding-top:18px;padding-bottom:18px}
+.logo{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500;letter-spacing:-.02em}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;gap:28px}
+.nav-links a{font-size:12px;color:var(--ink-dim);transition:color .2s}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;border:1px solid var(--accent);color:var(--accent);padding:9px 16px;border-radius:2px;transition:all .2s}
+.nav-cta:hover{background:var(--accent);color:var(--bg)}
+
+.hero{padding:180px 0 100px;min-height:100vh;display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid var(--line)}
+.hero .eyebrow{margin-bottom:32px}
+.hero .powered{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:18px;display:block}
+.hero .powered span{color:var(--accent)}
+.hero h1{margin-bottom:36px}
+.hero h1 .accent{color:var(--accent);font-style:italic}
+.hero .claim{font-size:clamp(17px,1.8vw,22px);color:var(--ink-dim);max-width:52ch;font-weight:300;margin-bottom:64px}
+.hero .claim strong{color:var(--ink)}
+.hero-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;border-top:1px solid var(--line);padding-top:32px}
+.hero-meta .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+.hero-meta .val{font-family:'Anton',sans-serif;font-size:28px;color:var(--ink);letter-spacing:-.01em}
+.hero-meta .val span{color:var(--accent)}
+
+.marquee{background:var(--bg-2);padding:32px 0;overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.marquee-track{display:flex;gap:64px;white-space:nowrap;animation:scroll 35s linear infinite;will-change:transform}
+.marquee-track span{font-family:'Anton',sans-serif;font-size:42px;color:var(--ink);letter-spacing:-.01em;text-transform:uppercase}
+.marquee-track span.dim{color:var(--ink-faint)}
+.marquee-track span.acc{color:var(--accent)}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.section-head{display:grid;grid-template-columns:1fr 2fr;gap:48px;margin-bottom:64px;align-items:end}
+.section-head .label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-faint)}
+.section-head .label span{color:var(--accent)}
+.section-head .lead{color:var(--ink);font-size:clamp(17px,1.6vw,20px);max-width:48ch;font-weight:300}
+
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.pillar{background:var(--bg);padding:48px 36px;display:flex;flex-direction:column;gap:20px}
+.pillar .num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.22em}
+.pillar h3{margin-bottom:8px}
+.pillar p{font-size:14px}
+
+/* ARCHITETTURA 3 LIVELLI — nuovo blocco */
+.arch{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);margin-top:24px}
+.arch-layer{background:var(--bg);padding:40px 32px;border-right:1px solid var(--line);position:relative;display:flex;flex-direction:column;gap:14px}
+.arch-layer:last-child{border-right:none}
+.arch-layer.middle{background:var(--bg-2)}
+.arch-layer.brand{background:var(--bg);border-left:3px solid var(--accent)}
+.arch-layer .level{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+.arch-layer h3{font-size:26px;line-height:.98}
+.arch-layer .role{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim);letter-spacing:.05em;text-transform:uppercase}
+.arch-layer p{font-size:13px;line-height:1.55}
+
+.landscape{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:48px}
+.player{background:var(--bg);padding:36px 28px;display:flex;flex-direction:column;gap:14px}
+.player .pname{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase}
+.player h3{font-size:24px;margin-bottom:4px}
+.player .raised{font-family:'Anton',sans-serif;font-size:48px;color:var(--ink);line-height:.95;letter-spacing:-.01em}
+.player .raised span{color:var(--accent)}
+.player .what{font-size:13px;color:var(--ink-dim);line-height:1.55}
+.player .source{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);letter-spacing:.05em;margin-top:8px;text-transform:uppercase}
+.gap-callout{padding:48px 40px;border:1px solid var(--accent);background:rgba(139,92,246,.04);display:grid;grid-template-columns:1fr 2fr;gap:32px;align-items:center}
+.gap-callout .badge{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
+.gap-callout h3{font-size:clamp(28px,3.5vw,44px);color:var(--ink);line-height:.95;margin-top:8px}
+.gap-callout h3 .acc{color:var(--accent)}
+.gap-callout p{font-size:15px;line-height:1.6}
+
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.tier{background:var(--bg);padding:44px 32px;display:flex;flex-direction:column;gap:18px;position:relative}
+.tier.medium{background:var(--bg-2)}
+.tier.enterprise{background:var(--bg);border-left:3px solid var(--accent)}
+.tier .pin{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;margin-bottom:4px}
+.tier h3{margin-bottom:10px}
+.tier .range{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-dim);letter-spacing:.05em;margin-bottom:18px;padding-bottom:18px;border-bottom:1px dashed var(--line)}
+.tier .row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px}
+.tier .row span:first-child{color:var(--ink-dim)}
+.tier .row span:last-child{color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:13px}
+.tier .arr{margin-top:14px;padding-top:18px;border-top:1px solid var(--line)}
+.tier .arr-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:6px}
+.tier .arr-val{font-family:'Anton',sans-serif;font-size:38px;color:var(--accent);line-height:.95;letter-spacing:-.01em}
+
+.fiscal{background:var(--bg-2);padding:120px 0;border-bottom:1px solid var(--line)}
+.fiscal .wrap{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+.fiscal h2{font-size:clamp(40px,6vw,80px);margin-bottom:24px}
+.fiscal h2 .acc{color:var(--accent)}
+.fiscal .lead{font-size:17px;color:var(--ink);font-weight:300;margin-bottom:24px;line-height:1.55}
+.fiscal .lead strong{font-weight:600}
+.fiscal .pull{font-family:'Anton',sans-serif;font-size:clamp(36px,5vw,56px);line-height:.95;color:var(--accent);margin:24px 0;letter-spacing:-.01em}
+.fiscal-card{border:1px solid var(--accent);background:rgba(139,92,246,.05);padding:36px 32px}
+.fiscal-card .ftitle{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;margin-bottom:24px}
+.fiscal-card .row{display:grid;grid-template-columns:1.4fr 1fr 1fr;padding:14px 0;border-bottom:1px dashed var(--line);align-items:baseline}
+.fiscal-card .row:last-child{border-bottom:none;padding-top:18px}
+.fiscal-card .row.headers{padding-bottom:8px;border-bottom:1px solid var(--line-bold)}
+.fiscal-card .row.headers span{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase}
+.fiscal-card .row .lbl{font-size:13px;color:var(--ink)}
+.fiscal-card .row .nom{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ink-dim);text-align:right}
+.fiscal-card .row .net{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-align:right;font-weight:500}
+.fiscal-card .row.tot .lbl{font-weight:600}
+.fiscal-card .row.tot .nom,.fiscal-card .row.tot .net{font-size:16px;font-weight:600}
+.fiscal-card .coc{margin-top:28px;padding-top:24px;border-top:1px solid var(--accent);text-align:center}
+.fiscal-card .coc .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:10px}
+.fiscal-card .coc .num{font-family:'Anton',sans-serif;font-size:64px;color:var(--accent);line-height:.95;letter-spacing:-.01em}
+.fiscal-notes{margin-top:32px;font-size:12px;color:var(--ink-faint);line-height:1.55}
+.fiscal-notes strong{color:var(--ink-dim)}
+.uc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.uc{background:var(--bg);padding:36px 28px;display:flex;flex-direction:column;gap:14px;min-height:200px}
+.uc:nth-child(even){background:var(--bg-2)}
+.uc .uc-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;margin-bottom:4px}
+.uc h3{font-size:22px;line-height:1.05;margin-bottom:6px}
+.uc p{font-size:13px;line-height:1.55;color:var(--ink-dim)}
+.uc p strong{color:var(--ink)}
+.traction-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line)}
+.traction-grid .cell{padding:40px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.traction-grid .cell:last-child{border-right:none}
+.traction-grid .cell .big{font-family:'Anton',sans-serif;font-size:clamp(48px,5vw,76px);color:var(--accent);line-height:.95}
+.traction-grid .cell .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);line-height:1.5}
+
+.proj{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.proj-card{padding:36px 28px;background:var(--bg-2);border:1px solid var(--line);text-align:center}
+.proj-card .yr{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;margin-bottom:14px}
+.proj-card .arr{font-family:'Anton',sans-serif;font-size:clamp(40px,5vw,72px);color:var(--ink);line-height:.95;margin-bottom:6px}
+.proj-card .ebitda{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-dim)}
+.proj-card.peak{border-color:var(--accent);background:rgba(139,92,246,.04)}
+.proj-card.peak .arr{color:var(--accent)}
+
+.founders{display:grid;grid-template-columns:2fr 1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+.founder{background:var(--bg);padding:48px 36px;display:flex;flex-direction:column;gap:16px;min-height:320px}
+.founder.featured{background:var(--bg-2);position:relative}
+.founder.featured::before{content:"";position:absolute;left:0;top:36px;bottom:36px;width:3px;background:var(--accent)}
+.founder .role{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase}
+.founder .name{font-family:'Anton',sans-serif;font-size:clamp(28px,3vw,42px);line-height:.95;letter-spacing:-.01em}
+.founder .bio{color:var(--ink-dim);font-size:13px;line-height:1.55}
+.founder .skin{margin-top:8px;padding:10px 14px;background:rgba(139,92,246,.1);border-left:2px solid var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.05em}
+.founder .badge{margin-top:auto;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase}
+
+.cap-table{border:1px solid var(--line);background:var(--bg-2);padding:40px 36px}
+.cap-row{display:grid;grid-template-columns:220px 1fr 80px;align-items:center;gap:20px;padding:14px 0;border-bottom:1px dashed var(--line)}
+.cap-row:last-child{border-bottom:none}
+.cap-row .who{font-size:14px;color:var(--ink)}
+.cap-row .who span{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin-top:4px}
+.cap-row .bar-track{height:14px;background:var(--bg-3);border-radius:1px;overflow:hidden;position:relative}
+.cap-row .bar-fill{height:100%;background:var(--accent)}
+.cap-row .bar-fill.alt{background:var(--accent-deep)}
+.cap-row .bar-fill.pool{background:repeating-linear-gradient(45deg,var(--accent-deep),var(--accent-deep) 4px,var(--bg-3) 4px,var(--bg-3) 8px)}
+.cap-row .pct{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);text-align:right;font-weight:500}
+
+.ask{background:var(--bg-2);padding:140px 0;border-bottom:1px solid var(--line)}
+.ask .wrap{display:grid;grid-template-columns:1.2fr 1fr;gap:80px;align-items:start}
+.ask h2{margin-bottom:32px}
+.ask h2 .acc{color:var(--accent)}
+.ask .lead{font-size:18px;color:var(--ink);margin-bottom:36px;font-weight:300}
+.ask .lead strong{font-weight:600}
+.ask-numbers{border:1px solid var(--accent);padding:36px 32px;background:rgba(139,92,246,.05)}
+.ask-numbers .item{padding:18px 0;border-bottom:1px dashed var(--line)}
+.ask-numbers .item:last-child{border-bottom:none}
+.ask-numbers .lbl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--ink-dim);text-transform:uppercase;margin-bottom:6px}
+.ask-numbers .val{font-family:'Anton',sans-serif;font-size:36px;color:var(--ink);letter-spacing:-.01em;line-height:1}
+.ask-numbers .val span{color:var(--accent)}
+.ask-use{margin-top:48px}
+.ask-use h3{margin-bottom:20px;font-size:18px;font-family:'JetBrains Mono',monospace;letter-spacing:.18em;color:var(--accent);font-weight:500;text-transform:uppercase}
+.ask-use .bar-row{display:grid;grid-template-columns:140px 1fr 80px;align-items:center;gap:16px;padding:10px 0}
+.ask-use .bar-row .lbl{font-size:13px;color:var(--ink)}
+.ask-use .bar-track{height:8px;background:var(--bg-3);border-radius:1px;overflow:hidden}
+.ask-use .bar-fill{height:100%;background:var(--accent)}
+.ask-use .bar-pct{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);text-align:right}
+
+.roadmap{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.rm-item{background:var(--bg);padding:36px 24px;text-align:left}
+.rm-item.live{background:var(--bg-2);border-top:3px solid var(--accent)}
+.rm-item .yr{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;margin-bottom:14px}
+.rm-item h3{font-size:20px;margin-bottom:10px}
+.rm-item .desc{font-size:12px;color:var(--ink-dim);line-height:1.55}
+.rm-item .powered{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.rm-item .powered span{color:var(--accent)}
+
+.cta-final{background:var(--accent);color:var(--bg);padding:140px 0;text-align:center}
+.cta-final h2{color:var(--bg);font-size:clamp(56px,9vw,140px);margin-bottom:24px}
+.cta-final p{color:var(--bg);max-width:42ch;margin:0 auto 32px;font-size:17px;opacity:.84}
+.cta-final p strong{color:var(--bg);font-weight:700}
+.cta-final .contact{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.18em;color:var(--bg);border-bottom:2px solid var(--bg);padding-bottom:4px;text-transform:uppercase;font-weight:600}
+
+.disclaimer{background:var(--bg-2);padding:64px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.disclaimer .wrap{max-width:920px}
+.disclaimer .label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.disclaimer p{font-size:12px;color:var(--ink-faint);line-height:1.7;max-width:none;margin-bottom:14px}
+.disclaimer p strong{color:var(--ink-dim);font-weight:600}
+
+footer{padding:48px 0;background:var(--bg);text-align:center}
+footer p{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase;margin:0 auto}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+.reveal.is-visible{opacity:1;transform:none}
+
+@media(max-width:720px){
+  .wrap{padding:0 20px}
+  nav .wrap{padding-top:14px;padding-bottom:14px}
+  .nav-links{display:none}
+  .hero{padding:130px 0 72px;min-height:auto}
+  .hero h1{margin-bottom:28px}
+  .hero .claim{margin-bottom:40px}
+  .hero-meta{grid-template-columns:repeat(2,1fr);gap:18px}
+  section{padding:72px 0}
+  .section-head{grid-template-columns:1fr;gap:18px;margin-bottom:40px}
+  .marquee-track span{font-size:30px}
+  .marquee-track{gap:40px}
+  .pillars{grid-template-columns:1fr}
+  .arch{grid-template-columns:1fr}
+  .arch-layer{border-right:none;border-bottom:1px solid var(--line)}
+  .arch-layer:last-child{border-bottom:none}
+  .landscape{grid-template-columns:1fr}
+  .gap-callout{grid-template-columns:1fr;gap:18px;padding:32px 24px}
+  .tiers{grid-template-columns:1fr}
+  .uc-grid{grid-template-columns:1fr}
+  .fiscal{padding:72px 0}
+  .fiscal .wrap{grid-template-columns:1fr;gap:40px}
+  .fiscal-card{padding:28px 22px}
+  .fiscal-card .row{grid-template-columns:1.2fr 0.9fr 0.9fr;gap:8px}
+  .fiscal-card .row .lbl{font-size:12px}
+  .fiscal-card .row .nom,.fiscal-card .row .net{font-size:12px}
+  .fiscal-card .coc .num{font-size:48px}
+  .traction-grid{grid-template-columns:repeat(2,1fr)}
+  .traction-grid .cell{border-right:none;border-bottom:1px solid var(--line)}
+  .traction-grid .cell:nth-child(odd){border-right:1px solid var(--line)}
+  .founders{grid-template-columns:1fr}
+  .roadmap{grid-template-columns:1fr 1fr}
+  .proj{grid-template-columns:1fr;gap:14px}
+  .ask{padding:80px 0}
+  .ask .wrap{grid-template-columns:1fr;gap:48px}
+  .cta-final{padding:80px 0}
+  .ask-use .bar-row{grid-template-columns:90px 1fr 50px;gap:10px}
+  .cap-row{grid-template-columns:140px 1fr 60px;gap:12px}
+  .cap-row .who{font-size:12px}
+  .cap-table{padding:28px 22px}
+  .disclaimer{padding:48px 0}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="#" class="logo">filodiretto<span>.app</span></a>
+    <div class="nav-links">
+      <a href="#tesi">Tesi</a>
+      <a href="#architettura">Asset</a>
+      <a href="#mercato">Mercato</a>
+      <a href="#prodotto">Tier</a>
+      <a href="#numeri">Numeri</a>
+      <a href="#team">Team</a>
+      <a href="#advisory">Advisory</a>
+      <a href="#rischio">Rischio</a>
+      <a href="#round">Round</a>
+    </div>
+    <a href="#round" class="nav-cta">F&amp;F →</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow reveal">Memo confidenziale · Round F&amp;F · 2026</div>
+    <span class="powered reveal">Powered by <span>2Wallet Technology</span></span>
+    <h1 class="reveal">Filodiretto.<br>Ogni dipendente.<br><span class="accent">Zero app.</span></h1>
+    <p class="claim reveal">
+      <strong>Filodiretto trasforma Apple, Google e Samsung Wallet nel canale diretto tra HR e ogni dipendente.</strong>
+      Notifiche push sul lock screen. <em>Zero attriti di installazione. Zero frammentazione di dispositivi.</em>
+    </p>
+    <div class="hero-meta reveal">
+      <div class="item">
+        <div class="lbl">Stadio</div>
+        <div class="val">F&amp;F</div>
+      </div>
+      <div class="item">
+        <div class="lbl">Round</div>
+        <div class="val">€<span>250</span>k</div>
+      </div>
+      <div class="item">
+        <div class="lbl">Pre-money</div>
+        <div class="val">€<span>1,8</span>M</div>
+      </div>
+      <div class="item">
+        <div class="lbl">ARR Y3 target</div>
+        <div class="val">€<span>2,57</span>M</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span>FILODIRETTO</span><span class="acc">·</span>
+    <span class="dim">HR SENZA APP</span><span class="acc">·</span>
+    <span>2WALLET TECHNOLOGY</span><span class="acc">·</span>
+    <span class="dim">ZERO INSTALL</span><span class="acc">·</span>
+    <span>OGNI DISPOSITIVO</span><span class="acc">·</span>
+    <span class="dim">LOCK-SCREEN</span><span class="acc">·</span>
+    <span>FILODIRETTO</span><span class="acc">·</span>
+    <span class="dim">HR SENZA APP</span><span class="acc">·</span>
+    <span>2WALLET TECHNOLOGY</span><span class="acc">·</span>
+    <span class="dim">ZERO INSTALL</span><span class="acc">·</span>
+    <span>OGNI DISPOSITIVO</span><span class="acc">·</span>
+    <span class="dim">LOCK-SCREEN</span><span class="acc">·</span>
+  </div>
+</div>
+
+<!-- 01 TESI -->
+<section id="tesi">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>01</span> · La tesi</div>
+      <div class="lead">La comunicazione HR è rotta. La ricostruiamo su una superficie che ogni dipendente porta già in tasca: il proprio wallet.</div>
+    </div>
+    <div class="pillars">
+      <div class="pillar reveal">
+        <div class="num">→ 01</div>
+        <h3>Le app non si installano. Le intranet non si usano.</h3>
+        <p>L'app HR media raggiunge <strong>meno del 40% della forza lavoro</strong> (benchmark interno + stime settore HR-tech). L'intranet aziendale viene aperta una volta a settimana, e male. La comunicazione interna sbatte contro un muro — e i CHRO lo sanno.</p>
+      </div>
+      <div class="pillar reveal">
+        <div class="num">→ 02</div>
+        <h3>Il wallet è universale.</h3>
+        <p>Ogni smartphone ha Apple Wallet, Google Wallet o Samsung Wallet preinstallato. <strong>Zero attrito di download</strong>. Un QR code o un link nella mail aziendale, e il dipendente è raggiunto.</p>
+      </div>
+      <div class="pillar reveal">
+        <div class="num">→ 03</div>
+        <h3>Il lock-screen è il vero canale.</h3>
+        <p>I pass wallet inviano notifiche direttamente sul <strong>lock screen</strong>: contestuali, persistenti, aggiornabili in tempo reale. L'engagement è <em>significativamente superiore</em> a email e chat aziendali (stime su benchmark mobile push vs email aziendale).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 01.b ARCHITETTURA 3 LIVELLI — nuova sezione -->
+<section id="architettura">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>01.b</span> · L'asset · 3 livelli</div>
+      <div class="lead">Non vendiamo un prodotto. <strong>Costruiamo una platform proprietaria</strong> che alimenta un primo brand HR (Filodiretto) e una pipeline di verticali futuri.</div>
+    </div>
+    <div class="arch reveal">
+      <div class="arch-layer">
+        <div class="level">→ Livello 01 · Holding</div>
+        <h3>Precise<br>Advertising</h3>
+        <div class="role">Owner IP · Builder MVP</div>
+        <p>Società 100% Adriano Coccia. <strong>Ha sviluppato internamente l'MVP Filodiretto oggi in produzione</strong>, l'engine cross-wallet 2Wallet Technology e il brand. Conferisce in dote alla NewCo <em>codice, design system, integrazioni Apple/Google/Samsung già live, brand IP</em> — equivalente a 14+ mesi di sviluppo capitalizzato e costo di replicazione stimato €280-350k.</p>
+      </div>
+      <div class="arch-layer middle">
+        <div class="level">→ Livello 02 · Platform Engine</div>
+        <h3>2Wallet<br>Technology</h3>
+        <div class="role">Infrastructure</div>
+        <p>Platform proprietaria che integra <strong>Apple Wallet + Google Wallet + Samsung Wallet</strong> in una sola astrazione cross-wallet, multi-tenant, con push update, magic-link, distribuzione, analytics. L'engine alimenta tutti i verticali della factory.</p>
+      </div>
+      <div class="arch-layer brand">
+        <div class="level">→ Livello 03 · Brand consumer</div>
+        <h3>Filodiretto</h3>
+        <div class="role">Primo verticale · HR</div>
+        <p>Brand consumer-facing del primo prodotto verticale. <strong>Filodiretto è il filo diretto</strong> tra HR e dipendente — wallet-native, lock-screen, zero app. Powered by 2Wallet Technology. <em>Live in produzione.</em></p>
+      </div>
+    </div>
+    <p class="reveal" style="margin-top:32px;color:var(--ink-dim);font-size:14px;text-align:center;max-width:none">
+      <strong style="color:var(--accent)">Pattern factory:</strong> ogni nuovo verticale = nuovo brand consumer powered by 2Wallet Technology. La platform resta proprietà della NewCo, i brand vivono come prodotti indipendenti con propria roadmap.
+    </p>
+  </div>
+</section>
+
+<!-- 02 MERCATO HR IN ESPLOSIONE -->
+<section id="mercato">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>02</span> · Il mercato HR italiano sta esplodendo</div>
+      <div class="lead">Il 2024-25 ha sbloccato l'HR-tech italiano. Funding round record, welfare in boom, gruppi corporate che entrano nel gioco. Noi ci inseriamo nello spazio bianco che nessuno copre.</div>
+    </div>
+    <div class="landscape">
+      <div class="player reveal">
+        <div class="pname">Jet HR · Payroll</div>
+        <h3>Jet HR</h3>
+        <div class="raised">€<span>41,7</span>M</div>
+        <p class="what">Raccolti tra pre-seed (€4,7M nel 2023), seed (€12M nel 2024) e Series A (€25M nel giugno 2025 da Base10). <strong>700+ clienti SMB</strong>, 6× crescita ARR nel 2024. Verticale: payroll &amp; compliance automation.</p>
+        <div class="source">Fonte: comunicati pubblici Jet HR, 2023-2025</div>
+      </div>
+      <div class="player reveal">
+        <div class="pname">Coverflex · Welfare</div>
+        <h3>Coverflex</h3>
+        <div class="raised">Top <span>100</span></div>
+        <p class="what">Tra le 100 startup europee a più rapida crescita 2025 (Sifted Leaderboard). <strong>2.000+ aziende clienti</strong> in Italia. Welfare aziendale: il 78% dei crediti welfare viene speso entro 3 mesi dall'erogazione (dato Coverflex).</p>
+        <div class="source">Fonte: Sifted Leaderboard 2025, Coverflex public data</div>
+      </div>
+      <div class="player reveal">
+        <div class="pname">cHRoco · Human Experience</div>
+        <h3>cHRoco</h3>
+        <div class="raised"><span>2025</span></div>
+        <p class="what">Lanciata a ottobre 2025 da <strong>Jakala + Intelco</strong> dalla cima della Torre Velasca di Milano. 3 anni di sviluppo, 100 persone coinvolte. Verticale: app HR full-stack white-label per grandi corporate.</p>
+        <div class="source">Fonte: comunicato stampa Jakala, ottobre 2025</div>
+      </div>
+    </div>
+    <div class="gap-callout reveal">
+      <div>
+        <div class="badge">→ Il posizionamento</div>
+        <h3>Loro fanno <span class="acc">full-stack costoso</span>. Noi stiamo <span class="acc">sopra</span>.</h3>
+      </div>
+      <p>
+        <strong>cHRoco è una full-app enterprise che gestisce tutto</strong> — pensata per chi può permettersi un'iniezione di Jakala dentro l'HR. <strong>Jet HR fa payroll automation</strong>. <strong>Coverflex fa welfare</strong>. Tutti player solidi nel loro centro del puzzle.
+        <em>Filodiretto non vuole essere il centro</em>: è il <strong>canale proprietario sopra il sistema</strong>. Quel layer trasversale che attiva la comunicazione, l'engagement, le convenzioni, i riconoscimenti — senza un'altra app da installare, senza un'altra intranet da non usare. Il payroll di Jet HR finisce dentro un pass. Il credito welfare di Coverflex pure. <strong>Noi siamo il filo che li unisce e li mette in tasca al dipendente.</strong>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 03 PRODOTTO -->
+<section id="prodotto">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>03</span> · Il prodotto</div>
+      <div class="lead">Una piattaforma, tre tier. Pricing per-dipendente al mese, prevedibile come una busta paga.</div>
+    </div>
+    <div class="tiers">
+      <div class="tier reveal">
+        <div class="pin">Tier 01</div>
+        <h3>Startup / Scaleup</h3>
+        <div class="range">Fino a 150 dipendenti</div>
+        <div class="row"><span>Setup una tantum</span><span>€10.000</span></div>
+        <div class="row"><span>Canone platform</span><span>€500 / mese</span></div>
+        <div class="row"><span>PEPM</span><span>€10,00</span></div>
+        <div class="row"><span>Dipendenti medi</span><span>80</span></div>
+        <div class="arr">
+          <div class="arr-lbl">ARR per cliente</div>
+          <div class="arr-val">€15,6k</div>
+        </div>
+      </div>
+      <div class="tier medium reveal">
+        <div class="pin">Tier 02</div>
+        <h3>Medium</h3>
+        <div class="range">150 – 500 dipendenti</div>
+        <div class="row"><span>Setup una tantum</span><span>€17.000</span></div>
+        <div class="row"><span>Canone platform</span><span>€1.500 / mese</span></div>
+        <div class="row"><span>PEPM</span><span>€8,00</span></div>
+        <div class="row"><span>Dipendenti medi</span><span>300</span></div>
+        <div class="arr">
+          <div class="arr-lbl">ARR per cliente</div>
+          <div class="arr-val">€46,8k</div>
+        </div>
+      </div>
+      <div class="tier enterprise reveal">
+        <div class="pin">Tier 03 · Featured</div>
+        <h3>Enterprise</h3>
+        <div class="range">Oltre 500 dipendenti</div>
+        <div class="row"><span>Setup una tantum</span><span>€25.000</span></div>
+        <div class="row"><span>Canone platform</span><span>€3.000 / mese</span></div>
+        <div class="row"><span>PEPM</span><span>€5,00</span></div>
+        <div class="row"><span>Dipendenti medi</span><span>1.500</span></div>
+        <div class="arr">
+          <div class="arr-lbl">ARR per cliente</div>
+          <div class="arr-val">€126k</div>
+        </div>
+      </div>
+    </div>
+    <div class="gap-callout reveal" style="margin-top:32px">
+      <div>
+        <div class="badge">→ Add-on opzionale</div>
+        <h3>Il pass diventa anche <span class="acc">badge fisico</span>.</h3>
+      </div>
+      <p>
+        Su richiesta, lo stesso wallet pass abilita <strong>l'accesso fisico</strong> all'azienda: porte uffici, mensa, parcheggio, sale riunioni, timbratura presenze. Nessuna app, nessuna tessera plastica. <em>Una sola identità digitale, dentro il telefono che il dipendente porta già con sé.</em> Add-on disponibile su tutti i tier, su qualsiasi sistema di controllo accessi NFC-compatibile. <strong>L'attivazione delle funzioni di controllo a distanza (timbratura, presenze) richiede al cliente gli adempimenti dell'art. 4 L. 300/1970</strong> — il framework di compliance è fornito da Filodiretto.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 03b USE CASES TRASVERSALI -->
+<section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>03.b</span> · Cosa fai con un pass</div>
+      <div class="lead">Un solo canale, sei usi trasversali. <strong>Filodiretto non è un'app dedicata a un task</strong> — è il layer che attiva tutto ciò che le app singole faticano a raggiungere.</div>
+    </div>
+    <div class="uc-grid">
+      <div class="uc reveal">
+        <div class="uc-tag">→ Comunicazione</div>
+        <h3>Annunci sul lock screen.</h3>
+        <p>News interne, alert urgenti, comunicati del CEO. Push notification direttamente sul lock screen — <strong>tempo di lettura comparabile a quello dei messaggi personali</strong>, ordini di grandezza superiore alla mail aziendale (benchmark mobile push vs email B2E).</p>
+      </div>
+      <div class="uc reveal">
+        <div class="uc-tag">→ Engagement</div>
+        <h3>Pulse survey &amp; NPS interno.</h3>
+        <p>Sondaggi flash, NPS dipendenti, feedback meeting. Click dal pass, una risposta. <strong>Tasso di risposta significativamente superiore</strong> rispetto a email survey tradizionale (stime benchmark mobile-native).</p>
+      </div>
+      <div class="uc reveal">
+        <div class="uc-tag">→ Convenzioni</div>
+        <h3>Convenzioni geolocalizzate.</h3>
+        <p>Il dipendente passa davanti a una palestra convenzionata, riceve la notifica con lo sconto attivo. <em>Apple Wallet location-aware</em>. Convenzioni che <strong>arrivano nel momento giusto, nel posto giusto</strong>. <strong>Attivazione opt-in</strong> con consenso esplicito ai sensi GDPR.</p>
+      </div>
+      <div class="uc reveal">
+        <div class="uc-tag">→ Recognition</div>
+        <h3>Riconoscimenti &amp; badge.</h3>
+        <p>Anniversari, achievement, peer recognition, micro-bonus. Il pass del dipendente <strong>si aggiorna nel tempo</strong>: visualizza badge, livelli, milestone. Engagement che si vede.</p>
+      </div>
+      <div class="uc reveal">
+        <div class="uc-tag">→ Onboarding</div>
+        <h3>Sequence di benvenuto.</h3>
+        <p>Card che si aggiorna automaticamente nei primi 90 giorni del nuovo assunto: documenti, training, contatti. <strong>Tutto nel telefono, niente da scaricare</strong>, niente da spiegare due volte.</p>
+      </div>
+      <div class="uc reveal">
+        <div class="uc-tag">→ Welfare reminder</div>
+        <h3>Credito welfare in scadenza.</h3>
+        <p>Integrazione roadmap con Coverflex, Edenred, Pellegrini, Day. Push <strong>3 giorni prima della scadenza</strong> del credito welfare: "Hai 240€ da usare entro venerdì". Il welfare diventa azione, non report.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 DOVE SIAMO -->
+<section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>04</span> · Dove siamo</div>
+      <div class="lead">MVP Filodiretto in produzione. <strong>3 design partner in pipeline per Q3 2026.</strong> Powered by 2Wallet Technology — la stessa platform che alimenterà i prossimi verticali della factory.</div>
+    </div>
+    <div class="traction-grid reveal">
+      <div class="cell">
+        <div class="big">MVP</div>
+        <div class="lbl">In produzione · Costruito e testato</div>
+      </div>
+      <div class="cell">
+        <div class="big">A·G·S</div>
+        <div class="lbl">3 Wallet integrati<br>Apple · Google · Samsung</div>
+      </div>
+      <div class="cell">
+        <div class="big">3</div>
+        <div class="lbl">Design Partner pipeline<br>Mid-market scaleup Italia</div>
+      </div>
+      <div class="cell">
+        <div class="big">Q3</div>
+        <div class="lbl">2026 target costituzione SRLi</div>
+      </div>
+    </div>
+    <p class="reveal" style="margin-top:24px;color:var(--ink-dim);font-size:13px;text-align:left;max-width:none;font-family:'JetBrains Mono',monospace;letter-spacing:.04em">
+      → <strong style="color:var(--accent)">Pipeline attiva:</strong> conversazioni avanzate con 3 scaleup italiane 250-1.000 dipendenti come design partner del Q3 2026. Target Y1: 12 clienti paganti — vedi sezione numeri.
+    </p>
+  </div>
+</section>
+
+<!-- 05 NUMERI -->
+<section id="numeri">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>05</span> · I numeri</div>
+      <div class="lead">3 anni per arrivare a €2,57M di ARR. <strong>EBITDA positivo dal Y1</strong>, margine 56% Y3 in linea con SaaS B2B mature. Proiezioni base case, soggette ad assunzioni di crescita e adozione mercato.</div>
+    </div>
+    <div class="proj">
+      <div class="proj-card reveal">
+        <div class="yr">2027 · Y1 · Base</div>
+        <div class="arr">€379k</div>
+        <div class="ebitda">12 clienti · EBITDA +€238k (63%) · Sweat + freelance tech</div>
+      </div>
+      <div class="proj-card reveal">
+        <div class="yr">2028 · Y2 · Base</div>
+        <div class="arr">€1,20M</div>
+        <div class="ebitda">36 clienti · EBITDA +€681k (57%) · 4 FTE + Sales Sr + freelance</div>
+      </div>
+      <div class="proj-card peak reveal">
+        <div class="yr">2029 · Y3 · Base</div>
+        <div class="arr">€2,48M</div>
+        <div class="ebitda">72 clienti · EBITDA +€1,38M (56%) · 7 FTE strutturati</div>
+      </div>
+    </div>
+    <div style="margin-top:64px">
+      <div class="section-head reveal" style="margin-bottom:32px">
+        <div class="label"><span>05.b</span> · Comparable &amp; potenziale exit</div>
+        <div class="lead">Il mercato HR-tech globale ha visto round recenti a <strong>15-25× ARR</strong>. Filodiretto applica un multiplo conservativo <strong>7× ARR</strong> alla proiezione Y3. <em>Stime forward-looking — vedi disclaimer in fondo.</em></div>
+      </div>
+      <div class="landscape" style="margin-bottom:32px">
+        <div class="player reveal">
+          <div class="pname">Personio · Germania</div>
+          <h3>Personio</h3>
+          <div class="raised"><span>~20×</span> ARR</div>
+          <p class="what">$8,5B valuation Series E. <strong>~$435M ARR 2024</strong>. HR all-in-one per SMB europee. Multiplo implicito ~20× ARR.</p>
+          <div class="source">Fonti: getlatka.com, personio.com press 2024-2025</div>
+        </div>
+        <div class="player reveal">
+          <div class="pname">Deel · Global</div>
+          <h3>Deel</h3>
+          <div class="raised"><span>~17×</span> ARR</div>
+          <p class="what">$17,3B valuation ottobre 2025 (Series E $300M). <strong>$1B ARR Q1 2025</strong>. Global payroll/HR. Multiplo revenue 22,76× (CBI / Crunchbase).</p>
+          <div class="source">Fonti: Crunchbase News, Deel.com blog 2025</div>
+        </div>
+        <div class="player reveal">
+          <div class="pname">HiBob · UK/Israele</div>
+          <h3>HiBob</h3>
+          <div class="raised"><span>~25×</span> ARR</div>
+          <p class="what">$2,7B valuation 2024 (+10% vs 2022). <strong>&gt;$100M ARR</strong>. HRIS mid-market. Multiplo implicito ~25× ARR.</p>
+          <div class="source">Fonti: hibob.com news, Calcalist Tech 2024</div>
+        </div>
+      </div>
+      <div class="proj">
+        <div class="proj-card reveal">
+          <div class="yr">Valuation Y3 @ 7× (conservativo)</div>
+          <div class="arr">€18M</div>
+          <div class="ebitda">€2,57M ARR Y3 × 7 — ben sotto i comparable</div>
+        </div>
+        <div class="proj-card reveal">
+          <div class="yr">Valuation Y5 @ 7×</div>
+          <div class="arr">€41,8M</div>
+          <div class="ebitda">ARR proj €5,97M · multiplo HR-tech conservativo</div>
+        </div>
+        <div class="proj-card peak reveal">
+          <div class="yr">Ritorno F&amp;F Y5 · stima base</div>
+          <div class="arr">20,9×</div>
+          <div class="ebitda">Cash on cash · €200k esterno → €4,18M (proiezione, no garanzia)</div>
+        </div>
+      </div>
+      <p class="reveal" style="margin-top:24px;color:var(--ink-dim);font-size:13px;max-width:none;text-align:center">
+        I comparable sono volutamente di scala global per fissare il <em>tetto del multiplo</em>. Anche applicando uno sconto Italia/early-stage di 3× rispetto al range Personio/Deel/HiBob, il <strong>7× resta conservativo</strong>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 06 TEAM -->
+<section id="team">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>06</span> · Chi siamo</div>
+      <div class="lead">Tre fondatori. Sweat equity dal giorno uno. <strong>Precise Advertising conferisce in dote 2Wallet Technology + Filodiretto IP</strong>. Il founder mette anche capitale personale.</div>
+    </div>
+    <div class="founders">
+      <div class="founder featured reveal">
+        <div class="role">CEO &amp; Co-founder</div>
+        <div class="name">Adriano Coccia</div>
+        <p class="bio"><strong>Full-time founder dal febbraio 2026.</strong> Esperto di digital marketing, builder di prodotti digitali tra adtech e media. Fondatore e proprietario al 100% di Precise Advertising, la società che conferisce alla NewCo <strong>2Wallet Technology (engine cross-wallet)</strong> + <strong>MVP Filodiretto già in produzione</strong>. Lavora per equity e mette capitale personale nel round.</p>
+        <div class="skin">+ €50k cash personali nel round (skin in the game founder)</div>
+        <div class="badge">Controllo effettivo 52,0% (Precise 30% + diretto 22%)</div>
+      </div>
+      <div class="founder reveal">
+        <div class="role">Tech leadership · Co-founder · in talks</div>
+        <div class="name">Digital Builders</div>
+        <p class="bio"><strong>Nando Bocca + Simone Ricci · Partner &amp; Founder Digital Builders S.r.l.</strong> Software house italiana che entra come <em>tech co-founder collettivo</em>: ownership engine 2Wallet Technology, architettura SaaS multi-tenant, integrazioni HRIS, mantenimento e scalabilità. <strong>Equity collettiva, vesting 4 anni con cliff 12 mesi.</strong> Vantaggio strutturale: capacity e business continuity di una software house, non rischio single-point-of-failure di un singolo CTO.</p>
+        <div class="badge">14,5% post-money (range indicativo)</div>
+      </div>
+      <div class="founder reveal">
+        <div class="role">Head of GTM &amp; Co-founder</div>
+        <div class="name">[TBA]</div>
+        <p class="bio">Founding GTM lead. Ownership pipeline, qualificazione, demo, closing sui buyer HR Director &amp; CHRO. Background HR-tech o welfare-tech italiano. <strong>Lavora per equity + commission plan</strong> su MRR firmato.</p>
+        <div class="badge">5,0% post-money + commission (range indicativo)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06.a ADVISORY BOARD -->
+<section id="advisory">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>06.a</span> · Advisory board</div>
+      <div class="lead">Quattro nomi in fase di chiusura, due assi: <strong>CHRO senior di gruppi top italiani</strong> (validazione buyer-side) e <strong>giuslavoristi di riferimento milanesi</strong> (compliance e sicurezza legale dell'attivazione enterprise).</div>
+    </div>
+    <div class="landscape">
+      <div class="player reveal">
+        <div class="pname">→ CHRO advisor · in talks</div>
+        <h3>Silvia Cassano</h3>
+        <div class="raised" style="font-size:24px;line-height:1.2">Chief People Officer<br><span>Fastweb + Vodafone</span></div>
+        <p class="what">Ex Vodafone, ING Italia, UniCredit. <strong>Profilo top dei CHRO italiani</strong> in fase di trasformazione organizzativa su scala mass-market. Validazione fit prodotto su forza lavoro telco/enterprise.</p>
+      </div>
+      <div class="player reveal">
+        <div class="pname">→ CHRO advisor · in talks</div>
+        <h3>Federica Mattiussi</h3>
+        <div class="raised" style="font-size:24px;line-height:1.2">Senior Director HR<br><span>Versace</span></div>
+        <p class="what">Ex Michael Kors EMEA, JAKALA, Tetra Pak. <strong>HR luxury/retail multinazionale</strong> con forza lavoro multi-paese e multi-store. Validazione su use-case retail employee e onboarding ad alta rotazione.</p>
+      </div>
+      <div class="player reveal">
+        <div class="pname">→ Giuslavorista advisor · in talks</div>
+        <h3>Avv. Ranieri Romani</h3>
+        <div class="raised" style="font-size:24px;line-height:1.2">Equity Partner<br><span>LCA Studio Legale</span></div>
+        <p class="what">Specialista employment law su crisi, ristrutturazioni, trasferimenti d'azienda. Membro AGI, EELA, AIAS, AIJA. <strong>LCA è già partner legale equity-incentivato di Filodiretto.</strong></p>
+      </div>
+      <div class="player reveal">
+        <div class="pname">→ Giuslavorista advisor · in talks</div>
+        <h3>Avv. Giuseppe Magnano di San Lio</h3>
+        <div class="raised" style="font-size:24px;line-height:1.2">Partner<br><span>Carlo Andrea Galli &amp; Partners</span></div>
+        <p class="what">Diritto del lavoro esclusivo, focus dirigenti/executive employment. Ex Marco De Bellis &amp; Partners. <strong>Specialista art. 4 Statuto Lavoratori</strong> e accordi di secondo livello — area critica per l'attivazione enterprise di Filodiretto.</p>
+      </div>
+    </div>
+    <p class="reveal" style="margin-top:32px;color:var(--ink-dim);font-size:14px;text-align:center;max-width:none">
+      <strong style="color:var(--accent)">Strategic Advisory Pool 3,5%</strong> riservato all'advisory board e a LCA come partner legale. Closing dei contratti advisor entro <strong>Q3 2026</strong>, contestualmente alla costituzione della SRLi.
+    </p>
+  </div>
+</section>
+
+<!-- 06.b RISCHIO PIATTAFORMA & PLAN B -->
+<section id="rischio">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>06.b</span> · Rischio piattaforma &amp; plan B</div>
+      <div class="lead">Filodiretto poggia su API di terze parti (Apple PassKit, Google Wallet, Samsung Wallet). <strong>Il rischio è gestito per design</strong>: cross-wallet day-one, plan B WhatsApp pronto, compliance integrata.</div>
+    </div>
+    <div class="pillars">
+      <div class="pillar reveal">
+        <div class="num">→ 01</div>
+        <h3>Cross-wallet già live.</h3>
+        <p>L'engine 2Wallet Technology è già <strong>multi-piattaforma dal day-one</strong> (Apple + Google + Samsung). Un cambio di TOS su una singola piattaforma non interrompe il servizio: il pass migra sugli altri canali wallet del dipendente.</p>
+      </div>
+      <div class="pillar reveal">
+        <div class="num">→ 02</div>
+        <h3>Plan B: WhatsApp Community.</h3>
+        <p>Se gli ecosistemi wallet stringono, <strong>Filodiretto migra l'azienda su WhatsApp Business API</strong> attivando una "Community area azienda" — canale broadcast HR-dipendente sulla messaggistica con il 97% di penetrazione adulta in Italia. Stesso outcome (lockscreen del dipendente), stessa value prop (zero app da installare, zero attrito).</p>
+      </div>
+      <div class="pillar reveal">
+        <div class="num">→ 03</div>
+        <h3>Compliance integrata.</h3>
+        <p>Framework GDPR + art. 88 + art. 4 L. 300/1970 fornito al cliente. <strong>Partner legale equity-incentivato (LCA Studio Legale Associato di Milano)</strong>. DPIA pronta per ogni onboarding enterprise. Vedi anche Advisory Board.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 CAP TABLE -->
+<section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>07</span> · Cap table post round</div>
+      <div class="lead">Pre-money €1,8M · Post-money €2M · Round €250k (€200k F&amp;F esterno + €50k founder). <strong>Cap table progettata con riserve nominate</strong> per la fase di crescita: ESOP per dipendenti operativi, pool advisory separato per legal partner e advisory board.</div>
+    </div>
+    <div class="cap-table reveal">
+      <div class="cap-row">
+        <div class="who">Precise Advertising<span>Conferisce engine + MVP + IP (no cash)</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:30.0%"></div></div>
+        <div class="pct">30,0%</div>
+      </div>
+      <div class="cap-row">
+        <div class="who">Adriano Coccia<span>CEO · sweat equity + €50k cash personali</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:22.0%"></div></div>
+        <div class="pct">22,0%</div>
+      </div>
+      <div class="cap-row">
+        <div class="who">Digital Builders<span>Tech co-founder · Bocca + Ricci · vesting 4y / cliff 12m</span></div>
+        <div class="bar-track"><div class="bar-fill alt" style="width:14.5%"></div></div>
+        <div class="pct">14,5%</div>
+      </div>
+      <div class="cap-row">
+        <div class="who">Head of GTM Co-founder<span>Work for equity + commission MRR</span></div>
+        <div class="bar-track"><div class="bar-fill alt" style="width:5.0%"></div></div>
+        <div class="pct">5,0%</div>
+      </div>
+      <div class="cap-row">
+        <div class="who">ESOP Pool<span>Opzioni 4-6 hire critici 24 mesi</span></div>
+        <div class="bar-track"><div class="bar-fill pool" style="width:15.0%"></div></div>
+        <div class="pct">15,0%</div>
+      </div>
+      <div class="cap-row">
+        <div class="who">Strategic Advisory Pool<span>LCA legal partner 1,5% + advisor HR &amp; mobile 2%</span></div>
+        <div class="bar-track"><div class="bar-fill pool" style="width:3.5%"></div></div>
+        <div class="pct">3,5%</div>
+      </div>
+      <div class="cap-row">
+        <div class="who">Friends &amp; Family<span>€200k esterni · 4 slot da €50k</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:10.0%;background:var(--ink)"></div></div>
+        <div class="pct">10,0%</div>
+      </div>
+    </div>
+    <p class="reveal" style="margin-top:32px;color:var(--ink-dim);font-size:14px;text-align:center;max-width:none">
+      <strong style="color:var(--accent)">Controllo effettivo Adriano: 52,0%</strong> · somma di Precise (30,0%) + quota personale (22,0%). Maggioranza assoluta mantenuta post-round con margine di sicurezza per i prossimi round seed.
+    </p>
+  </div>
+</section>
+
+<!-- ASK -->
+<section class="ask" id="round">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow reveal" style="margin-bottom:24px">Il round · Friends &amp; Family · Q4 2026</div>
+      <h2 class="reveal">€200k esterno.<br><span class="acc">10% equity F&amp;F.</span><br>4 slot · 18+ mesi runway.</h2>
+      <p class="lead reveal">
+        <strong>Pre-money €1,8M, post-money €2M.</strong> Round totale €250k = €200k F&amp;F esterno (4 slot da €50k) + €50k Adriano in proprio. Il cash finanzia 18 mesi di runway mentre il team lavora per equity.
+        Target: <em>8-12 clienti paganti nel Y1</em> con EBITDA positivo, fatturato Y2 €1,2M, e fine Y3 con €2,57M di ARR e €1,38M di EBITDA (56% margin) — pronti per un round seed istituzionale a multipli 6-10× ARR. <em>Proiezioni base case.</em>
+      </p>
+      <p class="lead reveal" style="font-size:15px;color:var(--accent);margin-top:8px;font-weight:500">
+        + Il founder mette €50k di tasca propria. Skin in the game reale. Closing entro 31/12/2026 (vincolo finestra detrazione 65%).
+      </p>
+      <div class="ask-use reveal">
+        <h3>Uso dei proventi (€250k)</h3>
+        <div class="bar-row">
+          <div class="lbl">Marketing &amp; lead gen</div>
+          <div class="bar-track"><div class="bar-fill" style="width:35%"></div></div>
+          <div class="bar-pct">35%</div>
+        </div>
+        <div class="bar-row">
+          <div class="lbl">Prodotto &amp; eng</div>
+          <div class="bar-track"><div class="bar-fill" style="width:25%"></div></div>
+          <div class="bar-pct">25%</div>
+        </div>
+        <div class="bar-row">
+          <div class="lbl">Infrastruttura</div>
+          <div class="bar-track"><div class="bar-fill" style="width:15%"></div></div>
+          <div class="bar-pct">15%</div>
+        </div>
+        <div class="bar-row">
+          <div class="lbl">Legal &amp; setup SRLi</div>
+          <div class="bar-track"><div class="bar-fill" style="width:10%"></div></div>
+          <div class="bar-pct">10%</div>
+        </div>
+        <div class="bar-row">
+          <div class="lbl">Out-of-pocket sales</div>
+          <div class="bar-track"><div class="bar-fill" style="width:15%"></div></div>
+          <div class="bar-pct">15%</div>
+        </div>
+      </div>
+    </div>
+    <div class="ask-numbers reveal">
+      <div class="item">
+        <div class="lbl">F&amp;F esterno · 4 slot</div>
+        <div class="val">€<span>200</span>k</div>
+      </div>
+      <div class="item">
+        <div class="lbl">Founder Adriano cash</div>
+        <div class="val">€<span>50</span>k</div>
+      </div>
+      <div class="item">
+        <div class="lbl">Pre-money valuation</div>
+        <div class="val">€<span>1,8</span>M</div>
+      </div>
+      <div class="item">
+        <div class="lbl">Equity F&amp;F esterno</div>
+        <div class="val"><span>10</span>%</div>
+      </div>
+      <div class="item">
+        <div class="lbl">Non-dilutive Smart&amp;Start</div>
+        <div class="val">€<span>180</span>k</div>
+      </div>
+      <div class="item">
+        <div class="lbl">Ritorno F&amp;F a Y5 · stima base</div>
+        <div class="val">20,<span>9</span>×</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VANTAGGIO FISCALE -->
+<section class="fiscal">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow" style="margin-bottom:24px">→ Vantaggio fiscale italiano · 2026</div>
+      <h2>Costa <span class="acc">il 35%</span> di quello che pensi.</h2>
+      <p class="lead">
+        <strong>La NewCo (2Wallet Technology S.r.l.) sarà iscritta al registro Startup Innovative</strong>. Per gli investitori persone fisiche residenti in Italia, l'art. 29-bis DL 179/2012 prevede una <strong>detrazione IRPEF del 65%</strong> sull'investimento in regime de minimis, fino a €100k per investitore/anno. <em>Beneficio condizionato all'iscrizione effettiva al registro Startup Innovative e al rispetto dei vincoli normativi.</em>
+      </p>
+      <div class="pull">€50k investiti =<br>€17,5k netti reali.</div>
+      <p class="lead">
+        Tradotto: <em>l'F&amp;F italiano informato</em> non guarda il return su €250k, lo guarda su <strong>€87,5k netti</strong>. Cambia tutto.
+      </p>
+      <div class="fiscal-notes">
+        <strong>Vincoli da rispettare:</strong> investimento mantenuto ≥3 anni (clawback se vendi prima) · max €100k/anno per investitore · max €300k de minimis aggregato sulla startup in 3 anni · solo persone fisiche residenti fiscali in Italia, no SPV/club deal · quota qualificata massima 25% del capitale · detrazione potenziata applicabile solo entro i primi 36 mesi dalla costituzione e solo per startup innovative (no PMI innovative).<br><br>
+        <strong>Finestra temporale:</strong> il regime ordinario di detrazione al 30% è scaduto il 31 dicembre 2025 senza proroga nella Legge di Bilancio 2026. La detrazione al 65% in regime de minimis resta operativa nel 2026 (art. 29-bis DL 179/2012). <strong>Il rinnovo per il 2027 dipenderà dalla prossima Legge di Bilancio</strong> — motivo in più per chiudere il round entro Q4 2026.<br><br>
+        <strong>Disclaimer fiscale:</strong> il presente documento non costituisce consulenza fiscale. Si raccomanda verifica con il proprio consulente fiscale di fiducia.
+      </div>
+    </div>
+    <div class="fiscal-card reveal">
+      <div class="ftitle">Costo investimento netto IRPEF · scenario illustrativo</div>
+      <div class="row headers">
+        <span>Investitore</span>
+        <span style="text-align:right">Nominale</span>
+        <span style="text-align:right">Netto</span>
+      </div>
+      <div class="row">
+        <div class="lbl">Adriano (founder)</div>
+        <div class="nom">€50.000</div>
+        <div class="net">€17.500</div>
+      </div>
+      <div class="row">
+        <div class="lbl">F&amp;F #1</div>
+        <div class="nom">€50.000</div>
+        <div class="net">€17.500</div>
+      </div>
+      <div class="row">
+        <div class="lbl">F&amp;F #2</div>
+        <div class="nom">€50.000</div>
+        <div class="net">€17.500</div>
+      </div>
+      <div class="row">
+        <div class="lbl">F&amp;F #3</div>
+        <div class="nom">€50.000</div>
+        <div class="net">€17.500</div>
+      </div>
+      <div class="row">
+        <div class="lbl">F&amp;F #4</div>
+        <div class="nom">€50.000</div>
+        <div class="net">€17.500</div>
+      </div>
+      <div class="row tot">
+        <div class="lbl">TOTALE round</div>
+        <div class="nom">€250.000</div>
+        <div class="net">€87.500</div>
+      </div>
+      <div class="coc">
+        <div class="lbl">Cash-on-cash Y5 base · netto IRPEF · stima F&amp;F esterno</div>
+        <div class="num">59×</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="label"><span>09</span> · La roadmap · factory</div>
+      <div class="lead">Filodiretto è il primo wedge. <strong>Sotto c'è 2Wallet Technology</strong>, l'engine replicabile per N verticali — ognuno una NewCo potenziale con exit indipendenti. <strong>Non una company: una factory di SaaS wallet-native.</strong></div>
+    </div>
+    <div class="roadmap">
+      <div class="rm-item live reveal">
+        <div class="yr">Y1 · Oggi · Live</div>
+        <h3>Filodiretto</h3>
+        <p class="desc">MVP in produzione. Comunicazione HR wallet-native. Push, automations, badge digitale. 3 tier pricing. Mid-market italiano.</p>
+        <div class="powered">Powered by <span>2Wallet Technology</span></div>
+      </div>
+      <div class="rm-item reveal">
+        <div class="yr">Y2-Y3 · Adiacente</div>
+        <h3>Engage2Wallet</h3>
+        <p class="desc">Loyalty B2C: punti, livelli, premi. Stesso engine, buyer diverso. Già pilotato con Hirostar Padel Club.</p>
+        <div class="powered">Powered by <span>2Wallet Technology</span></div>
+      </div>
+      <div class="rm-item reveal">
+        <div class="yr">Y3-Y4 · Eventi</div>
+        <h3>Live2Wallet</h3>
+        <p class="desc">Ticketing, accrediti, check-in QR/NFC. Engagement pre e post-evento. Per promoter, venue, festival.</p>
+        <div class="powered">Powered by <span>2Wallet Technology</span></div>
+      </div>
+      <div class="rm-item reveal">
+        <div class="yr">Y4+ · Pattern</div>
+        <h3>xxx2Wallet</h3>
+        <p class="desc">Ogni nuovo verticale è uno <strong>spin-off potenziale</strong>: NewCo dedicata, cap table separata, exit indipendente. L'engine resta proprietà della holding.</p>
+        <div class="powered">Powered by <span>2Wallet Technology</span></div>
+      </div>
+    </div>
+    <div class="gap-callout reveal" style="margin-top:48px">
+      <div>
+        <div class="badge">→ Replicabilità &amp; spin-off</div>
+        <h3>Una <span class="acc">factory</span>, non una company.</h3>
+      </div>
+      <p>
+        Ogni verticale che parte da zero su <strong>2Wallet Technology</strong> ha tre cose già pronte: <strong>l'engine cross-wallet</strong> (Apple/Google/Samsung integrati), <strong>il design system</strong>, <strong>la conoscenza go-to-market wallet-native</strong>.
+        Significa che il <em>time-to-market di ogni spin-off scende drasticamente</em>, e ogni NewCo può raccogliere un proprio round indipendente — generando exit multiple per gli investitori della holding originale.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA finale -->
+<section class="cta-final">
+  <div class="wrap">
+    <h2>Costruisci<br>il nuovo canale<br>HR.</h2>
+    <p><strong>Filodiretto</strong> è il primo prodotto powered by <strong>2Wallet Technology</strong>. Live. Costruito. Pronto a vendere. <strong>4 slot F&amp;F da €50k. Closing entro 31/12/2026</strong> per cogliere la finestra detrazione IRPEF 65%.</p>
+    <a href="mailto:hello@2wallet.app?subject=Round%20F%26F%20%E2%80%94%20Filodiretto" class="contact">hello@2wallet.app →</a>
+  </div>
+</section>
+
+<!-- DISCLAIMER LEGALE / FORWARD-LOOKING -->
+<section class="disclaimer">
+  <div class="wrap">
+    <div class="label">→ Disclaimer · Forward-looking statements</div>
+    <p><strong>Documento riservato.</strong> Il presente memo è destinato esclusivamente a investitori Friends &amp; Family identificati nominalmente e non costituisce offerta al pubblico ai sensi del TUF (D.Lgs. 58/1998). Riproduzione, distribuzione o condivisione a terzi non autorizzati è espressamente vietata.</p>
+    <p><strong>Proiezioni e stime.</strong> Tutte le proiezioni finanziarie, valutazioni, ritorni cash-on-cash e moltiplicatori riportati in questo documento sono <em>forward-looking statements</em> basati su ipotesi di crescita, adozione di mercato e contesto regolatorio che potrebbero non realizzarsi. Non costituiscono garanzia di rendimento. Investire in startup early-stage comporta <strong>rischio di perdita totale del capitale investito</strong>.</p>
+    <p><strong>Beneficio fiscale.</strong> La detrazione IRPEF al 65% è condizionata all'iscrizione effettiva della società al registro Startup Innovative e al rispetto dei vincoli previsti dall'art. 29-bis DL 179/2012. Si raccomanda verifica con il proprio consulente fiscale.</p>
+    <p><strong>Decisione di investimento.</strong> La decisione di investire deve essere assunta autonomamente da ciascun investitore previa valutazione del proprio profilo di rischio e — ove ritenuto opportuno — supporto di consulenti finanziari e legali indipendenti.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Confidenziale · Non distribuire · filodiretto.app · Precise Advertising · 2026</p>
+  </div>
+</footer>
+
+<script>
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add('is-visible');io.unobserve(e.target);}
+  });
+},{rootMargin:'-50px',threshold:0.05});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
