@@ -2496,10 +2496,10 @@
                 <p class="audiences-panel__intro">Segmentazione possessori pass, statistiche di apertura e clic sul retro, audience salvate. Per segmenti in linguaggio naturale usa <strong>W.AI</strong> (pulsante in basso a destra).</p>
                 <button type="button" class="btn sec fd-rbac-write" data-requires-write="audiences" style="margin-bottom:16px;" onclick="openWaiForAudience()">Apri W.AI · segmenta audience</button>
 
-                <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
-                    <button type="button" class="aud-subtab active" id="audTab_overview" onclick="switchAudienceTab('overview')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid var(--teal);margin-bottom:-2px;color:var(--teal);font-weight:700;font-size:13px;cursor:pointer;">Panoramica</button>
-                    <button type="button" class="aud-subtab" id="audTab_behavior" onclick="switchAudienceTab('behavior')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2);font-size:13px;cursor:pointer;">Comportamento</button>
-                    <button type="button" class="aud-subtab" id="audTab_saved" onclick="switchAudienceTab('saved')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2);font-size:13px;cursor:pointer;">Audience salvate</button>
+                <div class="aud-subtabs" role="tablist" style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
+                    <button type="button" class="aud-subtab active" id="audTab_overview" role="tab" aria-selected="true" onclick="switchAudienceTab('overview')">Panoramica</button>
+                    <button type="button" class="aud-subtab" id="audTab_behavior" role="tab" aria-selected="false" onclick="switchAudienceTab('behavior')">Comportamento</button>
+                    <button type="button" class="aud-subtab" id="audTab_saved" role="tab" aria-selected="false" onclick="switchAudienceTab('saved')">Audience salvate</button>
                 </div>
 
                 <div id="audPanel_overview" class="aud-panel">
@@ -8385,19 +8385,25 @@ async function deleteIwCampaign(id) {
 
 // ==================== AUDIENCES ====================
 function switchAudienceTab(tab) {
-    ['overview', 'behavior', 'saved'].forEach(t => {
-        const panel = document.getElementById('audPanel_' + t);
-        if (panel) panel.style.display = t === tab ? 'block' : 'none';
-        const btn = document.getElementById('audTab_' + t);
-        if (btn) {
-            const on = t === tab;
-            btn.style.borderBottomColor = on ? 'var(--teal)' : 'transparent';
-            btn.style.color = on ? 'var(--teal)' : 'var(--text2)';
-            btn.style.fontWeight = on ? '700' : '600';
-        }
+    const tabIds = { overview: 'audTab_overview', behavior: 'audTab_behavior', saved: 'audTab_saved' };
+    const panelIds = { overview: 'audPanel_overview', behavior: 'audPanel_behavior', saved: 'audPanel_saved' };
+    const key = tabIds[tab] ? tab : 'overview';
+
+    document.querySelectorAll('.aud-subtab').forEach((btn) => {
+        const isActive = btn.id === tabIds[key];
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
-    if (tab === 'behavior') loadAudienceBehavior();
-    if (tab === 'saved' && !audiencesCache.length) loadAudiences();
+
+    Object.values(panelIds).forEach((id) => {
+        const panel = document.getElementById(id);
+        if (panel) panel.style.display = 'none';
+    });
+    const activePanel = document.getElementById(panelIds[key]);
+    if (activePanel) activePanel.style.display = 'block';
+
+    if (key === 'behavior') loadAudienceBehavior();
+    if (key === 'saved' && !audiencesCache.length) loadAudiences();
 }
 
 let waiAudienceMode = false;

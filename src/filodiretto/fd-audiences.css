@@ -1,6 +1,37 @@
 /**
  * FD — Audience: tab Comportamento metrics grid + KPI consistency.
  */
+html[data-app='filodiretto'] #audiences .aud-subtabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--fd-space-5);
+  border-bottom: 2px solid var(--fd-border, var(--border));
+}
+
+html[data-app='filodiretto'] #audiences .aud-subtab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: var(--fd-color-text-secondary, var(--text2));
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html[data-app='filodiretto'] #audiences .aud-subtab:hover {
+  color: var(--fd-color-text-primary, var(--text));
+}
+
+html[data-app='filodiretto'] #audiences .aud-subtab.active,
+html[data-app='filodiretto'] #audiences .aud-subtab[aria-selected='true'] {
+  border-bottom-color: var(--fd-color-accent, var(--teal));
+  color: var(--fd-color-accent, var(--teal));
+  font-weight: 700;
+}
+
 html[data-app='filodiretto'] #audiences.audiences--fd #audienceInsightsStats.stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
