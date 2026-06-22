@@ -647,10 +647,22 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__details {
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__row {
   display: grid;
-  grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
-  gap: 4px var(--fd-space-3);
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+  gap: 6px var(--fd-space-3);
   align-items: baseline;
   font-size: var(--fd-font-size-sm);
+}
+
+html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__slug-link {
+  color: var(--fd-color-primary-700, #6d28d9);
+  font-weight: var(--fd-font-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+
+html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__slug-link:hover {
+  color: var(--fd-color-primary-800, #5b21b6);
 }
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__row dt {
@@ -664,6 +676,7 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__row dd {
   color: var(--fd-color-text-secondary);
   text-align: left;
   word-break: break-word;
+  padding-right: var(--fd-space-1);
 }
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__url {

@@ -134,8 +134,8 @@ test('fd.bundle.js is valid JavaScript after build', () => {
 
 test('index.html bundle cache references contacts-header tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260622-pass-regenerate/);
-  assert.match(html, /fd\.bundle\.js\?v=20260622-pass-regenerate/);
+  assert.match(html, /fd\.bundle\.css\?v=20260622-bi-save-footer/);
+  assert.match(html, /fd\.bundle\.js\?v=20260622-bi-save-footer/);
   assert.match(html, /\/dashboard\/lib\/public-url\.js/);
   assert.match(html, /function a2wPublicUrlBase/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
@@ -207,17 +207,19 @@ test('Filo brand identity uses bottom save bar and public landing URL', () => {
   const html = read('src/dashboard/index.html');
   assert.match(dirty, /brand-identity--fd-bottom-save/);
   assert.match(dirty, /fd-bi-bottom-bar/);
+  assert.match(dirty, /fdBiFormFooter/);
   assert.match(dirty, /relocateBrandSaveButton/);
   assert.match(dirty, /a2wBiSaveBtn/);
   assert.doesNotMatch(dirty, /id="fdBiStickySaveBtn"/);
   assert.match(dirty, /showSavedFlash/);
-  assert.match(bi, /fd-bi-landing-preview/);
+  assert.match(bi, /summarySlugLink/);
+  assert.match(bi, /a2w-bi-identity-summary__slug-link/);
   assert.match(bi, /fd-bi-checklist/);
   assert.match(bi, /fdBiChecklist/);
   assert.match(bi, /isNameSlugComplete/);
-  assert.match(biCss, /\.fd-bi-landing-preview/);
+  assert.match(biCss, /\.a2w-bi-identity-summary__slug-link/);
   assert.match(biCss, /\.fd-bi-aside-grid/);
-  assert.match(biCss, /grid-template-columns: minmax\(0, 38%\)/);
+  assert.match(biCss, /grid-template-columns: minmax\(0, 42%\)/);
   assert.match(html, /getPublicLandingUrl/);
 });
 

@@ -1677,54 +1677,18 @@
     }
     window.open(url, '_blank', 'noopener,noreferrer');
   }
-  function renderLandingPreviewBlock(slug) {
+  function summarySlugLink(slug) {
     var slugPart = String(slug || '').trim();
-    var fullUrl = slugPreviewUrl(slugPart);
-    var labelRow =
-      '<div class="fd-bi-landing-preview__label-row">' +
-      '<span class="fd-bi-landing-preview__label">URL pubblica della landing</span>' +
-      '<button type="button" class="fd-bi-landing-preview__help" title="' + esc(LANDING_TOOLTIP) +
-      '" aria-label="Info URL landing">?</button></div>';
-    if (!slugPart || !fullUrl) {
-      return (
-        '<div class="fd-bi-landing-preview fd-bi-landing-preview--empty">' +
-        labelRow +
-        '<p class="fd-bi-landing-preview__empty">Inserisci uno slug per generare il link pubblico.</p></div>'
-      );
+    if (!slugPart) {
+      return summaryRow('Slug landing', '—');
     }
+    var fullUrl = slugPreviewUrl(slugPart);
     return (
-      '<div class="fd-bi-landing-preview">' +
-      labelRow +
-      '<div class="fd-bi-landing-preview__url-row">' +
-      '<code class="fd-bi-landing-preview__url" id="fdBiPreviewUrl" title="' + esc(fullUrl) + '">' +
-      esc(fullUrl) + '</code>' +
-      '<div class="fd-bi-landing-preview__actions">' +
-      '<button type="button" class="fd-btn fd-btn--ghost fd-btn--sm fd-bi-landing-copy" data-landing-url="' +
-      esc(fullUrl) + '" aria-label="Copia URL landing" title="Copia URL">Copia</button>' +
-      '<button type="button" class="fd-btn fd-btn--secondary fd-btn--sm fd-bi-landing-open" data-landing-url="' +
-      esc(fullUrl) + '" aria-label="Apri landing in nuova scheda" title="Apri landing">Apri</button>' +
-      '</div></div>' +
-      '<p class="fd-bi-landing-preview__slug">Slug: <strong id="fdBiPreviewSlug">' + esc(slugPart) + '</strong></p>' +
+      '<div class="a2w-bi-identity-summary__row">' +
+      '<dt>Slug landing</dt>' +
+      '<dd><a class="a2w-bi-identity-summary__slug-link" href="' + esc(fullUrl) + '" target="_blank" rel="noopener noreferrer" title="' + esc(LANDING_TOOLTIP) + '">' + esc(slugPart) + '</a></dd>' +
       '</div>'
     );
-  }
-  function bindLandingPreviewActions(container) {
-    var root = container || document.getElementById('fdBiAside');
-    if (!root || root.dataset.fdLandingBound === '1') return;
-    root.dataset.fdLandingBound = '1';
-    root.addEventListener('click', function (e) {
-      var copyBtn = e.target.closest('.fd-bi-landing-copy');
-      if (copyBtn) {
-        e.preventDefault();
-        copyLandingUrl(copyBtn.getAttribute('data-landing-url'));
-        return;
-      }
-      var openBtn = e.target.closest('.fd-bi-landing-open');
-      if (openBtn) {
-        e.preventDefault();
-        openLandingUrl(openBtn.getAttribute('data-landing-url'));
-      }
-    });
   }
   function brandInitial(name) {
     var n = String(name || '').trim();
@@ -1910,8 +1874,8 @@
       '<p class="a2w-bi-identity-summary__name">' + esc(name) + '</p>' +
       '<p class="a2w-bi-identity-summary__tagline">' + esc(tagline || '—') + '</p>' +
       '</div></div>' +
-      renderLandingPreviewBlock(data.slug) +
       '<dl class="a2w-bi-identity-summary__details">' +
+      summarySlugLink(data.slug) +
       summaryRow('Email supporto', supportEmail) +
       summaryRow('Telefono', supportPhone) +
       summaryRow('DPO / Privacy', dpoEmail) +
@@ -1966,7 +1930,6 @@
       '</div></div>';
     layout.appendChild(aside);
     bindNavButtons(aside);
-    bindLandingPreviewActions(aside);
     bindChecklistActions(aside);
     bindSummaryFields();
     syncAsideSummary();
@@ -6421,40 +6384,61 @@
   }
   function showSavedFlash(label) {
     clearSavedFlash();
+    relocateBrandSaveButton();
+    var footer = document.getElementById('fdBiFormFooter');
+    if (footer) {
+      footer.classList.remove('is-dirty', 'is-saving');
+      footer.classList.add('is-saved-flash');
+    }
     var bar = document.getElementById('fdBiStickyBar');
-    if (!bar) return;
-    bar.hidden = false;
-    bar.classList.remove('is-dirty', 'is-saving');
-    bar.classList.add('is-saved-flash');
-    var hint = document.getElementById('fdBiStickyHint');
-    var actions = bar.querySelector('.fd-bi-sticky-bar__actions');
-    if (hint) hint.textContent = label || 'Salvato';
-    if (actions) actions.hidden = true;
-    setBottomBarVisible(true);
+    if (bar) bar.hidden = true;
+    setBottomBarVisible(false);
     savedFlashTimer = setTimeout(function () {
       savedFlashTimer = null;
-      bar.hidden = true;
-      bar.classList.remove('is-saved-flash');
-      if (actions) actions.hidden = false;
-      setBottomBarVisible(false);
+      if (footer) footer.classList.remove('is-saved-flash');
+      syncBrandIdentityStickyBar();
     }, 2800);
   }
-  function relocateBrandSaveButton(bar) {
-    var saveBtn = document.getElementById('a2wBiSaveBtn');
-    var actions = bar.querySelector('.fd-bi-sticky-bar__actions');
-    if (!saveBtn || !actions) return;
-    var headerActions = document.querySelector('#brand-identity .a2w-bi-header__actions');
-    if (saveBtn.dataset.fdRelocated === '1') {
-      if (!actions.contains(saveBtn) && (!headerActions || !headerActions.contains(saveBtn))) {
-        delete saveBtn.dataset.fdRelocated;
-      } else if (headerActions && headerActions.contains(saveBtn)) {
-        delete saveBtn.dataset.fdRelocated;
-      } else {
-        return;
-      }
+  function ensureBrandIdentityFormFooter() {
+    var footer = document.getElementById('fdBiFormFooter');
+    if (!footer) {
+      footer = document.createElement('footer');
+      footer.id = 'fdBiFormFooter';
+      footer.className = 'fd-bi-form-footer';
+      footer.setAttribute('role', 'region');
+      footer.setAttribute('aria-label', 'Salvataggio identità brand');
+      footer.innerHTML =
+        '<div class="fd-bi-form-footer__inner">' +
+        '<div class="fd-bi-form-footer__meta" id="fdBiFormFooterMeta"></div>' +
+        '<div class="fd-bi-form-footer__actions" id="fdBiFormFooterActions"></div>' +
+        '</div>';
+      var layout = document.querySelector('#brand-identity .a2w-bi-layout');
+      if (layout) layout.insertAdjacentElement('afterend', footer);
+      else document.querySelector('#brand-identity .a2w-bi-page')?.appendChild(footer);
     }
+    return footer;
+  }
+  function relocateBrandSaveButton() {
+    var footer = ensureBrandIdentityFormFooter();
+    var actions = document.getElementById('fdBiFormFooterActions');
+    var meta = document.getElementById('fdBiFormFooterMeta');
+    var saveBtn = document.getElementById('a2wBiSaveBtn');
+    var badge = document.getElementById('a2wBiSaveStateBadge');
+    if (!footer || !actions || !saveBtn) return;
+    var srWrap = document.getElementById('fdBiSaveStateWrap');
+    if (srWrap) {
+      srWrap.classList.remove('fd-bi-save-meta--sr');
+      srWrap.remove();
+    }
+    if (badge && meta && !meta.contains(badge)) {
+      badge.classList.add('fd-badge', 'fd-bi-state-badge', 'fd-bi-form-footer__badge');
+      meta.appendChild(badge);
+    }
+    if (saveBtn.dataset.fdRelocated === '1' && actions.contains(saveBtn)) return;
     saveBtn.dataset.fdRelocated = '1';
-    saveBtn.classList.add('fd-btn', 'fd-btn--primary', 'fd-bi-bottom-save-btn');
+    saveBtn.classList.add('fd-btn', 'fd-btn--primary', 'fd-bi-form-footer__save');
+    saveBtn.hidden = false;
+    saveBtn.style.display = '';
     actions.appendChild(saveBtn);
     var duplicate = document.getElementById('fdBiStickySaveBtn');
     if (duplicate) duplicate.remove();
@@ -6479,7 +6463,7 @@
         if (typeof window.loadBrandIdentity === 'function') window.loadBrandIdentity();
       });
     }
-    relocateBrandSaveButton(bar);
+    relocateBrandSaveButton();
     return bar;
   }
   function isSectionReadOnly() {
@@ -6525,12 +6509,13 @@
     }
     var actions = bar.querySelector('.fd-bi-sticky-bar__actions');
     if (actions) actions.hidden = false;
-    var saveBtn = document.getElementById('a2wBiSaveBtn');
-    var cancelBtn = document.getElementById('fdBiStickyCancelBtn');
-    if (saveBtn) {
-      saveBtn.hidden = false;
-      saveBtn.style.display = '';
+    relocateBrandSaveButton();
+    var footer = document.getElementById('fdBiFormFooter');
+    if (footer) {
+      footer.classList.toggle('is-dirty', dirty && !saving);
+      footer.classList.toggle('is-saving', saving);
     }
+    var cancelBtn = document.getElementById('fdBiStickyCancelBtn');
     if (cancelBtn) cancelBtn.disabled = saving;
   }
   function hideHeaderSaveChrome() {
@@ -6543,6 +6528,8 @@
     if (window.__fdBiStickyPatched || typeof window.a2wBiUpdateSaveButton !== 'function') return;
     window.__fdBiStickyPatched = true;
     hideHeaderSaveChrome();
+    ensureBrandIdentityFormFooter();
+    relocateBrandSaveButton();
     ensureBrandIdentityStickyBar();
     var origRefresh = window.a2wBiRefreshSaveUi;
     if (typeof origRefresh === 'function') {
@@ -11502,6 +11489,11 @@
   function initEngagementModule() {
     if (!isFiloPgaApp()) return;
     enhanceEngagementSectionDesign();
+    bindEngagementEvents();
+    var host = document.getElementById('pgaEngagementKpis');
+    if (host && !host.querySelector('.fd-pga-kpi')) {
+      renderKpiSkeleton();
+    }
   }
   global.loadPgaEngagement = loadPgaEngagement;
   if (document.readyState === 'loading') {

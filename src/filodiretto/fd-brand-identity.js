@@ -109,57 +109,18 @@
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  function renderLandingPreviewBlock(slug) {
+  function summarySlugLink(slug) {
     var slugPart = String(slug || '').trim();
-    var fullUrl = slugPreviewUrl(slugPart);
-    var labelRow =
-      '<div class="fd-bi-landing-preview__label-row">' +
-      '<span class="fd-bi-landing-preview__label">URL pubblica della landing</span>' +
-      '<button type="button" class="fd-bi-landing-preview__help" title="' + esc(LANDING_TOOLTIP) +
-      '" aria-label="Info URL landing">?</button></div>';
-
-    if (!slugPart || !fullUrl) {
-      return (
-        '<div class="fd-bi-landing-preview fd-bi-landing-preview--empty">' +
-        labelRow +
-        '<p class="fd-bi-landing-preview__empty">Inserisci uno slug per generare il link pubblico.</p></div>'
-      );
+    if (!slugPart) {
+      return summaryRow('Slug landing', '—');
     }
-
+    var fullUrl = slugPreviewUrl(slugPart);
     return (
-      '<div class="fd-bi-landing-preview">' +
-      labelRow +
-      '<div class="fd-bi-landing-preview__url-row">' +
-      '<code class="fd-bi-landing-preview__url" id="fdBiPreviewUrl" title="' + esc(fullUrl) + '">' +
-      esc(fullUrl) + '</code>' +
-      '<div class="fd-bi-landing-preview__actions">' +
-      '<button type="button" class="fd-btn fd-btn--ghost fd-btn--sm fd-bi-landing-copy" data-landing-url="' +
-      esc(fullUrl) + '" aria-label="Copia URL landing" title="Copia URL">Copia</button>' +
-      '<button type="button" class="fd-btn fd-btn--secondary fd-btn--sm fd-bi-landing-open" data-landing-url="' +
-      esc(fullUrl) + '" aria-label="Apri landing in nuova scheda" title="Apri landing">Apri</button>' +
-      '</div></div>' +
-      '<p class="fd-bi-landing-preview__slug">Slug: <strong id="fdBiPreviewSlug">' + esc(slugPart) + '</strong></p>' +
+      '<div class="a2w-bi-identity-summary__row">' +
+      '<dt>Slug landing</dt>' +
+      '<dd><a class="a2w-bi-identity-summary__slug-link" href="' + esc(fullUrl) + '" target="_blank" rel="noopener noreferrer" title="' + esc(LANDING_TOOLTIP) + '">' + esc(slugPart) + '</a></dd>' +
       '</div>'
     );
-  }
-
-  function bindLandingPreviewActions(container) {
-    var root = container || document.getElementById('fdBiAside');
-    if (!root || root.dataset.fdLandingBound === '1') return;
-    root.dataset.fdLandingBound = '1';
-    root.addEventListener('click', function (e) {
-      var copyBtn = e.target.closest('.fd-bi-landing-copy');
-      if (copyBtn) {
-        e.preventDefault();
-        copyLandingUrl(copyBtn.getAttribute('data-landing-url'));
-        return;
-      }
-      var openBtn = e.target.closest('.fd-bi-landing-open');
-      if (openBtn) {
-        e.preventDefault();
-        openLandingUrl(openBtn.getAttribute('data-landing-url'));
-      }
-    });
   }
 
   function brandInitial(name) {
@@ -363,8 +324,8 @@
       '<p class="a2w-bi-identity-summary__name">' + esc(name) + '</p>' +
       '<p class="a2w-bi-identity-summary__tagline">' + esc(tagline || '—') + '</p>' +
       '</div></div>' +
-      renderLandingPreviewBlock(data.slug) +
       '<dl class="a2w-bi-identity-summary__details">' +
+      summarySlugLink(data.slug) +
       summaryRow('Email supporto', supportEmail) +
       summaryRow('Telefono', supportPhone) +
       summaryRow('DPO / Privacy', dpoEmail) +
@@ -425,7 +386,6 @@
 
     layout.appendChild(aside);
     bindNavButtons(aside);
-    bindLandingPreviewActions(aside);
     bindChecklistActions(aside);
     bindSummaryFields();
     syncAsideSummary();

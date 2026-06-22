@@ -282,6 +282,11 @@
   function initEngagementModule() {
     if (!isFiloPgaApp()) return;
     enhanceEngagementSectionDesign();
+    bindEngagementEvents();
+    var host = document.getElementById('pgaEngagementKpis');
+    if (host && !host.querySelector('.fd-pga-kpi')) {
+      renderKpiSkeleton();
+    }
   }
 
   global.loadPgaEngagement = loadPgaEngagement;

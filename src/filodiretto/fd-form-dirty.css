@@ -78,6 +78,69 @@ html[data-app='filodiretto'] #templateModal #fdTplSaveBtn:disabled {
   cursor: not-allowed;
 }
 
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer {
+  margin-top: var(--fd-space-5);
+  padding: var(--fd-space-4);
+  border: 1px solid var(--fd-border, var(--border));
+  border-radius: var(--fd-radius-md);
+  background: var(--fd-color-surface, #fff);
+  box-shadow: var(--fd-shadow-sm);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fd-space-3);
+  flex-wrap: wrap;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--fd-space-2);
+  min-width: 0;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fd-space-2);
+  flex-shrink: 0;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer #a2wBiSaveBtn.fd-bi-form-footer__save {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 148px;
+  padding: 0 16px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer #a2wBiSaveBtn.fd-bi-form-footer__save:disabled:not(.is-saving) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer.is-dirty {
+  border-color: var(--fd-color-warning-border, #f59e0b);
+  background: var(--fd-color-warning-bg, #fffbeb);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer.is-saving {
+  border-color: var(--fd-color-info-border, #93c5fd);
+  background: var(--fd-color-info-bg, #eff6ff);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-form-footer.is-saved-flash {
+  border-color: var(--fd-color-success-border, rgba(16, 185, 129, 0.35));
+  background: var(--fd-color-success-bg, #ecfdf5);
+}
+
 html[data-app='filodiretto'] .fd-bi-bottom-bar,
 html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar {
   position: fixed;
