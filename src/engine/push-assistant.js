@@ -1,11 +1,14 @@
 const { callAI, extractJSON } = require('./ai-copy');
 const { computeInitialScheduledRun } = require('./scheduler');
+const { getProductBrandName } = require('./base-url');
 
 const VALID_CHANNELS = new Set(['apple', 'google', 'samsung', 'all']);
 const VALID_TYPES = new Set(['once', 'daily', 'weekly']);
 const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
 
-const SYSTEM_PROMPT = `Sei l'assistente push di Ads2Wallet, integrato nel back office della piattaforma.
+function buildPushAssistantSystemPrompt() {
+  const brand = getProductBrandName();
+  return `Sei l'assistente push di ${brand}, integrato nel back office della piattaforma.
 Aiuti i brand manager a creare notifiche push schedulate per i pass Apple Wallet, Google Wallet e Samsung Wallet dei loro clienti.
 
 ## Chi sei
@@ -109,6 +112,7 @@ Tipi di scheduling:
 - Non usare emoji nel titolo se il brand ha un tono formale/luxury.
 - Non impostare push alle 3 di notte o in orari irragionevoli.
 - Non creare push troppo generiche tipo "Novità in arrivo!" senza contesto.`;
+}
 
 function normalizeText(value) {
   return String(value || '')
@@ -345,7 +349,7 @@ ${examplesBlock}
 Richiesta del manager:
 ${prompt}`;
 
-  const text = await callAI(SYSTEM_PROMPT, userPrompt, 768);
+  const text = await callAI(buildPushAssistantSystemPrompt(), userPrompt, 768);
   return extractJSON(text);
 }
 

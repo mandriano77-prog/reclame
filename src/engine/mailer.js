@@ -3,6 +3,7 @@
  * Uses lazy initialization to ensure env vars are loaded
  */
 const { Resend } = require('resend');
+const { isHrProductLine, getProductBrandName } = require('./base-url');
 
 let resendClient = null;
 
@@ -15,8 +16,8 @@ function getResend() {
   return null;
 }
 
-const getFromEmail = () => process.env.FROM_EMAIL || 'noreply@ads2wallet.com';
-const getFromName = () => process.env.FROM_NAME || 'Ads2Wallet';
+const getFromEmail = () => process.env.FROM_EMAIL || (isHrProductLine() ? 'noreply@filodiretto.app' : 'noreply@ads2wallet.com');
+const getFromName = () => process.env.FROM_NAME || getProductBrandName();
 // HR display name stays FiloDiretto; sender uses verified filodiretto.app domain on Resend.
 const getHrFromEmail = () => process.env.HR_FROM_EMAIL || process.env.FROM_EMAIL || 'noreply@filodiretto.app';
 const getHrFromName = () => process.env.HR_FROM_NAME || 'FiloDiretto.App';
@@ -641,7 +642,7 @@ async function sendScratchEmail({ to, name, brandName, brandColor, scratchUrl, c
 
     <div style="text-align:center;padding:24px 0 0;">
       <p style="color:#444;font-size:11px;margin:0;">
-        Powered by Ads2Wallet
+        Powered by ${getProductBrandName()}
       </p>
     </div>
 

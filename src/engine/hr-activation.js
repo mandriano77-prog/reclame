@@ -1,5 +1,6 @@
 const PRIVACY_POLICY_VERSION = '1.0';
 const { signActivationToken, verifyActivationToken } = require('./activation-auth');
+const { resolveBaseUrlFromEnv } = require('./base-url');
 const {
   sendActivationEmail,
   sendActivationReminderEmail,
@@ -9,9 +10,7 @@ const { employeesToFieldValues } = require('./member-import');
 const { upsertPassConsent, PORTAL_CONSENT_TYPES } = require('../db/portal');
 
 function publicBaseUrl() {
-  const domain = process.env.CUSTOM_DOMAIN;
-  if (domain) return `https://${domain.replace(/^https?:\/\//, '')}`;
-  return 'http://localhost:3000';
+  return resolveBaseUrlFromEnv();
 }
 
 function activationUrl(token) {

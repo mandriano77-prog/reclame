@@ -72,8 +72,8 @@ test('Push preview and unified channel segmented control', () => {
   assert.match(css, /fd-push-channel-native/);
 });
 
-test('index.html bundle cache references fd-ui-refactor tag', () => {
+test('index.html bundle cache references bi-save-landing tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260622-fd-ui-refactor/);
-  assert.match(html, /fd\.bundle\.js\?v=20260622-fd-ui-refactor/);
+  assert.match(html, /fd\.bundle\.css\?v=20260622-bi-save-landing/);
+  assert.match(html, /fd\.bundle\.js\?v=20260622-bi-save-landing/);
 });

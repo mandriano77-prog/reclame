@@ -12,14 +12,16 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-breadcrumb {
 }
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-header {
-  position: sticky;
-  top: 0;
-  z-index: var(--fd-z-sticky, 100);
+  position: static;
   margin-bottom: var(--fd-space-5);
-  padding: var(--fd-space-3) 0 var(--fd-space-4);
-  background: color-mix(in srgb, var(--fd-color-bg-canvas) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--fd-border);
+  padding: 0 0 var(--fd-space-4);
+  background: transparent;
+  backdrop-filter: none;
+  border-bottom: none;
+}
+
+html[data-app='filodiretto'] #brand-identity.brand-identity--fd-bottom-save .a2w-bi-header__actions {
+  display: none !important;
 }
 
 html[data-app='filodiretto'] #brand-identity .fd-bi-save-bar {
@@ -472,6 +474,82 @@ html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__tagline {
   margin: 2px 0 0;
   font-size: 12px;
   color: var(--fd-color-text-secondary);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview {
+  margin-top: var(--fd-space-4);
+  padding-top: var(--fd-space-4);
+  border-top: 1px solid var(--fd-border);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--fd-space-2);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__label {
+  font-size: var(--fd-font-size-caption);
+  font-weight: var(--fd-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fd-color-text-muted);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--fd-border);
+  border-radius: 50%;
+  background: var(--fd-color-surface-muted);
+  color: var(--fd-color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__url-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__url {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-family: var(--fd-font-mono, ui-monospace, monospace);
+  color: var(--fd-color-text-primary);
+  word-break: break-all;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__slug {
+  font-size: 12px;
+  color: var(--fd-color-text-secondary);
+  margin-top: 4px;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__actions {
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview__empty {
+  font-size: 13px;
+  color: var(--fd-color-text-secondary);
+  margin: 0;
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-landing-preview--empty .fd-bi-landing-preview__url-row {
+  display: none;
 }
 
 html[data-app='filodiretto'] #brand-identity .a2w-bi-identity-summary__details {

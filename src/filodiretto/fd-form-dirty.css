@@ -78,42 +78,73 @@ html[data-app='filodiretto'] #templateModal #fdTplSaveBtn:disabled {
   cursor: not-allowed;
 }
 
+html[data-app='filodiretto'] .fd-bi-bottom-bar,
 html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar {
-  position: sticky;
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
-  z-index: 30;
+  z-index: calc(var(--fd-z-sticky, 100) + 5);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  border-top: 1px solid var(--fd-color-warning-border, #f59e0b);
+  background: var(--fd-color-warning-bg, #fffbeb);
+  box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.12);
+}
+
+html[data-app='filodiretto'] #brand-identity .fd-bi-bottom-bar__inner,
+html[data-app='filodiretto'] .fd-bi-bottom-bar .fd-bi-bottom-bar__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--fd-color-warning-border, #f59e0b);
-  border-radius: var(--fd-radius-md, 10px);
-  background: var(--fd-color-warning-bg, #fffbeb);
-  box-shadow: var(--fd-shadow-md, 0 4px 16px rgba(0, 0, 0, 0.08));
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
 }
 
+html[data-app='filodiretto'] body.fd-bi-bottom-bar-visible {
+  padding-bottom: 72px;
+}
+
+html[data-app='filodiretto'] .fd-bi-bottom-bar.is-saved-flash {
+  border-top-color: var(--fd-color-success-border, rgba(16, 185, 129, 0.35));
+  background: var(--fd-color-success-bg, #ecfdf5);
+}
+
+html[data-app='filodiretto'] .fd-bi-bottom-bar.is-saved-flash .fd-bi-sticky-bar__hint {
+  color: var(--fd-color-success, #059669);
+  font-weight: 600;
+}
+
+html[data-app='filodiretto'] .fd-bi-bottom-bar[hidden],
 html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar[hidden] {
   display: none !important;
 }
 
+html[data-app='filodiretto'] .fd-bi-bottom-bar.is-saving,
 html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar.is-saving {
   border-color: var(--fd-color-info-border, #93c5fd);
   background: var(--fd-color-info-bg, #eff6ff);
 }
 
+html[data-app='filodiretto'] .fd-bi-bottom-bar .fd-bi-sticky-bar__hint,
 html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar__hint {
   font-size: 13px;
   font-weight: 600;
   color: var(--fd-color-warning-text, #92400e);
 }
 
+html[data-app='filodiretto'] .fd-bi-bottom-bar.is-saving .fd-bi-sticky-bar__hint,
 html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar.is-saving .fd-bi-sticky-bar__hint {
   color: var(--fd-color-info-text, #1d4ed8);
 }
 
+html[data-app='filodiretto'] .fd-bi-bottom-bar .fd-bi-sticky-bar__actions,
 html[data-app='filodiretto'] #brand-identity .fd-bi-sticky-bar__actions {
   display: inline-flex;
   gap: 8px;

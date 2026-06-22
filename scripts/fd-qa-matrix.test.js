@@ -132,10 +132,12 @@ test('fd.bundle.js is valid JavaScript after build', () => {
   );
 });
 
-test('index.html bundle cache references fd-ui-refactor tag', () => {
+test('index.html bundle cache references filodiretto-rebrand tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260622-fd-ui-refactor/);
-  assert.match(html, /fd\.bundle\.js\?v=20260622-fd-ui-refactor/);
+  assert.match(html, /fd\.bundle\.css\?v=20260622-filodiretto-rebrand/);
+  assert.match(html, /fd\.bundle\.js\?v=20260622-filodiretto-rebrand/);
+  assert.match(html, /\/dashboard\/lib\/public-url\.js/);
+  assert.match(html, /function a2wPublicUrlBase/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
   assert.match(html, /fd-page-states\.js/);
   assert.match(html, /fd-mobile-gate\.js/);
@@ -197,6 +199,20 @@ for (const section of SECTION_MATRIX) {
     assert.match(read('src/dashboard/index.html'), new RegExp('id="' + section.sectionId + '"'));
   });
 }
+
+test('Filo brand identity uses bottom save bar and public landing URL', () => {
+  const dirty = readFd('fd-form-dirty.js');
+  const bi = readFd('fd-brand-identity.js');
+  const biCss = readFd('fd-brand-identity.css');
+  const html = read('src/dashboard/index.html');
+  assert.match(dirty, /brand-identity--fd-bottom-save/);
+  assert.match(dirty, /fd-bi-bottom-bar/);
+  assert.match(dirty, /showSavedFlash/);
+  assert.match(bi, /fd-bi-landing-preview/);
+  assert.match(bi, /URL pubblica della landing/);
+  assert.match(biCss, /\.fd-bi-landing-preview/);
+  assert.match(html, /window\.location\?\.origin/);
+});
 
 test('Filo brand identity aside reads camelCase form snapshot', () => {
   const js = readFd('fd-brand-identity.js');

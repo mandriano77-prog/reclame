@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="theme-color" id="themeColor" content="#0D0B1A">
-  <title>Ads2Wallet</title>
+  <title>FiloDiretto</title>
+  <meta name="description" content="Aggiungi il pass al tuo Wallet">
+  <link rel="canonical" id="canonicalLink" href="">
+  <script src="/public/boot.js"></script>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/theme.css">
@@ -255,7 +258,7 @@
   <div class="top">
     <div class="brand-row">
       <span class="brand-dot"></span>
-      <span>Powered by Filodiretto</span>
+      <span>Powered by FiloDiretto</span>
     </div>
   </div>
 
@@ -414,7 +417,13 @@
             brandDisplayName = brand.name;
             el.logoLetter.textContent = brand.name.charAt(0).toUpperCase();
             el.brandName.textContent = brand.name;
-            document.title = `${brand.name} · Filo Diretto`;
+            document.title = `${brand.name} · ${(window.__PRODUCT_BRAND_NAME__ || 'FiloDiretto')}`;
+            try {
+              const pubBase = (window.__PUBLIC_BASE_URL__ || window.location.origin || '').replace(/\/+$/, '');
+              const landingUrl = pubBase ? `${pubBase}/${slug}` : `/${slug}`;
+              const canon = document.getElementById('canonicalLink');
+              if (canon) canon.href = landingUrl;
+            } catch (_) {}
           }
           if (c.headline) el.brandName.textContent = c.headline;
           if (c.subheadline) el.sub.textContent = c.subheadline;

@@ -63,18 +63,103 @@
     };
   }
 
+  var LANDING_TOOLTIP =
+    'Link pubblico della landing del brand. La parte finale dell\'URL corrisponde allo slug (campo Slug nel form).';
+
   function slugPreviewUrl(slug) {
+    if (typeof window.getPublicLandingUrl === 'function') {
+      var direct = window.getPublicLandingUrl(slug);
+      if (direct) return direct;
+    }
     if (typeof window.a2wBiGetSlugPreviewUrl === 'function') {
-      return window.a2wBiGetSlugPreviewUrl(slug);
+      var fromHelper = window.a2wBiGetSlugPreviewUrl(slug);
+      if (fromHelper) return fromHelper;
     }
     var s = String(slug || '').trim();
-    if (!s) return '—';
+    if (!s) return '';
     try {
-      var domain = window.CUSTOM_DOMAIN || location.hostname;
-      return 'https://' + domain + '/' + s;
+      if (typeof window.getPublicBaseUrl === 'function') {
+        var base = window.getPublicBaseUrl();
+        if (base) return base + '/' + s;
+      }
+      return window.location.origin + '/' + s;
     } catch (_) {
       return '/' + s;
     }
+  }
+
+  function copyLandingUrl(url) {
+    if (!url) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        if (typeof window.toast === 'function') window.toast('URL landing copiata');
+      }).catch(function () {
+        if (typeof window.toast === 'function') window.toast('Copia non riuscita');
+      });
+      return;
+    }
+    if (typeof window.toast === 'function') window.toast('Copia non disponibile');
+  }
+
+  function openLandingUrl(url) {
+    if (!url) {
+      if (typeof window.toast === 'function') window.toast('Inserisci uno slug per aprire la landing');
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function renderLandingPreviewBlock(slug) {
+    var slugPart = String(slug || '').trim();
+    var fullUrl = slugPreviewUrl(slugPart);
+    var labelRow =
+      '<div class="fd-bi-landing-preview__label-row">' +
+      '<span class="fd-bi-landing-preview__label">URL pubblica della landing</span>' +
+      '<button type="button" class="fd-bi-landing-preview__help" title="' + esc(LANDING_TOOLTIP) +
+      '" aria-label="Info URL landing">?</button></div>';
+
+    if (!slugPart || !fullUrl) {
+      return (
+        '<div class="fd-bi-landing-preview fd-bi-landing-preview--empty">' +
+        labelRow +
+        '<p class="fd-bi-landing-preview__empty">Inserisci uno slug per generare il link pubblico.</p></div>'
+      );
+    }
+
+    return (
+      '<div class="fd-bi-landing-preview">' +
+      labelRow +
+      '<div class="fd-bi-landing-preview__url-row">' +
+      '<code class="fd-bi-landing-preview__url" id="fdBiPreviewUrl" title="' + esc(fullUrl) + '">' +
+      esc(fullUrl) + '</code>' +
+      '<div class="fd-bi-landing-preview__actions">' +
+      '<button type="button" class="fd-btn fd-btn--ghost fd-btn--sm fd-bi-landing-copy" data-landing-url="' +
+      esc(fullUrl) + '" aria-label="Copia URL landing" title="Copia URL">Copia</button>' +
+      '<button type="button" class="fd-btn fd-btn--secondary fd-btn--sm fd-bi-landing-open" data-landing-url="' +
+      esc(fullUrl) + '" aria-label="Apri landing in nuova scheda" title="Apri landing">Apri</button>' +
+      '</div></div>' +
+      '<p class="fd-bi-landing-preview__slug">Slug: <strong id="fdBiPreviewSlug">' + esc(slugPart) + '</strong></p>' +
+      '</div>'
+    );
+  }
+
+  function bindLandingPreviewActions(container) {
+    var root = container || document.getElementById('fdBiAside');
+    if (!root || root.dataset.fdLandingBound === '1') return;
+    root.dataset.fdLandingBound = '1';
+    root.addEventListener('click', function (e) {
+      var copyBtn = e.target.closest('.fd-bi-landing-copy');
+      if (copyBtn) {
+        e.preventDefault();
+        copyLandingUrl(copyBtn.getAttribute('data-landing-url'));
+        return;
+      }
+      var openBtn = e.target.closest('.fd-bi-landing-open');
+      if (openBtn) {
+        e.preventDefault();
+        openLandingUrl(openBtn.getAttribute('data-landing-url'));
+      }
+    });
   }
 
   function brandInitial(name) {
@@ -117,18 +202,20 @@
       '<p class="a2w-bi-identity-summary__name">' + esc(name) + '</p>' +
       '<p class="a2w-bi-identity-summary__tagline">' + esc(tagline || '—') + '</p>' +
       '</div></div>' +
+      renderLandingPreviewBlock(data.slug) +
       '<dl class="a2w-bi-identity-summary__details">' +
-      summaryRow('Landing', slugUrl === '—' ? '' : slugUrl) +
       summaryRow('Email supporto', supportEmail) +
       summaryRow('Telefono', supportPhone) +
       summaryRow('DPO / Privacy', dpoEmail) +
       summaryRow('Settore', data.settore) +
       '</dl>';
 
-    var slugEl = document.getElementById('fdBiPreviewSlug');
-    if (slugEl) slugEl.textContent = data.slug || '—';
-    var urlEl = document.getElementById('fdBiPreviewUrl');
-    if (urlEl) urlEl.textContent = slugUrl;
+    var legacyPreview = document.getElementById('a2wBiPreviewUrl');
+    if (legacyPreview) legacyPreview.textContent = slugUrl || '—';
+    var legacySlug = document.getElementById('a2wBiPreviewSlug');
+    if (legacySlug && !document.getElementById('fdBiIdentitySummary')) {
+      legacySlug.textContent = data.slug || '—';
+    }
   }
 
   function scheduleAsideSummary() {
@@ -178,6 +265,7 @@
 
     layout.appendChild(aside);
     bindNavButtons(aside);
+    bindLandingPreviewActions(aside);
     bindSummaryFields();
     syncAsideSummary();
   }

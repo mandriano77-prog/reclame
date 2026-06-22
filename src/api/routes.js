@@ -99,7 +99,7 @@ async function syncGoogleWalletClassForTemplate(brand, template) {
 const { generateLandingCopy, generateCreativeCopy } = require('../engine/ai-copy');
 const { planScheduledPush } = require('../engine/push-assistant');
 const { askWai, EXECUTABLE_INTENTS, validateWaiResponse } = require('../engine/wai');
-const { resolveBaseUrl } = require('../engine/base-url');
+const { resolveBaseUrl, getProductBrandName } = require('../engine/base-url');
 const sharp = require('sharp');
 const jwt = require('jsonwebtoken');
 const { execFile } = require('child_process');
@@ -2499,7 +2499,7 @@ router.delete('/push/scheduled/:id', async (req, res) => {
 });
 
 // OpenStreetMap Nominatim (pubblico) — proxy server-side: User-Agent obbligatorio, evita CORS dal browser
-const NOMINATIM_UA = `Ads2Wallet/1.0 (${process.env.CUSTOM_DOMAIN || 'localhost'})`;
+const NOMINATIM_UA = process.env.NOMINATIM_USER_AGENT || `${getProductBrandName()}/1.0 (${process.env.CUSTOM_DOMAIN || 'localhost'})`;
 
 function nominatimFormatLine(feature) {
   const a = feature.address || {};

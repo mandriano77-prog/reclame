@@ -8,6 +8,7 @@
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="/dashboard/boot.js"></script>
+    <script src="/dashboard/lib/public-url.js"></script>
     <script>
     (function () {
         try {
@@ -26,8 +27,8 @@
                 var fdLegacyMediaHide = document.createElement('style');
                 fdLegacyMediaHide.textContent = "html[data-app='filodiretto'] #media-library #a2wMediaTabs{display:none!important}";
                 document.head.appendChild(fdLegacyMediaHide);
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260622-fd-ui-refactor';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260622-fd-ui-refactor';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260622-filodiretto-rebrand';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260622-filodiretto-rebrand';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-components.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-mobile-gate.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-page-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-analytics.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-conventions.css', '/filodiretto/fd-pga.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-conventions.js', '/filodiretto/fd-pga.js', '/filodiretto/fd-pga-engagement.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -5520,7 +5521,7 @@ async function deleteCampaign(id) {
 function getCampaignLandingUrl(id) {
     const c = campaignsCache.find(x => x.id === id);
     if (!c) return '';
-    const base = location.origin;
+    const base = a2wPublicUrlBase() || location.origin;
     // Build URL: /{brand_slug}?c={campaign_id}&utm_source=...
     return fetch(`${API}/brands/${brandId}`).then(r => r.json()).then(brand => {
         let url = `${base}/${brand.slug}?c=${id}`;
@@ -5537,7 +5538,7 @@ async function getCampaignDirectUrl(id) {
     try {
         const c = campaignsCache.find(x => x.id === id);
         if (!c) { console.error('Campaign not in cache:', id); return ''; }
-        const base = location.origin;
+        const base = a2wPublicUrlBase() || location.origin;
         const res = await fetch(`${API}/brands/${brandId}`);
         const brand = await res.json();
         let url = `${base}/save/${brand.slug}/${id}`;
@@ -11623,7 +11624,7 @@ async function wzPublish() {
         try {
             const brandRes = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() });
             const brand = await brandRes.json();
-            const baseUrl = window.location.origin;
+            const baseUrl = a2wPublicUrlBase() || window.location.origin;
             const slug = brand.slug || '';
             const passLink = `${baseUrl}/save/${slug}`;
             const landingLink = `${baseUrl}/${slug}`;
@@ -11829,9 +11830,27 @@ function a2wBiField(id) {
     return document.getElementById(id);
 }
 
+function a2wPublicUrlBase() {
+    if (typeof getPublicBaseUrl === 'function') {
+        const base = getPublicBaseUrl();
+        if (base) return base;
+    }
+    try {
+        const origin = window.location?.origin;
+        if (origin && origin !== 'null') return origin;
+    } catch (_) {}
+    return '';
+}
+
 function a2wBiGetSlugPreviewUrl(slug) {
     const safe = String(slug || '').trim();
-    return `wallet.ads2wallet.com/${safe}`;
+    if (!safe) return '';
+    if (typeof getPublicLandingUrl === 'function') {
+        const url = getPublicLandingUrl(safe);
+        if (url) return url;
+    }
+    const base = a2wPublicUrlBase();
+    return base ? `${base}/${safe}` : `/${safe}`;
 }
 
 function a2wBiFormatLangLabel(code) {

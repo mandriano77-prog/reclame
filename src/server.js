@@ -18,7 +18,7 @@ const debugSignRoutes = require('./api/debug-sign');
 const { startScheduler } = require('./engine/scheduler');
 const { runStripPromoCheck } = require('./engine/strip-promo');
 const { isAnthropicConfigured, isFalConfigured } = require('./engine/env-ai');
-const { resolveBaseUrlFromEnv } = require('./engine/base-url');
+const { resolveBaseUrlFromEnv, getProductBrandName, buildPublicLandingUrl } = require('./engine/base-url');
 
 // Load certificates: prefer FILE-BASED certs (from repo), fallback to env vars
 function loadCerts() {
@@ -233,13 +233,28 @@ app.get('/dashboard/boot.js', (req, res) => {
   const chromeByline = bylineEnv || (lock === 'hr' ? '' : 'by Underdogs Group');
   const allowlistRaw = String(process.env.DASHBOARD_LOGIN_ALLOWLIST || '').trim();
   const loginAllowlist = allowlistRaw || (lock === 'hr' ? 'admin@nudj.studio' : '');
+  const publicBaseUrl = resolveBaseUrlFromEnv({ localhostPort: PORT });
+  const productBrand = getProductBrandName();
   res.type('application/javascript');
   res.set('Cache-Control', 'no-store');
   res.send(
     `window.__2WALLET_PRODUCT_LOCK__=${JSON.stringify(lock)};` +
     `window.__2WALLET_PRODUCT_TITLE__=${JSON.stringify(title)};` +
     `window.__2WALLET_CHROME_BYLINE__=${JSON.stringify(chromeByline)};` +
-    `window.__2WALLET_LOGIN_ALLOWLIST__=${JSON.stringify(loginAllowlist)};`
+    `window.__2WALLET_LOGIN_ALLOWLIST__=${JSON.stringify(loginAllowlist)};` +
+    `window.__PUBLIC_BASE_URL__=${JSON.stringify(publicBaseUrl)};` +
+    `window.__PRODUCT_BRAND_NAME__=${JSON.stringify(productBrand)};`
+  );
+});
+
+app.get('/public/boot.js', (req, res) => {
+  const publicBaseUrl = resolveBaseUrlFromEnv({ localhostPort: PORT });
+  const productBrand = getProductBrandName();
+  res.type('application/javascript');
+  res.set('Cache-Control', 'no-store');
+  res.send(
+    `window.__PUBLIC_BASE_URL__=${JSON.stringify(publicBaseUrl)};` +
+    `window.__PRODUCT_BRAND_NAME__=${JSON.stringify(productBrand)};`
   );
 });
 
@@ -298,7 +313,7 @@ const BUILD_VERSION = '3.0.0-' + Date.now();
 app.get('/health', async (req, res) => {
   const base = {
     status: 'ok',
-    product: getDeployDashboardProductLine() || 'ads2wallet',
+    product: getDeployDashboardProductLine() || getProductBrandName().toLowerCase(),
     version: BUILD_VERSION,
     timestamp: new Date().toISOString(),
     ai: {

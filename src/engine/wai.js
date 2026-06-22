@@ -11,6 +11,7 @@ const { parseSinceDaysFromPrompt, todayInTimezone, TZ } = require('./audience-pr
 const { extractJSON } = require('./ai-copy');
 const { getAnthropicApiKey } = require('./env-ai');
 const { pickWaiModel, formatModelLabel, getWaiModelFallbacks } = require('./ai-models');
+const { getProductBrandName, resolveBaseUrlFromEnv } = require('./base-url');
 
 const EXECUTABLE_INTENTS = new Set([
   'push.schedule',
@@ -26,7 +27,10 @@ const STRIP_GENERATE_WIDTH = 1125;
 const STRIP_GENERATE_HEIGHT = 432;
 const DISALLOWED_STRIP_PROMPT = /\b(nsfw|nude|naked|porn|xxx|erotic)\b/i;
 
-const SYSTEM_PROMPT = `Sei W.AI, l'agente AI del back office Ads2Wallet.
+function buildWaiSystemPrompt() {
+  const brand = getProductBrandName();
+  const studioHost = resolveBaseUrlFromEnv().replace(/^https?:\/\//, '');
+  return `Sei W.AI, l'agente AI del back office ${brand}.
 Aiuti i brand manager a gestire il loro programma wallet pass tramite comandi in linguaggio naturale.
 
 ## Identità
@@ -36,10 +40,10 @@ Se il manager dice "crea un reward caffè a 500 punti" non chiedi conferma — p
 e lo mostri per approvazione.
 
 ## Contesto operativo
-Operi dentro Ads2Wallet, una piattaforma che gestisce pass per Apple Wallet, Google Wallet e
+Operi dentro ${brand}, una piattaforma che gestisce pass per Apple Wallet, Google Wallet e
 Samsung Wallet. I pass sono carte digitali (storeCard) che i brand distribuiscono ai clienti
 tramite QR code, link o advertising. Ogni pass ha: design, push notification, geofencing,
-gamification, reward, strip promo. Il back office è su studio.ads2wallet.com.
+gamification, reward, strip promo. Il back office è su ${studioHost}.
 
 ## Regole di risposta
 - Rispondi SOLO con JSON valido, senza markdown, senza testo prima o dopo.
@@ -189,6 +193,7 @@ In preview.details includi description_it, prompt_en, style, dimensions "1125x43
 4. URGENZA SOFT: "oggi", "questa settimana" — mai "ULTIMA OCCASIONE!!!"
 5. COERENZA: mantieni il tono delle push recenti del brand
 6. NO SPAM: mai tutto maiuscolo, mai clickbait vuoto`;
+}
 
 function buildUserMessage(prompt, context, refinement = null) {
   let message = `Stato attuale del brand:\n${JSON.stringify(context, null, 2)}\n\nRichiesta del manager:\n${prompt}`;
@@ -758,7 +763,7 @@ async function askWai({ brandId, prompt, followup = '', previousProposal = null 
     ? { followup: followupText, previousProposal }
     : null;
   const text = await callWai(
-    SYSTEM_PROMPT,
+    buildWaiSystemPrompt(),
     buildUserMessage(trimmed, context, refinement),
     modelChoice.model
   );
@@ -774,7 +779,7 @@ async function askWai({ brandId, prompt, followup = '', previousProposal = null 
 }
 
 module.exports = {
-  SYSTEM_PROMPT,
+  buildWaiSystemPrompt,
   EXECUTABLE_INTENTS,
   buildWaiContext,
   buildUserMessage,
