@@ -1977,7 +1977,8 @@
     { id: 'brand-identity', label: 'Identità' },
     { id: 'media-library', label: 'Media' },
     { id: 'templates', label: 'Template Pass' },
-    { id: 'passes', label: 'Pass emessi' }
+    { id: 'passes', label: 'Pass emessi' },
+    { id: 'leads', label: 'Dipendenti' }
   ];
   function isFiloFlowApp() {
     if (document.documentElement.classList.contains('a2w-shell')) return false;

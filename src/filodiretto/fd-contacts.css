@@ -7,6 +7,11 @@ html[data-app='filodiretto'] #leads.leads--fd {
   overflow-x: clip;
 }
 
+html[data-app='filodiretto'] #leads .fd-brand-pass-flow-host {
+  margin: 0 0 var(--fd-space-4, 16px);
+  width: 100%;
+}
+
 html[data-app='filodiretto'] #leads.leads--fd .contacts-toolbar,
 html[data-app='filodiretto'] #leads.leads--fd #contactsToolbarHost.a2w-contacts-toolbar {
   display: flex;

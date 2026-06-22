@@ -1,5 +1,5 @@
 /**
- * FD — Brand & Pass setup flow indicators (Identità → Media → Template → Pass).
+ * FD — Brand & Pass setup flow indicators (Identità → Media → Template → Pass → Dipendenti).
  */
 (function () {
   'use strict';
@@ -8,7 +8,8 @@
     { id: 'brand-identity', label: 'Identità' },
     { id: 'media-library', label: 'Media' },
     { id: 'templates', label: 'Template Pass' },
-    { id: 'passes', label: 'Pass emessi' }
+    { id: 'passes', label: 'Pass emessi' },
+    { id: 'leads', label: 'Dipendenti' }
   ];
 
   function isFiloFlowApp() {
