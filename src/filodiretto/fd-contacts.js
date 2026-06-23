@@ -283,30 +283,30 @@
     if (!isFiloContactsApp() || !isHrLeadsActive()) return;
     var addBtn = document.getElementById('leadsAddBtn');
     if (addBtn) {
-      addBtn.classList.add('fd-btn', 'fd-btn--primary', 'fd-btn--sm');
-      addBtn.classList.remove('a2w-btn-primary');
+      addBtn.classList.remove('sec', 'a2w-btn-primary');
+      addBtn.classList.add('small');
     }
     var importBtn = document.getElementById('leadsImportBtn');
-    if (importBtn) importBtn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+    if (importBtn) {
+      importBtn.classList.add('sec', 'small');
+    }
 
     var toolbar = document.getElementById('contactsToolbarHost');
     if (toolbar) {
       toolbar.querySelectorAll('button.btn').forEach(function (btn) {
+        if (btn.id === 'leadsAddBtn') return;
         if (btn.classList.contains('danger')) {
-          btn.classList.add('fd-btn', 'fd-btn--danger', 'fd-btn--sm');
-        } else if (
-          btn.id === 'a2wLeadsSendActivationBtn' ||
-          (btn.textContent || '').indexOf('Invia') >= 0
-        ) {
-          btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-btn--sm');
+          btn.classList.add('small');
+        } else if (btn.id === 'a2wLeadsSendActivationBtn' || btn.id === 'leadsDistributeBtn') {
+          btn.classList.add('sec', 'small');
         } else {
-          btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+          btn.classList.add('sec', 'small');
         }
       });
     }
 
     var menuBtn = document.getElementById('fdContactsToolbarOverflowBtn');
-    if (menuBtn) menuBtn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm');
+    if (menuBtn) menuBtn.classList.add('fd-btn-ghost', 'small');
   }
 
   function enhanceContactsKpiAsStatGrid() {

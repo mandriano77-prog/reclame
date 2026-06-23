@@ -352,7 +352,7 @@
       }
 
       if (saveBtn && saveBtn.dataset.fdRelocated !== '1') {
-        saveBtn.classList.add('fd-btn', 'fd-btn--primary');
+        saveBtn.classList.remove('a2w-btn-primary', 'sec');
       }
     }
   }
@@ -383,8 +383,14 @@
     if (dialog) dialog.classList.add('fd-delete-brand-dialog');
     var cancel = document.getElementById('a2wDeleteBrandCancelBtn');
     var confirm = document.getElementById('a2wDeleteBrandConfirmBtn');
-    if (cancel) cancel.classList.add('fd-btn', 'fd-btn--secondary');
-    if (confirm) confirm.classList.add('fd-btn', 'fd-btn--danger');
+    if (cancel) {
+      cancel.classList.remove('fd-btn', 'fd-btn--secondary');
+      cancel.classList.add('btn', 'sec');
+    }
+    if (confirm) {
+      confirm.classList.remove('fd-btn', 'fd-btn--danger');
+      confirm.classList.add('btn', 'danger');
+    }
   }
 
   function countSocialProfiles() {

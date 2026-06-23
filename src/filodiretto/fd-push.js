@@ -609,8 +609,8 @@
       '<ul class="fd-push-confirm-summary" id="fdPushConfirmSummary"></ul>' +
       '<p class="fd-push-confirm-zero" id="fdPushConfirmZero" hidden>Nessun pass raggiungibile per questo canale.</p>' +
       '<div class="modal-actions">' +
-      '<button type="button" class="fd-btn fd-btn--secondary" id="fdPushConfirmCancel">Annulla</button>' +
-      '<button type="button" class="fd-btn fd-btn--primary" id="fdPushConfirmSubmit">Conferma invio</button>' +
+      '<button type="button" class="btn sec" id="fdPushConfirmCancel">Annulla</button>' +
+      '<button type="button" class="btn" id="fdPushConfirmSubmit">Conferma invio</button>' +
       '</div></div>';
     document.body.appendChild(wrap);
     setupFdModal(wrap);
@@ -634,8 +634,8 @@
       '<div class="modal-header" id="fdPushHistoryConfirmTitle">Elimina dallo storico</div>' +
       '<p id="fdPushHistoryConfirmMessage" class="form-hint" style="margin:0"></p>' +
       '<div class="modal-actions">' +
-      '<button type="button" class="fd-btn fd-btn--secondary" id="fdPushHistoryConfirmCancel">Annulla</button>' +
-      '<button type="button" class="fd-btn fd-btn--danger" id="fdPushHistoryConfirmSubmit">Elimina</button>' +
+      '<button type="button" class="btn sec" id="fdPushHistoryConfirmCancel">Annulla</button>' +
+      '<button type="button" class="btn danger" id="fdPushHistoryConfirmSubmit">Elimina</button>' +
       '</div></div>';
     document.body.appendChild(wrap);
     setupFdModal(wrap);
@@ -1104,48 +1104,35 @@
     if (!root) return;
 
     var sendBtn = root.querySelector('#pushSendBtn');
-    if (sendBtn) sendBtn.classList.add('fd-btn', 'fd-btn--primary', 'fd-push-send-btn');
+    if (sendBtn) sendBtn.classList.add('fd-push-send-btn');
 
     root.querySelectorAll('#fdPushTestBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary');
-      btn.classList.remove('sec');
+      if (!btn.classList.contains('sec')) btn.classList.add('sec');
     });
 
     root.querySelectorAll('[onclick*="pushPickStripFromMedia"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      btn.classList.add('sec', 'small');
     });
     root.querySelectorAll('#pushStripClearBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm', 'fd-push-strip-clear');
+      btn.classList.add('fd-btn-ghost', 'small', 'fd-push-strip-clear');
     });
 
     root.querySelectorAll('[onclick*="createScheduledPush"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-push-send-btn');
+      btn.classList.add('fd-push-send-btn');
     });
     root.querySelectorAll('[onclick*="addGeoLocation"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      btn.classList.add('sec', 'small');
     });
     root.querySelectorAll('[onclick*="saveGeoConfig"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--primary');
+      btn.classList.remove('purple');
+      btn.classList.add('sec');
     });
 
     root.querySelectorAll('#pushBulkBar .btn.small.sec, #pushBulkBar .btn.sec.small').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      if (!btn.classList.contains('small')) btn.classList.add('small');
     });
     root.querySelectorAll('#pushBulkBar .btn.small.danger, #pushBulkBar .btn.danger.small').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--danger', 'fd-btn--sm');
-    });
-
-    ['fdPushConfirmCancel', 'fdPushHistoryConfirmCancel'].forEach(function (id) {
-      var btn = document.getElementById(id);
-      if (btn) btn.classList.add('fd-btn', 'fd-btn--secondary');
-    });
-    ['fdPushConfirmSubmit', 'fdPushHistoryConfirmSubmit'].forEach(function (id) {
-      var btn = document.getElementById(id);
-      if (btn) {
-        btn.classList.add('fd-btn', 'fd-btn--sm');
-        if (btn.classList.contains('danger')) btn.classList.add('fd-btn--danger');
-        else btn.classList.add('fd-btn--primary');
-      }
+      if (!btn.classList.contains('small')) btn.classList.add('small');
     });
   }
 

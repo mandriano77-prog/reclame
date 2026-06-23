@@ -213,30 +213,22 @@
     if (!root) return;
 
     root.querySelectorAll('#passBulkBar .btn.small.sec, #passBulkBar .btn.sec.small').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
-    });
-    root.querySelectorAll('#passBulkBar #fdPassBulkRegenerateBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      if (!btn.classList.contains('small')) btn.classList.add('small');
     });
     root.querySelectorAll('#passBulkBar .btn.small.danger, #passBulkBar .btn.danger.small').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--danger', 'fd-btn--sm');
+      if (!btn.classList.contains('small')) btn.classList.add('small');
     });
     root.querySelectorAll('[onclick*="downloadPassesTableCsv"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      btn.classList.remove('sec');
+      btn.classList.add('small');
     });
     root.querySelectorAll('.fd-passes-pagination button').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--sm');
-      if (btn.getAttribute('onclick')?.indexOf('goNextPassesPage') >= 0) {
-        btn.classList.add('fd-btn--primary');
-      } else {
-        btn.classList.add('fd-btn--secondary');
-      }
+      btn.classList.add('small', 'sec');
     });
 
     var colsToggle = document.getElementById('fdPassesColsToggle');
     if (colsToggle) {
-      colsToggle.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
-      colsToggle.classList.remove('sec');
+      colsToggle.className = 'btn sec small fd-passes-cols-toggle';
     }
   }
 
@@ -257,7 +249,7 @@
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'fdPassesColsToggle';
-    btn.className = 'fd-btn fd-btn--secondary fd-btn--sm fd-passes-cols-toggle';
+    btn.className = 'btn sec small fd-passes-cols-toggle';
     btn.textContent = 'Colonne avanzate';
     btn.setAttribute('aria-pressed', 'false');
     btn.addEventListener('click', function () {
@@ -456,7 +448,6 @@
     var deleteBtn = bar.querySelector('.btn.danger');
     if (deleteBtn) bar.insertBefore(btn, deleteBtn);
     else bar.appendChild(btn);
-    btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
   }
 
   function enhancePassRowActions() {

@@ -155,10 +155,10 @@
       if (actions) actions.classList.add('fd-analytics-toolbar__actions');
 
       bar.querySelectorAll('.analytics-chip').forEach(function (chip) {
-        chip.classList.add('fd-btn', 'fd-btn--sm', 'fd-analytics-chip');
+        chip.classList.add('fd-analytics-chip');
       });
       bar.querySelectorAll('.btn.small.sec, .btn.sec.small').forEach(function (btn) {
-        btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+        if (!btn.classList.contains('small')) btn.classList.add('small');
       });
       bar.querySelectorAll('#analyticsTrendRange, .analytics-date').forEach(function (el) {
         el.classList.add('fd-analytics-control');
@@ -200,7 +200,8 @@
         intro.style.lineHeight = '';
       }
       introRow.querySelectorAll('.btn').forEach(function (btn) {
-        btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+        if (btn.id === 'fdActivityLogExportBtn') return;
+        btn.classList.add('small', 'sec');
       });
     }
 

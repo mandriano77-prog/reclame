@@ -386,7 +386,7 @@
       '<input type="date" id="fdActivityLogDateTo" aria-label="Filtra eventi al">' +
       '</div>' +
       '<div class="fd-activity-log-toolbar__actions">' +
-      '<button type="button" class="btn sec" id="fdActivityLogExportBtn" data-allow-readonly="true">Esporta CSV</button>' +
+      '<button type="button" class="btn" id="fdActivityLogExportBtn" data-allow-readonly="true">Esporta CSV</button>' +
       '</div>' +
       '<p class="fd-activity-log-filter-hint" id="fdActivityLogFilterHint" aria-live="polite"></p>';
 

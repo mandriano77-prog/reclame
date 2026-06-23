@@ -68,7 +68,7 @@ html[data-app='filodiretto'] #brand-identity .fd-bi-state-badge {
   text-overflow: ellipsis;
 }
 
-html[data-app='filodiretto'] #brand-identity #a2wBiSaveBtn.fd-btn--primary:disabled:not(.is-saving) {
+html[data-app='filodiretto'] #brand-identity #a2wBiSaveBtn.btn:disabled:not(.is-saving) {
   opacity: 0.55;
 }
 

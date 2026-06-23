@@ -1943,7 +1943,7 @@
         actions.appendChild(wrap);
       }
       if (saveBtn && saveBtn.dataset.fdRelocated !== '1') {
-        saveBtn.classList.add('fd-btn', 'fd-btn--primary');
+        saveBtn.classList.remove('a2w-btn-primary', 'sec');
       }
     }
   }
@@ -1971,8 +1971,14 @@
     if (dialog) dialog.classList.add('fd-delete-brand-dialog');
     var cancel = document.getElementById('a2wDeleteBrandCancelBtn');
     var confirm = document.getElementById('a2wDeleteBrandConfirmBtn');
-    if (cancel) cancel.classList.add('fd-btn', 'fd-btn--secondary');
-    if (confirm) confirm.classList.add('fd-btn', 'fd-btn--danger');
+    if (cancel) {
+      cancel.classList.remove('fd-btn', 'fd-btn--secondary');
+      cancel.classList.add('btn', 'sec');
+    }
+    if (confirm) {
+      confirm.classList.remove('fd-btn', 'fd-btn--danger');
+      confirm.classList.add('btn', 'danger');
+    }
   }
   function countSocialProfiles() {
     var n = 0;
@@ -2518,8 +2524,8 @@
       '<p class="fd-empty-state__title">Nessun brand selezionato</p>' +
       '<p class="fd-empty-state__desc">Scegli un brand esistente o configura Identità Brand per iniziare.</p>' +
       '<div class="fd-empty-state__actions">' +
-      '<button type="button" class="fd-btn fd-btn--primary" onclick="document.getElementById(\'brandSelector\').focus()">Seleziona brand</button>' +
-      '<button type="button" class="fd-btn fd-btn--secondary" data-fd-nav="brand-identity">Crea brand</button>' +
+      '<button type="button" class="btn" onclick="document.getElementById(\'brandSelector\').focus()">Seleziona brand</button>' +
+      '<button type="button" class="btn sec" data-fd-nav="brand-identity">Crea brand</button>' +
       '</div></div>';
     bindNavButtons(root);
   }
@@ -2659,9 +2665,9 @@
       '<div class="fd-card fd-home-shortcuts">' +
       '<h2 class="fd-home-card__title">Azioni frequenti</h2>' +
       '<div class="fd-home-shortcuts__actions">' +
-      '<button type="button" class="fd-btn fd-btn--secondary" data-fd-action="new-template">+ Nuovo template</button>' +
-      '<button type="button" class="fd-btn fd-btn--secondary" data-fd-nav="push">Invia push</button>' +
-      '<button type="button" class="fd-btn fd-btn--secondary" data-fd-action="import-employees">Importa dipendenti</button>' +
+      '<button type="button" class="btn sec" data-fd-action="new-template">+ Nuovo template</button>' +
+      '<button type="button" class="btn" data-fd-nav="push">Invia push</button>' +
+      '<button type="button" class="btn sec" data-fd-action="import-employees">Importa dipendenti</button>' +
       '</div></div>'
     );
   }
@@ -2673,7 +2679,7 @@
         '<p class="fd-home-primary__label">Stato brand</p>' +
         '<h3 class="fd-home-primary__title">Configurazione completata</h3>' +
         '<p class="fd-home-primary__desc">' + esc(brandName) + ' è operativo. Monitora KPI e invia comunicazioni ai dipendenti.</p>' +
-        '<button type="button" class="fd-btn fd-btn--primary" data-fd-nav="push">Invia una push</button>' +
+        '<button type="button" class="btn" data-fd-nav="push">Invia una push</button>' +
         '</div>'
       );
     }
@@ -2682,7 +2688,7 @@
       '<p class="fd-home-primary__label">Prossimo passo</p>' +
       '<h3 class="fd-home-primary__title">' + esc(step.label) + '</h3>' +
       '<p class="fd-home-primary__desc">' + esc(step.desc) + '</p>' +
-      '<button type="button" class="fd-btn fd-btn--primary" data-fd-nav="' + esc(step.section) + '">Continua setup →</button>' +
+      '<button type="button" class="btn" data-fd-nav="' + esc(step.section) + '">Continua setup →</button>' +
       '</div>'
     );
   }
@@ -2699,7 +2705,7 @@
         '<p class="fd-empty-state__title">Nessuna attività recente</p>' +
         '<p class="fd-empty-state__desc">Gli eventi su pass, installazioni Wallet e notifiche compariranno qui.</p>' +
         '<div class="fd-empty-state__actions">' +
-        '<button type="button" class="fd-btn fd-btn--ghost" data-fd-nav="activity-log">Apri log completo</button>' +
+        '<button type="button" class="btn fd-btn-ghost" data-fd-nav="activity-log">Apri log completo</button>' +
         '</div></div></div>'
       );
     }
@@ -2722,7 +2728,7 @@
       '<div class="fd-card fd-home-card">' +
       '<h2 class="fd-home-card__title">Ultime attività</h2>' +
       '<ul class="fd-home-activity-list">' + list + '</ul>' +
-      '<button type="button" class="fd-btn fd-btn--ghost" style="margin-top:12px" data-fd-nav="activity-log">Vedi tutto</button>' +
+      '<button type="button" class="btn fd-btn-ghost" style="margin-top:12px" data-fd-nav="activity-log">Vedi tutto</button>' +
       '</div>'
     );
   }
@@ -2845,7 +2851,7 @@
               })
             : '<div class="fd-error-state" role="alert"><p class="fd-error-state__desc">Errore caricamento home: ' +
               esc(e.message) +
-              '</p><button type="button" class="fd-btn fd-btn--secondary" id="fdHomeRetryBtn">Riprova</button></div>';
+              '</p><button type="button" class="btn sec" id="fdHomeRetryBtn">Riprova</button></div>';
         var retry = document.getElementById('fdHomeRetryBtn');
         if (retry && retry.dataset.fdBound !== '1') {
           retry.dataset.fdBound = '1';
@@ -3573,28 +3579,28 @@
     if (!isFiloContactsApp() || !isHrLeadsActive()) return;
     var addBtn = document.getElementById('leadsAddBtn');
     if (addBtn) {
-      addBtn.classList.add('fd-btn', 'fd-btn--primary', 'fd-btn--sm');
-      addBtn.classList.remove('a2w-btn-primary');
+      addBtn.classList.remove('sec', 'a2w-btn-primary');
+      addBtn.classList.add('small');
     }
     var importBtn = document.getElementById('leadsImportBtn');
-    if (importBtn) importBtn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+    if (importBtn) {
+      importBtn.classList.add('sec', 'small');
+    }
     var toolbar = document.getElementById('contactsToolbarHost');
     if (toolbar) {
       toolbar.querySelectorAll('button.btn').forEach(function (btn) {
+        if (btn.id === 'leadsAddBtn') return;
         if (btn.classList.contains('danger')) {
-          btn.classList.add('fd-btn', 'fd-btn--danger', 'fd-btn--sm');
-        } else if (
-          btn.id === 'a2wLeadsSendActivationBtn' ||
-          (btn.textContent || '').indexOf('Invia') >= 0
-        ) {
-          btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-btn--sm');
+          btn.classList.add('small');
+        } else if (btn.id === 'a2wLeadsSendActivationBtn' || btn.id === 'leadsDistributeBtn') {
+          btn.classList.add('sec', 'small');
         } else {
-          btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+          btn.classList.add('sec', 'small');
         }
       });
     }
     var menuBtn = document.getElementById('fdContactsToolbarOverflowBtn');
-    if (menuBtn) menuBtn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm');
+    if (menuBtn) menuBtn.classList.add('fd-btn-ghost', 'small');
   }
   function enhanceContactsKpiAsStatGrid() {
     var host = document.getElementById('leadsStats');
@@ -4252,10 +4258,10 @@
   function applyDsButtonClasses(root) {
     var scope = root || document;
     scope.querySelectorAll('#media-library #fdMediaBulkClearBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary');
+      if (!btn.classList.contains('sec')) btn.classList.add('sec');
     });
     scope.querySelectorAll('#media-library #fdMediaBulkDeleteBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--danger');
+      if (!btn.classList.contains('danger')) btn.classList.add('danger');
     });
   }
   function enhanceMediaHeaderDesign(header) {
@@ -5602,29 +5608,21 @@
     var root = scope || document.getElementById('passesContent');
     if (!root) return;
     root.querySelectorAll('#passBulkBar .btn.small.sec, #passBulkBar .btn.sec.small').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
-    });
-    root.querySelectorAll('#passBulkBar #fdPassBulkRegenerateBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      if (!btn.classList.contains('small')) btn.classList.add('small');
     });
     root.querySelectorAll('#passBulkBar .btn.small.danger, #passBulkBar .btn.danger.small').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--danger', 'fd-btn--sm');
+      if (!btn.classList.contains('small')) btn.classList.add('small');
     });
     root.querySelectorAll('[onclick*="downloadPassesTableCsv"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      btn.classList.remove('sec');
+      btn.classList.add('small');
     });
     root.querySelectorAll('.fd-passes-pagination button').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--sm');
-      if (btn.getAttribute('onclick')?.indexOf('goNextPassesPage') >= 0) {
-        btn.classList.add('fd-btn--primary');
-      } else {
-        btn.classList.add('fd-btn--secondary');
-      }
+      btn.classList.add('small', 'sec');
     });
     var colsToggle = document.getElementById('fdPassesColsToggle');
     if (colsToggle) {
-      colsToggle.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
-      colsToggle.classList.remove('sec');
+      colsToggle.className = 'btn sec small fd-passes-cols-toggle';
     }
   }
   function enhancePassTable(scope) {
@@ -5643,7 +5641,7 @@
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'fdPassesColsToggle';
-    btn.className = 'fd-btn fd-btn--secondary fd-btn--sm fd-passes-cols-toggle';
+    btn.className = 'btn sec small fd-passes-cols-toggle';
     btn.textContent = 'Colonne avanzate';
     btn.setAttribute('aria-pressed', 'false');
     btn.addEventListener('click', function () {
@@ -5825,7 +5823,6 @@
     var deleteBtn = bar.querySelector('.btn.danger');
     if (deleteBtn) bar.insertBefore(btn, deleteBtn);
     else bar.appendChild(btn);
-    btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
   }
   function enhancePassRowActions() {
     document.querySelectorAll('#passesContent .pass-row-actions').forEach(function (wrap) {
@@ -8505,8 +8502,8 @@
       '<ul class="fd-push-confirm-summary" id="fdPushConfirmSummary"></ul>' +
       '<p class="fd-push-confirm-zero" id="fdPushConfirmZero" hidden>Nessun pass raggiungibile per questo canale.</p>' +
       '<div class="modal-actions">' +
-      '<button type="button" class="fd-btn fd-btn--secondary" id="fdPushConfirmCancel">Annulla</button>' +
-      '<button type="button" class="fd-btn fd-btn--primary" id="fdPushConfirmSubmit">Conferma invio</button>' +
+      '<button type="button" class="btn sec" id="fdPushConfirmCancel">Annulla</button>' +
+      '<button type="button" class="btn" id="fdPushConfirmSubmit">Conferma invio</button>' +
       '</div></div>';
     document.body.appendChild(wrap);
     setupFdModal(wrap);
@@ -8529,8 +8526,8 @@
       '<div class="modal-header" id="fdPushHistoryConfirmTitle">Elimina dallo storico</div>' +
       '<p id="fdPushHistoryConfirmMessage" class="form-hint" style="margin:0"></p>' +
       '<div class="modal-actions">' +
-      '<button type="button" class="fd-btn fd-btn--secondary" id="fdPushHistoryConfirmCancel">Annulla</button>' +
-      '<button type="button" class="fd-btn fd-btn--danger" id="fdPushHistoryConfirmSubmit">Elimina</button>' +
+      '<button type="button" class="btn sec" id="fdPushHistoryConfirmCancel">Annulla</button>' +
+      '<button type="button" class="btn danger" id="fdPushHistoryConfirmSubmit">Elimina</button>' +
       '</div></div>';
     document.body.appendChild(wrap);
     setupFdModal(wrap);
@@ -8953,43 +8950,31 @@
     var root = scope || document.getElementById('push');
     if (!root) return;
     var sendBtn = root.querySelector('#pushSendBtn');
-    if (sendBtn) sendBtn.classList.add('fd-btn', 'fd-btn--primary', 'fd-push-send-btn');
+    if (sendBtn) sendBtn.classList.add('fd-push-send-btn');
     root.querySelectorAll('#fdPushTestBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary');
-      btn.classList.remove('sec');
+      if (!btn.classList.contains('sec')) btn.classList.add('sec');
     });
     root.querySelectorAll('[onclick*="pushPickStripFromMedia"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      btn.classList.add('sec', 'small');
     });
     root.querySelectorAll('#pushStripClearBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--ghost', 'fd-btn--sm', 'fd-push-strip-clear');
+      btn.classList.add('fd-btn-ghost', 'small', 'fd-push-strip-clear');
     });
     root.querySelectorAll('[onclick*="createScheduledPush"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--primary', 'fd-push-send-btn');
+      btn.classList.add('fd-push-send-btn');
     });
     root.querySelectorAll('[onclick*="addGeoLocation"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      btn.classList.add('sec', 'small');
     });
     root.querySelectorAll('[onclick*="saveGeoConfig"]').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--primary');
+      btn.classList.remove('purple');
+      btn.classList.add('sec');
     });
     root.querySelectorAll('#pushBulkBar .btn.small.sec, #pushBulkBar .btn.sec.small').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+      if (!btn.classList.contains('small')) btn.classList.add('small');
     });
     root.querySelectorAll('#pushBulkBar .btn.small.danger, #pushBulkBar .btn.danger.small').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--danger', 'fd-btn--sm');
-    });
-    ['fdPushConfirmCancel', 'fdPushHistoryConfirmCancel'].forEach(function (id) {
-      var btn = document.getElementById(id);
-      if (btn) btn.classList.add('fd-btn', 'fd-btn--secondary');
-    });
-    ['fdPushConfirmSubmit', 'fdPushHistoryConfirmSubmit'].forEach(function (id) {
-      var btn = document.getElementById(id);
-      if (btn) {
-        btn.classList.add('fd-btn', 'fd-btn--sm');
-        if (btn.classList.contains('danger')) btn.classList.add('fd-btn--danger');
-        else btn.classList.add('fd-btn--primary');
-      }
+      if (!btn.classList.contains('small')) btn.classList.add('small');
     });
   }
   function renderHistorySkeleton() {
@@ -9826,10 +9811,10 @@
       var actions = bar.querySelector('.analytics-actions');
       if (actions) actions.classList.add('fd-analytics-toolbar__actions');
       bar.querySelectorAll('.analytics-chip').forEach(function (chip) {
-        chip.classList.add('fd-btn', 'fd-btn--sm', 'fd-analytics-chip');
+        chip.classList.add('fd-analytics-chip');
       });
       bar.querySelectorAll('.btn.small.sec, .btn.sec.small').forEach(function (btn) {
-        btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+        if (!btn.classList.contains('small')) btn.classList.add('small');
       });
       bar.querySelectorAll('#analyticsTrendRange, .analytics-date').forEach(function (el) {
         el.classList.add('fd-analytics-control');
@@ -9868,7 +9853,8 @@
         intro.style.lineHeight = '';
       }
       introRow.querySelectorAll('.btn').forEach(function (btn) {
-        btn.classList.add('fd-btn', 'fd-btn--secondary', 'fd-btn--sm');
+        if (btn.id === 'fdActivityLogExportBtn') return;
+        btn.classList.add('small', 'sec');
       });
     }
     var tableWrap = panel.querySelector('.pass-table-wrap');
@@ -12022,7 +12008,7 @@
       '<input type="date" id="fdActivityLogDateTo" aria-label="Filtra eventi al">' +
       '</div>' +
       '<div class="fd-activity-log-toolbar__actions">' +
-      '<button type="button" class="btn sec" id="fdActivityLogExportBtn" data-allow-readonly="true">Esporta CSV</button>' +
+      '<button type="button" class="btn" id="fdActivityLogExportBtn" data-allow-readonly="true">Esporta CSV</button>' +
       '</div>' +
       '<p class="fd-activity-log-filter-hint" id="fdActivityLogFilterHint" aria-live="polite"></p>';
     tableWrap.parentNode.insertBefore(bar, tableWrap);

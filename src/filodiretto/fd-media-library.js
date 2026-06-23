@@ -641,10 +641,10 @@
   function applyDsButtonClasses(root) {
     var scope = root || document;
     scope.querySelectorAll('#media-library #fdMediaBulkClearBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--secondary');
+      if (!btn.classList.contains('sec')) btn.classList.add('sec');
     });
     scope.querySelectorAll('#media-library #fdMediaBulkDeleteBtn').forEach(function (btn) {
-      btn.classList.add('fd-btn', 'fd-btn--danger');
+      if (!btn.classList.contains('danger')) btn.classList.add('danger');
     });
   }
 

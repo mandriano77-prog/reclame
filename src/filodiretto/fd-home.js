@@ -224,8 +224,8 @@
       '<p class="fd-empty-state__title">Nessun brand selezionato</p>' +
       '<p class="fd-empty-state__desc">Scegli un brand esistente o configura Identità Brand per iniziare.</p>' +
       '<div class="fd-empty-state__actions">' +
-      '<button type="button" class="fd-btn fd-btn--primary" onclick="document.getElementById(\'brandSelector\').focus()">Seleziona brand</button>' +
-      '<button type="button" class="fd-btn fd-btn--secondary" data-fd-nav="brand-identity">Crea brand</button>' +
+      '<button type="button" class="btn" onclick="document.getElementById(\'brandSelector\').focus()">Seleziona brand</button>' +
+      '<button type="button" class="btn sec" data-fd-nav="brand-identity">Crea brand</button>' +
       '</div></div>';
     bindNavButtons(root);
   }
@@ -370,9 +370,9 @@
       '<div class="fd-card fd-home-shortcuts">' +
       '<h2 class="fd-home-card__title">Azioni frequenti</h2>' +
       '<div class="fd-home-shortcuts__actions">' +
-      '<button type="button" class="fd-btn fd-btn--secondary" data-fd-action="new-template">+ Nuovo template</button>' +
-      '<button type="button" class="fd-btn fd-btn--secondary" data-fd-nav="push">Invia push</button>' +
-      '<button type="button" class="fd-btn fd-btn--secondary" data-fd-action="import-employees">Importa dipendenti</button>' +
+      '<button type="button" class="btn sec" data-fd-action="new-template">+ Nuovo template</button>' +
+      '<button type="button" class="btn" data-fd-nav="push">Invia push</button>' +
+      '<button type="button" class="btn sec" data-fd-action="import-employees">Importa dipendenti</button>' +
       '</div></div>'
     );
   }
@@ -385,7 +385,7 @@
         '<p class="fd-home-primary__label">Stato brand</p>' +
         '<h3 class="fd-home-primary__title">Configurazione completata</h3>' +
         '<p class="fd-home-primary__desc">' + esc(brandName) + ' è operativo. Monitora KPI e invia comunicazioni ai dipendenti.</p>' +
-        '<button type="button" class="fd-btn fd-btn--primary" data-fd-nav="push">Invia una push</button>' +
+        '<button type="button" class="btn" data-fd-nav="push">Invia una push</button>' +
         '</div>'
       );
     }
@@ -394,7 +394,7 @@
       '<p class="fd-home-primary__label">Prossimo passo</p>' +
       '<h3 class="fd-home-primary__title">' + esc(step.label) + '</h3>' +
       '<p class="fd-home-primary__desc">' + esc(step.desc) + '</p>' +
-      '<button type="button" class="fd-btn fd-btn--primary" data-fd-nav="' + esc(step.section) + '">Continua setup →</button>' +
+      '<button type="button" class="btn" data-fd-nav="' + esc(step.section) + '">Continua setup →</button>' +
       '</div>'
     );
   }
@@ -413,7 +413,7 @@
         '<p class="fd-empty-state__title">Nessuna attività recente</p>' +
         '<p class="fd-empty-state__desc">Gli eventi su pass, installazioni Wallet e notifiche compariranno qui.</p>' +
         '<div class="fd-empty-state__actions">' +
-        '<button type="button" class="fd-btn fd-btn--ghost" data-fd-nav="activity-log">Apri log completo</button>' +
+        '<button type="button" class="btn fd-btn-ghost" data-fd-nav="activity-log">Apri log completo</button>' +
         '</div></div></div>'
       );
     }
@@ -436,7 +436,7 @@
       '<div class="fd-card fd-home-card">' +
       '<h2 class="fd-home-card__title">Ultime attività</h2>' +
       '<ul class="fd-home-activity-list">' + list + '</ul>' +
-      '<button type="button" class="fd-btn fd-btn--ghost" style="margin-top:12px" data-fd-nav="activity-log">Vedi tutto</button>' +
+      '<button type="button" class="btn fd-btn-ghost" style="margin-top:12px" data-fd-nav="activity-log">Vedi tutto</button>' +
       '</div>'
     );
   }
@@ -572,7 +572,7 @@
               })
             : '<div class="fd-error-state" role="alert"><p class="fd-error-state__desc">Errore caricamento home: ' +
               esc(e.message) +
-              '</p><button type="button" class="fd-btn fd-btn--secondary" id="fdHomeRetryBtn">Riprova</button></div>';
+              '</p><button type="button" class="btn sec" id="fdHomeRetryBtn">Riprova</button></div>';
         var retry = document.getElementById('fdHomeRetryBtn');
         if (retry && retry.dataset.fdBound !== '1') {
           retry.dataset.fdBound = '1';

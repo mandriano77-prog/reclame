@@ -15,7 +15,7 @@
         aria-label="Ricerca anagrafica dipendenti"
       >
       <div class="contacts-toolbar__actions" role="group" aria-label="Azioni anagrafica">
-        <button type="button" class="btn sec" id="leadsAddBtn" style="display:none;white-space:nowrap;">+ Aggiungi</button>
+        <button type="button" class="btn" id="leadsAddBtn" style="display:none;white-space:nowrap;">+ Aggiungi</button>
         <button type="button" class="btn sec" id="leadsImportBtn" style="display:none;white-space:nowrap;">✨ Importa da file</button>
         <button type="button" class="btn sec" id="leadsDistributeBtn" style="display:none;white-space:nowrap;">✉ Invia attivazione</button>
         <button type="button" class="btn sec" id="leadsExportBtn" style="white-space:nowrap;">⬇ Export CSV</button>
