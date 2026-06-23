@@ -98,8 +98,8 @@ test('brand identity non mostra sezione asset inline (solo Media Library)', () =
   assert.doesNotMatch(indexHtml, /Logo e immagini chiave/);
   assert.doesNotMatch(indexHtml, /id="a2wBiAssetsGrid"/);
   assert.doesNotMatch(indexHtml, /id="a2wBiOpenMediaLibraryBtn"/);
-  assert.match(indexHtml, /function a2wBiRenderAssetsGrid/);
-  assert.match(indexHtml, /Scegli da libreria/);
+  assert.match(indexHtml, /function isBrandIdentityAssetUiExcluded/);
+  assert.match(indexHtml, /Le immagini del brand si gestiscono in Media Library/);
 });
 
 test('media library include bucket wallet_icon', () => {

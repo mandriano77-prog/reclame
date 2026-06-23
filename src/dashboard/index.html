@@ -1830,7 +1830,7 @@
                     <header class="a2w-bi-header">
                         <div class="a2w-bi-header__copy">
                             <h1 class="sec-title page-title a2w-bi-title">Identità Brand</h1>
-                            <p class="a2w-bi-subtitle">Definisci nome, logo, contatti e dati pubblici. Queste informazioni alimentano pass, landing e comunicazioni.</p>
+                            <p class="a2w-bi-subtitle">Definisci nome, contatti e dati pubblici. Le immagini del brand si gestiscono in Media Library.</p>
                         </div>
                         <div class="a2w-bi-header__actions">
                             <span id="a2wBiSaveStateBadge" class="a2w-bi-state-badge" aria-live="polite">Salvato</span>
@@ -11914,6 +11914,12 @@ function isBrandIdentityPassFieldsExcluded() {
     return typeof isHrDashboard === 'function' && isHrDashboard();
 }
 
+/** Logo/strip/icon: solo Media Library (non in Identità Brand). */
+function isBrandIdentityAssetUiExcluded() {
+    if (isBrandIdentityPassFieldsExcluded()) return true;
+    return isA2wBrandIdentityV2Enabled();
+}
+
 function a2wBiSlugify(value) {
     return String(value || '')
         .toLowerCase()
@@ -11995,7 +12001,7 @@ function a2wBiSerializeState(data, selectedAssets) {
         dpoEmail: data.dpoEmail || '',
         emergencyPhone: data.emergencyPhone || ''
     };
-    if (!isBrandIdentityPassFieldsExcluded()) {
+    if (!isBrandIdentityAssetUiExcluded()) {
         payload.assets = {
             logo: selectedAssets.logo?.id || '',
             wallet_icon: selectedAssets.wallet_icon?.id || '',
@@ -12544,7 +12550,7 @@ async function loadBrandIdentity() {
         ['biName','biSlug','biTagline','biSettore','biLang','biHomepage','biSupportEmail','biSupportPhone','biDpoEmail','biEmergencyPhone','biSocialInstagram','biSocialFacebook','biSocialLinkedin','biSocialTiktok','biSocialX']
             .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         brandIdentityState.selectedAssets = { logo: null, wallet_icon: null, strip: null, thumbnail: null, background: null };
-        if (!isBrandIdentityPassFieldsExcluded()) a2wBiRenderAssetsGrid();
+        if (!isBrandIdentityAssetUiExcluded()) a2wBiRenderAssetsGrid();
         a2wBiUpdatePreviewCard();
         brandIdentityState.baseline = a2wBiSerializeState(a2wBiCollectFormData(), brandIdentityState.selectedAssets);
         brandIdentityState.dirty = false;
@@ -12580,7 +12586,7 @@ async function loadBrandIdentity() {
         brandIdentityState.lastSavedAt = c.brand_identity_last_saved_at
             ? new Date(c.brand_identity_last_saved_at).getTime()
             : null;
-        if (!isBrandIdentityPassFieldsExcluded()) {
+        if (!isBrandIdentityAssetUiExcluded()) {
             await a2wBiLoadMediaByType();
             a2wBiApplySelectedAssetsFromConfig(c);
             a2wBiRenderAssetsGrid();
@@ -12642,7 +12648,7 @@ async function saveBrandIdentity() {
             config.tagline = data.tagline;
         }
         const slug = data.slug || a2wBiSlugify(name);
-        const assets = isBrandIdentityPassFieldsExcluded() ? null : {
+        const assets = isBrandIdentityAssetUiExcluded() ? null : {
             logo: brandIdentityState.selectedAssets.logo?.id || null,
             wallet_icon: brandIdentityState.selectedAssets.wallet_icon?.id || null,
             strip: brandIdentityState.selectedAssets.strip?.id || null,
@@ -12701,7 +12707,7 @@ async function saveBrandIdentity() {
                 throw new Error(err.error || 'Errore salvataggio identità');
             }
             toast('Identità brand salvata!');
-            const logoAsset = brandIdentityState.selectedAssets?.logo;
+            const logoAsset = !isBrandIdentityAssetUiExcluded() && brandIdentityState.selectedAssets?.logo;
             if (logoAsset?.id) {
                 try {
                     const imgRes = await fetch(`${API}/media/${logoAsset.id}/image`, { headers: getAuthHeaders() });
