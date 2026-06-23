@@ -355,6 +355,9 @@
     if (typeof window.fdEnhanceResponsiveTables === 'function') {
       window.fdEnhanceResponsiveTables();
     }
+    if (typeof window.fdInjectSectionFlowBar === 'function') {
+      window.fdInjectSectionFlowBar('instant-win');
+    }
   }
 
   function enhanceChallengeSectionDesign() {
@@ -488,6 +491,9 @@
     syncEngagementTableHead('gamTable');
     if (typeof window.fdEnhanceResponsiveTables === 'function') {
       window.fdEnhanceResponsiveTables();
+    }
+    if (typeof window.fdInjectSectionFlowBar === 'function') {
+      window.fdInjectSectionFlowBar('gamification');
     }
   }
 

@@ -288,6 +288,9 @@
     if (!isFiloPgaApp()) return;
     enhanceEngagementSectionDesign();
     bindEngagementEvents();
+    if (typeof global.fdInjectSectionFlowBar === 'function') {
+      global.fdInjectSectionFlowBar('pga-engagement');
+    }
     var host = document.getElementById('pgaEngagementKpis');
     if (host && !host.querySelector('.fd-pga-kpi')) {
       renderKpiSkeleton();

@@ -603,6 +603,9 @@
   function initConventionsModule() {
     if (!isFiloConventionsApp()) return;
     enhanceConventionsSectionDesign();
+    if (typeof global.fdInjectSectionFlowBar === 'function') {
+      global.fdInjectSectionFlowBar('conventions');
+    }
   }
 
   global.switchConventionsTab = switchConventionsTab;

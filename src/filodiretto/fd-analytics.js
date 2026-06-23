@@ -247,6 +247,11 @@
     if (typeof window.fdEnhanceResponsiveTables === 'function') {
       window.fdEnhanceResponsiveTables();
     }
+    if (typeof window.fdInjectSectionFlowBar === 'function') {
+      var tab =
+        typeof window.getAnalyticsSectionTab === 'function' ? window.getAnalyticsSectionTab() : 'metrics';
+      window.fdInjectSectionFlowBar(tab === 'activity-log' ? 'activity-log' : 'analytics');
+    }
   }
 
   function patchAnalyticsSubnav() {

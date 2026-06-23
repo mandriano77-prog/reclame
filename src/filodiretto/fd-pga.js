@@ -724,6 +724,9 @@
     if (!isFiloPgaApp()) return;
     enhancePgaSectionDesign();
     ensurePgaCatalogFilters();
+    if (typeof global.fdInjectSectionFlowBar === 'function') {
+      global.fdInjectSectionFlowBar('pga-catalog');
+    }
   }
 
   global.switchPgaTab = switchPgaTab;

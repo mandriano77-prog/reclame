@@ -1365,6 +1365,9 @@
     patchNavForPush();
     patchPushHistoryDelete();
     enhancePushSectionDesign();
+    if (typeof window.fdInjectSectionFlowBar === 'function') {
+      window.fdInjectSectionFlowBar('push');
+    }
     enhanceImmediatePanel();
     enhancePushPanelsDom();
   }

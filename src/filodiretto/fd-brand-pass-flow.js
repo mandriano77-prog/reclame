@@ -1,15 +1,41 @@
 /**
- * FD — Brand & Pass setup flow indicators (Identità → Media → Template → Pass → Dipendenti).
+ * FD — Section flow pills (Brand & Pass, Growth Activation, Insights).
  */
 (function () {
   'use strict';
 
-  var STEPS = [
-    { id: 'brand-identity', label: 'Identità' },
-    { id: 'media-library', label: 'Media' },
-    { id: 'templates', label: 'Template Pass' },
-    { id: 'passes', label: 'Pass emessi' },
-    { id: 'leads', label: 'Dipendenti' }
+  var FLOW_GROUPS = [
+    {
+      id: 'brand-pass',
+      ariaLabel: 'Percorso Brand & Pass',
+      steps: [
+        { id: 'brand-identity', label: 'Identità' },
+        { id: 'media-library', label: 'Media' },
+        { id: 'templates', label: 'Template Pass' },
+        { id: 'passes', label: 'Pass emessi' },
+        { id: 'leads', label: 'Dipendenti' }
+      ]
+    },
+    {
+      id: 'growth-activation',
+      ariaLabel: 'Percorso Growth Activation',
+      steps: [
+        { id: 'push', label: 'Push' },
+        { id: 'instant-win', label: 'Reward' },
+        { id: 'gamification', label: 'Challenge' },
+        { id: 'conventions', label: 'Convenzioni' },
+        { id: 'pga-catalog', label: 'PGA Catalog' },
+        { id: 'pga-engagement', label: 'Engagement Coin' }
+      ]
+    },
+    {
+      id: 'insights',
+      ariaLabel: 'Percorso Insights',
+      steps: [
+        { id: 'analytics', label: 'Analytics' },
+        { id: 'activity-log', label: 'Log Attività' }
+      ]
+    }
   ];
 
   function isFiloFlowApp() {
@@ -28,40 +54,94 @@
       .replace(/>/g, '&gt;');
   }
 
-  function renderFlowBar(activeId) {
+  function findGroupForSection(sectionId) {
+    for (var i = 0; i < FLOW_GROUPS.length; i++) {
+      var group = FLOW_GROUPS[i];
+      for (var j = 0; j < group.steps.length; j++) {
+        if (group.steps[j].id === sectionId) return group;
+      }
+    }
+    return null;
+  }
+
+  function resolveHostSectionId(sectionId) {
+    if (sectionId === 'activity-log') return 'analytics';
+    return sectionId;
+  }
+
+  function allStepIds() {
+    var ids = [];
+    FLOW_GROUPS.forEach(function (group) {
+      group.steps.forEach(function (step) {
+        ids.push(step.id);
+      });
+    });
+    return ids;
+  }
+
+  function renderFlowBar(group, activeId) {
     return (
-      '<nav class="fd-brand-pass-flow" aria-label="Percorso configurazione pass">' +
-      STEPS.map(function (step, idx) {
-        var active = step.id === activeId ? ' is-active' : '';
-        var sep = idx < STEPS.length - 1 ? '<span class="fd-brand-pass-flow__sep" aria-hidden="true">›</span>' : '';
-        return (
-          '<button type="button" class="fd-brand-pass-flow__step' +
-          active +
-          '" data-fd-nav="' +
-          esc(step.id) +
-          '" onclick="nav(\'' +
-          esc(step.id) +
-          '\')">' +
-          esc(step.label) +
-          '</button>' +
-          sep
-        );
-      }).join('') +
+      '<nav class="fd-brand-pass-flow" data-flow-group="' +
+      esc(group.id) +
+      '" aria-label="' +
+      esc(group.ariaLabel) +
+      '">' +
+      group.steps
+        .map(function (step, idx) {
+          var active = step.id === activeId ? ' is-active' : '';
+          var sep =
+            idx < group.steps.length - 1
+              ? '<span class="fd-brand-pass-flow__sep" aria-hidden="true">›</span>'
+              : '';
+          return (
+            '<button type="button" class="fd-brand-pass-flow__step' +
+            active +
+            '" data-fd-nav="' +
+            esc(step.id) +
+            '" onclick="nav(\'' +
+            esc(step.id) +
+            '\')">' +
+            esc(step.label) +
+            '</button>' +
+            sep
+          );
+        })
+        .join('') +
       '</nav>'
     );
   }
 
-  function injectFlowBar(sectionId) {
-    var section = document.getElementById(sectionId);
-    if (!section || section.querySelector('.fd-brand-pass-flow')) return;
-    var page = section.querySelector('.a2w-media-page') || section;
-    var anchor =
+  function findFlowInsertPoint(page) {
+    return (
+      page.querySelector('.fd-page-header') ||
       page.querySelector('.a2w-media-page-head') ||
       page.querySelector('.fd-media-header') ||
-      page.querySelector('h1.page-title, h1.sec-title');
-    var host = document.createElement('div');
+      page.querySelector('h1.page-title, h1.sec-title, h1.fd-page-header__title')
+    );
+  }
+
+  function injectFlowBar(sectionId) {
+    if (!isFiloFlowApp()) return;
+    var group = findGroupForSection(sectionId);
+    if (!group) return;
+
+    var hostId = resolveHostSectionId(sectionId);
+    var section = document.getElementById(hostId);
+    if (!section) return;
+
+    var page = section.querySelector('.a2w-media-page') || section;
+    var host = section.querySelector('.fd-brand-pass-flow-host');
+    if (host) {
+      host.innerHTML = renderFlowBar(group, sectionId);
+      relocateFlowBarOutOfHeader(section);
+      return;
+    }
+
+    var anchor = findFlowInsertPoint(page);
+    host = document.createElement('div');
     host.className = 'fd-brand-pass-flow-host';
-    host.innerHTML = renderFlowBar(sectionId);
+    host.innerHTML = renderFlowBar(group, sectionId);
+
     if (anchor && anchor.parentNode) {
       anchor.parentNode.insertBefore(host, anchor);
     } else {
@@ -73,7 +153,7 @@
   function relocateFlowBarOutOfHeader(section) {
     if (!section) return;
     var page = section.querySelector('.a2w-media-page') || section;
-    var header = page.querySelector('.a2w-media-page-head, .fd-media-header');
+    var header = page.querySelector('.fd-page-header, .a2w-media-page-head, .fd-media-header');
     var flowHost = section.querySelector('.fd-brand-pass-flow-host');
     if (!flowHost || !header) return;
     if (flowHost.parentNode === header || header.contains(flowHost)) {
@@ -99,23 +179,37 @@
     };
   }
 
-  function initFdBrandPassFlow() {
+  function patchAnalyticsTabSwitch() {
+    if (window.__fdFlowAnalyticsTabPatched || typeof window.switchAnalyticsSectionTab !== 'function') {
+      return;
+    }
+    window.__fdFlowAnalyticsTabPatched = true;
+    var orig = window.switchAnalyticsSectionTab;
+    window.switchAnalyticsSectionTab = function (tab, options) {
+      var out = orig.apply(this, arguments);
+      var activeTab =
+        tab || (typeof window.getAnalyticsSectionTab === 'function' ? window.getAnalyticsSectionTab() : 'metrics');
+      injectFlowBar(activeTab === 'activity-log' ? 'activity-log' : 'analytics');
+      return out;
+    };
+  }
+
+  function initFdSectionFlow() {
     if (!isFiloFlowApp()) return;
     patchBrandSnapshot();
-    STEPS.forEach(function (s) {
-      injectFlowBar(s.id);
+    patchAnalyticsTabSwitch();
+
+    allStepIds().forEach(function (id) {
+      injectFlowBar(id);
     });
+
     var origNav = window.nav;
     if (typeof origNav === 'function' && !window.__fdFlowNavPatched) {
       window.__fdFlowNavPatched = true;
       window.nav = function (id) {
         var r = origNav.apply(this, arguments);
         var done = function () {
-          if (STEPS.some(function (s) {
-            return s.id === id;
-          })) {
-            injectFlowBar(id);
-          }
+          if (allStepIds().indexOf(id) >= 0) injectFlowBar(id);
         };
         if (r && typeof r.then === 'function') return r.then(done);
         setTimeout(done, 0);
@@ -124,13 +218,15 @@
     }
   }
 
-  window.fdInitBrandPassFlow = initFdBrandPassFlow;
+  window.fdInitBrandPassFlow = initFdSectionFlow;
+  window.fdInitSectionFlow = initFdSectionFlow;
   window.fdInjectBrandPassFlowBar = injectFlowBar;
+  window.fdInjectSectionFlowBar = injectFlowBar;
   window.fdRelocateBrandPassFlowBar = relocateFlowBarOutOfHeader;
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFdBrandPassFlow);
+    document.addEventListener('DOMContentLoaded', initFdSectionFlow);
   } else {
-    initFdBrandPassFlow();
+    initFdSectionFlow();
   }
 })();
