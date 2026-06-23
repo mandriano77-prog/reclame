@@ -153,6 +153,11 @@
     if (!sectionId || sectionId === 'welcome') return null;
     if (sectionId === 'audiences') sectionId = 'leads';
     if (sectionId === 'activity-log') sectionId = 'analytics';
+
+    var domItem = document.querySelector('.nav-group[data-nav-group] .nav-item[data-section-id="' + sectionId + '"]');
+    var domGroup = domItem && domItem.closest ? domItem.closest('.nav-group[data-nav-group]') : null;
+    if (domGroup && domGroup.dataset && domGroup.dataset.navGroup) return domGroup.dataset.navGroup;
+
     var nav = window.FD_NAV && window.FD_NAV.NAV;
     if (!nav) return null;
     for (var i = 0; i < nav.length; i++) {

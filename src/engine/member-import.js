@@ -5,6 +5,8 @@
 const XLSX = require('xlsx');
 const { randomUUID } = require('crypto');
 
+const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+
 const IMPORT_FIELDS = [
   { key: 'first_name', label: 'Nome', required: false },
   { key: 'last_name', label: 'Cognome', required: false },
@@ -155,9 +157,17 @@ function parseWorkbookBuffer(buffer) {
 }
 
 function parseImportFile({ file_base64, filename, csv_text }) {
-  if (csv_text) return parseCsvText(csv_text);
+  if (csv_text) {
+    if (Buffer.byteLength(String(csv_text), 'utf8') > MAX_IMPORT_BYTES) {
+      throw new Error('File import troppo grande (max 5 MB)');
+    }
+    return parseCsvText(csv_text);
+  }
   if (!file_base64) throw new Error('file_base64 o csv_text richiesto');
   const buf = Buffer.from(file_base64, 'base64');
+  if (buf.length > MAX_IMPORT_BYTES) {
+    throw new Error('File import troppo grande (max 5 MB)');
+  }
   const name = String(filename || '').toLowerCase();
   if (name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.ods')) {
     return parseWorkbookBuffer(buf);
