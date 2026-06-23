@@ -556,11 +556,12 @@
   var patchRetryCount = 0;
   var PATCH_RETRY_MAX = 120;
   function isFiloWai() {
-    if (document.documentElement.classList.contains('a2w-shell')) return false;
     try {
       if (window.__2WALLET_PRODUCT_LOCK__ === 'hr') return true;
     } catch (_) {}
-    return document.documentElement.getAttribute('data-app') === 'filodiretto';
+    if (document.documentElement.getAttribute('data-app') === 'filodiretto') return true;
+    if (document.documentElement.classList.contains('a2w-shell')) return false;
+    return false;
   }
   function getActiveSectionId() {
     var el = document.querySelector('.section.active');
@@ -1607,6 +1608,7 @@
 (function () {
   'use strict';
   var SOCIAL_IDS = ['biSocialInstagram', 'biSocialFacebook', 'biSocialLinkedin', 'biSocialTiktok', 'biSocialX'];
+  var socialAccordionCollapsedByUser = false;
   var SUMMARY_FIELD_IDS = [
     'biName',
     'biTagline',
@@ -2083,7 +2085,7 @@
       countEl.textContent = count > 0 ? count + (count === 1 ? ' profilo' : ' profili') : 'Nessun profilo';
       countEl.classList.toggle('has-profiles', count > 0);
     }
-    if (body && count > 0 && body.hidden) {
+    if (body && count > 0 && body.hidden && !socialAccordionCollapsedByUser) {
       body.hidden = false;
       toggle.setAttribute('aria-expanded', 'true');
     }
@@ -2125,14 +2127,18 @@
     });
     if (!toggle.dataset.fdSocialToggleBound) {
       toggle.dataset.fdSocialToggleBound = '1';
-      toggle.addEventListener('click', function () {
+      toggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
         if (body) {
           var open = body.hidden;
           body.hidden = !open;
           toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+          socialAccordionCollapsedByUser = !open;
+          if (open && countSocialProfiles() === 0) socialAccordionCollapsedByUser = false;
         }
         requestAnimationFrame(syncSocialToggleUi);
-      });
+      }, true);
     }
     syncSocialToggleUi();
   }

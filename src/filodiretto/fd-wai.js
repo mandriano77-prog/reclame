@@ -17,11 +17,12 @@
   var PATCH_RETRY_MAX = 120;
 
   function isFiloWai() {
-    if (document.documentElement.classList.contains('a2w-shell')) return false;
     try {
       if (window.__2WALLET_PRODUCT_LOCK__ === 'hr') return true;
     } catch (_) {}
-    return document.documentElement.getAttribute('data-app') === 'filodiretto';
+    if (document.documentElement.getAttribute('data-app') === 'filodiretto') return true;
+    if (document.documentElement.classList.contains('a2w-shell')) return false;
+    return false;
   }
 
   function getActiveSectionId() {

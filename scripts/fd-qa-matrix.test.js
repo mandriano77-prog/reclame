@@ -134,8 +134,8 @@ test('fd.bundle.js is valid JavaScript after build', () => {
 
 test('index.html bundle cache references wide-layout tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260623-wide-layout/);
-  assert.match(html, /fd\.bundle\.js\?v=20260623-wide-layout/);
+  assert.match(html, /fd\.bundle\.css\?v=20260623-interaction-fix/);
+  assert.match(html, /fd\.bundle\.js\?v=20260623-interaction-fix/);
   assert.match(html, /\/dashboard\/lib\/public-url\.js/);
   assert.match(html, /function a2wPublicUrlBase/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
@@ -246,6 +246,8 @@ test('Filo brand identity social accordion toggles on Filo HR shell', () => {
   assert.match(bi, /a2wBiSocialToggle/);
   assert.match(bi, /body\.hidden = !open/);
   assert.match(bi, /aria-expanded', open \? 'true' : 'false'/);
+  assert.match(bi, /socialAccordionCollapsedByUser/);
+  assert.match(bi, /stopImmediatePropagation/);
 });
 
 test('Filo brand identity aside reads camelCase form snapshot', () => {
@@ -390,4 +392,13 @@ test('Google Wallet HR pass resolves hub links like passkit', () => {
   assert.match(gw, /hubUrl: hrOpts\.hubUrl/);
   assert.match(ep, /linkText \|\| s\.label/);
   assert.match(ep, /announcement_full/);
+});
+
+test('W.AI API calls include auth headers', () => {
+  const html = read('src/dashboard/index.html');
+  const waiBlocks = html.match(/fetch\(`\$\{API\}\/wai\/[^`]+`[\s\S]*?\}\);/g) || [];
+  assert.ok(waiBlocks.length >= 5, 'expected at least 5 W.AI fetch calls');
+  waiBlocks.forEach((block) => {
+    assert.match(block, /\.\.\.getAuthHeaders\(\)/, 'W.AI fetch must spread getAuthHeaders()');
+  });
 });

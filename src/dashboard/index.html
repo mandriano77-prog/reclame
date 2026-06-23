@@ -27,10 +27,10 @@
                 var fdLegacyMediaHide = document.createElement('style');
                 fdLegacyMediaHide.textContent = "html[data-app='filodiretto'] #media-library #a2wMediaTabs{display:none!important}";
                 document.head.appendChild(fdLegacyMediaHide);
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260623-wide-layout';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260623-wide-layout';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260623-interaction-fix';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260623-interaction-fix';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-components.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wide-layout.css', '/filodiretto/fd-mobile-gate.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-page-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-analytics.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-conventions.css', '/filodiretto/fd-pga.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
-                var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-conventions.js', '/filodiretto/fd-pga.js', '/filodiretto/fd-pga-engagement.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js'];
+                var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-icons.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-legacy-campaigns.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-brand-identity.js', '/filodiretto/fd-brand-pass-flow.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-templates.js', '/filodiretto/fd-passes.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-rbac.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-conventions.js', '/filodiretto/fd-pga.js', '/filodiretto/fd-pga-engagement.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js', '/filodiretto/fd-profile.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
                 if (useFdBundle) {
                     var bundleCss = document.createElement('link');
@@ -12341,7 +12341,7 @@ function a2wBiEnsureUiBound() {
 
     const socialToggle = a2wBiField('a2wBiSocialToggle');
     const socialBody = a2wBiField('a2wBiSocialBody');
-    if (socialToggle && socialBody) {
+    if (socialToggle && socialBody && document.documentElement.getAttribute('data-app') !== 'filodiretto') {
         socialToggle.addEventListener('click', () => {
             const open = socialBody.hidden;
             socialBody.hidden = !open;
@@ -13504,9 +13504,8 @@ function waiResetStripPreview() {
 function toggleWaiOverlay(forceOpen) {
     const el = document.getElementById('waiOverlay');
     if (!el) return;
-    const shouldOpen = typeof forceOpen === 'boolean'
-        ? forceOpen
-        : (el.style.display === 'none' || !el.style.display);
+    const isOpen = el.style.display === 'flex' || getComputedStyle(el).display === 'flex';
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
     el.style.display = shouldOpen ? 'flex' : 'none';
     el.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
     if (shouldOpen) {
@@ -13675,7 +13674,7 @@ async function askWai() {
         const routedPrompt = waiWrapAudiencePrompt(prompt);
         const res = await fetch(`${API}/wai/ask`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({ prompt: routedPrompt, brand_id: brandId })
         });
         const data = await res.json().catch(() => ({}));
@@ -13711,7 +13710,7 @@ async function refineWai() {
     try {
         const res = await fetch(`${API}/wai/ask`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({
                 brand_id: brandId,
                 prompt: waiWrapAudiencePrompt(originalPrompt),
@@ -13903,7 +13902,7 @@ async function confirmWai() {
     try {
         const res = await fetch(`${API}/wai/execute`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({ intent: draft.intent, payload, prompt: waiGetPromptTrace() })
         });
         const data = await res.json().catch(() => ({}));
@@ -13953,7 +13952,7 @@ async function waiHandleStripGenerate(payload, { mode = 'library' } = {}) {
     try {
         const res = await fetch(`${API}/wai/execute`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({
                 intent: 'strip.generate',
                 payload,
@@ -14011,7 +14010,7 @@ async function waiSaveStrip() {
     try {
         const res = await fetch(`${API}/wai/strip-save`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({
                 brand_id: brandId,
                 image_base64: waiCurrentStripBase64,
