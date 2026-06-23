@@ -27,8 +27,8 @@
                 var fdLegacyMediaHide = document.createElement('style');
                 fdLegacyMediaHide.textContent = "html[data-app='filodiretto'] #media-library #a2wMediaTabs{display:none!important}";
                 document.head.appendChild(fdLegacyMediaHide);
-                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260623-btn-primary-hierarchy';
-                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260623-btn-primary-hierarchy';
+                var fdBundleCss = '/filodiretto/fd.bundle.css?v=20260623-push-linked-content';
+                var fdBundleJs = '/filodiretto/fd.bundle.js?v=20260623-push-linked-content';
                 var fdCss = ['/filodiretto/tokens.css', '/filodiretto/fd-theme.css', '/filodiretto/fd-typography.css', '/filodiretto/fd-buttons.css', '/filodiretto/fd-components.css', '/filodiretto/fd-header.css', '/filodiretto/fd-layout.css', '/filodiretto/fd-wide-layout.css', '/filodiretto/fd-mobile-gate.css', '/filodiretto/fd-wai.css', '/filodiretto/fd-brand-switcher.css', '/filodiretto/fd-nav.css', '/filodiretto/fd-brand-identity.css', '/filodiretto/fd-brand-scope.css', '/filodiretto/fd-home.css', '/filodiretto/fd-users.css', '/filodiretto/fd-contacts.css', '/filodiretto/fd-media-library.css', '/filodiretto/fd-destructive.css', '/filodiretto/fd-form-dirty.css', '/filodiretto/fd-form-help.css', '/filodiretto/fd-empty-states.css', '/filodiretto/fd-page-states.css', '/filodiretto/fd-danger-zone.css', '/filodiretto/fd-push.css', '/filodiretto/fd-reward-challenge.css', '/filodiretto/fd-analytics.css', '/filodiretto/fd-audiences.css', '/filodiretto/fd-conventions.css', '/filodiretto/fd-pga.css', '/filodiretto/fd-activity-log.css', '/filodiretto/fd-responsive-tables.css'];
                 var fdJs = ['/filodiretto/fd-buttons.js', '/filodiretto/fd-header.js', '/filodiretto/fd-layout.js', '/filodiretto/fd-mobile-gate.js', '/filodiretto/fd-wai.js', '/filodiretto/fd-brand-switcher.js', '/filodiretto/fd-icons.js', '/filodiretto/fd-nav.js', '/filodiretto/fd-legacy-campaigns.js', '/filodiretto/fd-hr-copy.js', '/filodiretto/fd-brand-scope.js', '/filodiretto/fd-brand-identity.js', '/filodiretto/fd-brand-pass-flow.js', '/filodiretto/fd-home.js', '/filodiretto/fd-users.js', '/filodiretto/fd-contacts.js', '/filodiretto/fd-media-library.js', '/filodiretto/fd-templates.js', '/filodiretto/fd-passes.js', '/filodiretto/fd-destructive.js', '/filodiretto/fd-form-dirty.js', '/filodiretto/fd-form-help.js', '/filodiretto/fd-form-a11y.js', '/filodiretto/fd-empty-states.js', '/filodiretto/fd-page-states.js', '/filodiretto/fd-danger-zone.js', '/filodiretto/fd-rbac.js', '/filodiretto/fd-push.js', '/filodiretto/fd-reward-challenge.js', '/filodiretto/fd-analytics.js', '/filodiretto/fd-audiences.js', '/filodiretto/fd-conventions.js', '/filodiretto/fd-pga.js', '/filodiretto/fd-pga-engagement.js', '/filodiretto/fd-activity-log.js', '/filodiretto/fd-responsive-tables.js', '/filodiretto/fd-profile.js'];
                 var useFdBundle = window.location.search.indexOf('fd_nobundle') === -1;
@@ -1665,7 +1665,7 @@
                         </div>
                         <div id="pushStripBlock" class="form-group" style="margin-top:8px;">
                             <label class="form-label">Strip per questa push (opzionale)</label>
-                            <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Solo per questo invio — non modifica la strip permanente del brand. Priorità su Reward / Challenge se selezioni entrambi.</p>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Solo per questo invio — non modifica la strip permanente del brand. La strip della campagna collegata ha priorità su questa strip temporanea.</p>
                             <div id="pushStripPreview" class="dropzone" role="button" tabindex="0" title="Scegli una strip temporanea per questa push" onclick="pushPickStripFromMedia()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pushPickStripFromMedia();}">
                                 <span class="dropzone__placeholder">Trascina o clicca per scegliere una strip temporanea</span>
                             </div>
@@ -1703,18 +1703,11 @@
                             </div>
                         </div>
                         <div class="form-group" style="margin-top:8px;">
-                            <label class="form-label" for="pushInstantWin">Collega Reward (opzionale)</label>
-                            <select id="pushInstantWin" aria-label="Collega Reward">
-                                <option value="">— Nessuna campagna Reward —</option>
+                            <label class="form-label" for="pushLinkedContent">Collega contenuto (opzionale)</label>
+                            <select id="pushLinkedContent" aria-label="Collega contenuto">
+                                <option value="">— Nessuno —</option>
                             </select>
-                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Se selezionata, il link al gioco verrà inserito nel Link 1 del retro di ogni pass.</p>
-                        </div>
-                        <div class="form-group" style="margin-top:8px;">
-                            <label class="form-label" for="pushGamification">Collega Challenge (opzionale)</label>
-                            <select id="pushGamification" aria-label="Collega Challenge">
-                                <option value="">— Nessuna campagna Challenge —</option>
-                            </select>
-                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Quiz, Memory o Puzzle — il link al gioco verrà inserito nel Link 1 del retro di ogni pass.</p>
+                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Reward o Challenge: il link al gioco verrà inserito nel Link 1 del retro di ogni pass.</p>
                         </div>
                         <p class="push-send-error" id="pushSendError" role="alert" hidden></p>
                         <button type="button" class="btn" id="pushSendBtn" style="width:100%;font-weight:700;margin-top:12px;" onclick="sendImmediatePush()">&#9889; Invia Notifica Ora</button>
@@ -4706,8 +4699,7 @@ function nav(id, options) {
                 loadPushCampaignSelect();
                 loadSchedCampaignSelect();
                 loadPushAudienceSelect();
-                loadPushIwSelect();
-                loadPushGamSelect();
+                loadPushLinkedContentSelect();
                 loadGeofencing();
             };
             if (typeof requestIdleCallback === 'function') requestIdleCallback(rest, { timeout: 1500 });
@@ -7281,42 +7273,58 @@ async function loadPushCampaignSelect() {
     campaignsCache.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
 }
 
-async function loadPushIwSelect() {
-    const sel = document.getElementById('pushInstantWin');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">— Nessuna campagna Reward —</option>';
-    if (!brandId) return;
-    try {
-        const res = await fetch(`${API}/instant-win?brand_id=${brandId}`, { headers: getAuthHeaders() });
-        if (!res.ok) return;
-        const campaigns = await res.json();
-        const gameLabels = { scratch: 'Scratch', wheel: 'Ruota', slots: 'Slot' };
-        campaigns.filter(c => c.status === 'active').forEach(c => {
-            const o = document.createElement('option');
-            o.value = c.id;
-            o.textContent = `${c.name} (${gameLabels[c.game_type] || c.game_type})`;
-            sel.appendChild(o);
-        });
-    } catch(e) { console.error('loadPushIwSelect error:', e); }
+function parsePushLinkedContent(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return {};
+    const sep = value.indexOf(':');
+    if (sep < 1) return {};
+    const kind = value.slice(0, sep);
+    const id = value.slice(sep + 1);
+    if (!id) return {};
+    if (kind === 'reward') return { instant_win_id: id };
+    if (kind === 'challenge') return { gamification_id: id };
+    return {};
 }
 
-async function loadPushGamSelect() {
-    const sel = document.getElementById('pushGamification');
+async function loadPushLinkedContentSelect() {
+    const sel = document.getElementById('pushLinkedContent');
     if (!sel) return;
-    sel.innerHTML = '<option value="">— Nessuna campagna Challenge —</option>';
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Nessuno —</option>';
     if (!brandId) return;
     try {
-        const res = await fetch(`${API}/gamification/campaigns/${brandId}`, { headers: getAuthHeaders() });
-        if (!res.ok) return;
-        const campaigns = await res.json();
-        const gameLabels = { quiz: 'Quiz', memory: 'Memory', puzzle: 'Puzzle' };
-        campaigns.filter(c => c.status === 'active').forEach(c => {
-            const o = document.createElement('option');
-            o.value = c.id;
-            o.textContent = `${c.name} (${gameLabels[c.game_type] || c.game_type})`;
-            sel.appendChild(o);
-        });
-    } catch(e) { console.error('loadPushGamSelect error:', e); }
+        const [iwRes, gamRes] = await Promise.all([
+            fetch(`${API}/instant-win?brand_id=${brandId}`, { headers: getAuthHeaders() }),
+            fetch(`${API}/gamification/campaigns/${brandId}`, { headers: getAuthHeaders() })
+        ]);
+        const rewardOg = document.createElement('optgroup');
+        rewardOg.label = 'Reward';
+        const challengeOg = document.createElement('optgroup');
+        challengeOg.label = 'Challenge';
+        const iwLabels = { scratch: 'Scratch', wheel: 'Ruota', slots: 'Slot' };
+        const gamLabels = { quiz: 'Quiz', memory: 'Memory', puzzle: 'Puzzle' };
+        if (iwRes.ok) {
+            const campaigns = await iwRes.json();
+            campaigns.filter(c => c.status === 'active').forEach(c => {
+                const o = document.createElement('option');
+                o.value = `reward:${c.id}`;
+                o.textContent = `${c.name} (${iwLabels[c.game_type] || c.game_type})`;
+                rewardOg.appendChild(o);
+            });
+        }
+        if (gamRes.ok) {
+            const campaigns = await gamRes.json();
+            campaigns.filter(c => c.status === 'active').forEach(c => {
+                const o = document.createElement('option');
+                o.value = `challenge:${c.id}`;
+                o.textContent = `${c.name} (${gamLabels[c.game_type] || c.game_type})`;
+                challengeOg.appendChild(o);
+            });
+        }
+        if (rewardOg.children.length) sel.appendChild(rewardOg);
+        if (challengeOg.children.length) sel.appendChild(challengeOg);
+        if (cur) sel.value = cur;
+    } catch (e) { console.error('loadPushLinkedContentSelect error:', e); }
 }
 
 async function loadSchedCampaignSelect() {
@@ -7518,10 +7526,9 @@ function buildImmediatePushBody() {
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel };
     if (audienceId) body.audience_id = audienceId;
     else if (campaignId && isLegacyCampaignsUiEnabled()) body.campaign_id = campaignId;
-    const iwId = document.getElementById('pushInstantWin')?.value;
-    if (iwId) body.instant_win_id = iwId;
-    const gamId = document.getElementById('pushGamification')?.value;
-    if (gamId) body.gamification_id = gamId;
+    const linked = parsePushLinkedContent(document.getElementById('pushLinkedContent')?.value);
+    if (linked.instant_win_id) body.instant_win_id = linked.instant_win_id;
+    if (linked.gamification_id) body.gamification_id = linked.gamification_id;
     if (document.getElementById('pushIncludePassLink')?.checked) {
         body.include_pass_link = true;
         body.pass_link_url = (document.getElementById('pushPassLinkUrl')?.value || '').trim();
@@ -7556,6 +7563,8 @@ function resetImmediatePushForm() {
     const pbu = document.getElementById('pushBackLinkUrl');
     if (pbl) pbl.value = '';
     if (pbu) pbu.value = '';
+    const linkedSel = document.getElementById('pushLinkedContent');
+    if (linkedSel) linkedSel.value = '';
     pushClearStrip();
 }
 

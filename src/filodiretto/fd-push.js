@@ -216,6 +216,19 @@
     syncChannelUi();
   }
 
+  function parsePushLinkedContent(raw) {
+    var value = String(raw || '').trim();
+    if (!value) return {};
+    var sep = value.indexOf(':');
+    if (sep < 1) return {};
+    var kind = value.slice(0, sep);
+    var id = value.slice(sep + 1);
+    if (!id) return {};
+    if (kind === 'reward') return { instant_win_id: id };
+    if (kind === 'challenge') return { gamification_id: id };
+    return {};
+  }
+
   function buildPushBody(extra) {
     extra = extra || {};
     var title = document.getElementById('pushTitle').value;
@@ -238,10 +251,9 @@
     if (audienceId) body.audience_id = audienceId;
     else if (campaignId) body.campaign_id = campaignId;
 
-    var iwId = document.getElementById('pushInstantWin').value;
-    if (iwId) body.instant_win_id = iwId;
-    var gamId = document.getElementById('pushGamification').value;
-    if (gamId) body.gamification_id = gamId;
+    var linked = parsePushLinkedContent(document.getElementById('pushLinkedContent')?.value);
+    if (linked.instant_win_id) body.instant_win_id = linked.instant_win_id;
+    if (linked.gamification_id) body.gamification_id = linked.gamification_id;
 
     if (document.getElementById('pushIncludePassLink')?.checked) {
       body.include_pass_link = true;
@@ -865,10 +877,10 @@
       renderRecipientLines(counts, channel) +
       '<li><strong>Titolo</strong>' + esc(title) + '</li>' +
       '<li><strong>Messaggio</strong>' + esc(firstMessageLine(message)) + '</li>';
-    var iw = selectedOptionLabel('pushInstantWin');
-    if (iw) html += '<li><strong>Reward collegato</strong>' + esc(iw) + '</li>';
-    var gam = selectedOptionLabel('pushGamification');
-    if (gam) html += '<li><strong>Challenge collegata</strong>' + esc(gam) + '</li>';
+    var linkedLabel = selectedOptionLabel('pushLinkedContent');
+    if (linkedLabel && document.getElementById('pushLinkedContent')?.value) {
+      html += '<li><strong>Contenuto collegato</strong>' + esc(linkedLabel) + '</li>';
+    }
     html += '<li><strong>Aggiorna contenuto pass</strong>' + (updatePass ? 'Sì' : 'No') + '</li>';
     if (result.note) html += '<li><strong>Nota</strong>' + esc(result.note) + '</li>';
     if (summary) summary.innerHTML = html;

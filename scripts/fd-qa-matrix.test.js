@@ -145,8 +145,8 @@ test('fd.bundle.css preserves calc() operator spacing (W.AI inset)', () => {
 
 test('index.html bundle cache references wide-layout tag', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /fd\.bundle\.css\?v=20260623-btn-primary-hierarchy/);
-  assert.match(html, /fd\.bundle\.js\?v=20260623-btn-primary-hierarchy/);
+  assert.match(html, /fd\.bundle\.css\?v=20260623-push-linked-content/);
+  assert.match(html, /fd\.bundle\.js\?v=20260623-push-linked-content/);
   assert.match(html, /\/dashboard\/lib\/public-url\.js/);
   assert.match(html, /function a2wPublicUrlBase/);
   assert.match(html, /#a2wMediaTabs\{display:none!important\}/);
