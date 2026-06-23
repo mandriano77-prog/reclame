@@ -7586,6 +7586,10 @@ function buildImmediatePushBody() {
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel };
     if (audienceId) body.audience_id = audienceId;
     else if (campaignId && isLegacyCampaignsUiEnabled()) body.campaign_id = campaignId;
+    const iwId = document.getElementById('pushInstantWin')?.value;
+    if (iwId) body.instant_win_id = iwId;
+    const gamId = document.getElementById('pushGamification')?.value;
+    if (gamId) body.gamification_id = gamId;
     if (document.getElementById('pushIncludePassLink')?.checked) {
         body.include_pass_link = true;
         body.pass_link_url = (document.getElementById('pushPassLinkUrl')?.value || '').trim();
