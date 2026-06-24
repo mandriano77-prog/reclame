@@ -1434,6 +1434,7 @@
     if (typeof ensureA2wLeadsHeaderChrome === 'function') ensureA2wLeadsHeaderChrome();
     syncA2wHeaderChrome();
     syncA2wWaiPadding();
+    bindA2wWaiControls();
     a2wDispatchSidebarEvent('a2w:shell:ready', { line: line });
   }
 
@@ -1470,6 +1471,36 @@
     wrap.classList.add('a2w-breadcrumb-brand-wrap--text-only');
     wrap.querySelectorAll('#a2wBreadcrumbLogo, #a2wBreadcrumbLogoFallback').forEach((el) => el.remove());
     a2wEnsureSidebarWorkspaceSwitcher();
+  }
+
+  function bindA2wWaiTrigger(btn, handler) {
+    if (!btn || btn.dataset.a2wWaiBound === '1') return;
+    btn.dataset.a2wWaiBound = '1';
+    btn.removeAttribute('onclick');
+    btn.onclick = null;
+    btn.addEventListener('click', handler);
+  }
+
+  /** Ads2Wallet shell: FAB + audience links (fd-wai.js is HR/Filo only). */
+  function bindA2wWaiControls() {
+    if (!isA2wActive()) return;
+    const fab = document.getElementById('waiBtn');
+    bindA2wWaiTrigger(fab, function (e) {
+      if (typeof window.toggleWaiOverlay !== 'function') return;
+      e.preventDefault();
+      window.toggleWaiOverlay();
+    });
+    document.querySelectorAll('[data-fd-wai-open], .fd-wai-inline-link').forEach(function (btn) {
+      bindA2wWaiTrigger(btn, function (e) {
+        e.preventDefault();
+        const mode = btn.getAttribute('data-fd-wai-mode') || '';
+        if (mode === 'audience' && typeof window.openWaiForAudience === 'function') {
+          window.openWaiForAudience();
+          return;
+        }
+        if (typeof window.toggleWaiOverlay === 'function') window.toggleWaiOverlay(true);
+      });
+    });
   }
 
   function syncA2wWaiPadding() {
@@ -1905,11 +1936,18 @@
   A2W.syncNavGroupsVisibility = a2wSyncNavGroupsVisibility;
   A2W.syncA2wHeaderChrome = syncA2wHeaderChrome;
   A2W.syncA2wWaiPadding = syncA2wWaiPadding;
+  A2W.bindA2wWaiControls = bindA2wWaiControls;
   A2W.a2wLoadAnalytics = a2wLoadAnalytics;
 
   window.ensureA2wLeadsLayout = ensureA2wLeadsLayout;
   window.initA2wShell = initA2wShell;
   window.syncA2wHeaderChrome = syncA2wHeaderChrome;
   window.syncA2wWaiPadding = syncA2wWaiPadding;
+  window.bindA2wWaiControls = bindA2wWaiControls;
   window.a2wLoadAnalytics = a2wLoadAnalytics;
+
+  window.addEventListener('load', function () {
+    if (!isA2wActive()) return;
+    bindA2wWaiControls();
+  });
 })();

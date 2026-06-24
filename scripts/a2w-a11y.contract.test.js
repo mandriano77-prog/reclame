@@ -36,6 +36,13 @@ test('W.AI FAB e modal-close hanno aria-label descrittivi', () => {
   assert.match(indexHtml, /closeAudienceEditor\(\)" aria-label="Chiudi editor audience"/);
 });
 
+test('Ads2Wallet shell binds W.AI FAB click (fd-wai is HR-only)', () => {
+  assert.doesNotMatch(indexHtml, /id="waiBtn"[^>]*onclick=/);
+  assert.match(shell, /function bindA2wWaiControls/);
+  assert.match(shell, /bindA2wWaiControls\(\)/);
+  assert.match(shell, /toggleWaiOverlay\(\)/);
+});
+
 test('breadcrumb duplicati nascosti — solo header globale su A2W', () => {
   const chrome = fs.readFileSync(path.join(root, 'src/dashboard/styles/a2w-chrome.css'), 'utf8');
   assert.match(chrome, /\.a2w-bi-breadcrumb[\s\S]*display:\s*none/);
