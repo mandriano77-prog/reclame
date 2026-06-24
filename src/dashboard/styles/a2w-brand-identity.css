@@ -1,5 +1,12 @@
 /* FILE A2W-ONLY — brand identity redesign */
 /* Logo/immagini: gestiti in Media Library, non in Identità Brand */
+html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-section:has(#a2wBiAssetsGrid),
+html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-preview-column,
+html[data-shell="dark"].a2w-shell #brand-identity .fd-bi-landing-preview,
+html[data-shell="dark"].a2w-shell #brand-identity #fdBiAside {
+  display: none !important;
+}
+
 .a2w-bi-page.a2w-bi-legacy-shell .a2w-bi-section:nth-of-type(3) {
   display: none;
 }

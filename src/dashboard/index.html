@@ -11926,6 +11926,29 @@ function isBrandIdentityAssetUiExcluded() {
     return isA2wBrandIdentityV2Enabled();
 }
 
+/** Rimuove markup legacy (deploy/cache vecchi) quando gli asset non sono più in Identità Brand. */
+function a2wBiRemoveLegacyAssetUi() {
+    if (!isBrandIdentityAssetUiExcluded()) return;
+    const page = document.querySelector('#brand-identity .a2w-bi-page');
+    if (!page) return;
+    page.querySelectorAll('aside, .fd-bi-landing-preview, #fdBiAside').forEach((node) => {
+        if (node.id === 'fdBiAside' || node.classList.contains('fd-bi-landing-preview')) {
+            node.remove();
+            return;
+        }
+        if ([...node.classList].some((cls) => cls.includes('preview-column'))) node.remove();
+    });
+    const assetsHost = a2wBiField('a2wBiAssetsGrid');
+    if (assetsHost) {
+        assetsHost.closest('.a2w-bi-section')?.remove();
+        return;
+    }
+    page.querySelectorAll('.a2w-bi-section').forEach((section) => {
+        const heading = section.querySelector('.a2w-bi-section__head h2');
+        if (heading && /logo e immagini/i.test(heading.textContent || '')) section.remove();
+    });
+}
+
 function a2wBiSlugify(value) {
     return String(value || '')
         .toLowerCase()
@@ -12543,6 +12566,7 @@ function a2wBiEnsureUiBound() {
 async function loadBrandIdentity() {
     const pageRoot = document.querySelector('#brand-identity .a2w-bi-page');
     const a2wEnabled = isA2wBrandIdentityV2Enabled();
+    a2wBiRemoveLegacyAssetUi();
     if (pageRoot) pageRoot.classList.toggle('a2w-bi-legacy-shell', !a2wEnabled);
     if (a2wEnabled) {
         a2wBiEnsureUiBound();
