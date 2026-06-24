@@ -21,14 +21,11 @@
         },
         {
             id: 'comunicazione',
-            label: 'Growth Activation',
+            label: 'Engagement',
             items: [
                 { id: 'push', label: 'Push & Notifiche' },
                 { id: 'instant-win', label: 'Reward' },
-                { id: 'gamification', label: 'Challenge' },
-                { id: 'conventions', label: 'Convenzioni' },
-                { id: 'pga-catalog', label: 'PGA Catalog' },
-                { id: 'pga-engagement', label: 'Engagement Coin' }
+                { id: 'gamification', label: 'Challenge' }
             ]
         },
         {

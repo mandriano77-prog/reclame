@@ -133,14 +133,19 @@ test('server exposes SPA routes for contatti and analytics subpaths', () => {
   assert.match(server, /\/dashboard\/analytics\/log/);
 });
 
-test('NAV catalog lists Contatti under Engagement and Analytics + Log under Insights', () => {
+test('NAV catalog lists Contatti under Brand & Pass and Engagement rewards stack', () => {
   const g = { document: { querySelectorAll: () => [] } };
   vm.runInNewContext(read('src/dashboard/lib/nav.js'), { ...g, window: g, global: g });
   const nav = g.FD_NAV.NAV;
   const engagement = nav.find((s) => s.id === 'comunicazione');
   assert.equal(engagement.label, 'Engagement');
   const engagementItems = engagement.items.map((i) => i.id);
-  assert.ok(engagementItems.includes('leads'));
+  assert.equal(engagementItems.length, 3);
+  assert.ok(engagementItems.includes('push'));
+  assert.ok(engagementItems.includes('instant-win'));
+  assert.ok(engagementItems.includes('gamification'));
+  const brandPassItems = nav.find((s) => s.id === 'brand-pass').items.map((i) => i.id);
+  assert.ok(brandPassItems.includes('leads'));
   assert.equal(nav.find((s) => s.id === 'database'), undefined);
   const insightsItems = nav.find((s) => s.id === 'insights').items.map((i) => i.id);
   assert.equal(insightsItems.length, 2);

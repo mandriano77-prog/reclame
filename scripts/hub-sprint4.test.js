@@ -15,11 +15,11 @@ const INDEX_SOURCE = fs.readFileSync(path.join(__dirname, '../src/dashboard/inde
 const SERVER_SOURCE = fs.readFileSync(path.join(__dirname, '../src/server.js'), 'utf8');
 const SUBNAV_SOURCE = fs.readFileSync(path.join(__dirname, '../src/dashboard/js/dashboard-subnav.js'), 'utf8');
 
-test('nav catalog includes conventions under Growth Activation and leads under Brand & Pass', () => {
-  assert.match(NAV_SOURCE, /id:\s*'conventions'/);
-  assert.match(NAV_SOURCE, /label:\s*'Convenzioni'/);
-  assert.match(NAV_SOURCE, /label:\s*'Growth Activation'/);
-  assert.match(NAV_SOURCE, /id:\s*'comunicazione'[\s\S]*conventions/);
+test('Ads nav catalog uses Engagement without HR hub items; Contatti under Brand & Pass', () => {
+  assert.doesNotMatch(NAV_SOURCE, /label:\s*'Growth Activation'/);
+  assert.match(NAV_SOURCE, /label:\s*'Engagement'/);
+  assert.doesNotMatch(NAV_SOURCE, /id:\s*'conventions'/);
+  assert.doesNotMatch(NAV_SOURCE, /id:\s*'pga-catalog'/);
   assert.match(NAV_SOURCE, /id:\s*'brand-pass'[\s\S]*id:\s*'leads'/);
 });
 
