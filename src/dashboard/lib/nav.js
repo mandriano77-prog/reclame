@@ -43,13 +43,16 @@
         }
     ];
 
-    /** Sections outside main NAV (wizard / design flows / sub-tabs). */
+    /** Sections outside main NAV (wizard / design flows / sub-tabs / HR hub). */
     var EXTRA_PAGE_TITLES = {
         welcome: 'Inizio',
         'pass-design': 'Design Pass',
         'pass-wizard': 'Crea Pass',
         audiences: 'Audience',
-        'activity-log': 'Log Attività'
+        'activity-log': 'Log Attività',
+        conventions: 'Convenzioni',
+        'pga-catalog': 'PGA Catalog',
+        'pga-engagement': 'Engagement Coin'
     };
 
     function getPageTitle(sectionId) {

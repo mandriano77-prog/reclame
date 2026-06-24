@@ -1163,6 +1163,19 @@
     if (typeof window.applyLegacyCampaignsUiMask === 'function') {
       window.applyLegacyCampaignsUiMask();
     }
+    patchHrGrowthSidebar();
+  }
+  function patchHrGrowthSidebar() {
+    if (!isFiloNavApp()) return;
+    if (!document || typeof document.querySelector !== 'function') return;
+    var group = document.querySelector('.nav-group[data-nav-group="comunicazione"]');
+    if (!group) return;
+    var summary = group.querySelector('summary.nav-group-label');
+    if (summary) summary.textContent = 'Growth Activation';
+    group.querySelectorAll('.fd-nav-item--hr').forEach(function (item) {
+      item.style.display = '';
+      item.removeAttribute('hidden');
+    });
   }
   function sectionIdFromNavItem(el) {
     if (!el) return '';
@@ -1322,6 +1335,7 @@
   }
   function fdInitNavGroups() {
     if (!isFiloNavApp()) return false;
+    patchHrGrowthSidebar();
     injectNavIcons();
     bindNavGroups();
     syncNavGroups(getActiveSectionForGroups());
@@ -1334,14 +1348,27 @@
     window.updateNavState = function () {
       orig.apply(this, arguments);
       applyFiloNavMask();
+      patchHrGrowthSidebar();
       injectNavIcons();
       syncNavGroups(getActiveSectionForGroups());
     };
   }
+  function patchApplyNavNaming() {
+    if (window.__fdNavNamingPatched || !window.FD_NAV || typeof window.FD_NAV.applyNavNaming !== 'function') return;
+    window.__fdNavNamingPatched = true;
+    var orig = window.FD_NAV.applyNavNaming;
+    window.FD_NAV.applyNavNaming = function () {
+      orig.apply(this, arguments);
+      patchHrGrowthSidebar();
+      injectNavIcons();
+    };
+  }
   function initFdNav() {
     if (!isFiloNavApp()) return;
+    patchApplyNavNaming();
     patchUpdateNavState();
     applyFiloNavMask();
+    patchHrGrowthSidebar();
     injectNavIcons();
   }
   window.fdApplyFiloNavMask = applyFiloNavMask;

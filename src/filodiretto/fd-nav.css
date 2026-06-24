@@ -45,6 +45,10 @@ html[data-app='filodiretto'] .nav-group {
   flex-shrink: 0;
 }
 
+html:not([data-app='filodiretto']) .fd-nav-item--hr {
+  display: none !important;
+}
+
 html[data-app='filodiretto'] .nav-group-label {
   margin: var(--space-2, 8px) 0 var(--space-1, 4px);
   padding: 0 var(--space-2, 8px);

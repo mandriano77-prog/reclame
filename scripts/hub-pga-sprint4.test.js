@@ -20,9 +20,12 @@ test('HR hub nav icons live in fd-nav; Ads sidebar omits PGA entries', () => {
   assert.match(navJs, /'pga-catalog':/);
   assert.match(navJs, /'pga-engagement':/);
   assert.match(navJs, /conventions:/);
+  assert.match(navJs, /patchHrGrowthSidebar/);
+  assert.match(navJs, /Growth Activation/);
   assert.doesNotMatch(NAV_SOURCE, /id:\s*'pga-catalog'/);
   assert.doesNotMatch(NAV_SOURCE, /label:\s*'Growth Activation'/);
   assert.match(NAV_SOURCE, /label:\s*'Engagement'/);
+  assert.match(NAV_SOURCE, /conventions:\s*'Convenzioni'/);
 });
 
 test('index.html wires PGA sections and nav loaders', () => {
@@ -30,9 +33,10 @@ test('index.html wires PGA sections and nav loaders', () => {
   assert.match(INDEX_SOURCE, /id="pga-engagement"/);
   assert.match(INDEX_SOURCE, /loadPgaCatalog/);
   assert.match(INDEX_SOURCE, /loadPgaEngagement/);
-  assert.doesNotMatch(INDEX_SOURCE, /data-section-id="pga-catalog"/);
-  assert.doesNotMatch(INDEX_SOURCE, /data-section-id="pga-engagement"/);
-  assert.doesNotMatch(INDEX_SOURCE, /data-section-id="conventions"/);
+  assert.match(INDEX_SOURCE, /data-section-id="pga-catalog"/);
+  assert.match(INDEX_SOURCE, /data-section-id="pga-engagement"/);
+  assert.match(INDEX_SOURCE, /data-section-id="conventions"/);
+  assert.match(INDEX_SOURCE, /fd-nav-item--hr/);
   assert.match(INDEX_SOURCE, /conventionsTab_onboarding/);
 });
 

@@ -34,6 +34,18 @@ function bootFdNavDom() {
   const detailsList = [];
   return {
     documentElement: { getAttribute: (k) => (k === 'data-app' ? 'filodiretto' : null) },
+    querySelector(sel) {
+      if (sel === '.nav-item.active') return null;
+      var m = sel.match(/data-section-id="([^"]+)"/);
+      if (!m) return null;
+      for (var i = 0; i < detailsList.length; i++) {
+        var items = detailsList[i].querySelectorAll('.nav-item');
+        for (var j = 0; j < items.length; j++) {
+          if (items[j].getAttribute('data-section-id') === m[1]) return items[j];
+        }
+      }
+      return null;
+    },
     querySelectorAll(sel) {
       if (sel === '.nav-group[data-nav-group]') return detailsList;
       if (sel === '.nav-item.active') return [];
@@ -43,14 +55,6 @@ function bootFdNavDom() {
       return null;
     },
     addDetails(id, items) {
-      const navItems = items.map((sectionId) => ({
-        getAttribute(k) {
-          if (k === 'data-section-id') return sectionId;
-          return null;
-        },
-        style: { display: '' },
-        classList: { contains: () => false }
-      }));
       const el = {
         dataset: { navGroup: id },
         classList: makeClassList(),
@@ -75,6 +79,18 @@ function bootFdNavDom() {
         },
         addEventListener() {}
       };
+      const navItems = items.map((sectionId) => ({
+        getAttribute(k) {
+          if (k === 'data-section-id') return sectionId;
+          return null;
+        },
+        style: { display: '' },
+        classList: { contains: () => false },
+        closest(sel) {
+          if (sel === '.nav-group[data-nav-group]') return el;
+          return null;
+        }
+      }));
       detailsList.push(el);
       groups[id] = true;
       return el;
@@ -84,20 +100,23 @@ function bootFdNavDom() {
 
 test('fdSectionToNavGroup maps sections to sidebar groups', () => {
   const g = { document: bootFdNavDom(), localStorage: { getItem: () => null, setItem() {} }, __2WALLET_PRODUCT_LOCK__: 'hr' };
+  g.document.addDetails('comunicazione', ['push', 'instant-win', 'gamification', 'conventions']);
+  g.document.addDetails('brand-pass', ['leads']);
   loadScript('src/dashboard/lib/nav.js', g);
   loadScript('src/filodiretto/fd-nav.js', g);
   assert.equal(g.fdSectionToNavGroup('welcome'), null);
   assert.equal(g.fdSectionToNavGroup('push'), 'comunicazione');
-  assert.equal(g.fdSectionToNavGroup('leads'), 'comunicazione');
+  assert.equal(g.fdSectionToNavGroup('conventions'), 'comunicazione');
+  assert.equal(g.fdSectionToNavGroup('leads'), 'brand-pass');
   assert.equal(g.fdSectionToNavGroup('activity-log'), 'insights');
   assert.equal(g.fdSectionToNavGroup('users'), 'setup');
 });
 
-test('fdSyncNavGroups pins setup and marks engagement active for Contatti', () => {
+test('fdSyncNavGroups opens brand-pass when Contatti is active', () => {
   const doc = bootFdNavDom();
   doc.addDetails('setup', ['users']);
-  const engagement = doc.addDetails('comunicazione', ['push', 'instant-win', 'gamification', 'leads']);
-  engagement.open = false;
+  const brandPass = doc.addDetails('brand-pass', ['brand-identity', 'leads']);
+  brandPass.open = false;
   const g = {
     document: doc,
     localStorage: { getItem: () => null, setItem() {} },
@@ -107,6 +126,6 @@ test('fdSyncNavGroups pins setup and marks engagement active for Contatti', () =
   loadScript('src/dashboard/lib/nav.js', g);
   loadScript('src/filodiretto/fd-nav.js', g);
   g.fdSyncNavGroups('leads');
-  assert.ok(engagement.open, 'active group should be forced open');
-  assert.ok(engagement.classList.contains('nav-group--active'));
+  assert.ok(brandPass.open, 'active group should be forced open');
+  assert.ok(brandPass.classList.contains('nav-group--active'));
 });
