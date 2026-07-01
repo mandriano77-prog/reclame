@@ -13,8 +13,7 @@
 
   function isA2wDeploy() {
     const h = (window.location.hostname || '').toLowerCase();
-    // studio.ads2wallet.com is always the Ads2Wallet product — never treat as Filo light shell.
-    if (h.includes('ads2wallet')) return true;
+    if (h.includes('ads2wallet') || h.includes('reclame')) return true;
     if (typeof isFiloShell === 'function' && isFiloShell()) return false;
     try {
       const locked = typeof getLockedProductLine === 'function' ? getLockedProductLine() : null;
@@ -1771,7 +1770,7 @@
       `;
     }).join('');
 
-    const accentData = getComputedStyle(document.documentElement).getPropertyValue('--a2w-accent-data').trim() || '#3FE0C8';
+    const accentData = getComputedStyle(document.documentElement).getPropertyValue('--a2w-accent-data').trim() || '#E8A33D';
     el.innerHTML = `
       <svg id="analyticsTrendSvg" viewBox="0 0 ${width} ${height}" width="100%" height="280" role="img" aria-label="Trend download e install">
         <defs>
@@ -1864,7 +1863,7 @@
     if (card) card.classList.toggle('a2w-top-campaigns--single', ranked.length <= 1);
 
     const maxConv = Math.max(1, ...ranked.map((r) => r.conv));
-    const accentData = getComputedStyle(document.documentElement).getPropertyValue('--a2w-accent-data').trim() || '#3FE0C8';
+    const accentData = getComputedStyle(document.documentElement).getPropertyValue('--a2w-accent-data').trim() || '#E8A33D';
     el.innerHTML = `<div class="a2w-top-campaigns-inner">${ranked.map((r, idx) => {
       const w = ((r.conv / maxConv) * 100).toFixed(1);
       const rowColor = idx === 0 ? accentData : idx === 1 ? '#3b82f6' : idx === 2 ? '#10b981' : '#a78bfa';

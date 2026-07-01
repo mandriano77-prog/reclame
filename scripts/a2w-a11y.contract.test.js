@@ -6,13 +6,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const tokens = fs.readFileSync(path.join(root, 'src/dashboard/styles/a2w-tokens.css'), 'utf8');
+const tokens = fs.readFileSync(path.join(root, 'src/dashboard/styles/a2w-tokens.css'), 'utf8')
+  + fs.readFileSync(path.join(root, 'src/dashboard/styles/rm-tokens.css'), 'utf8');
 const a11y = fs.readFileSync(path.join(root, 'src/dashboard/styles/a2w-a11y.css'), 'utf8');
 const shell = fs.readFileSync(path.join(root, 'src/dashboard/js/a2w-shell.js'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(root, 'src/dashboard/index.html'), 'utf8');
 
 test('token testo terziario rispetta soglia WCAG AA (>= 0.55)', () => {
-  const match = tokens.match(/--a2w-text-tertiary:\s*rgba\(255,\s*255,\s*255,\s*([\d.]+)\)/);
+  const match = tokens.match(/--a2w-text-tertiary:\s*rgba\(\s*\d+,\s*\d+,\s*\d+,\s*([\d.]+)\)/);
   assert.ok(match, 'a2w-text-tertiary token missing');
   assert.ok(Number(match[1]) >= 0.55, 'tertiary opacity too low for AA on dark bg');
 });

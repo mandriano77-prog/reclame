@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ads2Wallet</title>
-    <meta name="description" content="Dashboard piattaforma Wallet">
+    <title>Reclame Media</title>
+    <meta name="description" content="Dashboard Reclame Media">
     <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" type="image/svg+xml" href="/favicon-ads2wallet.svg">
-    <link rel="apple-touch-icon" href="/favicon-ads2wallet.svg">
+    <link rel="icon" type="image/svg+xml" href="/favicon-reclame.svg">
+    <link rel="apple-touch-icon" href="/favicon-reclame.svg">
     <script src="/dashboard/boot.js"></script>
     <script src="/dashboard/lib/public-url.js"></script>
     <script>
@@ -18,7 +18,7 @@
             var byline = (typeof window.__2WALLET_CHROME_BYLINE__ === 'string')
                 ? window.__2WALLET_CHROME_BYLINE__.trim() : 'by Underdogs Group';
             if (!byline && lock === 'hr') byline = '';
-            var base = productTitle || (lock === 'hr' ? 'FiloDiretto' : 'Ads2Wallet');
+            var base = productTitle || (lock === 'hr' ? 'FiloDiretto' : 'Reclame Media');
             document.title = byline ? (base + ' — ' + byline) : base;
             var desc = document.querySelector('meta[name="description"]');
             if (desc) desc.content = base + (lock === 'hr' ? ' — piattaforma HR Wallet' : ' — dashboard');
@@ -58,17 +58,18 @@
                 }
             }
             var host = (window.location.hostname || '').toLowerCase();
-            if (host.includes('ads2wallet')) {
+            if (host.includes('ads2wallet') || host.includes('reclame') || lock === 'ads') {
                 document.documentElement.classList.add('a2w-shell');
             }
         } catch (e) {}
     })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/shared/theme.css">
     <link rel="stylesheet" href="/dashboard/styles/tokens.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-a11y.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-layout.css">
+    <link rel="stylesheet" href="/dashboard/styles/rm-tokens.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-tokens.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-chrome.css?v=20260528-mobile-drawer">
     <link rel="stylesheet" href="/dashboard/styles/a2w-section-tabs.css?v=20260528-nav">
@@ -437,7 +438,7 @@
             background: var(--bg2, #1a1a2e) !important; box-shadow: none !important; flex-shrink: 0;
             accent-color: var(--teal, var(--accent)); cursor: pointer; vertical-align: middle;
         }
-        .a2w-bulk-check:checked { border-color: var(--teal, var(--accent)) !important; background: rgba(20, 184, 170, 0.2) !important; }
+        .a2w-bulk-check:checked { border-color: var(--teal, var(--accent)) !important; background: var(--accent-subtle) !important; }
         .pass-table__id { font-family: ui-monospace, monospace; font-size: 11px; max-width: 148px; }
         .pass-id-copy {
             display: inline-block; max-width: 100%; padding: 2px 6px; border-radius: 6px;
@@ -796,8 +797,8 @@
             color: var(--text-body);
         }
         html[data-shell="dark"] .wai-panel {
-            background: #111;
-            border-color: rgba(139, 92, 246, 0.25);
+            background: var(--rm-bg-elevated, #16110F);
+            border-color: rgba(199, 46, 34, 0.25);
             color: var(--text-body);
         }
 
@@ -1399,7 +1400,7 @@
 <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 <div class="layout" id="mainLayout" style="display:none;">
     <aside class="sidebar" role="navigation" aria-label="Menu principale">
-        <div class="logo"><span class="chrome-product-title">Ads2Wallet</span></div>
+        <div class="logo"><span class="chrome-product-title">Reclame Media</span></div>
         <div class="sidebar-nav">
             <div class="nav-item nav-item--standalone nav-item--icon-only active" id="navItemWelcome" data-section-id="welcome" onclick="nav('welcome')" role="button" tabindex="0" aria-label="Inizio" data-fd-tooltip="Inizio">Inizio</div>
 
@@ -1443,7 +1444,7 @@
         </div>
 
         <div class="sidebar-footer">
-            <div class="sidebar-footer-text"><span class="chrome-product-title">Ads2Wallet</span></div>
+            <div class="sidebar-footer-text"><span class="chrome-product-title">Reclame Media</span></div>
         </div>
     </aside>
 
@@ -1453,13 +1454,13 @@
                 <div class="header-start">
                 <nav class="app-breadcrumb" aria-label="Percorso" id="appBreadcrumb">
                     <ol class="breadcrumb-list">
-                        <li><span id="breadcrumbBrand">Ads2Wallet</span></li>
+                        <li><span id="breadcrumbBrand">Reclame Media</span></li>
                         <li><span id="breadcrumbSection" aria-current="page">Inizio</span></li>
                     </ol>
                 </nav>
                 <div class="header-title header-title--legacy" id="headerBrandTitle">
                     <img id="headerBrandLogo" class="header-brand-logo" alt="Logo brand">
-                    <span id="headerBrandName">Ads2Wallet</span>
+                    <span id="headerBrandName">Reclame Media</span>
                 </div>
             </div>
             <div class="header-actions">
@@ -4960,9 +4961,9 @@ function ensureBrandIdFromContext() {
 // UI shell uses fixed palettes per product line; pass colors in brand.config stay for the pass only.
 const PRODUCT_LINE_STORAGE_KEY = '2wallet_product_line';
 const VALID_PRODUCT_LINES = ['ads', 'hr', 'engage', 'live'];
-const PRODUCT_DISPLAY_TITLES = { ads: 'Ads2Wallet', hr: 'HR2Wallet', engage: 'Engage2Wallet', live: 'Live2Wallet' };
+const PRODUCT_DISPLAY_TITLES = { ads: 'Reclame Media', hr: 'HR2Wallet', engage: 'Engage2Wallet', live: 'Live2Wallet' };
 const PRODUCT_THEMES = {
-    ads: { light: false, bg: '#0D0B1A', accent: '#00D4AA', purple: '#B794F4', text: '#FFFFFF', onAccent: '#0a0a0f' },
+    ads: { light: false, bg: '#0E0C0B', accent: '#C72E22', purple: '#A8251B', text: '#F4EDE2', onAccent: '#F4EDE2' },
     hr: {
         light: true,
         bg: '#FAFAFA',
@@ -5089,6 +5090,7 @@ function getLockedProductLine() {
     if (h.includes('engage2wallet')) return 'engage';
     if (h.includes('live2wallet')) return 'live';
     if (h.includes('ads2wallet')) return 'ads';
+    if (h.includes('reclame')) return 'ads';
     return null;
 }
 
@@ -9701,7 +9703,7 @@ async function loadLeads() {
     const mc = getMergedProductMenuCopy(getDashboardProductLine());
     leadsHrMode = isHrBrandContext();
     window.leadsHrMode = leadsHrMode;
-    if ((window.location.hostname || '').toLowerCase().includes('ads2wallet')) {
+    if (/ads2wallet|reclame/.test((window.location.hostname || '').toLowerCase())) {
         document.documentElement.classList.add('a2w-shell');
     }
     hrDistributionMode = getDistributionModeFromStorage();

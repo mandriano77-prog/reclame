@@ -677,7 +677,7 @@ html[data-shell="dark"].a2w-shell #media-library .a2w-media-tabs__tab:hover {
 html[data-shell="dark"].a2w-shell #media-library .a2w-media-tabs__tab.is-active,
 html[data-shell="dark"].a2w-shell #media-library .a2w-media-tabs__tab[aria-selected="true"] {
   border-color: var(--a2w-action-primary);
-  background: rgba(63, 224, 200, 0.12);
+  background: var(--a2w-accent-soft);
   color: var(--a2w-action-primary);
 }
 
@@ -812,7 +812,7 @@ html[data-shell="dark"].a2w-shell #media-library .a2w-media-dropzone__hint {
 }
 
 html[data-shell="dark"].a2w-shell #media-library .a2w-media-dropzone--dragover {
-  background: rgba(63, 224, 200, 0.15);
+  background: var(--a2w-accent-soft);
   border-color: var(--a2w-action-primary);
 }
 

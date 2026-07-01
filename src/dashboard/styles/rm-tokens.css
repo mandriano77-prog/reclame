@@ -1,0 +1,108 @@
+/**
+ * Reclame Media brand tokens — source of truth for dashboard dark shell.
+ * Palette from Reclame deck; mapped to legacy --a2w-* / --accent aliases for minimal churn.
+ */
+:root {
+  --rm-brand: #C72E22;
+  --rm-brand-hover: #A8251B;
+  --rm-cream: #F4EDE2;
+  --rm-bg-canvas: #0A0908;
+  --rm-bg-elevated: #16110F;
+  --rm-bg-elevated-alt: #0E0C0B;
+  --rm-gold: #E8A33D;
+  --rm-page-off-white: #FAF9F5;
+
+  --rm-font-heading: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --rm-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --rm-font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+html[data-shell="dark"].a2w-shell {
+  /* Reclame brand → A2W shell tokens (accent = brand red, not teal) */
+  --a2w-accent-hsl: 4 71% 46%;
+  --a2w-accent: var(--rm-brand);
+  --a2w-accent-soft: rgba(199, 46, 34, 0.12);
+  --a2w-destructive-hsl: 0 84% 60%;
+  --a2w-destructive: hsl(var(--a2w-destructive-hsl));
+  --a2w-destructive-soft: hsl(var(--a2w-destructive-hsl) / 0.08);
+  --a2w-type-h1-size: 24px;
+  --a2w-type-h1-weight: 600;
+  --a2w-type-h2-size: 18px;
+  --a2w-type-h2-weight: 600;
+  --a2w-type-body-size: 14px;
+  --a2w-type-body-weight: 400;
+  --a2w-type-micro-size: 12px;
+  --a2w-type-micro-weight: 500;
+  --a2w-accent-hover: var(--rm-brand-hover);
+  --a2w-accent-subtle: rgba(199, 46, 34, 0.14);
+  --a2w-action-primary: var(--rm-brand);
+  --a2w-action-primary-hover: var(--rm-brand-hover);
+  --a2w-action-secondary: rgba(244, 237, 226, 0.04);
+  --a2w-action-secondary-hover: rgba(244, 237, 226, 0.08);
+  --a2w-action-secondary-border: rgba(244, 237, 226, 0.18);
+  --a2w-border-focus: var(--rm-brand);
+  --a2w-nav-active-bg: var(--rm-bg-elevated);
+  --a2w-accent-data: var(--rm-gold);
+  --a2w-text-primary: rgba(244, 237, 226, 0.92);
+  --a2w-text-secondary: rgba(244, 237, 226, 0.68);
+  --a2w-text-tertiary: rgba(244, 237, 226, 0.55);
+  --text2: var(--a2w-text-secondary);
+  --text-muted: var(--a2w-text-tertiary);
+  --border-focus: var(--a2w-border-focus);
+  --a2w-border-subtle: rgba(244, 237, 226, 0.08);
+  --a2w-border-default: rgba(244, 237, 226, 0.10);
+  --a2w-radius-card: 16px;
+  --a2w-fab-clearance: 96px;
+  --a2w-sidebar-expanded-w: 240px;
+  --a2w-sidebar-collapsed-w: 64px;
+  --a2w-dur-sidebar: 150ms;
+  --a2w-z-toast: 9000;
+  --a2w-z-popover: 8900;
+  --a2w-z-dropdown: 9200;
+  --a2w-z-modal: 9500;
+  --a2w-z-tooltip: 9700;
+
+  /* Legacy dashboard aliases used by inline styles & shared components */
+  --bg-canvas: var(--rm-bg-canvas);
+  --bg-app: var(--rm-bg-elevated-alt);
+  --bg-subtle: var(--rm-bg-elevated);
+  --bg-hover: #1E1916;
+  --bg-active: rgba(199, 46, 34, 0.18);
+  --bg: var(--bg-app);
+  --bg2: var(--bg-canvas);
+  --bg3: var(--bg-hover);
+  --border-default: var(--a2w-border-default);
+  --border-strong: rgba(244, 237, 226, 0.16);
+  --border: var(--border-default);
+  --text-primary: var(--rm-cream);
+  --text-body: rgba(244, 237, 226, 0.82);
+  --text-secondary: var(--a2w-text-secondary);
+  --text-muted: var(--a2w-text-tertiary);
+  --text-on-accent: var(--rm-cream);
+  --accent: var(--rm-brand);
+  --accent-hover: var(--rm-brand-hover);
+  --accent-subtle: var(--a2w-accent-subtle);
+  --teal: var(--rm-brand);
+  --purple: var(--rm-brand-hover);
+  --font-sans: var(--rm-font-body);
+  --font-mono: var(--rm-font-mono);
+}
+
+html[data-shell="dark"].a2w-shell h1,
+html[data-shell="dark"].a2w-shell h2,
+html[data-shell="dark"].a2w-shell h3,
+html[data-shell="dark"].a2w-shell .sec-title,
+html[data-shell="dark"].a2w-shell .page-title,
+html[data-shell="dark"].a2w-shell .block-title,
+html[data-shell="dark"].a2w-shell .a2w-page-header__title,
+html[data-shell="dark"].a2w-shell .a2w-ui-setup-checklist__title {
+  font-family: var(--rm-font-heading);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+html[data-shell="dark"].a2w-shell code,
+html[data-shell="dark"].a2w-shell pre,
+html[data-shell="dark"].a2w-shell .mono {
+  font-family: var(--rm-font-mono);
+}

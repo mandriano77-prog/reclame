@@ -73,7 +73,7 @@ html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-state-badge.is-dirty {
 }
 
 html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-state-badge.is-saving {
-  border-color: rgba(63, 224, 200, 0.45);
+  border-color: rgba(199, 46, 34, 0.45);
   color: var(--a2w-action-primary);
 }
 
@@ -111,7 +111,7 @@ html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-save-btn.is-dirty:not(
 
 html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-save-btn.is-saving:disabled {
   background: var(--a2w-action-secondary);
-  border-color: rgba(63, 224, 200, 0.35);
+  border-color: rgba(199, 46, 34, 0.35);
   color: var(--a2w-action-primary);
   cursor: wait;
   opacity: 1;

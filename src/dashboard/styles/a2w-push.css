@@ -42,7 +42,7 @@ html[data-shell="dark"].a2w-shell #push .tabs-bar__tab.push-subtab:hover {
 
 html[data-shell="dark"].a2w-shell #push .tabs-bar__tab.push-subtab.active,
 html[data-shell="dark"].a2w-shell #push .tabs-bar__tab.push-subtab[aria-selected="true"] {
-  background: rgba(52, 211, 153, 0.1);
+  background: var(--a2w-accent-soft);
   border-color: var(--a2w-accent, #34d399);
   color: #6ee7b7;
   font-weight: 600;

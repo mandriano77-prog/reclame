@@ -57,8 +57,8 @@ html[data-shell="dark"].a2w-shell .a2w-ui-setup-checklist__item {
 }
 
 html[data-shell="dark"].a2w-shell .a2w-ui-setup-checklist__item.is-done {
-  border-color: rgba(63, 224, 200, 0.22);
-  background: rgba(63, 224, 200, 0.06);
+  border-color: rgba(199, 46, 34, 0.22);
+  background: rgba(199, 46, 34, 0.06);
 }
 
 html[data-shell="dark"].a2w-shell .a2w-ui-setup-checklist__check {
@@ -77,8 +77,8 @@ html[data-shell="dark"].a2w-shell .a2w-ui-setup-checklist__check {
 }
 
 html[data-shell="dark"].a2w-shell .a2w-ui-setup-checklist__item.is-done .a2w-ui-setup-checklist__check {
-  border-color: rgba(63, 224, 200, 0.45);
-  background: rgba(63, 224, 200, 0.14);
+  border-color: rgba(199, 46, 34, 0.45);
+  background: rgba(199, 46, 34, 0.14);
   color: var(--a2w-action-primary);
 }
 

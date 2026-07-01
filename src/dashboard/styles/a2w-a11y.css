@@ -38,13 +38,13 @@ html[data-shell="dark"].a2w-shell .modal-close:focus-visible,
 html[data-shell="dark"].a2w-shell .wai-panel-btn:focus-visible {
   outline: 2px solid var(--a2w-border-focus);
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(63, 224, 200, 0.22);
+  box-shadow: 0 0 0 3px var(--a2w-accent-soft);
 }
 
 html[data-shell="dark"].a2w-shell .wai-fab:focus-visible {
   outline: 2px solid var(--a2w-border-focus);
   outline-offset: 3px;
-  box-shadow: 0 0 0 4px rgba(63, 224, 200, 0.28), 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 4px rgba(199, 46, 34, 0.28), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 html[data-shell="dark"].a2w-shell .a2w-sidebar-toggle-btn:focus-visible,
