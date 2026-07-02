@@ -3723,6 +3723,11 @@ const API = '/api/v1';
 const AUTH_TOKEN_KEY = 'ads2wallet:jwt';
 let brandId = null;
 let brandsListCache = [];
+
+/** Keep window.brandId in sync for A2W modules (push UX, setup checklist, shell). */
+function syncGlobalBrandId() {
+    window.brandId = brandId || null;
+}
 function getAuthHeaders() {
     const t = localStorage.getItem(AUTH_TOKEN_KEY);
     const h = {};
@@ -4032,6 +4037,7 @@ function logout() {
     authToken = null;
     setCurrentUser(null);
     brandId = null;
+    syncGlobalBrandId();
     try { localStorage.removeItem(LAST_BRAND_KEY); } catch (_) {}
     const gate = document.getElementById('loginGate');
     const main = document.getElementById('mainLayout');
@@ -4839,6 +4845,7 @@ async function loadBrands() {
     else if (singleBrandAuto) nextId = brands[0].id;
 
     brandId = nextId || null;
+    syncGlobalBrandId();
     if (brandId) {
         const b = brands.find((x) => String(x.id) === String(brandId));
         if (b) persistDashboardProductLine(getBrandProductLine(b));
@@ -4875,6 +4882,7 @@ function changeBrand() {
     passFiltersLastBrandHydrated = null;
     const sel = document.getElementById('brandSelector');
     brandId = sel.value || null;
+    syncGlobalBrandId();
     currentBrandName = brandId ? (sel.options[sel.selectedIndex]?.textContent || '') : '';
     if (brandId) {
         const b = brandsListCache.find((x) => String(x.id) === String(brandId));
@@ -4934,11 +4942,15 @@ function syncBrandUrl() {
 
 /** Sync global brandId from header dropdown or ?brand_id= URL (Contatti modals). */
 function ensureBrandIdFromContext() {
-    if (brandId) return brandId;
+    if (brandId) {
+        syncGlobalBrandId();
+        return brandId;
+    }
     const sel = document.getElementById('brandSelector');
     const fromSel = sel?.value?.trim();
     if (fromSel) {
         brandId = fromSel;
+        syncGlobalBrandId();
         currentBrandName = sel.options[sel.selectedIndex]?.textContent || currentBrandName;
         syncBrandUrl();
         return brandId;
@@ -4948,12 +4960,14 @@ function ensureBrandIdFromContext() {
         const b = (brandsListCache || []).find((x) => String(x.id) === String(urlBid));
         if (b) {
             brandId = b.id;
+            syncGlobalBrandId();
             currentBrandName = b.name || currentBrandName;
             if (sel) sel.value = brandId;
             syncBrandUrl();
             return brandId;
         }
     }
+    syncGlobalBrandId();
     return null;
 }
 
@@ -5153,6 +5167,7 @@ function populateBrandSelector(brands) {
     if (keepId) sel.value = keepId;
     else if (brandId) {
         brandId = null;
+        syncGlobalBrandId();
         currentBrandName = '';
         try { localStorage.removeItem(LAST_BRAND_KEY); } catch (_) {}
         syncBrandUrl();
@@ -7863,7 +7878,7 @@ async function sendImmediatePush() {
         setPushFieldError('pushMessage', 'Inserisci il testo del messaggio');
         invalid = true;
     }
-    if (!brandId) {
+    if (!ensureBrandIdFromContext()) {
         toast('Seleziona un brand');
         return;
     }
@@ -12750,6 +12765,7 @@ function a2wBiEnsureUiBound() {
                 a2wBiToggleDeleteDialog(false);
                 toast('Brand eliminata');
                 brandId = null;
+                syncGlobalBrandId();
                 await loadBrands();
             } catch (e) {
                 toast('Errore: ' + (e.message || 'eliminazione fallita'));
@@ -12930,6 +12946,7 @@ async function saveBrandIdentity() {
                 return;
             }
             brandId = newBrand.id;
+            syncGlobalBrandId();
             syncBrandUrl();
             toast('Brand creato!');
             await loadBrands();
@@ -13026,6 +13043,7 @@ async function a2wBiExecuteDeleteBrand() {
     }
     toast('Brand eliminata');
     brandId = null;
+    syncGlobalBrandId();
     await loadBrands();
 }
 

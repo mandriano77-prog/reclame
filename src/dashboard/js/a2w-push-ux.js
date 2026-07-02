@@ -144,8 +144,15 @@
     });
   }
 
+  function resolveBrandId() {
+    if (typeof global.ensureBrandIdFromContext === 'function') {
+      return global.ensureBrandIdFromContext();
+    }
+    return global.brandId || null;
+  }
+
   async function fetchRecipientNote(channel) {
-    var brandId = global.brandId;
+    var brandId = resolveBrandId();
     if (!brandId) return { note: 'Seleziona un brand per stimare i destinatari.' };
     try {
       var api = global.API || '/api/v1';
@@ -187,7 +194,7 @@
       if (typeof global.setPushFieldError === 'function') global.setPushFieldError('pushMessage', 'Inserisci il testo del messaggio');
       invalid = true;
     }
-    if (!global.brandId) {
+    if (!resolveBrandId()) {
       if (typeof global.toast === 'function') global.toast('Seleziona un brand');
       return;
     }
