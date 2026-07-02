@@ -50,9 +50,9 @@
         'pass-wizard': 'Crea Pass',
         audiences: 'Audience',
         'activity-log': 'Log Attività',
-        conventions: 'Convenzioni',
+        conventions: 'Promozioni',
         'pga-catalog': 'PGA Catalog',
-        'pga-engagement': 'Engagement Coin'
+        'pga-engagement': 'Coin'
     };
 
     function getPageTitle(sectionId) {

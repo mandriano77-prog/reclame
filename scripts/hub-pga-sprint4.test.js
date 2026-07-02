@@ -25,7 +25,7 @@ test('HR hub nav icons live in fd-nav; Ads sidebar omits PGA entries', () => {
   assert.doesNotMatch(NAV_SOURCE, /id:\s*'pga-catalog'/);
   assert.doesNotMatch(NAV_SOURCE, /label:\s*'Growth Activation'/);
   assert.match(NAV_SOURCE, /label:\s*'Engagement'/);
-  assert.match(NAV_SOURCE, /conventions:\s*'Convenzioni'/);
+  assert.match(NAV_SOURCE, /conventions:\s*'Promozioni'/);
 });
 
 test('index.html wires PGA sections and nav loaders', () => {
@@ -33,7 +33,8 @@ test('index.html wires PGA sections and nav loaders', () => {
   assert.match(INDEX_SOURCE, /id="pga-engagement"/);
   assert.match(INDEX_SOURCE, /loadPgaCatalog/);
   assert.match(INDEX_SOURCE, /loadPgaEngagement/);
-  assert.match(INDEX_SOURCE, /data-section-id="pga-catalog"/);
+  // PGA Catalog nav item removed from sidebar (Reclame); section stays wired.
+  assert.doesNotMatch(INDEX_SOURCE, /data-section-id="pga-catalog"/);
   assert.match(INDEX_SOURCE, /data-section-id="pga-engagement"/);
   assert.match(INDEX_SOURCE, /data-section-id="conventions"/);
   assert.match(INDEX_SOURCE, /fd-nav-item--hr/);

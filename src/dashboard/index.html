@@ -1421,9 +1421,8 @@
                     <div class="nav-item" onclick="nav('push')" data-section-id="push" data-requires-perm="push" role="button" tabindex="0">Push &amp; Notifiche</div>
                     <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards" role="button" tabindex="0">Reward</div>
                     <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges" role="button" tabindex="0">Challenge</div>
-                    <div class="nav-item fd-nav-item--hr" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">Convenzioni</div>
-                    <div class="nav-item fd-nav-item--hr" onclick="nav('pga-catalog')" data-section-id="pga-catalog" data-requires-perm="pga_catalog" role="button" tabindex="0">PGA Catalog</div>
-                    <div class="nav-item fd-nav-item--hr" onclick="nav('pga-engagement')" data-section-id="pga-engagement" data-requires-perm="pga_engagement" role="button" tabindex="0">Engagement Coin</div>
+                    <div class="nav-item fd-nav-item--hr" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">Promozioni</div>
+                    <div class="nav-item fd-nav-item--hr" onclick="nav('pga-engagement')" data-section-id="pga-engagement" data-requires-perm="pga_engagement" role="button" tabindex="0">Coin</div>
                 </div>
             </details>
 
@@ -2892,9 +2891,9 @@
 
             <!-- HUB CONVENZIONI -->
             <div id="conventions" class="section" data-rbac-section="conventions" hidden aria-hidden="true">
-                <h1 class="sec-title page-title">Convenzioni</h1>
-                <p id="conventionsPageBlurb" class="fd-conventions-lead" style="color:var(--text2);font-size:13px;margin-bottom:16px;">Gestisci le convenzioni aziendali, monitora gli utilizzi aggregati e personalizza l'Hub per i dipendenti.</p>
-                <div class="tabs-bar a2w-section-tabs fd-conventions-tabs" role="tablist" aria-label="Sezione Convenzioni" id="conventionsSectionTabs">
+                <h1 class="sec-title page-title">Promozioni</h1>
+                <p id="conventionsPageBlurb" class="fd-conventions-lead" style="color:var(--text2);font-size:13px;margin-bottom:16px;">Gestisci le promozioni, monitora gli utilizzi aggregati e personalizza l'Hub.</p>
+                <div class="tabs-bar a2w-section-tabs fd-conventions-tabs" role="tablist" aria-label="Sezione Promozioni" id="conventionsSectionTabs">
                     <button type="button" class="tabs-bar__tab active" role="tab" id="conventionsTab_merchants" aria-selected="true" aria-controls="conventionsTabPanel_merchants" onclick="switchConventionsTab('merchants')">Merchant</button>
                     <button type="button" class="tabs-bar__tab" role="tab" id="conventionsTab_onboarding" aria-selected="false" aria-controls="conventionsTabPanel_onboarding" onclick="switchConventionsTab('onboarding')">Avvio rapido</button>
                     <button type="button" class="tabs-bar__tab" role="tab" id="conventionsTab_settings" aria-selected="false" aria-controls="conventionsTabPanel_settings" onclick="switchConventionsTab('settings')">Impostazioni Hub</button>
@@ -2948,17 +2947,9 @@
                         <div class="fd-conventions-guide-step">
                             <span class="fd-conventions-guide-step__num">2</span>
                             <div>
-                                <strong>Attiva PGA</strong>
-                                <p style="margin:8px 0 12px;color:var(--text2);font-size:13px">Abilita il catalogo esperienze e le regole coin per i dipendenti.</p>
-                                <button type="button" class="btn sec small" onclick="nav('pga-catalog')">Vai a PGA Catalog</button>
-                            </div>
-                        </div>
-                        <div class="fd-conventions-guide-step">
-                            <span class="fd-conventions-guide-step__num">3</span>
-                            <div>
-                                <strong>Rivedi le esperienze</strong>
-                                <p style="margin:8px 0 12px;color:var(--text2);font-size:13px">Controlla costi coin, limiti annuali e prenotazioni in attesa.</p>
-                                <button type="button" class="btn sec small" onclick="nav('pga-catalog'); if(typeof switchPgaTab==='function') switchPgaTab('catalog')">Catalogo esperienze</button>
+                                <strong>Rivedi le regole coin</strong>
+                                <p style="margin:8px 0 12px;color:var(--text2);font-size:13px">Controlla saldi e regole coin dalla sezione Coin.</p>
+                                <button type="button" class="btn sec small" onclick="nav('pga-engagement')">Vai a Coin</button>
                             </div>
                         </div>
                     </div>
@@ -3132,7 +3123,7 @@
 
             <!-- PGA ENGAGEMENT -->
             <div id="pga-engagement" class="section" data-rbac-section="pga-engagement" hidden aria-hidden="true">
-                <h1 class="sec-title page-title">Engagement Coin</h1>
+                <h1 class="sec-title page-title">Coin</h1>
                 <div class="fd-pga-toolbar">
                     <label for="pgaEngagementDays">Periodo</label>
                     <select id="pgaEngagementDays" class="fd-pga-range-select">
@@ -7350,7 +7341,7 @@ async function loadPushLinkedContentSelect() {
         const challengeOg = document.createElement('optgroup');
         challengeOg.label = 'Challenge';
         const conventionOg = document.createElement('optgroup');
-        conventionOg.label = 'Convenzioni';
+        conventionOg.label = 'Promozioni';
         const iwLabels = { scratch: 'Scratch', wheel: 'Ruota', slots: 'Slot' };
         const gamLabels = { quiz: 'Quiz', memory: 'Memory', puzzle: 'Puzzle' };
         if (iwRes.ok) {
