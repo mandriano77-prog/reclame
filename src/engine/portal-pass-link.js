@@ -1,7 +1,8 @@
 /**
  * Magic-link URL on Wallet pass back — token stored in field_values.__portal_token
  */
-const { getPassInstance, updatePassInstance } = require('../db');
+const { getPassInstance, updatePassInstance, getBrand } = require('../db');
+const { isPortalPassBrand } = require('./pass-product-line');
 const {
   issuePortalToken,
   verifyPortalToken,
@@ -54,6 +55,9 @@ async function resolvePortalLinkForPass(passId, options = {}) {
 
   const pass = await getPassInstance(passId);
   if (!pass) return null;
+
+  const brand = pass.brand_id ? await getBrand(pass.brand_id) : null;
+  if (brand && !isPortalPassBrand(brand)) return null;
 
   if (!rotate) {
     const stored = await readPassPortalToken(passId);

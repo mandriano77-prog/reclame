@@ -381,6 +381,7 @@ const {
   createPassInstance, logEvent, incrementCampaignDownloads
 } = require('./db');
 const { renderSaveThankYouPage, resolvePortalHref } = require('./engine/thank-you-html');
+const { isPortalPassBrand } = require('./engine/pass-product-line');
 
 async function renderThankYouForPass(res, passId) {
   const passInstance = await getPassInstance(passId);
@@ -391,13 +392,15 @@ async function renderThankYouForPass(res, passId) {
   const brandName = brand.name || 'Wallet';
   const passDownloadUrl = `/api/v1/passes/${passInstance.id}/download`;
   const logoUrl = `/api/v1/brands/${encodeURIComponent(String(brand.id))}/logo?t=${Date.now()}`;
-  const portalHref = await resolvePortalHref(passInstance.id, brand.id);
+  const portalHref = await resolvePortalHref(passInstance.id, brand);
+  const showPortal = isPortalPassBrand(brand);
 
   return res.send(renderSaveThankYouPage({
     brandName,
     logoUrl,
     passDownloadUrl,
     portalHref,
+    showPortal,
     brandColor: brand?.config?.labelColor || null
   }));
 }

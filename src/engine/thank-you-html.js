@@ -171,13 +171,28 @@ function thankYouStyles() {
   `;
 }
 
-function thankYouSuccessBlock({ brandName, portalHref, passDownloadUrl }) {
+function thankYouSuccessBlock({ brandName, portalHref, passDownloadUrl, showPortal = true }) {
   const brand = escapeHtml(brandName);
   const portalTarget = portalHref && portalHref !== '#' ? portalHref : '#';
-  const portalBtn = `<a class="btn-primary" href="${escapeHtml(portalTarget)}"${portalTarget === '#' ? ' aria-disabled="true" onclick="return false;"' : ''}>Apri il mio profilo →</a>`;
+  const portalBtn = showPortal
+    ? `<a class="btn-primary" href="${escapeHtml(portalTarget)}"${portalTarget === '#' ? ' aria-disabled="true" onclick="return false;"' : ''}>Apri il mio profilo →</a>`
+    : '';
   const downloadLink = passDownloadUrl
     ? `<a class="link-secondary" href="${escapeHtml(passDownloadUrl)}">Pass non installato? Scarica di nuovo</a>`
     : '';
+
+  if (!showPortal) {
+    return `
+    <div class="icon-circle">
+      <span class="check" aria-hidden="true">&#10003;</span>
+    </div>
+    <h1>Pass aggiunto.</h1>
+    <p class="body-copy lead">Il pass di <strong>${brand}</strong> è ora nel tuo Wallet.<br>
+    Riceverai aggiornamenti e notifiche direttamente sulla lock screen del telefono.</p>
+    <div class="cta-stack actions">
+      ${downloadLink}
+    </div>`;
+  }
 
   return `
     <div class="icon-circle">
@@ -199,11 +214,12 @@ function renderSaveThankYouPage({
   passDownloadUrl,
   portalHref,
   brandColor,
+  showPortal = true,
   footer = getThankYouFooter()
 }) {
   const safeBrand = escapeHtml(brandName);
   const initial = escapeHtml((brandName || 'B').charAt(0).toUpperCase());
-  const successBlock = thankYouSuccessBlock({ brandName, portalHref, passDownloadUrl });
+  const successBlock = thankYouSuccessBlock({ brandName, portalHref, passDownloadUrl, showPortal });
   const accent = normalizeHexColor(brandColor) || '#8B5CF6';
   const accentDark = shadeHex(accent, 0.85);
   const accentLight = shadeHex(accent, 1.2);
@@ -293,15 +309,26 @@ function renderSaveThankYouPage({
 </html>`;
 }
 
-async function resolvePortalHref(passId, _brandId) {
-  if (!passId) return '#';
+async function resolvePortalHref(passId, brandOrId) {
+  if (!passId) return null;
   try {
+    const { getBrand } = require('../db');
+    const { isPortalPassBrand } = require('./pass-product-line');
+    let brand = null;
+    if (brandOrId && typeof brandOrId === 'object') brand = brandOrId;
+    else if (brandOrId) brand = await getBrand(brandOrId);
+    if (!brand) {
+      const { getPassInstance } = require('../db');
+      const pass = await getPassInstance(passId);
+      if (pass?.brand_id) brand = await getBrand(pass.brand_id);
+    }
+    if (brand && !isPortalPassBrand(brand)) return null;
     const { resolvePortalLinkForPass } = require('./portal-pass-link');
     const link = await resolvePortalLinkForPass(passId);
-    return link?.portal_url || '#';
+    return link?.portal_url || null;
   } catch (err) {
     console.warn('[portal] thank-you link unavailable:', err.message);
-    return '#';
+    return null;
   }
 }
 

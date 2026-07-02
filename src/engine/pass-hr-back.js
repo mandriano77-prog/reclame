@@ -7,13 +7,9 @@ const {
   sectionsToAppleBackFields,
   resolveMemberProfile,
   resolveVariableLink,
-  escapeHtml,
-  isHrEmployeePass
+  escapeHtml
 } = require('./employee-pass');
-
-function isHrPassBrand(brand) {
-  return isHrEmployeePass(brand);
-}
+const { isHrPassBrand } = require('./pass-product-line');
 
 function buildHrBackFields(ctx) {
   return sectionsToAppleBackFields(buildBackSections(ctx));

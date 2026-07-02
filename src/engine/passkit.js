@@ -5,10 +5,16 @@ const sharp = require('sharp');
 const archiver = require('archiver');
 const { Transform } = require('stream');
 const {
-  isHrPassBrand,
   resolveMemberProfile,
   resolveEmployeeIdForBarcode
 } = require('./pass-hr-back');
+const {
+  isHrPassBrand,
+  isPortalPassBrand,
+  isPersonalAreaBackLink,
+  brandHasWalletLogoAsset,
+  getBrandProductLine
+} = require('./pass-product-line');
 const {
   buildEmployeePass,
   toApplePass,
@@ -353,17 +359,20 @@ function resolvePassMatricola(instance, fv) {
   return instance?.id || '';
 }
 
-/** QR identificativo — codifica serialNumber, altText nome · #matricola (placeholder badge). */
-function buildIdentifyingQrBarcode(instance, memberRow = null) {
+/** QR identificativo — codifica serialNumber; altText opzionale (HR badge). */
+function buildIdentifyingQrBarcode(instance, memberRow = null, options = {}) {
   const profile = resolveMemberProfile(memberRow, instance);
   const name = profile.full_name || resolvePassHolderName(instance, parsePassFieldValues(instance));
   const employeeId = resolveEmployeeIdForBarcode(memberRow, instance);
-  return {
+  const payload = {
     format: 'PKBarcodeFormatQR',
     message: instance.serial_number || '',
-    messageEncoding: 'iso-8859-1',
-    altText: `${name} · #${employeeId}`.slice(0, 64)
+    messageEncoding: 'iso-8859-1'
   };
+  if (!options.omitAltText) {
+    payload.altText = `${name} · #${employeeId}`.slice(0, 64);
+  }
+  return payload;
 }
 
 /**
@@ -521,7 +530,8 @@ function generatePassJson(template, instance, brand, options = {}) {
   }
   if (!geoFaceLbl) geoFaceLbl = 'MESSAGGIO';
   geoFaceLbl = geoFaceLbl.toUpperCase().slice(0, 16) || 'MESSAGGIO';
-  if (geoFaceMsg) {
+  // Geofencing promo on pass face — skip on Ads/Reclame (clean media pass layout).
+  if (geoFaceMsg && getBrandProductLine(brand) !== 'ads') {
     const field = { key: GEO_AUX_KEY, label: geoFaceLbl, value: geoFaceMsg.slice(0, 120) };
     const existingIdx = auxiliaryFields.findIndex((f) => f.key === GEO_AUX_KEY);
     if (existingIdx >= 0) auxiliaryFields.splice(existingIdx, 1);
@@ -626,11 +636,16 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
+  const portalBrand = isPortalPassBrand(brand);
+
   if (!useHrBack) {
   const linkSlots = resolveTemplateLinkSlots(tplFields);
+  const slot0 = linkSlots[0];
   const link1 = resolveBackLink1(brandConfig, instance.serial_number)
-    || (linkSlots[0].label || linkSlots[0].url
-      ? makeBackLinkField('link_0', linkSlots[0].label, linkSlots[0].url)
+    || (slot0.label || slot0.url
+      ? (!portalBrand && isPersonalAreaBackLink(slot0.label, slot0.url)
+        ? null
+        : makeBackLinkField('link_0', slot0.label, slot0.url))
       : null);
   if (link1) orderedBackFields.push(link1);
 
@@ -649,6 +664,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   [1, 2].forEach((idx) => {
     const link = linkSlots[idx];
     if (!link.label && !link.url) return;
+    if (!portalBrand && isPersonalAreaBackLink(link.label, link.url)) return;
     orderedBackFields.push(makeBackLinkField(`link_${idx}`, link.label, link.url));
   });
 
@@ -663,7 +679,7 @@ function generatePassJson(template, instance, brand, options = {}) {
     });
   }
 
-  if (portalUrl) {
+  if (portalUrl && portalBrand) {
     orderedBackFields.push(makeBackLinkField('portal_link', 'Il mio profilo', portalUrl));
   }
 
@@ -678,6 +694,7 @@ function generatePassJson(template, instance, brand, options = {}) {
     if (f.key === 'contatti' && backContent.contatti) return;
     if (f.key === 'portal_link' && portalUrl) return;
     if (TEMPLATE_LINK_FIELD_KEYS.has(String(f.key || '').toLowerCase())) return;
+    if (!portalBrand && isPersonalAreaBackLink(f.label, f.value)) return;
     orderedBackFields.push(f);
   });
   }
@@ -687,12 +704,30 @@ function generatePassJson(template, instance, brand, options = {}) {
     ? APPLE_EMPLOYEE_PASS_STRUCTURE
     : (template.pass_type || 'storeCard');
   let passStructure = {};
-  let barcodePayload = buildIdentifyingQrBarcode(instance, member);
+  let barcodePayload = buildIdentifyingQrBarcode(instance, member, {
+    omitAltText: !useHrBack
+  });
   let passForegroundColor = foregroundColor;
   let passBackgroundColor = backgroundColor;
   let passLabelColor = labelColor;
+  const hasCustomLogo = brandHasWalletLogoAsset(brand, template);
   let passLogoText = brand.name;
-  let omitLogoText = false;
+  let omitLogoText = hasCustomLogo;
+
+  if (headerFields.length > 0 && hasCustomLogo) {
+    const brandNameNorm = String(brand.name || '').trim().toLowerCase();
+    for (let i = 0; i < headerFields.length; i += 1) {
+      const val = String(headerFields[i].value || '').trim();
+      const valNorm = val.toLowerCase();
+      if (!valNorm) continue;
+      if (valNorm === brandNameNorm || brandNameNorm.startsWith(valNorm) || valNorm.startsWith(brandNameNorm.slice(0, Math.min(12, brandNameNorm.length)))) {
+        headerFields[i] = { ...headerFields[i], value: '' };
+      }
+    }
+    while (headerFields.length && !headerFields[headerFields.length - 1].label && !headerFields[headerFields.length - 1].value) {
+      headerFields.pop();
+    }
+  }
 
   if (useHrBack) {
     const apiBase = `${String(baseUrl).replace(/\/+$/, '')}/api/v1`;
@@ -981,7 +1016,7 @@ async function createPkpass(template, instance, brand, options = {}) {
     certPath = path.join(__dirname, '../../certs/signerCert.pem'),
     keyPath = path.join(__dirname, '../../certs/signerKey.pem'),
     wwdrPath = path.join(__dirname, '../../certs/wwdr.pem'),
-    issuePortalLink = true,
+    issuePortalLink = isPortalPassBrand(brand),
     rotatePortalLink = false,
     portalUrl: portalUrlOption = undefined,
     member: memberOption = undefined

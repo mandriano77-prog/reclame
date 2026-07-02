@@ -586,7 +586,11 @@ async function buildPassObject(brand, template, instance, memberHint) {
   const lastName = memberHint?.last_name || '';
 
   const { buildIdentifyingQrBarcode } = require('./passkit');
-  const { message: barcodeValue, altText: barcodeAlt } = buildIdentifyingQrBarcode(instance);
+  const { isPortalPassBrand } = require('./pass-product-line');
+  const omitAlt = !isPortalPassBrand(brand);
+  const barcodePayload = buildIdentifyingQrBarcode(instance, memberHint, { omitAltText: omitAlt });
+  const barcodeValue = barcodePayload.message;
+  const barcodeAlt = barcodePayload.altText || '';
 
   const obj = passKind === 'loyalty'
     ? {
@@ -598,7 +602,7 @@ async function buildPassObject(brand, template, instance, memberHint) {
       barcode: {
         type: 'QR_CODE',
         value: barcodeValue || instance.serial_number,
-        alternateText: barcodeAlt || instance.serial_number
+        alternateText: barcodeAlt
       },
       textModulesData: [],
       linksModuleData: { uris: [] }
@@ -613,7 +617,7 @@ async function buildPassObject(brand, template, instance, memberHint) {
       barcode: {
         type: 'QR_CODE',
         value: barcodeValue || instance.serial_number,
-        alternateText: barcodeAlt || instance.serial_number
+        alternateText: barcodeAlt
       },
       hexBackgroundColor: rgbToHex(brand?.config?.backgroundColor || template.style?.backgroundColor || '#0D0B1A'),
       textModulesData: [],
