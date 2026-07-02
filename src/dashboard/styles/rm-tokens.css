@@ -12,7 +12,6 @@
   --rm-gold: #E8A33D;
   --rm-page-off-white: #FAF9F5;
 
-  --rm-font-heading: 'Instrument Serif', Georgia, 'Times New Roman', serif;
   --rm-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --rm-font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 }
@@ -82,23 +81,14 @@ html[data-shell="dark"].a2w-shell {
   --accent: var(--rm-brand);
   --accent-hover: var(--rm-brand-hover);
   --accent-subtle: var(--a2w-accent-subtle);
+  /* Stati OK/success in palette: oro Reclame al posto del verde */
+  --success: var(--rm-gold);
+  --success-bg: rgba(232, 163, 61, 0.12);
+  --green: var(--rm-gold);
   --teal: var(--rm-brand);
   --purple: var(--rm-brand-hover);
   --font-sans: var(--rm-font-body);
   --font-mono: var(--rm-font-mono);
-}
-
-html[data-shell="dark"].a2w-shell h1,
-html[data-shell="dark"].a2w-shell h2,
-html[data-shell="dark"].a2w-shell h3,
-html[data-shell="dark"].a2w-shell .sec-title,
-html[data-shell="dark"].a2w-shell .page-title,
-html[data-shell="dark"].a2w-shell .block-title,
-html[data-shell="dark"].a2w-shell .a2w-page-header__title,
-html[data-shell="dark"].a2w-shell .a2w-ui-setup-checklist__title {
-  font-family: var(--rm-font-heading);
-  font-weight: 400;
-  letter-spacing: -0.01em;
 }
 
 html[data-shell="dark"].a2w-shell code,
