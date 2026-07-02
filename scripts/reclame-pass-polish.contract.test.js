@@ -25,7 +25,8 @@ test('pass back link tracking uses /api/v1 path', () => {
   assert.match(passkit, /\/api\/v1\/track\/pass-link/);
   assert.match(passkit, /attributedValue/);
   assert.match(passkit, /pushBackMode/);
-  assert.match(passkit, /label: 'PROMOZIONE'/);
+  assert.match(passkit, /ctaOnly/);
+  assert.match(passkit, /slice\(0, 1200\)/);
 });
 
 test('Thank-you page hides portal CTA for non-HR brands', () => {

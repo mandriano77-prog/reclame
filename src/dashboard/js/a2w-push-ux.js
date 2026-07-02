@@ -7,6 +7,7 @@
 
   var TITLE_MAX = 50;
   var MESSAGE_MAX = 178;
+  var BACK_PROMO_MAX = 1200;
 
   function isA2wPushUxActive() {
     if (!document.documentElement.classList.contains('a2w-shell')) return false;
@@ -107,17 +108,14 @@
       }
     }
 
-    var promoTitle = wrap.querySelector('[data-a2w-push-pass-promo-title]');
     var promoBody = wrap.querySelector('[data-a2w-push-pass-promo-body]');
-    if (promoTitle) promoTitle.textContent = title.toUpperCase().slice(0, 30);
     if (promoBody) promoBody.textContent = message;
 
     var linkRow = wrap.querySelector('[data-a2w-push-pass-link]');
     if (linkRow) {
       if (linkUrl || linkLabel) {
         linkRow.hidden = false;
-        linkRow.innerHTML = '<span class="a2w-push-pass-preview__link-label">' + esc(linkLabel || 'Scopri di più') + '</span>' +
-          '<span class="a2w-push-pass-preview__link-url">' + esc(linkUrl || 'https://…') + '</span>';
+        linkRow.innerHTML = '<span class="a2w-push-pass-preview__link-cta">' + esc(linkLabel || 'Scopri di più') + '</span>';
       } else {
         linkRow.hidden = true;
         linkRow.innerHTML = '';
@@ -143,7 +141,6 @@
       '<div class="a2w-push-pass-preview__face a2w-push-pass-preview__face--back">' +
       '<span class="a2w-push-pass-preview__face-label">Retro</span>' +
       '<div class="a2w-push-pass-preview__back-block">' +
-      '<div class="a2w-push-pass-preview__promo-label" data-a2w-push-pass-promo-title>NOVITÀ</div>' +
       '<div class="a2w-push-pass-preview__promo-body" data-a2w-push-pass-promo-body>Testo promozione…</div>' +
       '</div>' +
       '<div class="a2w-push-pass-preview__back-link" data-a2w-push-pass-link hidden></div>' +
@@ -378,7 +375,7 @@
     });
 
     wrapCharField('pushTitle', TITLE_MAX);
-    wrapCharField('pushMessage', MESSAGE_MAX);
+    wrapCharField('pushMessage', BACK_PROMO_MAX);
     syncPreview();
     var updateCb = document.getElementById('pushUpdatePass');
     if (updateCb && !updateCb.dataset.a2wPassPreviewWired) {

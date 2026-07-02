@@ -1655,9 +1655,9 @@
                             <p class="push-field-error" id="pushTitleError" role="alert"></p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="pushMessage">Testo promozione</label>
-                            <textarea id="pushMessage" rows="3" placeholder="es. Ci siamo — scopri l'offerta sul link qui sotto" style="resize:vertical;" aria-describedby="pushMessageError"></textarea>
-                            <p class="push-field-hint" style="font-size:11px;color:var(--text2);margin:4px 0 0;">Compare sul retro del pass nella sezione Promozione.</p>
+                            <label class="form-label" for="pushMessage">Testo promozione (retro pass)</label>
+                            <textarea id="pushMessage" rows="8" maxlength="1200" placeholder="Descrivi l'offerta, le condizioni, la validità… (fino a 1200 caratteri)" style="resize:vertical;min-height:140px;" aria-describedby="pushMessageError pushMessageHint"></textarea>
+                            <p class="push-field-hint" id="pushMessageHint" style="font-size:11px;color:var(--text2);margin:4px 0 0;">Spazio ampio sul retro del pass. Sul fronte e lock screen si vedono solo i primi caratteri + il titolo.</p>
                             <p class="push-field-error" id="pushMessageError" role="alert"></p>
                         </div>
                         <div class="form-group" style="margin-top:4px;">
@@ -1678,15 +1678,15 @@
                             </div>
                         </div>
                         <div id="pushBackSetupBlock" class="form-group" style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);">
-                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Link out</div>
-                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Un solo link cliccabile in cima al retro del pass.</p>
+                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Link out (CTA)</div>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Un pulsante cliccabile sul retro: l'URL resta nascosto, visibile solo il testo del link.</p>
                             <div class="form-group" style="margin-bottom:10px;">
-                                <label class="form-label" for="pushPassLinkUrl">Link out — URL (https://)</label>
-                                <input type="url" id="pushPassLinkUrl" placeholder="https://..." oninput="syncPushPassLinkLabel(); if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
+                                <label class="form-label" for="pushPassLinkLabel">Testo del link (CTA)</label>
+                                <input type="text" id="pushPassLinkLabel" maxlength="64" placeholder="es. Scopri l'offerta" oninput="if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label" for="pushPassLinkLabel">Link out — testo (max 64)</label>
-                                <input type="text" id="pushPassLinkLabel" maxlength="64" placeholder="es. Scopri l'offerta" oninput="if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
+                                <label class="form-label" for="pushPassLinkUrl">URL di destinazione (https://)</label>
+                                <input type="url" id="pushPassLinkUrl" placeholder="https://..." oninput="syncPushPassLinkLabel(); if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
                             </div>
                             <input type="hidden" id="pushIncludePassLink" value="">
                             <div id="pushPassLinkFields" hidden aria-hidden="true">

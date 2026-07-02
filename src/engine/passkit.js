@@ -593,17 +593,18 @@ function generatePassJson(template, instance, brand, options = {}) {
     }
   }
 
-  function makeBackLinkField(key, label, url) {
+  function makeBackLinkField(key, label, url, opts = {}) {
     const dest = String(url || '').trim();
     if (!dest) return null;
     const displayLabel = String(label || 'Scopri di più').trim().slice(0, 64) || 'Scopri di più';
     const trackedUrl = wrapTrackableBackLinkUrl(key, displayLabel, dest) || dest;
     const safeHref = escapeHtml(trackedUrl);
     const safeText = escapeHtml(displayLabel);
+    const ctaOnly = opts.ctaOnly === true;
     return {
       key,
-      label: displayLabel.toUpperCase().slice(0, 64),
-      value: dest,
+      label: ctaOnly ? '' : displayLabel.toUpperCase().slice(0, 64),
+      value: ctaOnly ? displayLabel : dest,
       attributedValue: `<a href="${safeHref}">${safeText}</a>`
     };
   }
@@ -618,26 +619,26 @@ function generatePassJson(template, instance, brand, options = {}) {
     };
   }
 
-  function resolveBackLink1(brandCfg, instance, serialNumber) {
+  function resolveBackLink1(brandCfg, instance, serialNumber, linkOpts = {}) {
     const dynamic = resolveDynamicPassLink(instance);
     if (dynamic?.url) {
-      return makeBackLinkField('link_0', dynamic.label, dynamic.url);
+      return makeBackLinkField('link_0', dynamic.label, dynamic.url, linkOpts);
     }
     const pushOut = brandCfg.pushLinkOut;
     if (pushOut?.url) {
-      return makeBackLinkField('link_0', pushOut.label || 'Scopri di più', pushOut.url);
+      return makeBackLinkField('link_0', pushOut.label || 'Scopri di più', pushOut.url, linkOpts);
     }
     if (brandCfg.instantWinActive && serialNumber) {
       const playUrl = `${baseUrl}/play/${serialNumber}`;
       const iwLabel = brandCfg.instantWinActive.label || 'Gioca e Vinci!';
-      return makeBackLinkField('link_0', iwLabel, playUrl);
+      return makeBackLinkField('link_0', iwLabel, playUrl, linkOpts);
     }
     if (brandCfg.gamificationActive && serialNumber) {
       const gameTypeRoutes = { quiz: 'quiz', memory: 'memory', puzzle: 'puzzle' };
       const gameRoute = gameTypeRoutes[brandCfg.gamificationActive.game_type] || 'quiz';
       const gameUrl = `${baseUrl}/game/${gameRoute}/${serialNumber}`;
       const gamLabel = brandCfg.gamificationActive.label || 'Gioca ora!';
-      return makeBackLinkField('link_0', gamLabel, gameUrl);
+      return makeBackLinkField('link_0', gamLabel, gameUrl, linkOpts);
     }
     return null;
   }
@@ -647,11 +648,11 @@ function generatePassJson(template, instance, brand, options = {}) {
   const pushBackMode = !useHrBack && !!(brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message);
 
   if (pushBackMode) {
-    const promoBody = String(brandConfig.pushAnnouncement.message || '').trim().slice(0, 500);
+    const promoBody = String(brandConfig.pushAnnouncement.message || '').trim().slice(0, 1200);
     if (promoBody) {
       orderedBackFields.push({
         key: 'announcement_full',
-        label: 'PROMOZIONE',
+        label: '',
         value: promoBody
       });
     }
@@ -662,7 +663,8 @@ function generatePassJson(template, instance, brand, options = {}) {
   if (!useHrBack) {
   const linkSlots = resolveTemplateLinkSlots(tplFields);
   const slot0 = linkSlots[0];
-  let link1 = resolveBackLink1(brandConfig, instance, instance.serial_number);
+  const backLinkOpts = pushBackMode ? { ctaOnly: true } : {};
+  let link1 = resolveBackLink1(brandConfig, instance, instance.serial_number, backLinkOpts);
   if (!link1 && !pushBackMode && (slot0.label || slot0.url)) {
     if (portalBrand || !isPersonalAreaBackLink(slot0.label, slot0.url)) {
       link1 = makeBackLinkField('link_0', slot0.label, slot0.url);

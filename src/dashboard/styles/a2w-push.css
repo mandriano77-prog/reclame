@@ -344,18 +344,10 @@ html.a2w-shell .a2w-push-pass-preview__back-link {
   font-size: 11px;
 }
 
-html.a2w-shell .a2w-push-pass-preview__link-label {
+html.a2w-shell .a2w-push-pass-preview__link-cta {
   display: block;
   color: #6eb6ff;
   font-weight: 600;
-  margin-bottom: 2px;
-}
-
-html.a2w-shell .a2w-push-pass-preview__link-url {
-  display: block;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.45);
-  word-break: break-all;
 }
 
 html.a2w-shell #pushBackSetupBlock .form-label {
