@@ -408,13 +408,17 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
     const brand = await getBrandBySlug(slug);
     if (!brand) return res.status(404).send('Brand non trovato');
 
-    // Find template (campaign-specific or first available)
+    // Find template (campaign-specific, query template_id, or first available)
     let template = null;
     if (campaignId) {
       const campaign = await getCampaign(campaignId);
       if (campaign && campaign.template_id) {
         template = await getTemplate(campaign.template_id);
       }
+    }
+    if (!template && req.query.template_id) {
+      const byId = await getTemplate(String(req.query.template_id));
+      if (byId && String(byId.brand_id) === String(brand.id)) template = byId;
     }
     if (!template) {
       const templates = await listTemplates(brand.id);

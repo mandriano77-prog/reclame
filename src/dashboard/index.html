@@ -5697,11 +5697,15 @@ async function copyCampaignDirect(id) {
 }
 
 let currentQrCampaignId = null;
+let currentQrUrl = null;
 let currentQrMode = 'direct';
 
 async function showCampaignQR(id) {
     try {
         currentQrCampaignId = id;
+        currentQrUrl = null;
+        const header = document.querySelector('#qrModal .modal-header');
+        if (header) header.textContent = 'QR Code Campagna';
         await renderQR();
         document.getElementById('qrModal').classList.add('active');
     } catch(err) {
@@ -5711,8 +5715,8 @@ async function showCampaignQR(id) {
 }
 
 async function renderQR() {
-    const url = await getCampaignDirectUrl(currentQrCampaignId);
-    if (!url) { alert('Impossibile generare URL campagna. Verifica che il brand abbia uno slug.'); return; }
+    const url = currentQrUrl || (currentQrCampaignId ? await getCampaignDirectUrl(currentQrCampaignId) : '');
+    if (!url) { alert('Impossibile generare URL. Verifica che il brand abbia uno slug.'); return; }
     document.getElementById('qrUrl').value = url;
     const canvas = document.getElementById('qrCanvas');
     canvas.innerHTML = '';
@@ -6516,6 +6520,104 @@ function formatCampaignStatusBadge(c) {
     };
 }
 
+function renderTemplateIssueSection(templateId) {
+    if (isHrDashboard()) return '';
+    return `
+        <div class="a2w-tpl-issue a2w-tpl-campaigns" data-template-id="${esc(templateId)}">
+            <div class="a2w-tpl-campaigns__header">
+                <div class="a2w-tpl-campaigns__heading">
+                    <div class="a2w-tpl-campaigns__title">Emetti il pass</div>
+                    <p class="a2w-tpl-campaigns__subtitle">Condividi link o QR code per scaricare il pass su Apple Wallet e Google Wallet</p>
+                </div>
+            </div>
+            <div class="a2w-tpl-issue__link-row">
+                <code class="a2w-tpl-campaign-item__url a2w-tpl-issue__url" data-template-url-host="${esc(templateId)}" title="Link download pass">Generazione link…</code>
+            </div>
+            <div class="a2w-tpl-issue__actions a2w-tpl-campaign-item__actions">
+                <button type="button" class="btn small a2w-btn-primary" onclick="createTemplatePassLink('${esc(templateId)}')">Crea link</button>
+                <button type="button" class="btn small sec" onclick="showTemplatePassQR('${esc(templateId)}')">Crea QR</button>
+                <button type="button" class="btn small sec" onclick="copyTemplatePassLink('${esc(templateId)}')">Copia link</button>
+            </div>
+        </div>`;
+}
+
+async function getTemplatePassDirectUrl(templateId) {
+    if (!brandId || !templateId) return '';
+    try {
+        const brand = await fetchBrandById(brandId);
+        if (!brand?.slug) return '';
+        const base = a2wPublicUrlBase() || location.origin;
+        const params = new URLSearchParams({ template_id: String(templateId) });
+        return `${base}/save/${encodeURIComponent(brand.slug)}?${params.toString()}`;
+    } catch (err) {
+        console.error('getTemplatePassDirectUrl error:', err);
+        return '';
+    }
+}
+
+async function hydrateTemplateIssueUrls() {
+    const hosts = document.querySelectorAll('#templatesList [data-template-url-host]');
+    await Promise.all([...hosts].map(async (host) => {
+        const templateId = host.getAttribute('data-template-url-host');
+        if (!templateId) return;
+        try {
+            const url = await getTemplatePassDirectUrl(templateId);
+            host.textContent = url || 'Configura lo slug del brand in Identità Brand';
+            if (url) host.title = url;
+        } catch (_) {
+            host.textContent = '—';
+        }
+    }));
+}
+
+async function createTemplatePassLink(templateId) {
+    const url = await getTemplatePassDirectUrl(templateId);
+    if (!url) {
+        toast('Impossibile creare il link: verifica slug del brand in Identità Brand');
+        return;
+    }
+    const host = document.querySelector(`#templatesList [data-template-url-host="${CSS.escape(templateId)}"]`);
+    if (host) {
+        host.textContent = url;
+        host.title = url;
+    }
+    try {
+        await navigator.clipboard.writeText(url);
+        toast('Link creato e copiato negli appunti');
+    } catch (_) {
+        toast('Link creato — usa Copia link');
+    }
+}
+
+async function copyTemplatePassLink(templateId) {
+    const url = await getTemplatePassDirectUrl(templateId);
+    if (!url) {
+        toast('Link non disponibile: verifica slug del brand');
+        return;
+    }
+    navigator.clipboard.writeText(url).then(() => toast('Link copiato!'));
+}
+
+async function showTemplatePassQR(templateId) {
+    try {
+        const url = await getTemplatePassDirectUrl(templateId);
+        if (!url) {
+            toast('Impossibile generare QR: verifica slug del brand');
+            return;
+        }
+        currentQrCampaignId = null;
+        currentQrUrl = url;
+        const header = document.querySelector('#qrModal .modal-header');
+        if (header) header.textContent = 'QR code pass';
+        await renderQR();
+        document.getElementById('qrModal').classList.add('active');
+        document.body.classList.add('modal-open');
+    } catch (err) {
+        console.error('showTemplatePassQR error:', err);
+        toast('Errore generazione QR: ' + (err.message || err));
+    }
+}
+
 function renderTemplateCampaignsSection(templateId, allCampaigns) {
     if (!isLegacyCampaignsUiEnabled()) return '';
     const campaigns = (allCampaigns || []).filter(c => c.template_id === templateId);
@@ -6583,9 +6685,6 @@ async function loadTemplates() {
     const templates = await fetchCachedJson(`${API}/templates?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
     const el = document.getElementById('templatesList');
     if (!templates.length) { el.innerHTML = renderEmptyState({ title: 'Nessun template', description: 'Crea un template riutilizzabile per i tuoi pass.', ctaLabel: 'Nuovo template', ctaOnclick: 'openTemplateModal()', icon: 'inbox' }); if (typeof fdRbacHook === 'function') fdRbacHook('templates'); return; }
-    if (isLegacyCampaignsUiEnabled()) {
-        campaignsCache = await fetchCachedJson(`${API}/campaigns?brand_id=${brandId}`, { headers: { ...getAuthHeaders() } });
-    }
     el.innerHTML = templates.map(t => `
         <div class="card a2w-template-card">
             <div class="card-row">
@@ -6599,10 +6698,10 @@ async function loadTemplates() {
                     <button class="btn small danger" onclick="deleteTemplate('${t.id}')">Elimina</button>
                 </div>
             </div>
-            ${renderTemplateCampaignsSection(t.id, campaignsCache)}
+            ${renderTemplateIssueSection(t.id)}
         </div>
     `).join('');
-    if (isLegacyCampaignsUiEnabled()) hydrateTemplateCampaignUrls();
+    hydrateTemplateIssueUrls();
     if (typeof fdRbacHook === 'function') fdRbacHook('templates');
 }
 
@@ -11849,7 +11948,7 @@ async function wzPublish() {
             const brand = await brandRes.json();
             const baseUrl = a2wPublicUrlBase() || window.location.origin;
             const slug = brand.slug || '';
-            const passLink = `${baseUrl}/save/${slug}`;
+            const passLink = `${baseUrl}/save/${slug}?template_id=${encodeURIComponent(tplIdFinal)}`;
             const landingLink = `${baseUrl}/${slug}`;
 
             document.getElementById('wzPassLink').value = passLink;
