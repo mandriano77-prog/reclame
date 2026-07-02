@@ -254,6 +254,14 @@ html.a2w-shell .a2w-campaign-modal-actions__hint {
   }
 }
 
+html.a2w-shell #pushPanel_immediate .a2w-push-field--hidden {
+  display: none !important;
+}
+
+html.a2w-shell #pushPanel_immediate .push-field-hint {
+  line-height: 1.4;
+}
+
 /* Pass retro preview (push setup) */
 html.a2w-shell .a2w-push-pass-preview {
   margin-top: 16px;

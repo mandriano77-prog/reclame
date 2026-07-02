@@ -6,7 +6,8 @@ const archiver = require('archiver');
 const { Transform } = require('stream');
 const {
   resolveMemberProfile,
-  resolveEmployeeIdForBarcode
+  resolveEmployeeIdForBarcode,
+  escapeHtml
 } = require('./pass-hr-back');
 const {
   isHrPassBrand,
@@ -581,7 +582,7 @@ function generatePassJson(template, instance, brand, options = {}) {
     if (/^(mailto:|tel:|javascript:)/i.test(destinationUrl)) return destinationUrl;
     if (String(destinationUrl).includes('/track/pass-link')) return destinationUrl;
     try {
-      const tracked = new URL(`${baseUrl}/api/track/pass-link`);
+      const tracked = new URL(`${baseUrl}/api/v1/track/pass-link`);
       tracked.searchParams.set('sn', instance.serial_number);
       tracked.searchParams.set('key', key);
       tracked.searchParams.set('to', destinationUrl);
@@ -593,16 +594,18 @@ function generatePassJson(template, instance, brand, options = {}) {
   }
 
   function makeBackLinkField(key, label, url) {
-    const trackedUrl = url ? wrapTrackableBackLinkUrl(key, label, url) : null;
-    const field = {
+    const dest = String(url || '').trim();
+    if (!dest) return null;
+    const displayLabel = String(label || 'Scopri di più').trim().slice(0, 64) || 'Scopri di più';
+    const trackedUrl = wrapTrackableBackLinkUrl(key, displayLabel, dest) || dest;
+    const safeHref = escapeHtml(trackedUrl);
+    const safeText = escapeHtml(displayLabel);
+    return {
       key,
-      label: '',
-      value: label || url || ''
+      label: displayLabel.toUpperCase().slice(0, 64),
+      value: dest,
+      attributedValue: `<a href="${safeHref}">${safeText}</a>`
     };
-    if (trackedUrl) {
-      field.attributedValue = `<a href="${trackedUrl}">${label || url}</a>`;
-    }
-    return field;
   }
 
   function resolveDynamicPassLink(instance) {
@@ -641,13 +644,17 @@ function generatePassJson(template, instance, brand, options = {}) {
 
   const orderedBackFields = [];
   const useHrBack = isHrPassBrand(brand);
+  const pushBackMode = !useHrBack && !!(brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message);
 
-  if (!useHrBack && brandConfig.pushAnnouncement && brandConfig.pushAnnouncement.message) {
-    orderedBackFields.push({
-      key: 'announcement_full',
-      label: brandConfig.pushAnnouncement.title || 'NOVITÀ E PROMOZIONI',
-      value: brandConfig.pushAnnouncement.message
-    });
+  if (pushBackMode) {
+    const promoBody = String(brandConfig.pushAnnouncement.message || '').trim().slice(0, 500);
+    if (promoBody) {
+      orderedBackFields.push({
+        key: 'announcement_full',
+        label: 'PROMOZIONE',
+        value: promoBody
+      });
+    }
   }
 
   const portalBrand = isPortalPassBrand(brand);
@@ -655,14 +662,15 @@ function generatePassJson(template, instance, brand, options = {}) {
   if (!useHrBack) {
   const linkSlots = resolveTemplateLinkSlots(tplFields);
   const slot0 = linkSlots[0];
-  const link1 = resolveBackLink1(brandConfig, instance, instance.serial_number)
-    || (slot0.label || slot0.url
-      ? (!portalBrand && isPersonalAreaBackLink(slot0.label, slot0.url)
-        ? null
-        : makeBackLinkField('link_0', slot0.label, slot0.url))
-      : null);
+  let link1 = resolveBackLink1(brandConfig, instance, instance.serial_number);
+  if (!link1 && !pushBackMode && (slot0.label || slot0.url)) {
+    if (portalBrand || !isPersonalAreaBackLink(slot0.label, slot0.url)) {
+      link1 = makeBackLinkField('link_0', slot0.label, slot0.url);
+    }
+  }
   if (link1) orderedBackFields.push(link1);
 
+  if (!pushBackMode) {
   // 3. REGOLAMENTO — from brand backContent OR template fields
   const backContent = brandConfig.backContent || {};
   const tplRegolamento = (!Array.isArray(tplFields) && tplFields.regolamento) || '';
@@ -711,6 +719,7 @@ function generatePassJson(template, instance, brand, options = {}) {
     if (!portalBrand && isPersonalAreaBackLink(f.label, f.value)) return;
     orderedBackFields.push(f);
   });
+  }
   }
 
   // ── Pass structure ────────────────────────────────────────────

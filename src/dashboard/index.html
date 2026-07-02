@@ -1627,35 +1627,37 @@
                 <!-- TAB 1: Push Immediata -->
                 <div id="pushPanel_immediate" class="push-panel">
                     <div class="push-card">
-                        <div class="form-group">
+                        <div class="form-group a2w-push-field--hidden">
                             <label class="form-label" for="pushCampaignTarget">Campagna target</label>
                             <select id="pushCampaignTarget" aria-label="Campagna target">
                                 <option value="">Tutti i pass (tutte le campagne)</option>
                             </select>
-                        </div>                        <div class="form-group">
+                        </div>
+                        <div class="form-group a2w-push-field--hidden">
                             <label class="form-label" for="pushAudienceTarget">Audience (opzionale)</label>
                             <select id="pushAudienceTarget" aria-label="Audience opzionale">
                                 <option value="">— Nessuna (usa campagna o tutti) —</option>
                             </select>
-                            <p style="font-size:11px;color:var(--text2);margin-top:4px;">Se selezionata, ha priorità sulla campagna. Crea segmenti in <strong>Audience</strong>.</p>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group a2w-push-field--hidden">
                             <label class="form-label" for="pushChannel">Canale invio</label>
                             <select id="pushChannel" aria-label="Canale invio">
-                                <option value="apple">Apple Wallet (APNs)</option>
+                                <option value="apple" selected>Apple Wallet (APNs)</option>
                                 <option value="google">Google Wallet</option>
                                 <option value="samsung">Samsung Wallet</option>
                                 <option value="all">Tutti i canali</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="pushTitle">Titolo</label>
-                            <input type="text" id="pushTitle" placeholder="es. Offerta speciale weekend!" aria-describedby="pushTitleError">
+                            <label class="form-label" for="pushTitle">Titolo notifica</label>
+                            <input type="text" id="pushTitle" placeholder="es. Rock n roll" aria-describedby="pushTitleError">
+                            <p class="push-field-hint" style="font-size:11px;color:var(--text2);margin:4px 0 0;">Sul fronte del pass e sulla lock screen.</p>
                             <p class="push-field-error" id="pushTitleError" role="alert"></p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="pushMessage">Messaggio</label>
-                            <textarea id="pushMessage" rows="3" placeholder="es. Scopri la promozione esclusiva!" style="resize:vertical;" aria-describedby="pushMessageError"></textarea>
+                            <label class="form-label" for="pushMessage">Testo promozione</label>
+                            <textarea id="pushMessage" rows="3" placeholder="es. Ci siamo — scopri l'offerta sul link qui sotto" style="resize:vertical;" aria-describedby="pushMessageError"></textarea>
+                            <p class="push-field-hint" style="font-size:11px;color:var(--text2);margin:4px 0 0;">Compare sul retro del pass nella sezione Promozione.</p>
                             <p class="push-field-error" id="pushMessageError" role="alert"></p>
                         </div>
                         <div class="form-group" style="margin-top:4px;">
@@ -1676,8 +1678,8 @@
                             </div>
                         </div>
                         <div id="pushBackSetupBlock" class="form-group" style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);">
-                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Retro pass</div>
-                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Titolo e messaggio sopra compaiono sul retro come promozione. Aggiungi un solo link out cliccabile.</p>
+                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Link out</div>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Un solo link cliccabile in cima al retro del pass.</p>
                             <div class="form-group" style="margin-bottom:10px;">
                                 <label class="form-label" for="pushPassLinkUrl">Link out — URL (https://)</label>
                                 <input type="url" id="pushPassLinkUrl" placeholder="https://..." oninput="syncPushPassLinkLabel(); if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
@@ -1691,14 +1693,14 @@
                                 <input type="datetime-local" id="pushPassLinkExpires">
                             </div>
                         </div>
-                        <div class="form-group" style="margin-top:8px;display:none;" id="pushLegacyLinkOut">
+                        <div class="form-group a2w-push-field--hidden" style="margin-top:8px;" id="pushLegacyLinkOut">
                             <label class="form-label">Link out — retro Link 1 (legacy Ads)</label>
                             <div class="form-row">
                                 <input type="text" id="pushBackLinkLabel" placeholder="Testo link es. Scopri l'offerta" style="flex:1;">
                                 <input type="url" id="pushBackLinkUrl" placeholder="https://..." style="flex:1;">
                             </div>
                         </div>
-                        <div class="form-group a2w-push-linked-content-wrap" style="margin-top:8px;">
+                        <div class="form-group a2w-push-field--hidden a2w-push-linked-content-wrap" style="margin-top:8px;">
                             <label class="form-label" for="pushLinkedContent">Collega contenuto (opzionale)</label>
                             <select id="pushLinkedContent" aria-label="Collega contenuto">
                                 <option value="">— Nessuno —</option>

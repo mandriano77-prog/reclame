@@ -9,6 +9,7 @@ const root = path.join(__dirname, '..');
 const passkit = fs.readFileSync(path.join(root, 'src/engine/passkit.js'), 'utf8');
 const portalLink = fs.readFileSync(path.join(root, 'src/engine/portal-pass-link.js'), 'utf8');
 const thankYou = fs.readFileSync(path.join(root, 'src/engine/thank-you-html.js'), 'utf8');
+const indexHtml = fs.readFileSync(path.join(root, 'src/dashboard/index.html'), 'utf8');
 const productLine = require('../src/engine/pass-product-line');
 
 test('Ads brand skips portal and personal area links', () => {
@@ -20,9 +21,11 @@ test('Ads brand skips portal and personal area links', () => {
   assert.match(portalLink, /isPortalPassBrand\(brand\)/);
 });
 
-test('passkit reads per-pass dynamic link for push link out on back', () => {
-  assert.match(passkit, /function resolveDynamicPassLink/);
-  assert.match(passkit, /resolveBackLink1\(brandConfig, instance/);
+test('pass back link tracking uses /api/v1 path', () => {
+  assert.match(passkit, /\/api\/v1\/track\/pass-link/);
+  assert.match(passkit, /attributedValue/);
+  assert.match(passkit, /pushBackMode/);
+  assert.match(passkit, /label: 'PROMOZIONE'/);
 });
 
 test('Thank-you page hides portal CTA for non-HR brands', () => {
@@ -30,11 +33,7 @@ test('Thank-you page hides portal CTA for non-HR brands', () => {
   assert.match(thankYou, /Pass aggiunto/);
 });
 
-test('push UX shows pass back preview with link out', () => {
-  const pushUx = fs.readFileSync(path.join(root, 'src/dashboard/js/a2w-push-ux.js'), 'utf8');
-  const indexHtml = fs.readFileSync(path.join(root, 'src/dashboard/index.html'), 'utf8');
-  assert.match(pushUx, /a2wPushPassPreview/);
-  assert.match(pushUx, /syncPushPassPreview/);
-  assert.match(indexHtml, /pushBackSetupBlock/);
-  assert.match(indexHtml, /Link out — URL/);
+test('push form hides extra fields on A2W shell', () => {
+  assert.match(indexHtml, /a2w-push-field--hidden/);
+  assert.match(indexHtml, /Testo promozione/);
 });

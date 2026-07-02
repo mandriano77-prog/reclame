@@ -372,7 +372,10 @@
     if (passPreview.parentElement !== asideCol) asideCol.appendChild(passPreview);
 
     var linkedWrap = panel.querySelector('.a2w-push-linked-content-wrap');
-    if (linkedWrap) linkedWrap.style.display = 'none';
+    if (linkedWrap) linkedWrap.classList.add('a2w-push-field--hidden');
+    panel.querySelectorAll('.a2w-push-field--hidden').forEach(function (el) {
+      el.style.display = 'none';
+    });
 
     wrapCharField('pushTitle', TITLE_MAX);
     wrapCharField('pushMessage', MESSAGE_MAX);

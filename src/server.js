@@ -116,6 +116,11 @@ app.get('/debug/wallet-check', requireDebugAccess, async (req, res) => {
 
 // API routes
 app.use('/api/v1', apiRoutes);
+// Legacy pass back-link tracking (passes issued before /api/v1 fix)
+app.get('/api/track/pass-link', (req, res) => {
+  const q = new URLSearchParams(req.query).toString();
+  res.redirect(307, `/api/v1/track/pass-link${q ? `?${q}` : ''}`);
+});
 app.use('/api/v1/portal', portalRoutes);
 app.use('/debug', debugSignRoutes);
 
