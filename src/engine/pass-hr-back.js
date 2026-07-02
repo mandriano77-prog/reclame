@@ -7,7 +7,8 @@ const {
   sectionsToAppleBackFields,
   resolveMemberProfile,
   resolveVariableLink,
-  escapeHtml
+  escapeHtml,
+  escapePassLinkHref
 } = require('./employee-pass');
 const { isHrPassBrand } = require('./pass-product-line');
 
@@ -22,6 +23,7 @@ function resolveEmployeeIdForBarcode(memberRow, instance) {
 
 module.exports = {
   escapeHtml,
+  escapePassLinkHref,
   isHrPassBrand,
   resolveMemberProfile,
   resolveVariableLink,

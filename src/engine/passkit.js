@@ -7,7 +7,8 @@ const { Transform } = require('stream');
 const {
   resolveMemberProfile,
   resolveEmployeeIdForBarcode,
-  escapeHtml
+  escapeHtml,
+  escapePassLinkHref
 } = require('./pass-hr-back');
 const {
   isHrPassBrand,
@@ -598,7 +599,7 @@ function generatePassJson(template, instance, brand, options = {}) {
     if (!dest) return null;
     const displayLabel = String(label || 'Scopri di più').trim().slice(0, 64) || 'Scopri di più';
     const trackedUrl = wrapTrackableBackLinkUrl(key, displayLabel, dest) || dest;
-    const safeHref = escapeHtml(trackedUrl);
+    const safeHref = escapePassLinkHref(trackedUrl);
     const safeText = escapeHtml(displayLabel);
     const ctaOnly = opts.ctaOnly === true;
     return {

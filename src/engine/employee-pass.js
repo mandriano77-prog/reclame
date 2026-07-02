@@ -21,6 +21,11 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+/** PassKit attributedValue href — Wallet does not decode &amp; in query strings. */
+function escapePassLinkHref(url) {
+  return String(url == null ? '' : url).replace(/"/g, '&quot;');
+}
+
 function parseFieldValues(instance) {
   const raw = instance?.field_values;
   if (!raw) return {};
@@ -187,7 +192,7 @@ function resolveEmployeePassColors(template, brandConfig) {
 
 function makeHrLinkField(key, label, url, linkText) {
   const safeLabel = escapeHtml(label);
-  const safeUrl = escapeHtml(url);
+  const safeUrl = escapePassLinkHref(url);
   const displayHost = url.replace(/^https?:\/\//i, '');
   const renderedText = String(linkText || '').trim() || safeLabel || escapeHtml(displayHost);
   return {
@@ -398,7 +403,7 @@ function sectionsToAppleBackFields(sections) {
   return sections.map((s) => {
     if (s.kind === 'link') {
       if (s.doc) {
-        const safeUrl = escapeHtml(s.url);
+        const safeUrl = escapePassLinkHref(s.url);
         return {
           key: s.key,
           label: String(s.label).toUpperCase().slice(0, 64),
@@ -619,5 +624,6 @@ module.exports = {
   sectionsToAppleBackFields,
   resolveMemberProfile,
   resolveVariableLink,
-  escapeHtml
+  escapeHtml,
+  escapePassLinkHref
 };

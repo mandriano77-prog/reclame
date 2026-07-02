@@ -29,6 +29,14 @@ test('pass back link tracking uses /api/v1 path', () => {
   assert.match(passkit, /slice\(0, 1200\)/);
 });
 
+test('pass back link href avoids &amp; in tracking URLs', () => {
+  const { escapePassLinkHref } = require('../src/engine/employee-pass');
+  const href = 'https://example.com/track?sn=1&key=link_0&to=https%3A%2F%2Fdest';
+  assert.equal(escapePassLinkHref(href), href);
+  assert.doesNotMatch(escapePassLinkHref(href), /&amp;/);
+  assert.match(passkit, /escapePassLinkHref\(trackedUrl\)/);
+});
+
 test('Thank-you page hides portal CTA for non-HR brands', () => {
   assert.match(thankYou, /showPortal/);
   assert.match(thankYou, /Pass aggiunto/);
