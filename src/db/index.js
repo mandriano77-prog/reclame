@@ -556,6 +556,20 @@ async function getDb() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_holder_events_brand_created ON holder_events(brand_id, created_at DESC)`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_holder_events_serial ON holder_events(serial_number, created_at DESC)`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_holder_events_action ON holder_events(brand_id, event_action)`).catch(()=>{});
+    await pool.query(`CREATE TABLE IF NOT EXISTS coupon_redemptions (
+      id BIGSERIAL PRIMARY KEY,
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      pass_id TEXT REFERENCES pass_instances(id) ON DELETE SET NULL,
+      serial_number TEXT NOT NULL,
+      offer_id TEXT NOT NULL,
+      offer_title TEXT,
+      store_label TEXT,
+      operator_label TEXT,
+      metadata JSONB DEFAULT '{}',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(brand_id, serial_number, offer_id)
+    )`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_brand_created ON coupon_redemptions(brand_id, created_at DESC)`).catch(()=>{});
     await pool.query(`CREATE TABLE IF NOT EXISTS push_assistant_log (
       id TEXT PRIMARY KEY,
       brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
@@ -1161,6 +1175,7 @@ async function deleteBrand(id) {
   await pool.query('DELETE FROM scheduled_push WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM audiences WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM holder_events WHERE brand_id = $1', [id]);
+  await pool.query('DELETE FROM coupon_redemptions WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM pass_instances WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM members WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM import_errors WHERE brand_id = $1', [id]);

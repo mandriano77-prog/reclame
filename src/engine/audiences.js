@@ -5,7 +5,7 @@ const { pool } = require('../db');
 
 const ALLOWED_EVENT_ACTIONS = new Set([
   'created', 'downloaded', 'installed', 'removed', 'opened',
-  'link_click', 'instant_win_played', 'instant_win_won', 'gamification_played',
+  'link_click', 'coupon_redeemed', 'instant_win_played', 'instant_win_won', 'gamification_played',
   'google_installed', 'google_removed', 'scheduled_sent'
 ]);
 

@@ -1217,6 +1217,54 @@ router.get('/track/pass-link', async (req, res) => {
   }
 });
 
+// Reclame CPA — cashier coupon redemption (closed-loop at checkout)
+const {
+  previewCouponRedemption,
+  confirmCouponRedemption,
+  ensureBrandCashierPin,
+  rotateBrandCashierPin,
+  listRecentCouponRedemptions,
+  resolveActiveCouponOffer
+} = require('../engine/coupon-redemption');
+
+router.post('/redeem/preview', async (req, res) => {
+  try {
+    const brandSlug = String(req.body.brand_slug || req.body.slug || '').trim();
+    const serialNumber = String(req.body.serial_number || req.body.serial || '').trim();
+    const pin = String(req.body.pin || '').trim();
+    if (!brandSlug || !serialNumber || !pin) {
+      return res.status(400).json({ valid: false, reason: 'Parametri mancanti' });
+    }
+    const result = await previewCouponRedemption({ brandSlug, serialNumber, pin });
+    res.status(result.valid ? 200 : 422).json(result);
+  } catch (err) {
+    console.error('redeem/preview error:', err);
+    res.status(500).json({ valid: false, reason: err.message });
+  }
+});
+
+router.post('/redeem/confirm', async (req, res) => {
+  try {
+    const brandSlug = String(req.body.brand_slug || req.body.slug || '').trim();
+    const serialNumber = String(req.body.serial_number || req.body.serial || '').trim();
+    const pin = String(req.body.pin || '').trim();
+    if (!brandSlug || !serialNumber || !pin) {
+      return res.status(400).json({ valid: false, reason: 'Parametri mancanti' });
+    }
+    const result = await confirmCouponRedemption({
+      brandSlug,
+      serialNumber,
+      pin,
+      storeLabel: req.body.store_label,
+      operatorLabel: req.body.operator_label
+    });
+    res.status(result.valid ? 200 : 422).json(result);
+  } catch (err) {
+    console.error('redeem/confirm error:', err);
+    res.status(500).json({ valid: false, reason: err.message });
+  }
+});
+
 // Click redirect + tracking
 router.get('/click/:campaign_id', async (req, res) => {
   try {
@@ -1526,6 +1574,8 @@ function isJwtBypassRoute(req) {
   if (m === 'POST' && /^\/activate\/[^/]+$/.test(path)) return true;
   if (path.startsWith('/portal/')) return true;
   if (path.startsWith('/hub/')) return true;
+  if (m === 'GET' && path === '/track/pass-link') return true;
+  if (m === 'POST' && (path === '/redeem/preview' || path === '/redeem/confirm')) return true;
   return false;
 }
 
@@ -2791,6 +2841,49 @@ router.get('/brands/:brand_id/holder-events/export', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="holder_events_${brand_id}_${days}d.csv"`);
     res.send('\uFEFF' + [header, ...lines].join('\n'));
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/brands/:brand_id/cashier', async (req, res) => {
+  try {
+    const brand_id = req.params.brand_id;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const brand = await getBrand(brand_id);
+    const pinResult = await ensureBrandCashierPin(brand_id);
+    const slug = brand.slug || brand_id;
+    const base = resolveBaseUrl(req);
+    const offer = resolveActiveCouponOffer(brand);
+    res.json({
+      slug,
+      pin: pinResult.pin,
+      pin_rotated: pinResult.rotated,
+      cashier_url: `${base}/cashier/${encodeURIComponent(slug)}`,
+      active_offer: offer
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/brands/:brand_id/cashier/rotate-pin', async (req, res) => {
+  try {
+    const brand_id = req.params.brand_id;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const { pin } = await rotateBrandCashierPin(brand_id);
+    res.json({ pin });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/brands/:brand_id/coupon-redemptions', async (req, res) => {
+  try {
+    const brand_id = req.params.brand_id;
+    if (!requireBrandId(req, res, brand_id)) return;
+    const rows = await listRecentCouponRedemptions(brand_id, req.query.limit);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.get('/brands/:brand_id/audiences/event-actions', async (req, res) => {

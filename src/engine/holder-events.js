@@ -170,7 +170,9 @@ async function getHolderBehaviorInsights(brandId, days = 30) {
         COUNT(*) FILTER (WHERE event_action = 'installed')::int AS installed,
         COUNT(*) FILTER (WHERE event_action = 'opened')::int AS opened,
         COUNT(*) FILTER (WHERE event_action = 'link_click')::int AS link_clicks,
-        COUNT(DISTINCT serial_number) FILTER (WHERE event_action = 'link_click')::int AS unique_clickers
+        COUNT(DISTINCT serial_number) FILTER (WHERE event_action = 'link_click')::int AS unique_clickers,
+        COUNT(*) FILTER (WHERE event_action = 'coupon_redeemed')::int AS coupon_redemptions,
+        COUNT(DISTINCT serial_number) FILTER (WHERE event_action = 'coupon_redeemed')::int AS unique_redeemers
        FROM holder_events
        WHERE brand_id = $1 AND created_at >= NOW() - $2::interval`,
       [brandId, interval]
@@ -178,6 +180,10 @@ async function getHolderBehaviorInsights(brandId, days = 30) {
   ]);
 
   const linkFunnels = await getLinkFunnels(brandId, days);
+  const funnelRow = funnel.rows[0] || {};
+  const clickToRedeemPct = funnelRow.unique_clickers > 0
+    ? Math.round((funnelRow.unique_redeemers / funnelRow.unique_clickers) * 1000) / 10
+    : 0;
 
   return {
     period_days: parseInt(days, 10) || 30,
@@ -185,8 +191,15 @@ async function getHolderBehaviorInsights(brandId, days = 30) {
     unique_holders_active: uniqueActors.rows[0].actors,
     by_action: byAction.rows,
     top_link_clicks: topLinks.rows,
-    funnel: funnel.rows[0],
-    link_funnels: linkFunnels
+    funnel: funnelRow,
+    link_funnels: linkFunnels,
+    closed_loop: {
+      link_clicks: funnelRow.link_clicks || 0,
+      unique_clickers: funnelRow.unique_clickers || 0,
+      coupon_redemptions: funnelRow.coupon_redemptions || 0,
+      unique_redeemers: funnelRow.unique_redeemers || 0,
+      click_to_redeem_pct: clickToRedeemPct
+    }
   };
 }
 

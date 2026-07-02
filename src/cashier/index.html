@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>Reclame · Cassa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="cashier.css">
+</head>
+<body>
+  <main class="cashier-app">
+    <header class="cashier-header">
+      <p class="cashier-kicker">Reclame · Riscatto coupon</p>
+      <h1 class="cashier-title" id="cashierBrandName">Cassa</h1>
+    </header>
+
+    <section class="cashier-card" id="cashierPinStep">
+      <label class="cashier-label" for="cashierPin">PIN cassa</label>
+      <input class="cashier-input" id="cashierPin" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="6 cifre">
+      <button type="button" class="cashier-btn" id="cashierPinSubmit">Entra</button>
+      <p class="cashier-hint">Il PIN lo trovi nel back office Reclame → Audience → Comportamento.</p>
+    </section>
+
+    <section class="cashier-card" id="cashierScanStep" hidden>
+      <label class="cashier-label" for="cashierSerial">Codice pass (QR wallet)</label>
+      <input class="cashier-input cashier-input--mono" id="cashierSerial" autocomplete="off" placeholder="Scansiona o incolla serial">
+      <div class="cashier-row">
+        <input class="cashier-input" id="cashierStore" placeholder="Negozio / cassa (opz.)">
+      </div>
+      <button type="button" class="cashier-btn" id="cashierPreviewBtn">Verifica offerta</button>
+    </section>
+
+    <section class="cashier-result" id="cashierResult" hidden aria-live="polite"></section>
+  </main>
+  <script src="cashier.js" defer></script>
+</body>
+</html>

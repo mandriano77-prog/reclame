@@ -229,6 +229,19 @@ app.get(['/scan', '/scan/'], (req, res, next) => {
   sendPartnerSpa(req, res);
 });
 
+// Reclame — cashier coupon redemption UI (tablet at checkout)
+const cashierDir = path.join(__dirname, 'cashier');
+const cashierIndex = path.join(cashierDir, 'index.html');
+
+function sendCashierSpa(req, res) {
+  res.set('Cache-Control', 'no-store');
+  if (fs.existsSync(cashierIndex)) return res.sendFile(cashierIndex);
+  res.status(503).send('Cassa Reclame in preparazione.');
+}
+
+app.use('/cashier', express.static(cashierDir));
+app.get(['/cashier', '/cashier/', '/cashier/:slug', '/cashier/:slug/'], sendCashierSpa);
+
 // Dashboard boot: product line lock from deploy env (e.g. studio.filodiretto.app → DASHBOARD_PRODUCT_LINE=hr)
 const VALID_DASHBOARD_PRODUCT_LINES = ['ads', 'hr', 'engage', 'live'];
 function getDeployDashboardProductLine() {

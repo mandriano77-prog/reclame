@@ -1,0 +1,139 @@
+:root {
+  --bg: #0b1220;
+  --card: #121a2b;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #eef2ff;
+  --muted: rgba(238, 242, 255, 0.62);
+  --accent: #38bdf8;
+  --ok: #34d399;
+  --bad: #fb7185;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, system-ui, sans-serif;
+  background: radial-gradient(circle at top, #172554 0%, var(--bg) 55%);
+  color: var(--text);
+}
+
+.cashier-app {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.cashier-header { margin-bottom: 20px; }
+
+.cashier-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cashier-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.cashier-card,
+.cashier-result {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.cashier-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.cashier-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.cashier-input--mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.cashier-row { margin-bottom: 4px; }
+
+.cashier-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: white;
+  cursor: pointer;
+}
+
+.cashier-btn:disabled { opacity: 0.55; cursor: wait; }
+
+.cashier-btn--ok { background: linear-gradient(135deg, #059669, #047857); }
+
+.cashier-hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.cashier-result.ok { border-color: rgba(52, 211, 153, 0.35); }
+.cashier-result.ko { border-color: rgba(251, 113, 133, 0.35); }
+
+.cashier-result h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.cashier-result p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.cashier-offer {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.cashier-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cashier-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.cashier-link-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}

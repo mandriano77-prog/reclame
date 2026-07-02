@@ -148,6 +148,7 @@ async function executeWalletPush(body, ctx = {}) {
     pass_link_label,
     pass_link_expires_at,
     test_pass_id,
+    coupon_redeemable,
   } = body;
 
   if (!brand_id || !title || !message) {
@@ -217,7 +218,15 @@ async function executeWalletPush(body, ctx = {}) {
     }
 
     const config = brand.config || {};
-    config.pushAnnouncement = { title, message, ts: Date.now() };
+    config.pushAnnouncement = {
+      title,
+      message,
+      ts: Date.now(),
+      coupon: {
+        redeemable: coupon_redeemable !== false,
+        offer_id: String(Date.now())
+      }
+    };
 
     if (!instant_win_id) delete config.instantWinActive;
     if (!gamification_id) delete config.gamificationActive;

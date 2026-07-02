@@ -218,6 +218,7 @@ function classifyApiRoute(method, path) {
     return { section: 'audiences', write };
   }
   if (/^\/brands\/[^/]+\/holder-events/.test(p)) return { section: 'audiences', write: false };
+  if (/^\/brands\/[^/]+\/(cashier|coupon-redemptions)/.test(p)) return { section: 'audiences', write: /rotate-pin/.test(p) };
 
   if (/^\/brands\/[^/]+\/(logo|strip|landing-bg|wallet-icon|ai-strip|ai-copy|ai-creative)/.test(p)) {
     return { section: 'brand_identity', write };

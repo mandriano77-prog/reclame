@@ -1692,6 +1692,13 @@
                             <div id="pushPassLinkFields" hidden aria-hidden="true">
                                 <input type="datetime-local" id="pushPassLinkExpires">
                             </div>
+                            <div class="form-group" style="margin-top:10px;margin-bottom:0;">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                                    <input type="checkbox" id="pushCouponRedeemable" checked style="width:auto;accent-color:var(--teal);">
+                                    <span>Abilita riscatto in cassa (QR pass → CPA verificato)</span>
+                                </label>
+                                <p style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Il visitatore mostra il QR del pass alla cassa; il riscatto chiude il loop Push → Tap → Store → Cassa.</p>
+                            </div>
                         </div>
                         <div class="form-group a2w-push-field--hidden" style="margin-top:8px;" id="pushLegacyLinkOut">
                             <label class="form-label">Link out — retro Link 1 (legacy Ads)</label>
@@ -2536,6 +2543,11 @@
                         <button class="btn sec" onclick="exportHolderEventsCsv()">⬇ Export eventi CSV</button>
                     </div>
                     <div class="stats-grid" id="audienceBehaviorStats"></div>
+                    <div class="card" style="margin-bottom:16px;" id="audienceClosedLoopCard">
+                        <div class="sec-title" style="font-size:15px;">Closed-loop · Push → Cassa</div>
+                        <div id="audienceClosedLoopStats" style="font-size:13px;color:var(--text2);">—</div>
+                        <div id="audienceCashierSetup" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:13px;">—</div>
+                    </div>
                     <div class="card" style="margin-bottom:16px;">
                         <div class="sec-title" style="font-size:15px;">Funnel per link (retro pass)</div>
                         <div id="audienceLinkFunnels" style="font-size:13px;color:var(--text2);">—</div>
@@ -2789,7 +2801,7 @@
                                 <option value="never">Non ha mai fatto</option>
                             </select>
                         </div>
-                        <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction"><option value="">—</option><option value="opened">Aperto pass</option><option value="link_click">Clic link retro</option><option value="installed">Installato</option><option value="instant_win_played">Reward</option><option value="gamification_played">Challenge</option></select></div>
+                        <div class="form-group" style="flex:1;"><label class="form-label">Azione</label><select id="audBehaviorAction"><option value="">—</option><option value="opened">Aperto pass</option><option value="link_click">Clic link retro</option><option value="coupon_redeemed">Coupon riscattato (cassa)</option><option value="installed">Installato</option><option value="instant_win_played">Reward</option><option value="gamification_played">Challenge</option></select></div>
                         <div class="form-group" style="flex:1;"><label class="form-label">Target key</label><input type="text" id="audBehaviorTargetKey" placeholder="link_0"></div>
                     </div>
                     <div class="form-row">
@@ -7833,6 +7845,9 @@ function buildImmediatePushBody() {
         const expLocal = document.getElementById('pushPassLinkExpires')?.value;
         if (expLocal) body.pass_link_expires_at = new Date(expLocal).toISOString();
     }
+    if (updatePass) {
+        body.coupon_redeemable = !!document.getElementById('pushCouponRedeemable')?.checked;
+    }
     if (!isHrDashboard() && isLegacyCampaignsUiEnabled()) {
         applyPushLinkedContentToBody(body, document.getElementById('pushLinkedContent')?.value);
     }
@@ -8814,6 +8829,52 @@ async function exportHolderEventsCsv() {
     toast('CSV eventi esportato');
 }
 
+async function loadCashierSetup() {
+    const el = document.getElementById('audienceCashierSetup');
+    if (!el || !brandId) return;
+    try {
+        const res = await fetch(`${API}/brands/${brandId}/cashier`, { headers: getAuthHeaders() });
+        const data = res.ok ? await res.json() : {};
+        if (!res.ok) {
+            el.innerHTML = '<span style="color:var(--text2);">Setup cassa non disponibile.</span>';
+            return;
+        }
+        const offer = data.active_offer
+            ? `<p style="margin:0 0 8px;"><strong>Offerta attiva:</strong> ${esc(data.active_offer.title)}</p>`
+            : '<p style="margin:0 0 8px;color:var(--text2);">Nessuna offerta attiva — invia una push con aggiornamento pass.</p>';
+        el.innerHTML = `
+            ${offer}
+            <p style="margin:0 0 6px;"><strong>Link cassa (tablet):</strong><br>
+            <a href="${esc(data.cashier_url)}" target="_blank" rel="noopener">${esc(data.cashier_url)}</a></p>
+            <p style="margin:0 0 10px;"><strong>PIN cassa:</strong> <code style="font-size:15px;letter-spacing:0.08em;">${esc(data.pin || '—')}</code></p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn sec small" id="audCashierCopyBtn">Copia link cassa</button>
+                <button type="button" class="btn sec small" data-requires-write="audiences" onclick="rotateCashierPin()">Rigenera PIN</button>
+            </div>
+        `;
+        const copyBtn = document.getElementById('audCashierCopyBtn');
+        if (copyBtn) copyBtn.onclick = () => copyCashierLink(data.cashier_url);
+        if (typeof fdRbacHook === 'function') fdRbacHook('audiences');
+    } catch (e) {
+        el.innerHTML = '<span style="color:var(--text2);">Errore caricamento setup cassa.</span>';
+    }
+}
+
+function copyCashierLink(url) {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => toast('Link cassa copiato')).catch(() => toast(url));
+}
+
+async function rotateCashierPin() {
+    if (!brandId) return;
+    if (!await appConfirm({ title: 'Rigenera PIN cassa', message: 'Il PIN attuale smetterà di funzionare sui tablet già configurati.', confirmLabel: 'Rigenera', tone: 'danger' })) return;
+    const res = await fetch(`${API}/brands/${brandId}/cashier/rotate-pin`, { method: 'POST', headers: getAuthHeaders() });
+    const data = res.ok ? await res.json() : {};
+    if (!res.ok) { toast(data.error || 'Operazione non riuscita'); return; }
+    toast('Nuovo PIN cassa generato');
+    loadCashierSetup();
+}
+
 async function loadAudienceBehavior() {
     if (!brandId) return;
     try {
@@ -8823,12 +8884,23 @@ async function loadAudienceBehavior() {
         const b = data.behavior || {};
         const f = b.funnel || {};
         document.getElementById('audienceBehaviorStats').innerHTML = `
-            <div class="stat-num">${b.total_events ?? 0}</div><div class="stat-label">Eventi (${days} gg)</div>
-            <div class="stat-card"><div class="stat-num">${b.unique_holders_active ?? 0}<div class="stat-label">Possessori attivi</div></div>
+            <div class="stat-card"><div class="stat-num">${b.total_events ?? 0}</div><div class="stat-label">Eventi (${days} gg)</div></div>
+            <div class="stat-card"><div class="stat-num">${b.unique_holders_active ?? 0}</div><div class="stat-label">Possessori attivi</div></div>
             <div class="stat-card"><div class="stat-num">${f.opened ?? 0}</div><div class="stat-label">Aperture pass</div></div>
             <div class="stat-card"><div class="stat-num">${f.link_clicks ?? 0}</div><div class="stat-label">Clic link retro</div></div>
-            <div class="stat-card"><div class="stat-num">${f.unique_clickers ?? 0}</div>Utenti unici clic
-        `.replace(/<\/?motion[^>]*>/g, '');
+            <div class="stat-card"><div class="stat-num">${f.coupon_redemptions ?? 0}</div><div class="stat-label">Riscatti cassa</div></div>
+        `;
+
+        const cl = b.closed_loop || {};
+        document.getElementById('audienceClosedLoopStats').innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;margin-bottom:8px;">
+                <div><div style="font-weight:700;font-size:18px;">${cl.link_clicks ?? 0}</div><div style="color:var(--text2);font-size:11px;">Tap link</div></div>
+                <div><div style="font-weight:700;font-size:18px;">${cl.coupon_redemptions ?? 0}</div><div style="color:var(--text2);font-size:11px;">Riscatti CPA</div></div>
+                <div><div style="font-weight:700;font-size:18px;">${cl.click_to_redeem_pct ?? 0}%</div><div style="color:var(--text2);font-size:11px;">Tap → Cassa</div></div>
+            </div>
+            <p style="margin:0;font-size:12px;color:var(--text2);">Misurazione closed-loop: push sul pass, tap sul link out, riscatto verificato in cassa via QR wallet.</p>
+        `;
+        loadCashierSetup();
 
         const funnels = b.link_funnels || [];
         document.getElementById('audienceLinkFunnels').innerHTML = funnels.length ? funnels.map(f => `
