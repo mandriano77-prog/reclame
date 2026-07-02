@@ -125,6 +125,14 @@
       var brand = await global.fetchBrandById(global.brandId);
       brandPaletteCache = (brand && brand.config) || null;
       manualPaletteOverride = isManualBrandPalette(brandPaletteCache);
+      if (manualPaletteOverride) {
+        // Pickers pre-caricati con i colori manuali salvati sul brand.
+        var manual = colorsFromBrandConfig(brandPaletteCache) || defaultColors();
+        var c = getColorInputs();
+        if (c.bg) c.bg.value = manual.backgroundColor;
+        if (c.fg) c.fg.value = manual.foregroundColor;
+        if (c.lbl) c.lbl.value = manual.labelColor;
+      }
     } catch (_) {
       brandPaletteCache = null;
     }
@@ -176,11 +184,11 @@
     cfg.backgroundColor = colors.backgroundColor;
     cfg.foregroundColor = colors.foregroundColor;
     cfg.labelColor = colors.labelColor;
-    cfg.colors = {
+    cfg.colors = Object.assign({}, cfg.colors || {}, {
       background: colors.backgroundColor,
       text: colors.foregroundColor,
       accent: colors.backgroundColor
-    };
+    });
     cfg.palette_source = 'manual';
     cfg.palette_updated_at = new Date().toISOString();
     var res = await fetch((global.API || '/api/v1') + '/brands/' + global.brandId, {
@@ -711,6 +719,7 @@
   global.a2wApplyTplPreviewColors = applyPreviewColors;
   global.a2wResetTplColorPickers = resetColorPickers;
   global.a2wLoadBrandPaletteForTemplate = loadBrandPaletteForTemplate;
+  global.a2wIsTplManualPaletteOn = function () { return !!manualPaletteOverride; };
   global.a2wSetTplSaveStatus = setSaveStatus;
   global.a2wApplyTplStyleImages = applyStyleImages;
   global.a2wSyncTplUploadZone = syncTplUploadZone;

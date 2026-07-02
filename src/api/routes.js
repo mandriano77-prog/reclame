@@ -1870,13 +1870,30 @@ router.get('/brands/:id/wallet-logo-debug', async (req, res) => {
 router.post('/brands/:id/logo/sync-from-identity', async (req, res) => {
   try {
     if (!requireOwnedBrandPk(req, res, req.params.id)) return;
-    const brand = await getBrand(req.params.id);
+    let brand = await getBrand(req.params.id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
-    const { syncWalletLogoFromBrandIdentity } = require('../engine/brand-wallet-logo');
-    const synced = await syncWalletLogoFromBrandIdentity(req.params.id, brand, {
+    // Ripristino esplicito: rimuove l'override manuale, altrimenti
+    // mergeAutoPalette salterebbe la ri-estrazione della palette.
+    if (brand.config?.palette_source === 'manual') {
+      await updateBrand(req.params.id, { config: { ...(brand.config || {}), palette_source: '' } });
+      brand = await getBrand(req.params.id);
+    }
+    const { syncWalletLogoFromBrandIdentity, applyBrandLogoBase64 } = require('../engine/brand-wallet-logo');
+    let synced = await syncWalletLogoFromBrandIdentity(req.params.id, brand, {
       syncTemplates: isHrBrand(brand, req)
     });
-    if (!synced) return res.status(400).json({ error: 'Nessun logo Brand Identity da sincronizzare' });
+    if (!synced) {
+      // Brand senza asset Brand Identity: riusa il logo wallet già in config.logos.
+      const legacyLogo = brand.config?.logos?.['logo@2x'] || brand.config?.logos?.logo;
+      if (legacyLogo) {
+        await applyBrandLogoBase64(req.params.id, legacyLogo, {
+          brand,
+          syncTemplates: isHrBrand(brand, req)
+        });
+        synced = true;
+      }
+    }
+    if (!synced) return res.status(400).json({ error: 'Nessun logo da cui rigenerare la palette' });
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

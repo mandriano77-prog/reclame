@@ -131,3 +131,18 @@ test('mergeAutoPalette (fonte upload) rispetta override manuale', () => {
   assert.match(src, /mergeAutoPalette\(config, palette, 'icon-auto'\)/);
   assert.match(src, /palette_updated_at/);
 });
+
+test('routes: upload logo in Media Library aggancia palette; restore azzera override manuale', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const routes = fs.readFileSync(path.join(__dirname, '../src/api/routes.js'), 'utf8');
+  // POST /media type=logo → stesso hook palette di POST /brands/:id/logo
+  assert.match(routes, /if \(type === 'logo'\)/);
+  assert.match(routes, /Media logo palette sync failed/);
+  // POST /brands/:id/logo/sync-from-identity → rimuove palette_source 'manual'
+  // prima della ri-estrazione, con fallback sul logo legacy in config.logos
+  assert.match(routes, /logo\/sync-from-identity/);
+  assert.match(routes, /palette_source === 'manual'/);
+  assert.match(routes, /palette_source: ''/);
+  assert.match(routes, /Nessun logo da cui rigenerare la palette/);
+});

@@ -6857,7 +6857,16 @@ async function saveTemplate() {
     const headerValue = document.getElementById('tplHeaderValue').value.trim();
     const styleBase = { ...existingStyle, description: document.getElementById('tplDescription').value };
     if (!isHrDashboard() && typeof a2wGetTemplatePreviewColors === 'function') {
-        Object.assign(styleBase, a2wGetTemplatePreviewColors());
+        const manualPaletteOn = typeof a2wIsTplManualPaletteOn === 'function' && a2wIsTplManualPaletteOn();
+        if (manualPaletteOn || !document.documentElement.classList.contains('a2w-shell')) {
+            Object.assign(styleBase, a2wGetTemplatePreviewColors());
+        } else {
+            // Palette automatica del brand: il template non fissa i colori,
+            // comanda brand.config (resolvePassColors lato server).
+            delete styleBase.backgroundColor;
+            delete styleBase.foregroundColor;
+            delete styleBase.labelColor;
+        }
     }
     const body = {
         brand_id: brandId,

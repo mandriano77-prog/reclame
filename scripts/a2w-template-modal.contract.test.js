@@ -56,11 +56,22 @@ test('STEP 7: auto palette UI and manual override in template modal', () => {
   assert.match(modalBlock, /id="tplPaletteCustomizeBtn"/);
   assert.match(modalBlock, /Personalizza colori/);
   assert.match(modalBlock, /id="tplPaletteManualBlock"/);
+  assert.match(modalBlock, /id="tplPaletteRestoreAutoBtn"/);
   assert.match(modalBlock, /id="tplColorBg"/);
   assert.match(tplEditor, /loadBrandPaletteForTemplate/);
   assert.match(tplEditor, /persistManualBrandPaletteIfNeeded/);
   assert.match(tplEditor, /getTemplatePreviewColors/);
   assert.match(tplEditor, /applyPreviewColors/);
+});
+
+test('STEP 7a: senza override manuale il template non fissa i colori (comanda brand.config)', () => {
+  assert.match(tplEditor, /a2wIsTplManualPaletteOn/);
+  assert.match(indexHtml, /a2wIsTplManualPaletteOn/);
+  assert.match(indexHtml, /delete styleBase\.backgroundColor/);
+  assert.match(indexHtml, /delete styleBase\.foregroundColor/);
+  assert.match(indexHtml, /delete styleBase\.labelColor/);
+  // override manuale: scrive anche i colori sul brand (palette_source='manual')
+  assert.match(tplEditor, /palette_source = 'manual'/);
 });
 
 test('STEP 7b: wallet notification icon in template modal (Ads shell)', () => {
