@@ -347,7 +347,8 @@ function buildPassClass(brand, template) {
     }
   }
 
-  classObj.hexBackgroundColor = rgbToHex(template.style?.backgroundColor || '#0D0B1A');
+  // Brand palette (auto-extracted or manual) wins over template style, like Apple resolvePassColors().
+  classObj.hexBackgroundColor = rgbToHex(brand?.config?.backgroundColor || template.style?.backgroundColor || '#0D0B1A');
 
   if (isHrEmployeePass(brand)) {
     const employeePass = buildEmployeePass({
@@ -614,7 +615,7 @@ async function buildPassObject(brand, template, instance, memberHint) {
         value: barcodeValue || instance.serial_number,
         alternateText: barcodeAlt || instance.serial_number
       },
-      hexBackgroundColor: rgbToHex(template.style?.backgroundColor || '#0D0B1A'),
+      hexBackgroundColor: rgbToHex(brand?.config?.backgroundColor || template.style?.backgroundColor || '#0D0B1A'),
       textModulesData: [],
       linksModuleData: { uris: [] }
     };

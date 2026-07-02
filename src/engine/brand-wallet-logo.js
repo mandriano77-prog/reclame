@@ -3,6 +3,27 @@
  */
 const sharp = require('sharp');
 const { getMedia, getBrand, listTemplates, updateBrand, updateTemplate, touchPassesForTemplate, listPasses, touchPass } = require('../db');
+const { extractPaletteFromImage, isManualPalette } = require('./brand-palette');
+
+/**
+ * Merge an auto-extracted palette into a brand config (mutates `config`).
+ * Skips when the brand set colors manually (`palette_source === 'manual'`).
+ */
+function mergeAutoPalette(config, palette, source) {
+  if (!palette || isManualPalette(config)) return config;
+  config.backgroundColor = palette.backgroundColor;
+  config.foregroundColor = palette.foregroundColor;
+  config.labelColor = palette.labelColor;
+  config.colors = {
+    ...(config.colors || {}),
+    background: palette.backgroundColor,
+    text: palette.foregroundColor,
+    accent: palette.accent
+  };
+  config.palette_source = source;
+  config.palette_updated_at = new Date().toISOString();
+  return config;
+}
 
 async function resolveBrandLogoRawBuffer(brand) {
   const cfg = brand?.config || {};
@@ -179,6 +200,11 @@ async function applyWalletIconBase64(brandId, iconBase64, { brand, touchPasses =
   };
   config.wallet_icon_rev = (Number(config.wallet_icon_rev) || 0) + 1;
   config.wallet_icon_synced_at = new Date().toISOString();
+  // Icon is a fallback palette source: never overwrite a logo-derived palette.
+  if (config.palette_source !== 'logo-auto') {
+    const palette = await extractPaletteFromImage(imgBuffer);
+    mergeAutoPalette(config, palette, 'icon-auto');
+  }
   await updateBrand(brandId, { config });
   if (touchPasses) {
     const passes = await listPasses(brandId);
@@ -211,6 +237,8 @@ async function applyBrandLogoBase64(brandId, logoBase64, { brand, syncTemplates 
     'icon@2x': iconPack.icon2x.toString('base64'),
     'icon@3x': iconPack.icon3x.toString('base64')
   };
+  const palette = await extractPaletteFromImage(imgBuffer);
+  mergeAutoPalette(config, palette, 'logo-auto');
   await updateBrand(brandId, { config });
 
   if (syncTemplates) {
@@ -300,5 +328,6 @@ module.exports = {
   syncWalletLogoFromBrandIdentity,
   syncWalletIconFromBrandIdentity,
   assignWalletIconMedia,
-  inspectPkpassIcon
+  inspectPkpassIcon,
+  mergeAutoPalette
 };

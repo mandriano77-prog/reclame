@@ -87,6 +87,40 @@ test('formatGoogleWalletError maps classNotFound to 422', () => {
   }
 });
 
+test('buildPassClass: brand.config.backgroundColor vince su template.style', () => {
+  const { mod, restore } = loadGoogleWallet({
+    GOOGLE_WALLET_ISSUER_ID: '3388000000023116539',
+    GOOGLE_WALLET_PASS_KIND: null
+  });
+  try {
+    const template = { id: '3ab88300-aaaa-bbbb-cccc-ddddeeeeffff', style: { backgroundColor: '#654321' } };
+    const withBrandColor = mod.buildPassClass(
+      { slug: 'acme', name: 'Acme', config: { backgroundColor: '#123456' } },
+      template
+    );
+    assert.equal(withBrandColor.hexBackgroundColor, '#123456');
+
+    const templateOnly = mod.buildPassClass({ slug: 'acme', name: 'Acme', config: {} }, template);
+    assert.equal(templateOnly.hexBackgroundColor, '#654321');
+
+    const fallback = mod.buildPassClass(
+      { slug: 'acme', name: 'Acme', config: {} },
+      { id: '3ab88300-aaaa-bbbb-cccc-ddddeeeeffff' }
+    );
+    assert.equal(fallback.hexBackgroundColor, '#0D0B1A');
+  } finally {
+    restore();
+  }
+});
+
+test('pass object usa brand.config.backgroundColor prima del template (contract)', () => {
+  const fs = require('fs');
+  const src = fs.readFileSync(MOD, 'utf8');
+  const matches = src.match(/rgbToHex\(brand\?\.config\?\.backgroundColor \|\| template\.style\?\.backgroundColor \|\| '#0D0B1A'\)/g) || [];
+  assert.ok(matches.length >= 2, 'brand.config precedence su class e object');
+  assert.doesNotMatch(src, /rgbToHex\(template\.style\?\.backgroundColor \|\| '#0D0B1A'\)/);
+});
+
 test('pass route ensures class before object', () => {
   const fs = require('fs');
   const routes = fs.readFileSync(path.join(__dirname, '../src/api/routes.js'), 'utf8');

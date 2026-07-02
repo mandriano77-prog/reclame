@@ -4949,7 +4949,8 @@ function ensureBrandIdFromContext() {
 }
 
 // ==================== PRODUCT SHELL THEME (2wallet lines) ====================
-// UI shell uses fixed palettes per product line; pass colors in brand.config stay for the pass only.
+// UI shell uses per-product base palettes; when a brand has an auto/manual palette
+// (brand.config.backgroundColor) the dark-shell accent is tinted to it via applyBrandAccentVars().
 const PRODUCT_LINE_STORAGE_KEY = '2wallet_product_line';
 const VALID_PRODUCT_LINES = ['ads', 'hr', 'engage', 'live'];
 const PRODUCT_DISPLAY_TITLES = { ads: 'Reclame Media', hr: 'HR2Wallet', engage: 'Engage2Wallet', live: 'Live2Wallet' };
@@ -5327,7 +5328,7 @@ function onDashboardProductLineChange() {
     if (getActiveSectionId() === 'leads') loadLeads();
 }
 
-// ==================== BRAND THEMING (header only; shell = product theme) ====================
+// ==================== BRAND THEMING (header + accent tint on dark shell) ====================
 function applyBrandTheme() {
     const line = getDashboardProductLine();
     applyProductShellTheme(line);
@@ -5340,6 +5341,7 @@ function applyBrandTheme() {
     const headerBrandLogo = document.getElementById('headerBrandLogo');
     if (!brandId) {
         currentBrandSlug = '';
+        applyBrandAccentVars(null);
         if (headerBrandName) headerBrandName.textContent = productTitle;
         if (headerBrandLogo) {
             headerBrandLogo.style.display = 'none';
@@ -5354,6 +5356,7 @@ function applyBrandTheme() {
     const targetBrandId = brandId;
     fetchBrandById(targetBrandId).then(brand => {
         if (!brand || brandId !== targetBrandId) return;
+        applyBrandAccentVars(brand.config || null);
         const name = brand.name || productTitle;
         currentBrandSlug = brand.slug || '';
         if (headerBrandName) headerBrandName.textContent = name;
@@ -5398,6 +5401,57 @@ function adjustAlpha(hex, alpha) {
     if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
     const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
     return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function darkenHex(hex, amount) {
+    hex = hex.replace('#','');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    let r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+    r = Math.max(0, r - amount); g = Math.max(0, g - amount); b = Math.max(0, b - amount);
+    return '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+// ==================== BRAND ACCENT TINT (palette auto-estratta dal logo) ====================
+// Applies the brand palette accent (brand.config.backgroundColor) to the dark shell UI.
+// The dark canvas stays untouched; only accent/action/focus tints change.
+const BRAND_ACCENT_CLEAR_VARS = [
+    '--accent-subtle',
+    '--a2w-accent', '--a2w-accent-hover', '--a2w-accent-subtle', '--a2w-accent-soft',
+    '--a2w-action-primary', '--a2w-action-primary-hover',
+    '--a2w-border-focus', '--border-focus', '--bg-active'
+];
+
+function normalizeBrandAccentHex(value) {
+    if (typeof value !== 'string') return null;
+    let h = value.trim();
+    if (/^#[0-9a-fA-F]{3}$/.test(h)) h = '#' + h.slice(1).split('').map(c => c + c).join('');
+    return /^#[0-9a-fA-F]{6}$/.test(h) ? h.toUpperCase() : null;
+}
+
+function applyBrandAccentVars(config) {
+    const root = document.documentElement;
+    const rootStyle = root.style;
+    const accent = normalizeBrandAccentHex(config && (config.backgroundColor || (config.colors && config.colors.accent)));
+    if (!accent || root.getAttribute('data-shell') !== 'dark') {
+        // No brand palette (or light shell): fall back to the product theme accent
+        // (--accent/--accent-hover are re-set by applyProductShellTheme).
+        BRAND_ACCENT_CLEAR_VARS.forEach((v) => rootStyle.removeProperty(v));
+        return;
+    }
+    const hover = darkenHex(accent, 30); // ~12% darker
+    const subtle = adjustAlpha(accent, 0.14);
+    rootStyle.setProperty('--accent', accent);
+    rootStyle.setProperty('--accent-hover', hover);
+    rootStyle.setProperty('--accent-subtle', subtle);
+    rootStyle.setProperty('--a2w-accent', accent);
+    rootStyle.setProperty('--a2w-accent-hover', hover);
+    rootStyle.setProperty('--a2w-accent-subtle', subtle);
+    rootStyle.setProperty('--a2w-accent-soft', adjustAlpha(accent, 0.12));
+    rootStyle.setProperty('--a2w-action-primary', accent);
+    rootStyle.setProperty('--a2w-action-primary-hover', hover);
+    rootStyle.setProperty('--a2w-border-focus', accent);
+    rootStyle.setProperty('--border-focus', accent);
+    rootStyle.setProperty('--bg-active', adjustAlpha(accent, 0.18));
 }
 
 
