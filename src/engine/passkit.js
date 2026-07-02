@@ -605,7 +605,21 @@ function generatePassJson(template, instance, brand, options = {}) {
     return field;
   }
 
-  function resolveBackLink1(brandCfg, serialNumber) {
+  function resolveDynamicPassLink(instance) {
+    if (!instance?.dynamic_link_url) return null;
+    const exp = instance.dynamic_link_expires_at ? new Date(instance.dynamic_link_expires_at) : null;
+    if (exp && exp <= new Date()) return null;
+    return {
+      label: String(instance.dynamic_link_label || 'Scopri di più').trim().slice(0, 64),
+      url: String(instance.dynamic_link_url).trim()
+    };
+  }
+
+  function resolveBackLink1(brandCfg, instance, serialNumber) {
+    const dynamic = resolveDynamicPassLink(instance);
+    if (dynamic?.url) {
+      return makeBackLinkField('link_0', dynamic.label, dynamic.url);
+    }
     const pushOut = brandCfg.pushLinkOut;
     if (pushOut?.url) {
       return makeBackLinkField('link_0', pushOut.label || 'Scopri di più', pushOut.url);
@@ -641,7 +655,7 @@ function generatePassJson(template, instance, brand, options = {}) {
   if (!useHrBack) {
   const linkSlots = resolveTemplateLinkSlots(tplFields);
   const slot0 = linkSlots[0];
-  const link1 = resolveBackLink1(brandConfig, instance.serial_number)
+  const link1 = resolveBackLink1(brandConfig, instance, instance.serial_number)
     || (slot0.label || slot0.url
       ? (!portalBrand && isPersonalAreaBackLink(slot0.label, slot0.url)
         ? null

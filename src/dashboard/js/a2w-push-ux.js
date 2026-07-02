@@ -76,6 +76,79 @@
     document.querySelectorAll('[data-a2w-push-preview-body]').forEach(function (el) {
       el.textContent = body;
     });
+    syncPushPassPreview();
+  }
+
+  function syncPushPassPreview() {
+    var wrap = document.getElementById('a2wPushPassPreview');
+    if (!wrap) return;
+    var updateOn = !!document.getElementById('pushUpdatePass')?.checked;
+    wrap.hidden = !updateOn;
+    if (!updateOn) return;
+
+    var brand = getBrandLabel();
+    var title = (document.getElementById('pushTitle')?.value || '').trim() || 'NOVITÀ';
+    var message = (document.getElementById('pushMessage')?.value || '').trim() || 'Testo promozione…';
+    var linkLabel = (document.getElementById('pushPassLinkLabel')?.value || '').trim();
+    var linkUrl = (document.getElementById('pushPassLinkUrl')?.value || '').trim();
+
+    var frontLogo = wrap.querySelector('[data-a2w-push-pass-logo]');
+    if (frontLogo) frontLogo.textContent = brand;
+
+    var stripEl = wrap.querySelector('[data-a2w-push-pass-strip]');
+    var stripPrev = document.querySelector('#pushStripPreview img');
+    if (stripEl) {
+      if (stripPrev && stripPrev.src) {
+        stripEl.style.backgroundImage = 'url(' + stripPrev.src + ')';
+        stripEl.style.display = '';
+      } else {
+        stripEl.style.backgroundImage = '';
+        stripEl.style.display = '';
+      }
+    }
+
+    var promoTitle = wrap.querySelector('[data-a2w-push-pass-promo-title]');
+    var promoBody = wrap.querySelector('[data-a2w-push-pass-promo-body]');
+    if (promoTitle) promoTitle.textContent = title.toUpperCase().slice(0, 30);
+    if (promoBody) promoBody.textContent = message;
+
+    var linkRow = wrap.querySelector('[data-a2w-push-pass-link]');
+    if (linkRow) {
+      if (linkUrl || linkLabel) {
+        linkRow.hidden = false;
+        linkRow.innerHTML = '<span class="a2w-push-pass-preview__link-label">' + esc(linkLabel || 'Scopri di più') + '</span>' +
+          '<span class="a2w-push-pass-preview__link-url">' + esc(linkUrl || 'https://…') + '</span>';
+      } else {
+        linkRow.hidden = true;
+        linkRow.innerHTML = '';
+      }
+    }
+  }
+
+  function buildPassPreviewPanel() {
+    if (document.getElementById('a2wPushPassPreview')) return document.getElementById('a2wPushPassPreview');
+    var block = document.createElement('div');
+    block.id = 'a2wPushPassPreview';
+    block.className = 'a2w-push-pass-preview';
+    block.hidden = true;
+    block.innerHTML =
+      '<h3 class="a2w-push-pass-preview__title">Anteprima pass (retro)</h3>' +
+      '<p class="a2w-push-pass-preview__hint">Dopo l\'invio: strip sul fronte, promozione + link out sul retro.</p>' +
+      '<div class="a2w-push-pass-preview__faces">' +
+      '<div class="a2w-push-pass-preview__face a2w-push-pass-preview__face--front">' +
+      '<span class="a2w-push-pass-preview__face-label">Fronte</span>' +
+      '<div class="a2w-push-pass-preview__strip" data-a2w-push-pass-strip></div>' +
+      '<div class="a2w-push-pass-preview__front-row"><span data-a2w-push-pass-logo>Brand</span></div>' +
+      '</div>' +
+      '<div class="a2w-push-pass-preview__face a2w-push-pass-preview__face--back">' +
+      '<span class="a2w-push-pass-preview__face-label">Retro</span>' +
+      '<div class="a2w-push-pass-preview__back-block">' +
+      '<div class="a2w-push-pass-preview__promo-label" data-a2w-push-pass-promo-title>NOVITÀ</div>' +
+      '<div class="a2w-push-pass-preview__promo-body" data-a2w-push-pass-promo-body>Testo promozione…</div>' +
+      '</div>' +
+      '<div class="a2w-push-pass-preview__back-link" data-a2w-push-pass-link hidden></div>' +
+      '</div></div>';
+    return block;
   }
 
   function buildPreviewPanel() {
@@ -295,9 +368,21 @@
     var preview = buildPreviewPanel();
     if (preview.parentElement !== asideCol) asideCol.appendChild(preview);
 
+    var passPreview = buildPassPreviewPanel();
+    if (passPreview.parentElement !== asideCol) asideCol.appendChild(passPreview);
+
+    var linkedWrap = panel.querySelector('.a2w-push-linked-content-wrap');
+    if (linkedWrap) linkedWrap.style.display = 'none';
+
     wrapCharField('pushTitle', TITLE_MAX);
     wrapCharField('pushMessage', MESSAGE_MAX);
     syncPreview();
+    var updateCb = document.getElementById('pushUpdatePass');
+    if (updateCb && !updateCb.dataset.a2wPassPreviewWired) {
+      updateCb.dataset.a2wPassPreviewWired = '1';
+      updateCb.addEventListener('change', syncPushPassPreview);
+    }
+    togglePushStripBlock();
     wirePushSendConfirm();
   }
 
@@ -340,4 +425,5 @@
   }
 
   global.a2wEnhancePushPanel = enhanceImmediatePanel;
+  global.a2wSyncPushPassPreview = syncPushPassPreview;
 })(typeof window !== 'undefined' ? window : global);

@@ -1675,26 +1675,21 @@
                                 <button type="button" class="btn small danger" id="pushStripClearBtn" onclick="pushClearStrip()" style="display:none;">Rimuovi strip</button>
                             </div>
                         </div>
-                        <div class="form-group" style="margin-top:8px;">
-                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-                                <input type="checkbox" id="pushIncludePassLink" onchange="togglePushPassLinkFields()" style="width:auto;accent-color:var(--accent);">
-                                <span>Includi link nel pass</span>
-                            </label>
-                        </div>
-                        <div id="pushPassLinkFields" style="display:none;margin-top:8px;">
-                            <div class="form-group">
-                                <label class="form-label">URL link (https://)</label>
-                                <input type="url" id="pushPassLinkUrl" placeholder="https://..." oninput="syncPushPassLinkLabel()">
+                        <div id="pushBackSetupBlock" class="form-group" style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);">
+                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Retro pass</div>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Titolo e messaggio sopra compaiono sul retro come promozione. Aggiungi un solo link out cliccabile.</p>
+                            <div class="form-group" style="margin-bottom:10px;">
+                                <label class="form-label" for="pushPassLinkUrl">Link out — URL (https://)</label>
+                                <input type="url" id="pushPassLinkUrl" placeholder="https://..." oninput="syncPushPassLinkLabel(); if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Label del link (max 64)</label>
-                                <input type="text" id="pushPassLinkLabel" maxlength="64" placeholder="es. Compila il questionario">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" for="pushPassLinkLabel">Link out — testo (max 64)</label>
+                                <input type="text" id="pushPassLinkLabel" maxlength="64" placeholder="es. Scopri l'offerta" oninput="if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Scadenza link</label>
+                            <input type="hidden" id="pushIncludePassLink" value="">
+                            <div id="pushPassLinkFields" hidden aria-hidden="true">
                                 <input type="datetime-local" id="pushPassLinkExpires">
                             </div>
-                            <p style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.4;">Il link compare in cima al retro del pass fino alla scadenza (default 7 giorni).</p>
                         </div>
                         <div class="form-group" style="margin-top:8px;display:none;" id="pushLegacyLinkOut">
                             <label class="form-label">Link out — retro Link 1 (legacy Ads)</label>
@@ -1703,7 +1698,7 @@
                                 <input type="url" id="pushBackLinkUrl" placeholder="https://..." style="flex:1;">
                             </div>
                         </div>
-                        <div class="form-group" style="margin-top:8px;">
+                        <div class="form-group a2w-push-linked-content-wrap" style="margin-top:8px;">
                             <label class="form-label" for="pushLinkedContent">Collega contenuto (opzionale)</label>
                             <select id="pushLinkedContent" aria-label="Collega contenuto">
                                 <option value="">— Nessuno —</option>
@@ -6842,13 +6837,8 @@ async function loadHrTemplateBackFields(t) {
 }
 
 function togglePushPassLinkFields() {
-    const on = document.getElementById('pushIncludePassLink')?.checked;
-    const box = document.getElementById('pushPassLinkFields');
-    if (box) box.style.display = on ? 'block' : 'none';
-    if (on && !document.getElementById('pushPassLinkExpires')?.value) {
-        const el = document.getElementById('pushPassLinkExpires');
-        if (el) el.value = defaultPushLinkExpiryLocal();
-    }
+    /* Legacy: link fields live in #pushBackSetupBlock; expiry kept hidden until needed. */
+    togglePushStripBlock();
 }
 
 function defaultPushLinkExpiryLocal() {
@@ -7676,8 +7666,15 @@ let pushStripMediaId = null;
 
 function togglePushStripBlock() {
     const block = document.getElementById('pushStripBlock');
+    const backBlock = document.getElementById('pushBackSetupBlock');
     const on = document.getElementById('pushUpdatePass')?.checked;
     if (block) block.style.display = on ? 'block' : 'none';
+    if (backBlock) backBlock.style.display = on ? 'block' : 'none';
+    if (on && !document.getElementById('pushPassLinkExpires')?.value) {
+        const el = document.getElementById('pushPassLinkExpires');
+        if (el) el.value = defaultPushLinkExpiryLocal();
+    }
+    if (typeof a2wSyncPushPassPreview === 'function') a2wSyncPushPassPreview();
 }
 
 function pushPickStripFromMedia() {
@@ -7691,6 +7688,7 @@ function pushPickStripFromMedia() {
         const clr = document.getElementById('pushStripClearBtn');
         if (clr) clr.style.display = '';
         toast('Strip selezionata per la push');
+        if (typeof a2wSyncPushPassPreview === 'function') a2wSyncPushPassPreview();
     }, 'strip');
 }
 
@@ -7702,6 +7700,7 @@ function pushClearStrip() {
     }
     const clr = document.getElementById('pushStripClearBtn');
     if (clr) clr.style.display = 'none';
+    if (typeof a2wSyncPushPassPreview === 'function') a2wSyncPushPassPreview();
 }
 
 let pushHistoryCache = [];
@@ -7824,14 +7823,17 @@ function buildImmediatePushBody() {
     if (iwId) body.instant_win_id = iwId;
     const gamId = document.getElementById('pushGamification')?.value;
     if (gamId) body.gamification_id = gamId;
-    if (document.getElementById('pushIncludePassLink')?.checked) {
+    const passLinkUrl = (document.getElementById('pushPassLinkUrl')?.value || '').trim();
+    if (updatePass && passLinkUrl) {
         body.include_pass_link = true;
-        body.pass_link_url = (document.getElementById('pushPassLinkUrl')?.value || '').trim();
+        body.pass_link_url = passLinkUrl;
         body.pass_link_label = (document.getElementById('pushPassLinkLabel')?.value || '').trim();
         const expLocal = document.getElementById('pushPassLinkExpires')?.value;
         if (expLocal) body.pass_link_expires_at = new Date(expLocal).toISOString();
     }
-    applyPushLinkedContentToBody(body, document.getElementById('pushLinkedContent')?.value);
+    if (!isHrDashboard() && isLegacyCampaignsUiEnabled()) {
+        applyPushLinkedContentToBody(body, document.getElementById('pushLinkedContent')?.value);
+    }
     if (!isHrDashboard()) {
         const backLinkUrl = (document.getElementById('pushBackLinkUrl')?.value || '').trim();
         if (backLinkUrl) {
@@ -7850,12 +7852,14 @@ function resetImmediatePushForm() {
     if (messageEl) messageEl.value = '';
     clearPushFieldErrors();
     const incl = document.getElementById('pushIncludePassLink');
-    if (incl) incl.checked = false;
+    if (incl) incl.value = '';
     togglePushPassLinkFields();
-    ['pushPassLinkUrl', 'pushPassLinkLabel', 'pushPassLinkExpires'].forEach((id) => {
+    ['pushPassLinkUrl', 'pushPassLinkLabel'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+    const expEl = document.getElementById('pushPassLinkExpires');
+    if (expEl) expEl.value = '';
     const pbl = document.getElementById('pushBackLinkLabel');
     const pbu = document.getElementById('pushBackLinkUrl');
     if (pbl) pbl.value = '';

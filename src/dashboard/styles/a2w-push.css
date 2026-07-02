@@ -253,3 +253,103 @@ html.a2w-shell .a2w-campaign-modal-actions__hint {
     position: static;
   }
 }
+
+/* Pass retro preview (push setup) */
+html.a2w-shell .a2w-push-pass-preview {
+  margin-top: 16px;
+  padding: var(--space-4, 16px);
+  border: 1px solid var(--a2w-border-default, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+html.a2w-shell .a2w-push-pass-preview__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html.a2w-shell .a2w-push-pass-preview__hint {
+  margin: 0 0 12px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--a2w-text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+html.a2w-shell .a2w-push-pass-preview__faces {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+html.a2w-shell .a2w-push-pass-preview__face {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  min-height: 120px;
+}
+
+html.a2w-shell .a2w-push-pass-preview__face-label {
+  display: block;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.a2w-shell .a2w-push-pass-preview__strip {
+  height: 36px;
+  background: rgba(255, 255, 255, 0.08) center/cover no-repeat;
+}
+
+html.a2w-shell .a2w-push-pass-preview__front-row {
+  padding: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+html.a2w-shell .a2w-push-pass-preview__back-block {
+  padding: 8px;
+}
+
+html.a2w-shell .a2w-push-pass-preview__promo-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 4px;
+}
+
+html.a2w-shell .a2w-push-pass-preview__promo-body {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+html.a2w-shell .a2w-push-pass-preview__back-link {
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+}
+
+html.a2w-shell .a2w-push-pass-preview__link-label {
+  display: block;
+  color: #6eb6ff;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+html.a2w-shell .a2w-push-pass-preview__link-url {
+  display: block;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  word-break: break-all;
+}
+
+html.a2w-shell #pushBackSetupBlock .form-label {
+  font-size: 12px;
+}

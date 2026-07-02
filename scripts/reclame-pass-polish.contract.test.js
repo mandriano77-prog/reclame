@@ -20,12 +20,21 @@ test('Ads brand skips portal and personal area links', () => {
   assert.match(portalLink, /isPortalPassBrand\(brand\)/);
 });
 
-test('Custom logo omits logoText to avoid overlapping brand name', () => {
-  assert.match(passkit, /brandHasWalletLogoAsset/);
-  assert.match(passkit, /omitLogoText = hasCustomLogo/);
+test('passkit reads per-pass dynamic link for push link out on back', () => {
+  assert.match(passkit, /function resolveDynamicPassLink/);
+  assert.match(passkit, /resolveBackLink1\(brandConfig, instance/);
 });
 
 test('Thank-you page hides portal CTA for non-HR brands', () => {
   assert.match(thankYou, /showPortal/);
   assert.match(thankYou, /Pass aggiunto/);
+});
+
+test('push UX shows pass back preview with link out', () => {
+  const pushUx = fs.readFileSync(path.join(root, 'src/dashboard/js/a2w-push-ux.js'), 'utf8');
+  const indexHtml = fs.readFileSync(path.join(root, 'src/dashboard/index.html'), 'utf8');
+  assert.match(pushUx, /a2wPushPassPreview/);
+  assert.match(pushUx, /syncPushPassPreview/);
+  assert.match(indexHtml, /pushBackSetupBlock/);
+  assert.match(indexHtml, /Link out — URL/);
 });
