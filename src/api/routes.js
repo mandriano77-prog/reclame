@@ -3185,6 +3185,26 @@ router.post('/media', async (req, res) => {
     // Convert PDF to PNG if needed
     image_base64 = await pdfToPngIfNeeded(image_base64);
     const item = await createMedia({ brand_id, campaign_id: campaign_id || null, type, title, image_base64 });
+    // Il logo in Media Library È il logo brand (la UI mostra solo l'ultimo):
+    // aggancia subito wallet logo + palette auto, come POST /brands/:id/logo.
+    if (type === 'logo') {
+      try {
+        const brand = await getBrand(brand_id);
+        if (brand) {
+          const config = { ...(brand.config || {}) };
+          config.brand_identity_assets = { ...(config.brand_identity_assets || {}), logo: item.id };
+          await updateBrand(brand_id, { config });
+          const refreshed = await getBrand(brand_id);
+          const { applyBrandLogoBase64 } = require('../engine/brand-wallet-logo');
+          await applyBrandLogoBase64(brand_id, image_base64, {
+            brand: refreshed,
+            syncTemplates: isHrBrand(refreshed, req)
+          });
+        }
+      } catch (paletteErr) {
+        console.warn('Media logo palette sync failed:', paletteErr.message);
+      }
+    }
     res.json(item);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

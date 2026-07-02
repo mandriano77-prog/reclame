@@ -49,14 +49,25 @@ test('STEP 6: unified upload zones sync from style.images and media library', ()
   assert.match(indexHtml, /a2wApplyTplStyleImages\(existingImages\)/);
 });
 
-test('STEP 7: color pickers persist in style and preview', () => {
+test('STEP 7: auto palette UI and manual override in template modal', () => {
   assert.match(modalBlock, /id="tplColorsSection"/);
+  assert.match(modalBlock, /id="tplPaletteAutoBlock"/);
+  assert.match(modalBlock, /id="tplPaletteSwatches"/);
+  assert.match(modalBlock, /id="tplPaletteCustomizeBtn"/);
+  assert.match(modalBlock, /Personalizza colori/);
+  assert.match(modalBlock, /id="tplPaletteManualBlock"/);
   assert.match(modalBlock, /id="tplColorBg"/);
-  assert.match(modalBlock, /id="tplColorFg"/);
-  assert.match(modalBlock, /id="tplColorLabel"/);
-  assert.match(indexHtml, /a2wGetTemplatePreviewColors/);
+  assert.match(tplEditor, /loadBrandPaletteForTemplate/);
+  assert.match(tplEditor, /persistManualBrandPaletteIfNeeded/);
   assert.match(tplEditor, /getTemplatePreviewColors/);
   assert.match(tplEditor, /applyPreviewColors/);
+});
+
+test('STEP 7b: wallet notification icon in template modal (Ads shell)', () => {
+  assert.match(modalBlock, /id="tplImgWalletIconRow"/);
+  assert.match(modalBlock, /Icona notifica/);
+  assert.match(indexHtml, /isTplWalletIconUiEnabled/);
+  assert.match(indexHtml, /persistHrWalletIcon/);
 });
 
 test('STEP 8: save button in footer with async feedback', () => {

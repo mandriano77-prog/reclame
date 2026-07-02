@@ -3369,20 +3369,29 @@
 
                 <div id="tplColorsSection" class="a2w-tpl-colors" style="display:none;">
                     <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Colori pass</div>
-                    <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Sfondo, testo e label come nel pass Apple/Google Wallet. L’anteprima si aggiorna in tempo reale.</p>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="tplColorBg">Sfondo</label>
-                            <input type="color" id="tplColorBg" class="a2w-tpl-color-input" value="#0D0B1A" oninput="updatePassPreview()">
+                    <div id="tplPaletteAutoBlock">
+                        <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Palette automatica dal logo del brand (pass Apple/Google e accent della piattaforma). Carica o aggiorna il logo per rigenerarla.</p>
+                        <div id="tplPaletteSwatches" class="a2w-tpl-palette-swatches" aria-live="polite"></div>
+                        <p id="tplPaletteAutoHint" style="font-size:11px;color:var(--text2);margin:8px 0 0;line-height:1.45;"></p>
+                        <button type="button" class="btn small sec" id="tplPaletteCustomizeBtn" style="margin-top:10px;">Personalizza colori</button>
+                    </div>
+                    <div id="tplPaletteManualBlock" hidden>
+                        <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Override manuale: sostituisce la palette automatica sul pass e sulla piattaforma.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="tplColorBg">Sfondo</label>
+                                <input type="color" id="tplColorBg" class="a2w-tpl-color-input" value="#0D0B1A" oninput="updatePassPreview()">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="tplColorFg">Testo</label>
+                                <input type="color" id="tplColorFg" class="a2w-tpl-color-input" value="#FFFFFF" oninput="updatePassPreview()">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="tplColorLabel">Label</label>
+                                <input type="color" id="tplColorLabel" class="a2w-tpl-color-input" value="#A78BFA" oninput="updatePassPreview()">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="tplColorFg">Testo</label>
-                            <input type="color" id="tplColorFg" class="a2w-tpl-color-input" value="#FFFFFF" oninput="updatePassPreview()">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="tplColorLabel">Label</label>
-                            <input type="color" id="tplColorLabel" class="a2w-tpl-color-input" value="#A78BFA" oninput="updatePassPreview()">
-                        </div>
+                        <button type="button" class="btn small sec" id="tplPaletteRestoreAutoBtn" style="margin-top:4px;">Ripristina palette automatica</button>
                     </div>
                 </div>
 
@@ -3420,8 +3429,8 @@
                     </div>
                     <div class="form-row" id="tplImgWalletIconRow" style="display:none;">
                         <div class="form-group" style="flex:1;">
-                            <label class="form-label">Icona notifiche Wallet (quadrata)</label>
-                            <p style="font-size:11px;color:var(--text2);margin:0 0 8px;line-height:1.45;">Per le push su iPhone: usa un simbolo quadrato (es. 512×512). Il logo orizzontale del pass resta troppo piccolo nelle notifiche.</p>
+                            <label class="form-label">Icona notifica (quadrata, min 87×87 px)</label>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 8px;line-height:1.45;">Usata nelle notifiche push su iPhone e nel pass. Usa un simbolo quadrato (consigliato 512×512 px): il logo orizzontale resta troppo piccolo nelle notifiche.</p>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
                                 <button type="button" class="btn small" onclick="tplPickFromMedia('wallet_icon')">Da Media Library</button>
                             </div>
@@ -5284,11 +5293,13 @@ function applyProductShellTheme(line) {
                 ` .btn:not(.sec):not(.danger):not(.purple){background:${accent};color:${onA};}` +
                 ` .btn.sec{color:var(--text-primary);border-color:var(--border-strong);background:var(--bg-canvas);}`;
         } else {
+            // var(--accent) (non hex fisso): così la tinta brand di applyBrandAccentVars
+            // si propaga anche a nav attiva, focus e bottoni primari.
             style.textContent =
-                `input:focus,select:focus,textarea:focus{border-color:${accent}!important;box-shadow:0 0 0 2px ${ring}!important;}` +
-                ` .nav-item.active{background:${accent}!important;color:${onA}!important;}` +
-                ` .badge.active{background:${adjustAlpha(accent, 0.22)}!important;color:${accent}!important;}` +
-                ` .btn:not(.sec):not(.danger):not(.purple){background:${accent};color:${onA};}`;
+                `input:focus,select:focus,textarea:focus{border-color:var(--accent, ${accent})!important;box-shadow:0 0 0 2px var(--accent-subtle, ${ring})!important;}` +
+                ` .nav-item.active{background:var(--accent, ${accent})!important;color:${onA}!important;}` +
+                ` .badge.active{background:var(--accent-subtle, ${adjustAlpha(accent, 0.22)})!important;color:var(--accent, ${accent})!important;}` +
+                ` .btn:not(.sec):not(.danger):not(.purple){background:var(--accent, ${accent});color:${onA};}`;
         }
     }
 }
@@ -5428,10 +5439,46 @@ function normalizeBrandAccentHex(value) {
     return /^#[0-9a-fA-F]{6}$/.test(h) ? h.toUpperCase() : null;
 }
 
+/** Luminanza relativa WCAG in [0,1] da hex #RRGGBB. */
+function relativeLuminanceHex(hex) {
+    const h = hex.replace('#', '');
+    const chan = (v) => {
+        const c = v / 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return 0.2126 * chan(r) + 0.7152 * chan(g) + 0.0722 * chan(b);
+}
+
+/**
+ * Accent leggibile sulla shell scura: schiarisce i colori brand troppo scuri
+ * (es. navy quasi nero) finché la tinta resta visibile.
+ */
+function ensureVisibleBrandAccent(hex) {
+    let out = hex;
+    let guard = 0;
+    while (relativeLuminanceHex(out) < 0.05 && guard < 8) {
+        out = lightenHex(out, 24).toUpperCase();
+        guard += 1;
+    }
+    return out;
+}
+
+function resolveBrandAccentFromConfig(config) {
+    if (!config) return null;
+    // Tinge solo con una palette reale (auto dal logo/icona o override manuale):
+    // i default fissi di creazione brand (#0D0B1A) renderebbero la UI quasi nera.
+    if (!config.palette_source) return null;
+    return normalizeBrandAccentHex(
+        (config.colors && config.colors.accent) || config.backgroundColor
+    );
+}
+
 function applyBrandAccentVars(config) {
     const root = document.documentElement;
     const rootStyle = root.style;
-    const accent = normalizeBrandAccentHex(config && (config.backgroundColor || (config.colors && config.colors.accent)));
+    const paletteAccent = resolveBrandAccentFromConfig(config);
+    const accent = paletteAccent ? ensureVisibleBrandAccent(paletteAccent) : null;
     if (!accent || root.getAttribute('data-shell') !== 'dark') {
         // No brand palette (or light shell): fall back to the product theme accent
         // (--accent/--accent-hover are re-set by applyProductShellTheme).
@@ -6610,7 +6657,7 @@ function togglePassBackEditorMode() {
     if (hrNote) hrNote.style.display = hr ? 'block' : 'none';
     if (frontBlock) frontBlock.style.opacity = '1';
     const walletIconRow = document.getElementById('tplImgWalletIconRow');
-    if (walletIconRow) walletIconRow.style.display = hr ? '' : 'none';
+    if (walletIconRow) walletIconRow.style.display = isTplWalletIconUiEnabled() ? '' : 'none';
 }
 
 async function loadHrWalletIconPreview() {
@@ -6723,8 +6770,8 @@ async function openTemplateModal() {
     onPassTypeChange();
     if (isHrDashboard()) {
         await loadHrTemplateBackFields(null);
-        await loadHrWalletIconPreview();
     }
+    if (isTplWalletIconUiEnabled()) await loadHrWalletIconPreview();
 }
 
 async function editTemplate(id) {
@@ -6767,8 +6814,8 @@ async function editTemplate(id) {
     document.getElementById('tplContatti').value = fields.contatti || '';
     if (isHrDashboard()) {
         await loadHrTemplateBackFields(t);
-        await loadHrWalletIconPreview();
     }
+    if (isTplWalletIconUiEnabled()) await loadHrWalletIconPreview();
     // Reset and load existing images
     tplImageCache = {};
     ['tplImgLogo','tplImgStrip','tplImgThumb','tplImgBg'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
@@ -6790,7 +6837,11 @@ async function editTemplate(id) {
     document.body.classList.add('modal-open');
     populateStripPromoSelect();
     onPassTypeChange();
-    if (typeof a2wResetTplColorPickers === 'function') a2wResetTplColorPickers(t.style || {});
+    if (typeof a2wLoadBrandPaletteForTemplate === 'function') {
+        await a2wLoadBrandPaletteForTemplate();
+    } else if (typeof a2wResetTplColorPickers === 'function') {
+        a2wResetTplColorPickers(t.style || {});
+    }
 }
 
 async function saveTemplate() {
@@ -6851,6 +6902,11 @@ async function saveTemplate() {
     if (tplId && Object.keys(tplImageCache).length > 0) {
         await uploadTemplateImages(tplId);
     }
+    // Icona notifica (Ads): salvata sul brand, non sul template
+    if (!isHrDashboard() && brandId && isTplWalletIconUiEnabled()
+        && (tplImageCache.wallet_icon || tplWalletIconMediaId)) {
+        await persistHrWalletIcon();
+    }
     if (isHrDashboard() && brandId) {
         try {
             const existing = await fetch(`${API}/brands/${brandId}`, { headers: { ...getAuthHeaders() } }).then(r => r.json());
@@ -6878,6 +6934,7 @@ async function saveTemplate() {
         toast(editId ? 'Template aggiornato!' : 'Template creato!');
     }
     invalidateBrandCache();
+    applyBrandTheme();
     loadTemplates();
 }
 
@@ -6905,7 +6962,7 @@ function updatePassPreview() {
     const brandName = currentBrandName || 'BRAND';
     const passType = isHrDashboard() ? 'storeCard' : document.getElementById('tplType').value;
     const walletIconRow = document.getElementById('tplImgWalletIconRow');
-    if (walletIconRow) walletIconRow.style.display = isHrDashboard() ? '' : 'none';
+    if (walletIconRow) walletIconRow.style.display = isTplWalletIconUiEnabled() ? '' : 'none';
 
     if (isHrDashboard()) {
         document.getElementById('ppLogo').textContent = brandName;
@@ -7126,8 +7183,14 @@ function onPassTypeChange() {
 let tplImageCache = {}; // { logo: base64, strip: base64, ... }
 let tplWalletIconMediaId = null;
 
+/** Icona notifica (wallet icon) nel modale template: HR + shell Ads scura. */
+function isTplWalletIconUiEnabled() {
+    return (typeof isHrDashboard === 'function' && isHrDashboard())
+        || document.documentElement.classList.contains('a2w-shell');
+}
+
 async function persistHrWalletIcon({ reapplyExisting = false } = {}) {
-    if (!brandId || !isHrDashboard()) return { ok: false, skipped: true };
+    if (!brandId || !isTplWalletIconUiEnabled()) return { ok: false, skipped: true };
     if (tplImageCache.wallet_icon) {
         const res = await fetch(`${API}/brands/${brandId}/wallet-icon`, {
             method: 'POST',
@@ -12833,6 +12896,7 @@ async function saveBrandIdentity() {
         if (isA2wBrandIdentityV2Enabled()) {
             brandIdentityState.lastSavedAt = Date.now();
         }
+        invalidateBrandCache(); // config aggiornato (palette/logo): niente tinta stantia
         applyBrandTheme();
         await loadBrandIdentity();
     } catch (e) {

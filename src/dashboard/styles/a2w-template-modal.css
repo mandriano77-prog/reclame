@@ -338,6 +338,35 @@ html.a2w-shell #templateModal .a2w-tpl-upload--enhanced > .form-label:first-chil
   margin-bottom: 6px;
 }
 
+html.a2w-shell #templateModal .a2w-tpl-palette-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-palette-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 72px;
+}
+
+html.a2w-shell #templateModal .a2w-tpl-palette-swatch__chip {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--a2w-border-default, rgba(255, 255, 255, 0.12));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+html.a2w-shell #templateModal .a2w-tpl-palette-swatch__label {
+  font-size: 10px;
+  color: var(--text2, rgba(244, 237, 226, 0.68));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 @media (max-width: 860px) {
   html.a2w-shell #templateModal .a2w-tpl-modal__layout {
     flex-direction: column;

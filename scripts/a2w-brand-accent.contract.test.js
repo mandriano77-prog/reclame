@@ -17,9 +17,12 @@ test('applyBrandAccentVars esiste ed è cablata in applyBrandTheme', () => {
   assert.match(indexHtml, /applyBrandAccentVars\(null\)/);
 });
 
-test('accent brand letto da config.backgroundColor con fallback colors.accent', () => {
-  assert.match(indexHtml, /config\.backgroundColor \|\| \(config\.colors && config\.colors\.accent\)/);
+test('accent brand solo con palette_source (auto o manual), non con default fissi', () => {
+  assert.match(indexHtml, /function resolveBrandAccentFromConfig\(config\)/);
+  assert.match(indexHtml, /config\.palette_source/);
+  assert.match(indexHtml, /\(config\.colors && config\.colors\.accent\) \|\| config\.backgroundColor/);
   assert.match(indexHtml, /function normalizeBrandAccentHex\(/);
+  assert.match(indexHtml, /function ensureVisibleBrandAccent\(/);
 });
 
 test('tinta limitata alla shell scura e reversibile', () => {
