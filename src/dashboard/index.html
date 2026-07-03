@@ -1658,7 +1658,7 @@
                         <div class="form-group a2w-push-field--hidden">
                             <label class="form-label" for="pushChannel">Canale invio</label>
                             <select id="pushChannel" aria-label="Canale invio">
-                                <option value="apple" selected>Apple Wallet (APNs)</option>
+                                <option value="apple" selected>Apple Wallet (iPhone)</option>
                                 <option value="google">Google Wallet</option>
                                 <option value="samsung">Samsung Wallet</option>
                                 <option value="all">Tutti i canali</option>
@@ -1782,7 +1782,7 @@
                         <div class="form-group">
                             <label class="form-label">Canale invio</label>
                             <select id="schedChannel">
-                                <option value="apple">Apple Wallet (APNs)</option>
+                                <option value="apple">Apple Wallet (iPhone)</option>
                                 <option value="google">Google Wallet</option>
                                 <option value="samsung">Samsung Wallet</option>
                                 <option value="all">Tutti i canali</option>
@@ -1838,7 +1838,7 @@
                         <div class="form-group">
                             <label class="form-label">Canale aggiornamento</label>
                             <select id="geoChannel" style="max-width:280px;">
-                                <option value="apple">Apple Wallet (APNs)</option>
+                                <option value="apple">Apple Wallet (iPhone)</option>
                                 <option value="google">Google Wallet</option>
                                 <option value="samsung">Samsung Wallet</option>
                                 <option value="all">Tutti i canali</option>
@@ -2930,7 +2930,7 @@
             <!-- COMMERCIALE RECLAME -->
             <div id="commercial" class="section" data-rbac-section="commercial" hidden aria-hidden="true">
                 <h1 class="sec-title page-title">Commerciale</h1>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:16px;">Calendario inventory retail media, prenotazioni brand-tenant, performance closed-loop e fatturazione.</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:16px;">Calendario degli spazi pubblicitari, prenotazioni degli inserzionisti, risultati e fatturazione.</p>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
                     <div class="form-group" style="margin:0;">
                         <label class="form-label" for="commercialFilterFrom">Periodo da</label>
@@ -2976,8 +2976,8 @@
                             <select id="commercialBookingFormat">
                                 <option value="push_lockscreen">Push lockscreen</option>
                                 <option value="hub_sponsored">HUB sponsorizzato</option>
-                                <option value="geofence_recall">Geofencing richiamo</option>
-                                <option value="coupon_cpa">Coupon CPA cassa</option>
+                                <option value="geofence_recall">Richiamo per zona</option>
+                                <option value="coupon_cpa">Coupon riscattabile in cassa</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -5193,12 +5193,12 @@ const PRODUCT_MENU_COPY = {
         leads_stat_email: 'Con email',
         leads_search_placeholder: 'Cerca nome, email, telefono…',
         leads_add_btn: '＋ Aggiungi profilo',
-        leads_import_btn: 'Importa PII (CSV)',
+        leads_import_btn: 'Importa contatti (CSV)',
         leads_empty: 'Nessun profilo identificato',
         leads_empty_title: 'Nessun profilo identificato',
         leads_empty_desc: 'I pass anonimi sono elencati in Pass Emessi. Qui compaiono solo possessori con dati personali (form, import o integrazione).',
         leads_empty_add: 'Aggiungi profilo',
-        leads_empty_import: 'Importa PII (CSV)',
+        leads_empty_import: 'Importa contatti (CSV)',
         leads_empty_goto_passes: 'Vai a Pass Emessi',
         leads_export_empty: 'Nessun profilo da esportare',
         aud_overview_title: 'Panoramica possessori',
@@ -9155,7 +9155,7 @@ async function loadAudienceBehavior() {
         document.getElementById('audienceClosedLoopStats').innerHTML = `
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;margin-bottom:8px;">
                 <div><div style="font-weight:700;font-size:18px;">${cl.link_clicks ?? 0}</div><div style="color:var(--text2);font-size:11px;">Tap link</div></div>
-                <div><div style="font-weight:700;font-size:18px;">${cl.coupon_redemptions ?? 0}</div><div style="color:var(--text2);font-size:11px;">Riscatti CPA</div></div>
+                <div><div style="font-weight:700;font-size:18px;">${cl.coupon_redemptions ?? 0}</div><div style="color:var(--text2);font-size:11px;">Riscatti in cassa</div></div>
                 <div><div style="font-weight:700;font-size:18px;">${cl.click_to_redeem_pct ?? 0}%</div><div style="color:var(--text2);font-size:11px;">Tap → Cassa</div></div>
             </div>
             <p style="margin:0;font-size:12px;color:var(--text2);">Misurazione closed-loop: push sul pass, tap sul link out, riscatto verificato in cassa via QR wallet.</p>
@@ -10311,8 +10311,8 @@ async function loadLeads() {
         }
         const importBtnAds = document.getElementById('a2wContactsImportBtn');
         if (importBtnAds) {
-            importBtnAds.textContent = mc.leads_import_btn || 'Importa PII (CSV)';
-            importBtnAds.setAttribute('aria-label', mc.leads_import_btn || 'Importa PII da CSV');
+            importBtnAds.textContent = mc.leads_import_btn || 'Importa contatti (CSV)';
+            importBtnAds.setAttribute('aria-label', mc.leads_import_btn || 'Importa contatti da CSV');
         }
     }
     const searchEl = document.getElementById('leadsSearch');
