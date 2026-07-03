@@ -1411,8 +1411,8 @@
                     <div class="nav-item" onclick="nav('brand-identity')" data-section-id="brand-identity" data-requires-perm="brand_identity" role="button" tabindex="0">Identità Brand</div>
                     <div class="nav-item" onclick="nav('media-library')" data-section-id="media-library" data-requires-perm="media_library" role="button" tabindex="0">Media Library</div>
                     <div class="nav-item" onclick="nav('templates')" data-section-id="templates" data-requires-perm="templates" role="button" tabindex="0">Template Pass</div>
-                    <div class="nav-item" onclick="nav('passes')" data-section-id="passes" data-requires-perm="passes" role="button" tabindex="0">Pass Emessi</div>
-                    <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-requires-perm="employees" data-menu-key="nav_leads" data-menu-default="Contatti" role="button" tabindex="0">Contatti <span id="navNoMatricolaBadge" class="nav-badge" style="display:none;" title="Dipendenti senza matricola"></span></div>
+                    <div class="nav-item" onclick="nav('passes')" data-section-id="passes" data-requires-perm="passes" data-menu-key="nav_passes" data-menu-default="Pass Emessi" role="button" tabindex="0">Pass Emessi</div>
+                    <div class="nav-item" onclick="nav('leads')" data-section-id="leads" data-requires-perm="employees" data-menu-key="nav_leads" data-menu-default="Contatti" role="button" tabindex="0">Contatti <span class="nav-item__addon-badge a2w-reclame-only" data-menu-key="leads_nav_addon_badge" data-menu-default="Add-on">Add-on</span> <span id="navNoMatricolaBadge" class="nav-badge" style="display:none;" title="Dipendenti senza matricola"></span></div>
                 </div>
             </details>
 
@@ -1583,12 +1583,17 @@
 
             <!-- PASSES -->
             <div id="passes" class="section" data-rbac-section="passes">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <h1 class="sec-title page-title" style="margin-bottom:0">Pass Emessi</h1>
-                    <div style="display:flex;gap:8px;">
-                        <select id="passFilterCampaign" onchange="loadPasses(true)" style="width:auto;min-width:160px;">
-                            <option value="">Tutte le campagne</option>
-                        </select>
+                <div class="passes-page-header" style="margin-bottom:20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                        <div>
+                            <h1 class="sec-title page-title" data-menu-key="passes_page_title" data-menu-default="Pass Emessi" style="margin-bottom:6px;">Pass Emessi</h1>
+                            <p class="passes-page-blurb a2w-reclame-only" data-menu-key="passes_page_blurb" data-menu-default="Tutti i possessori del pass media, anonimi inclusi. Stato installazione, wallet e reachability push.">Tutti i possessori del pass media, anonimi inclusi. Stato installazione, wallet e reachability push.</p>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <select id="passFilterCampaign" onchange="loadPasses(true)" style="width:auto;min-width:160px;">
+                                <option value="">Tutte le campagne</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <p id="passFilterSessionHint" style="font-size:11px;color:var(--text2);margin:-8px 0 14px;">Campagna, ricerca e pagina sono ricordati per questo brand finché il tab del browser è aperto.</p>
@@ -2491,8 +2496,8 @@
                     </div>
                   </div>
                   <div class="a2w-contacts-header-actions" id="a2wContactsHeaderActions">
-                    <button type="button" class="btn a2w-contacts-header-btn" id="a2wContactsAddBtn" aria-label="Aggiungi contatto">＋ Aggiungi contatto</button>
-                    <button type="button" class="btn sec a2w-contacts-header-btn a2w-contacts-header-btn--secondary" id="a2wContactsImportBtn" aria-label="Importa contatti da CSV">Importa CSV</button>
+                    <button type="button" class="btn a2w-contacts-header-btn" id="a2wContactsAddBtn" data-menu-key="leads_add_btn" data-menu-default="＋ Aggiungi contatto" aria-label="Aggiungi contatto">＋ Aggiungi contatto</button>
+                    <button type="button" class="btn sec a2w-contacts-header-btn a2w-contacts-header-btn--secondary" id="a2wContactsImportBtn" data-menu-key="leads_import_btn" data-menu-default="Importa CSV" aria-label="Importa contatti da CSV">Importa CSV</button>
                   </div>
                 </div>
                 <div class="tabs-bar a2w-section-tabs" role="tablist" aria-label="Sezione Contatti" id="leadsSectionTabs">
@@ -2535,7 +2540,7 @@
                 </div>
 
                 <div id="audPanel_overview" class="aud-panel">
-                    <div class="sec-title" style="font-size:16px;margin-bottom:12px;">Possessori pass</div>
+                    <div class="sec-title" data-menu-key="aud_overview_title" data-menu-default="Possessori pass" style="font-size:16px;margin-bottom:12px;">Possessori pass</div>
                     <div class="stats-grid" id="audienceInsightsStats"></div>
                     <div class="card" style="margin-bottom:20px;">
                         <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Pass per campagna</div>
@@ -4541,6 +4546,7 @@ function getSectionPageTitle(sectionId) {
         ? getMergedProductMenuCopy(getDashboardProductLine())
         : {};
     if (sectionId === 'leads' && copy.leads_page_title) return copy.leads_page_title;
+    if (sectionId === 'passes' && copy.passes_page_title) return copy.passes_page_title;
     if (window.FD_NAV && typeof window.FD_NAV.getPageTitle === 'function') {
         return window.FD_NAV.getPageTitle(sectionId);
     }
@@ -5138,12 +5144,30 @@ const PRODUCT_MENU_DEFAULTS = {
 
 const PRODUCT_MENU_COPY = {
     ads: {
-        nav_leads: 'Possessori pass',
-        leads_page_title: 'Possessori pass',
-        leads_page_blurb: 'Elenco dei possessori del pass media: device registrati, segmentazione e attivazione campagne.',
-        leads_stat_total: 'Possessori totali',
-        leads_empty: 'Nessun possessore registrato',
-        leads_export_empty: 'Nessun possessore da esportare',
+        nav_passes: 'Pass Emessi',
+        passes_page_title: 'Pass Emessi',
+        passes_page_blurb: 'Tutti i possessori del pass media, anonimi inclusi. Stato installazione, wallet e reachability push.',
+        passes_empty_desc: 'I pass compariranno qui dopo la pubblicazione del QR o l\'iscrizione dalla landing. Ogni riga è un possessore, anche senza dati personali.',
+        nav_leads: 'Profili identificati',
+        leads_nav_addon_badge: 'Add-on',
+        leads_page_title: 'Profili identificati',
+        leads_page_blurb: 'Add-on: possessori che hanno lasciato dati personali (nome, email, telefono). I pass anonimi sono in Pass Emessi.',
+        leads_card_title: 'Anagrafica identificata',
+        leads_stat_total: 'Profili identificati',
+        leads_stat_device: 'Con device collegato',
+        leads_stat_phone: 'Con telefono',
+        leads_stat_email: 'Con email',
+        leads_search_placeholder: 'Cerca nome, email, telefono…',
+        leads_add_btn: '＋ Aggiungi profilo',
+        leads_import_btn: 'Importa PII (CSV)',
+        leads_empty: 'Nessun profilo identificato',
+        leads_empty_title: 'Nessun profilo identificato',
+        leads_empty_desc: 'I pass anonimi sono elencati in Pass Emessi. Qui compaiono solo possessori con dati personali (form, import o integrazione).',
+        leads_empty_add: 'Aggiungi profilo',
+        leads_empty_import: 'Importa PII (CSV)',
+        leads_empty_goto_passes: 'Vai a Pass Emessi',
+        leads_export_empty: 'Nessun profilo da esportare',
+        aud_overview_title: 'Panoramica possessori',
         nav_group_engagement: 'Attivazione',
         nav_group_retail_media: 'Retail Media',
     },
@@ -5188,6 +5212,11 @@ function applyProductMenuCopy(line) {
         if (!k) return;
         const v = copy[k];
         const text = (v != null && String(v) !== '') ? v : (el.dataset?.menuDefault || '');
+        if (el.classList.contains('nav-item__addon-badge')) {
+            if (v != null && String(v) !== '') el.textContent = v;
+            else if (el.dataset?.menuDefault) el.textContent = el.dataset.menuDefault;
+            return;
+        }
         if (el.classList.contains('nav-item')) {
             const labelEl = el.querySelector('.nav-label, .a2w-nav-label');
             if (labelEl) {
@@ -5198,6 +5227,20 @@ function applyProductMenuCopy(line) {
                 }
                 return;
             }
+            const addon = el.querySelector('.nav-item__addon-badge');
+            const badge = el.querySelector('.nav-badge');
+            el.textContent = '';
+            el.appendChild(document.createTextNode(text));
+            if (addon) {
+                el.appendChild(document.createTextNode(' '));
+                el.appendChild(addon);
+            }
+            if (badge) el.appendChild(badge);
+            if (text) {
+                el.setAttribute('data-fd-tooltip', text);
+                el.setAttribute('aria-label', text);
+            }
+            return;
         }
         if (v != null && String(v) !== '') el.textContent = v;
         else if (el.dataset && el.dataset.menuDefault) el.textContent = el.dataset.menuDefault;
@@ -6249,7 +6292,11 @@ async function loadPasses(resetPage = false) {
     window._lastPassesForExport = filteredPasses;
 
     if (!passes.length) {
-        el.innerHTML = renderEmptyState({ title: 'Nessun pass emesso', description: 'I pass compariranno qui dopo la pubblicazione o l\'iscrizione.', icon: 'inbox' });
+        const mc = getMergedProductMenuCopy(getDashboardProductLine());
+        const emptyDesc = isA2wLeadsRedesignActive() && mc.passes_empty_desc
+            ? mc.passes_empty_desc
+            : 'I pass compariranno qui dopo la pubblicazione o l\'iscrizione.';
+        el.innerHTML = renderEmptyState({ title: 'Nessun pass emesso', description: emptyDesc, icon: 'inbox' });
         persistPassFilters();
         return;
     }
@@ -9496,7 +9543,7 @@ function ensureA2wLeadsHeaderChrome() {
         helpBtn.type = 'button';
         helpBtn.className = 'a2w-contacts-help-trigger';
         helpBtn.id = 'a2wContactsHelpBtn';
-        helpBtn.setAttribute('aria-label', 'Informazioni su Contatti');
+        helpBtn.setAttribute('aria-label', 'Informazioni su ' + (title?.textContent?.trim() || 'profili'));
         helpBtn.setAttribute('aria-describedby', 'a2wContactsHelpTooltip');
         helpBtn.textContent = '?';
 
@@ -9839,25 +9886,27 @@ function renderLeadsToolbar() {
         leadsToolbarInitialized = false;
     }
     if (isA2wLeadsRedesignActive()) {
+        const mc = getMergedProductMenuCopy(getDashboardProductLine());
         host.classList.add('a2w-contacts-toolbar');
+        const searchPh = mc.leads_search_placeholder || 'Cerca per nome, email, telefono…';
         host.innerHTML = `
           <div class="a2w-contacts-search-wrap">
-            <label for="leadsSearch" class="sr-only">Cerca contatti</label>
+            <label for="leadsSearch" class="sr-only">Cerca profili</label>
             <span class="a2w-contacts-search-icon" aria-hidden="true">⌕</span>
             <input
               type="text"
               id="leadsSearch"
               class="a2w-contacts-search-input"
-              placeholder="Cerca per nome, email, telefono…"
+              placeholder="${esc(searchPh)}"
               autocomplete="off"
             >
           </div>
-          <div class="a2w-contacts-toolbar-actions" role="group" aria-label="Azioni contatti">
+          <div class="a2w-contacts-toolbar-actions" role="group" aria-label="Azioni profili identificati">
             <div class="a2w-contacts-filter-wrap">
-              <button type="button" class="btn sec a2w-contacts-toolbar-btn" id="a2wLeadsFiltersBtn" aria-expanded="false" aria-controls="a2wLeadsFiltersPanel" aria-haspopup="dialog" aria-label="Apri filtri contatti">Filtri</button>
+              <button type="button" class="btn sec a2w-contacts-toolbar-btn" id="a2wLeadsFiltersBtn" aria-expanded="false" aria-controls="a2wLeadsFiltersPanel" aria-haspopup="dialog" aria-label="Apri filtri">Filtri</button>
               <div class="a2w-contacts-filter-popover" id="a2wLeadsFiltersPanel" role="dialog" aria-modal="false" aria-labelledby="a2wLeadsFiltersTitle" hidden>
                 <header class="a2w-contacts-filter-popover__head">
-                  <p class="a2w-contacts-filter-popover__title" id="a2wLeadsFiltersTitle">Filtra contatti</p>
+                  <p class="a2w-contacts-filter-popover__title" id="a2wLeadsFiltersTitle">Filtra profili</p>
                   <p class="a2w-contacts-filter-popover__hint">I filtri sono cumulativi</p>
                 </header>
                 <div class="a2w-contacts-filter-options">
@@ -9988,7 +10037,7 @@ function renderLegacyLeadsStats(data, mc) {
         const kpis = [
             {
                 key: 'total',
-                label: 'Contatti totali',
+                label: mc.leads_stat_total || 'Contatti totali',
                 value: rows.length,
                 delta: rows.filter(inLast7Days).length,
                 icon: '👥',
@@ -9996,21 +10045,21 @@ function renderLegacyLeadsStats(data, mc) {
             },
             {
                 key: 'device',
-                label: 'Con device registrato',
+                label: mc.leads_stat_device || 'Con device registrato',
                 value: rows.filter((l) => !!(l.device_id && String(l.device_id).trim())).length,
                 delta: rows.filter((l) => !!(l.device_id && String(l.device_id).trim()) && inLast7Days(l)).length,
                 icon: '📱'
             },
             {
                 key: 'phone',
-                label: 'Con telefono',
+                label: mc.leads_stat_phone || 'Con telefono',
                 value: rows.filter((l) => !!(l.player_phone && String(l.player_phone).trim())).length,
                 delta: rows.filter((l) => !!(l.player_phone && String(l.player_phone).trim()) && inLast7Days(l)).length,
                 icon: '☎'
             },
             {
                 key: 'email',
-                label: 'Con email',
+                label: mc.leads_stat_email || 'Con email',
                 value: rows.filter((l) => !!(l.player_email && String(l.player_email).trim())).length,
                 delta: rows.filter((l) => !!(l.player_email && String(l.player_email).trim()) && inLast7Days(l)).length,
                 icon: '✉'
@@ -10148,7 +10197,7 @@ async function loadLeads() {
     updateLeadsImportButton();
     setLeadsTableHead(leadsHrMode);
     const cardTitle = document.getElementById('contactsCardATitle');
-    if (cardTitle) cardTitle.textContent = leadsHrMode ? 'Anagrafica dipendenti' : 'Contatti';
+    if (cardTitle) cardTitle.textContent = leadsHrMode ? 'Anagrafica dipendenti' : (mc.leads_card_title || mc.leads_page_title || 'Contatti');
     if (leadsHrMode) {
         const addBtn = document.getElementById('a2wContactsAddBtn');
         if (addBtn) {
@@ -10165,6 +10214,16 @@ async function loadLeads() {
     } else {
         const headerActions = document.getElementById('a2wContactsHeaderActions');
         if (headerActions) headerActions.hidden = false;
+        const addBtn = document.getElementById('a2wContactsAddBtn');
+        if (addBtn) {
+            addBtn.textContent = mc.leads_add_btn || '＋ Aggiungi profilo';
+            addBtn.setAttribute('aria-label', mc.leads_add_btn || 'Aggiungi profilo');
+        }
+        const importBtnAds = document.getElementById('a2wContactsImportBtn');
+        if (importBtnAds) {
+            importBtnAds.textContent = mc.leads_import_btn || 'Importa PII (CSV)';
+            importBtnAds.setAttribute('aria-label', mc.leads_import_btn || 'Importa PII da CSV');
+        }
     }
     const searchEl = document.getElementById('leadsSearch');
     if (searchEl) {
@@ -10347,6 +10406,11 @@ function renderLeadsTable(leads) {
     const filteredRows = Array.isArray(leads) ? leads : [];
 
     if (isA2w && !leadsHrMode && totalRows === 0) {
+        const emptyTitle = mc.leads_empty_title || mc.leads_empty || 'Nessun contatto ancora';
+        const emptyDesc = mc.leads_empty_desc || 'Crea una campagna con landing page per raccogliere dati personali.';
+        const emptyAdd = mc.leads_empty_add || 'Aggiungi manualmente';
+        const emptyImport = mc.leads_empty_import || 'Importa CSV';
+        const gotoPasses = mc.leads_empty_goto_passes || 'Vai a Pass Emessi';
         if (emptyHost) {
             emptyHost.hidden = false;
             emptyHost.innerHTML = `
@@ -10354,25 +10418,17 @@ function renderLeadsTable(leads) {
                 <div class="a2w-contacts-empty__icon" aria-hidden="true">
                   <svg class="a2w-contacts-empty__icon-svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
                 </div>
-                <h2 class="a2w-contacts-empty__title">Nessun contatto ancora</h2>
-                <p class="a2w-contacts-empty__desc">Crea una campagna con landing page per raccogliere contatti automaticamente da form e pass Wallet.</p>
+                <h2 class="a2w-contacts-empty__title">${esc(emptyTitle)}</h2>
+                <p class="a2w-contacts-empty__desc">${esc(emptyDesc)}</p>
                 <div class="a2w-contacts-empty__actions a2w-contacts-empty__actions--primary">
-                  <button type="button" class="btn a2w-btn-primary a2w-contacts-empty__cta" onclick="openA2wContactsPrimaryLanding()">Crea la prima campagna</button>
+                  <button type="button" class="btn sec a2w-contacts-empty__cta" onclick="nav('passes')">${esc(gotoPasses)}</button>
                 </div>
-                <p class="a2w-contacts-empty__or" aria-hidden="true">oppure</p>
+                <p class="a2w-contacts-empty__or" aria-hidden="true">add-on dati personali</p>
                 <div class="a2w-contacts-empty__actions a2w-contacts-empty__actions--secondary">
-                  <button type="button" class="a2w-contacts-empty__link" onclick="openA2wAddContactModal()">Aggiungi manualmente</button>
+                  <button type="button" class="a2w-contacts-empty__link" onclick="openA2wAddContactModal()">${esc(emptyAdd)}</button>
                   <span class="a2w-contacts-empty__sep" aria-hidden="true">·</span>
-                  <button type="button" class="a2w-contacts-empty__link a2w-contacts-empty__link--muted" onclick="openEmployeeImportModal()">Importa CSV</button>
+                  <button type="button" class="a2w-contacts-empty__link a2w-contacts-empty__link--muted" onclick="openEmployeeImportModal()">${esc(emptyImport)}</button>
                 </div>
-                <details class="a2w-contacts-empty__howto">
-                  <summary>Come funziona la raccolta contatti</summary>
-                  <ol class="a2w-contacts-empty__steps">
-                    <li>Crea una campagna (con landing e UTM)</li>
-                    <li>Configura un pass</li>
-                    <li>Condividi il link o lancia la campagna</li>
-                  </ol>
-                </details>
               </div>
             `;
         }
