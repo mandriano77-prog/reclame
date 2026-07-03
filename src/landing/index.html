@@ -402,7 +402,7 @@
       async function loadBrand() {
         try {
           const r = await fetch(`/api/v1/brands/by-slug/${encodeURIComponent(slug)}`);
-          if (!r.ok) return;
+          if (!r.ok) { handleBrandLoadError(); return; }
           const brand = await r.json();
           const c = brand.config || {};
 
@@ -452,7 +452,25 @@
           bgImg.src = `/api/v1/brands/by-slug/${encodeURIComponent(slug)}/landing-bg?t=${Date.now()}`;
 
           setupWalletButtons(brand.wallet || {});
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error(e); handleBrandLoadError(); }
+      }
+
+      // On a failed brand load, keep UA gating (Apple already hidden on Android) and give the user
+      // a visible, retry-able message instead of a silent dead end.
+      function handleBrandLoadError() {
+        if (el.error) {
+          el.error.textContent = 'Impossibile caricare la pagina. Controlla la connessione e ';
+          var retry = document.createElement('a');
+          retry.href = '#';
+          retry.textContent = 'riprova';
+          retry.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            el.error.textContent = '';
+            loadBrand();
+          });
+          el.error.appendChild(retry);
+          el.error.appendChild(document.createTextNode('.'));
+        }
       }
 
       function setupWalletButtons(wallet) {
@@ -475,10 +493,17 @@
         }
         if (isAndroid) {
           appleBtn.style.display = 'none';
-          if (w.google && googleBtn) googleBtn.style.display = 'flex';
-          if (w.samsung && samsungBtn) samsungBtn.style.display = 'flex';
-          if (!w.google && !w.samsung) appleBtn.style.display = 'none';
-          if (el.deviceNote) el.deviceNote.textContent = 'Consigliato: Android con Google/Samsung Wallet installato.';
+          var hasGoogle = !!(w.google && googleBtn);
+          var hasSamsung = !!(w.samsung && samsungBtn);
+          if (hasGoogle) googleBtn.style.display = 'flex';
+          if (hasSamsung) samsungBtn.style.display = 'flex';
+          if (!hasGoogle && !hasSamsung) {
+            // Brand is Apple-only: never leave the Android user on a page with no CTA.
+            if (el.error) el.error.textContent = 'Questo pass è disponibile solo su iPhone (Apple Wallet). Apri questa pagina da un iPhone per aggiungerlo.';
+            if (el.deviceNote) el.deviceNote.textContent = '';
+          } else {
+            if (el.deviceNote) el.deviceNote.textContent = 'Aggiungi il pass a Google Wallet o Samsung Wallet.';
+          }
           return;
         }
         appleBtn.style.display = 'flex';
@@ -486,8 +511,16 @@
         if (w.google && googleBtn) googleBtn.style.display = 'flex';
         if (w.samsung && samsungBtn) samsungBtn.style.display = 'flex';
         if (el.deviceNote) {
-          el.deviceNote.textContent = 'Desktop supportato per avvio flusso, ma i KPI principali contano solo installazioni wallet confermate da mobile/callback.';
+          el.deviceNote.textContent = 'Per l’installazione diretta, apri questa pagina dal tuo telefono.';
         }
+      }
+
+      // UA-only gating that runs immediately, independent of the brand fetch, so a failed or slow
+      // network can never leave an Android user with a misleading "Aggiungi ad Apple" button.
+      function applyInitialDeviceGating() {
+        var ua = navigator.userAgent || '';
+        var appleBtn = document.getElementById('installBtn');
+        if (/android/i.test(ua) && appleBtn) appleBtn.style.display = 'none';
       }
 
       function showThankYou(portalHref, passDownloadUrl) {
@@ -571,6 +604,7 @@
       }
 
       el.btn.addEventListener('click', install);
+      applyInitialDeviceGating();
       loadBrand();
     })();
 
