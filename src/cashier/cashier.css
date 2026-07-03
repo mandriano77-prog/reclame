@@ -137,3 +137,9 @@ body {
   border: 1px solid var(--border);
   color: var(--text);
 }
+
+/* Visible keyboard focus (WCAG 2.4.7) — dark surface */
+:where(a, button, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible {
+  outline: 2px solid #F4EDE2;
+  outline-offset: 2px;
+}

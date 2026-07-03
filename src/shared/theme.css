@@ -63,6 +63,12 @@ select:focus {
   box-shadow: 0 0 0 3px var(--brand-subtle);
 }
 
+/* Visible keyboard focus for landing/join/activate (which load this file). WCAG 2.4.7. */
+:where(a, button, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--brand-dark, #7C3AED);
+  outline-offset: 2px;
+}
+
 .hr-fieldset {
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
