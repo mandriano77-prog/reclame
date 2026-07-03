@@ -885,6 +885,12 @@ async function getDb() {
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS member_id TEXT REFERENCES members(id) ON DELETE SET NULL`).catch(() => {});
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`).catch(() => {});
 
+    // Indexes on hot filtered columns (defined here — after the member_id ALTER above and the
+    // members table creation — so the target columns exist). member/pass/email lookups otherwise seq-scan.
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_passes_member ON pass_instances(member_id) WHERE member_id IS NOT NULL`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_events_pass ON events(pass_id)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_members_brand_email_lower ON members(brand_id, LOWER(TRIM(email)))`).catch(() => {});
+
     await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS hr_email VARCHAR(255)`).catch(() => {});
     await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS hr_phone VARCHAR(64)`).catch(() => {});
     await pool.query(`ALTER TABLE brands ADD COLUMN IF NOT EXISTS dpo_email VARCHAR(255)`).catch(() => {});
