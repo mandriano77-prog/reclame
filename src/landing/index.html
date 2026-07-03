@@ -315,8 +315,8 @@
     </div>
     <div class="icon-circle" aria-hidden="true">&#10003;</div>
     <h1>Benvenuto in <span id="tyBrand">Wallet</span>.</h1>
-    <p class="body-copy">Il pass è ora nel tuo wallet.<br>
-    Hai appena attivato il <strong>filo diretto</strong> con <span id="tyBrandInline">Wallet</span>: le comunicazioni arrivano direttamente sulla lock-screen del tuo iPhone — niente email, niente intranet.</p>
+    <p class="body-copy">Se il pass non si è aperto da solo, tocca «Scarica di nuovo» qui sotto.<br>
+    Stai attivando il <strong>filo diretto</strong> con <span id="tyBrandInline">Wallet</span>: le comunicazioni arrivano direttamente sulla lock-screen del tuo iPhone — niente email, niente intranet.</p>
     <p class="muted">Puoi gestire cosa ricevere dal tuo profilo personale, in qualsiasi momento.</p>
     <div class="cta-stack">
       <a class="btn-primary" id="tyPortalBtn" href="/portal/">Apri il mio profilo →</a>
@@ -515,6 +515,14 @@
         }
       }
 
+      // In-app browsers (social apps) frequently block blob/<a download>, so the .pkpass never
+      // reaches the wallet even though the flow "succeeds". Detect them to fall back to a direct
+      // navigation to the pass URL (served as application/vnd.apple.pkpass).
+      function isInAppBrowser() {
+        var ua = navigator.userAgent || '';
+        return /FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|WhatsApp|Snapchat|Pinterest|LinkedInApp|TikTok|MicroMessenger/i.test(ua);
+      }
+
       // UA-only gating that runs immediately, independent of the brand fetch, so a failed or slow
       // network can never leave an Android user with a misleading "Aggiungi ad Apple" button.
       function applyInitialDeviceGating() {
@@ -584,6 +592,14 @@
           const portalHref = r.headers.get('X-Portal-Href');
           const passDownloadUrl = r.headers.get('X-Pass-Download-Url')
             || (r.headers.get('X-Pass-Id') ? `/api/v1/passes/${r.headers.get('X-Pass-Id')}/download` : null);
+
+          // In-app browser: skip the blob/<a download> dance (it silently fails there) and
+          // navigate straight to the pass URL so iOS opens the Add-to-Wallet sheet.
+          if (isInAppBrowser() && passDownloadUrl) {
+            window.location.href = passDownloadUrl;
+            return;
+          }
+
           const blob = await r.blob();
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
