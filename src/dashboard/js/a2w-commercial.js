@@ -92,7 +92,7 @@
       var res = await fetch(API + '/brands/' + encodeURIComponent(bid) + '/commercial/calendar?' + calendarQuery().replace(/^&/, ''), { headers: authHeaders() });
       var data = res.ok ? await res.json() : {};
       if (!res.ok) {
-        pkgEl.innerHTML = '<p style="color:var(--text2);">Calendario non disponibile.</p>';
+        renderCommercialCalendarError(pkgEl);
         return;
       }
 
@@ -176,7 +176,20 @@
       }
     } catch (e) {
       console.error('loadCommercialCalendar', e);
+      // Don't leave the admin staring at an empty calendar as if there were no bookings.
+      renderCommercialCalendarError(pkgEl);
     }
+  }
+
+  function renderCommercialCalendarError(container) {
+    if (!container) return;
+    container.innerHTML =
+      '<div role="alert" style="border:1px solid rgba(255,107,107,.35);border-radius:10px;padding:14px;color:var(--text2);">' +
+      'Impossibile caricare il calendario commerciale. Controlla la connessione e ' +
+      '<button type="button" class="btn sec small" id="commercialCalendarRetry" style="margin-left:6px;">Riprova</button>' +
+      '</div>';
+    var retry = document.getElementById('commercialCalendarRetry');
+    if (retry) retry.addEventListener('click', loadCommercialCalendar);
   }
 
   async function patchBookingStatus(bookingId, status) {
