@@ -1820,7 +1820,7 @@
                 <div id="pushPanel_geofencing" class="push-panel" style="display:none;">
                     <div class="push-card" style="margin-top:0;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                            <span style="font-weight:700;font-size:14px;color:var(--text1);">Punti di interesse</span>
+                            <span style="font-weight:700;font-size:14px;color:var(--text-primary);">Punti di interesse</span>
                             <button class="btn small" onclick="addGeoLocation()">+ Aggiungi POI</button>
                         </div>
                         <div id="geoLocationsList"></div>
@@ -2201,7 +2201,7 @@
                                     </div>
                                     <div class="form-group" id="wzTypeHrStatic" style="display:none">
                                         <label class="form-label">Layout</label>
-                                        <div class="form-static-value" style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text1);">Pass dipendente</div>
+                                        <div class="form-static-value" style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);">Pass dipendente</div>
                                     </div>
                                 </div>
                             </div>
@@ -3508,7 +3508,7 @@
                     </div>
                     <div class="form-group" id="tplTypeHrStatic" style="display:none">
                         <label class="form-label">Layout</label>
-                        <div class="form-static-value" style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text1);">Pass dipendente</div>
+                        <div class="form-static-value" style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);">Pass dipendente</div>
                     </div>
                     <div class="form-group"><label class="form-label">Descrizione</label><input type="text" id="tplDescription" placeholder="es. Sconto benvenuto" oninput="updatePassPreview()"></div>
                 </div>
@@ -3792,7 +3792,7 @@
   </form>
 </dialog>
 
-<div id="toastEl" class="toast"></div>
+<div id="toastEl" class="toast" role="status" aria-live="polite"></div>
 
 <button type="button" id="waiBtn" class="wai-fab" aria-label="Apri assistente W.AI" data-tooltip="Apri assistente W.AI" title="Apri assistente W.AI">W.AI</button>
 
@@ -11936,14 +11936,14 @@ function wzBuildPreview() {
     const hasCont = !!document.getElementById('wzContatti').value.trim();
     document.getElementById('wzSummary').innerHTML = `
         <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 12px;font-size:13px;">
-            <span style="font-weight:600;color:var(--text1);">Nome</span><span>${esc(document.getElementById('wzName').value || '—')}</span>
-            <span style="font-weight:600;color:var(--text1);">Layout</span><span>${formatTemplatePassTypeLabel(type)}</span>
-            <span style="font-weight:600;color:var(--text1);">Campi fronte</span><span>${frontFields} configurati</span>
-            <span style="font-weight:600;color:var(--text1);">Link retro</span><span>${backLinks} link</span>
-            <span style="font-weight:600;color:var(--text1);">Regolamento</span><span>${hasReg ? 'Presente' : 'Non configurato'}</span>
-            <span style="font-weight:600;color:var(--text1);">Contatti</span><span>${hasCont ? 'Presenti' : 'Non configurati'}</span>
-            <span style="font-weight:600;color:var(--text1);">Logo</span><span>${wzLogoBase64 ? '&#10003; Selezionato' : 'Nessuno'}</span>
-            <span style="font-weight:600;color:var(--text1);">Strip</span><span>${wzStripBase64 ? '&#10003; Selezionata' : 'Nessuna'}</span>
+            <span style="font-weight:600;color:var(--text-primary);">Nome</span><span>${esc(document.getElementById('wzName').value || '—')}</span>
+            <span style="font-weight:600;color:var(--text-primary);">Layout</span><span>${formatTemplatePassTypeLabel(type)}</span>
+            <span style="font-weight:600;color:var(--text-primary);">Campi fronte</span><span>${frontFields} configurati</span>
+            <span style="font-weight:600;color:var(--text-primary);">Link retro</span><span>${backLinks} link</span>
+            <span style="font-weight:600;color:var(--text-primary);">Regolamento</span><span>${hasReg ? 'Presente' : 'Non configurato'}</span>
+            <span style="font-weight:600;color:var(--text-primary);">Contatti</span><span>${hasCont ? 'Presenti' : 'Non configurati'}</span>
+            <span style="font-weight:600;color:var(--text-primary);">Logo</span><span>${wzLogoBase64 ? '&#10003; Selezionato' : 'Nessuno'}</span>
+            <span style="font-weight:600;color:var(--text-primary);">Strip</span><span>${wzStripBase64 ? '&#10003; Selezionata' : 'Nessuna'}</span>
         </div>
     `;
 }

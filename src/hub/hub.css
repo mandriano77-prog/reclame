@@ -308,7 +308,9 @@ input {
   padding: 12px 14px;
   border: none;
   border-radius: 12px;
-  background: var(--hub-accent);
+  /* Darker than --hub-accent so white label clears WCAG AA (--hub-accent is kept for
+     accent text on the dark surface, where a lighter purple reads better). */
+  background: #7C3AED;
   color: #fff;
   font-weight: 600;
   cursor: pointer;

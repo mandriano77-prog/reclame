@@ -15,11 +15,11 @@
     --text-primary: #0F172A;
     --text-body: #334155;
     --text-secondary: #64748B;
-    --text-muted: #94A3B8;
+    --text-muted: #64748B;
     --text-on-accent: #FFFFFF;
 
     /* Accent */
-    --accent: #8B5CF6;
+    --accent: #7C3AED;
     --accent-hover: #7C3AED;
     --accent-subtle: #F5F3FF;
 

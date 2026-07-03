@@ -45,13 +45,14 @@ a {
 
 button.btn-primary,
 .btn-primary {
-  background: var(--brand);
+  /* --brand-dark (#7C3AED) clears WCAG AA for white text; --brand (#8B5CF6) is 4.23:1 and fails */
+  background: var(--brand-dark);
   color: #fff;
 }
 
 button.btn-primary:hover,
 .btn-primary:hover {
-  background: var(--brand-dark);
+  background: #6D28D9;
 }
 
 input:focus,
