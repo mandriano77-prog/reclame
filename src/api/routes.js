@@ -2634,10 +2634,10 @@ router.get('/push/jobs/:id', async (req, res) => {
 
 router.get('/push/history', async (req, res) => {
   try {
-    const { brand_id } = req.query;
+    const { brand_id, limit } = req.query;
     if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
     if (!requireBrandId(req, res, brand_id)) return;
-    const pushes = await listPushes(brand_id);
+    const pushes = await listPushes(brand_id, limit);
     res.json(pushes);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -2826,11 +2826,16 @@ router.put('/brands/:id/geofencing', async (req, res) => {
 
     await updateBrand(req.params.id, { config });
 
-    // Regenerate all active passes to include new locations
-    const passes = await pool.query(
-      'SELECT id FROM pass_instances WHERE brand_id = $1', [req.params.id]
+    // Regenerate all active passes to include new locations. Fetch the pass rows once and reuse
+    // them; only pull the heavy columns (SELECT *) when a Google/Samsung sync actually needs them.
+    const needFullRows = sendGoogle || (sendSamsung && samsungWallet.isConfigured());
+    const passRows = await pool.query(
+      needFullRows
+        ? 'SELECT * FROM pass_instances WHERE brand_id = $1'
+        : 'SELECT id FROM pass_instances WHERE brand_id = $1',
+      [req.params.id]
     );
-    await touchPassesByIds(passes.rows.map((p) => p.id));
+    await touchPassesByIds(passRows.rows.map((p) => p.id));
 
     let pushCount = 0;
     if (sendApple) {
@@ -2843,7 +2848,6 @@ router.put('/brands/:id/geofencing', async (req, res) => {
 
     let googleSync = { attempted: 0, updated: 0, errors: 0, skipped: !sendGoogle };
     let samsungSync = { attempted: 0, notified: 0, skipped: !sendSamsung || !samsungWallet.isConfigured() };
-    const passRows = await pool.query('SELECT * FROM pass_instances WHERE brand_id = $1', [req.params.id]);
     if (sendGoogle) {
       googleSync = await syncGoogleWalletObjectsForPasses({
         brand: await getBrand(req.params.id),

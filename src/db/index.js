@@ -2273,8 +2273,9 @@ async function logPush(data) {
   return result.rows[0];
 }
 
-async function listPushes(brandId) {
-  const result = await pool.query('SELECT * FROM push_log WHERE brand_id = $1 ORDER BY created_at DESC', [brandId]);
+async function listPushes(brandId, limit = 200) {
+  const cap = Math.min(Math.max(parseInt(limit) || 200, 1), 500);
+  const result = await pool.query('SELECT * FROM push_log WHERE brand_id = $1 ORDER BY created_at DESC LIMIT $2', [brandId, cap]);
   return result.rows;
 }
 
