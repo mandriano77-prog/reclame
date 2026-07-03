@@ -73,16 +73,18 @@ test('fd-conventions module exposes loader and tab switcher', () => {
   assert.match(convSource, /hub-analytics/);
 });
 
-test('member import rejects payloads over server-side 5 MB limit', () => {
+test('member import rejects payloads over server-side 5 MB limit', async () => {
+  // parseImportFile is async, so it rejects rather than throwing synchronously — the old
+  // assert.throws never matched the returned promise. Use assert.rejects.
   const { parseImportFile } = require('../src/engine/member-import');
   const tooLargeCsv = 'matricola,nome\n' + '1,'.repeat(3 * 1024 * 1024);
-  assert.throws(
+  await assert.rejects(
     () => parseImportFile({ csv_text: tooLargeCsv }),
     /File import troppo grande/
   );
 
   const tooLargeFile = Buffer.alloc(5 * 1024 * 1024 + 1).toString('base64');
-  assert.throws(
+  await assert.rejects(
     () => parseImportFile({ file_base64: tooLargeFile, filename: 'dipendenti.xlsx' }),
     /File import troppo grande/
   );
