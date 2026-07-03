@@ -67,7 +67,29 @@ app.use((req, res, next) => {
 
 // Middleware
 app.use(cors(corsOptions()));
-app.use(morgan('combined'));
+
+// Access logs: redact auth tokens that travel in URLs (hub ?token=, portal ?t=, reset=,
+// and the /activate/:token path) so they don't end up in log files / aggregators.
+function redactUrlForLog(raw) {
+  if (!raw) return raw;
+  try {
+    const hasScheme = /^https?:\/\//i.test(raw);
+    const u = new URL(raw, 'http://localhost');
+    ['token', 't', 'reset', 'auth', 'pin'].forEach((k) => {
+      if (u.searchParams.has(k)) u.searchParams.set(k, 'REDACTED');
+    });
+    const pathname = u.pathname.replace(/(\/activate\/)[^/]+/i, '$1REDACTED');
+    const qs = u.searchParams.toString();
+    const tail = pathname + (qs ? `?${qs}` : '') + u.hash;
+    return hasScheme ? `${u.protocol}//${u.host}${tail}` : tail;
+  } catch (_) {
+    return raw;
+  }
+}
+morgan.token('surl', (req) => redactUrlForLog(req.originalUrl || req.url));
+morgan.token('sreferrer', (req) => redactUrlForLog(req.headers.referer || req.headers.referrer || '') || '-');
+// 'combined' format with the url and referrer tokens replaced by their redacted variants
+app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :surl HTTP/:http-version" :status :res[content-length] ":sreferrer" ":user-agent"'));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
