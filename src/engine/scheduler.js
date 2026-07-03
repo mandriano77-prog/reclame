@@ -6,7 +6,7 @@
 
 const {
   getDueScheduledPush,
-  updateScheduledPush,
+  claimScheduledPushForRun,
   getBrand,
   updateBrand,
   touchPassesByIds,
@@ -251,7 +251,16 @@ async function executeScheduledPush(schedule, baseUrl) {
   console.log(`✓ Scheduled push sent: ${sentCount}/${devices.length} devices, ${passesUpdated} passes touched`);
 }
 
+let tickInFlight = false;
+
 async function schedulerTick(baseUrl) {
+  // Skip if a previous tick is still running: a slow tick (many APNs sends) could otherwise
+  // overlap the next 60s interval and process the same schedules twice.
+  if (tickInFlight) {
+    console.log('⏰ Scheduler: previous tick still running, skipping this interval');
+    return;
+  }
+  tickInFlight = true;
   try {
     const due = await getDueScheduledPush();
     if (due.length === 0) return;
@@ -260,20 +269,24 @@ async function schedulerTick(baseUrl) {
 
     for (const schedule of due) {
       try {
-        await executeScheduledPush(schedule, baseUrl);
-
+        // Claim atomically BEFORE sending: advance next_run_at (or deactivate one-shots) with a
+        // conditional UPDATE. If another overlapping tick or app instance already claimed it, skip.
         const nextRun = calculateNextRun(schedule);
-        if (nextRun) {
-          await updateScheduledPush(schedule.id, { next_run_at: nextRun, last_run_at: new Date() });
-        } else {
-          await updateScheduledPush(schedule.id, { active: false, last_run_at: new Date() });
-        }
+        const claimed = await claimScheduledPushForRun(
+          schedule.id,
+          nextRun ? { next_run_at: nextRun } : { active: false }
+        );
+        if (!claimed) continue;
+
+        await executeScheduledPush(schedule, baseUrl);
       } catch (err) {
         console.error(`Error executing schedule ${schedule.id}:`, err.message);
       }
     }
   } catch (err) {
     console.error('Scheduler tick error:', err.message);
+  } finally {
+    tickInFlight = false;
   }
 }
 

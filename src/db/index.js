@@ -2329,6 +2329,29 @@ async function getDueScheduledPush() {
   return result.rows;
 }
 
+/**
+ * Atomically claim a due scheduled push before sending it. The WHERE still requires
+ * active=true AND next_run_at<=NOW(), so only the first caller (across overlapping ticks
+ * or multiple app instances) flips it forward and gets a row back; the rest see no row
+ * and skip — preventing duplicate sends. Pass { next_run_at } for recurring schedules or
+ * { active: false } for one-shots.
+ * @returns {boolean} true if this caller claimed the run.
+ */
+async function claimScheduledPushForRun(id, data = {}) {
+  const sets = ['last_run_at = NOW()'];
+  const values = [id];
+  let idx = 2;
+  if (data.next_run_at !== undefined) { sets.push(`next_run_at = $${idx}`); values.push(data.next_run_at); idx++; }
+  if (data.active !== undefined) { sets.push(`active = $${idx}`); values.push(data.active); idx++; }
+  const res = await pool.query(
+    `UPDATE scheduled_push SET ${sets.join(', ')}
+     WHERE id = $1 AND active = true AND next_run_at <= NOW()
+     RETURNING id`,
+    values
+  );
+  return res.rows.length > 0;
+}
+
 // ─── Audiences ───────────────────────────────────────────────────────────────
 
 async function createAudience(data) {
@@ -4678,6 +4701,7 @@ module.exports = {
   updateScheduledPush,
   deleteScheduledPush,
   getDueScheduledPush,
+  claimScheduledPushForRun,
   createAudience,
   getAudience,
   listAudiences,
