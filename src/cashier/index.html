@@ -13,7 +13,7 @@
 <body>
   <main class="cashier-app">
     <header class="cashier-header">
-      <p class="cashier-kicker">Reclame · Riscatto coupon</p>
+      <p class="cashier-kicker" id="cashierKicker">Reclame · Riscatto coupon</p>
       <h1 class="cashier-title" id="cashierBrandName">Cassa</h1>
     </header>
 
@@ -25,12 +25,13 @@
     </section>
 
     <section class="cashier-card" id="cashierScanStep" hidden>
-      <label class="cashier-label" for="cashierSerial">Codice pass (QR wallet)</label>
-      <input class="cashier-input cashier-input--mono" id="cashierSerial" autocomplete="off" placeholder="Scansiona o incolla serial">
+      <label class="cashier-label" for="cashierCode">Codice riscatto (retro pass)</label>
+      <input class="cashier-input cashier-input--mono" id="cashierCode" autocomplete="off" placeholder="es. ZARA-8K4M">
       <div class="cashier-row">
         <input class="cashier-input" id="cashierStore" placeholder="Negozio / cassa (opz.)">
       </div>
       <button type="button" class="cashier-btn" id="cashierPreviewBtn">Verifica offerta</button>
+      <p class="cashier-hint">Il cliente trova il codice sul retro del pass, sezione «RISCATTO IN CASSA».</p>
     </section>
 
     <section class="cashier-result" id="cashierResult" hidden aria-live="polite"></section>

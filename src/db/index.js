@@ -572,6 +572,29 @@ async function getDb() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_brand_created ON coupon_redemptions(brand_id, created_at DESC)`).catch(()=>{});
     await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS sponsored BOOLEAN DEFAULT FALSE`).catch(()=>{});
     await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS sponsored_rank INTEGER DEFAULT 0`).catch(()=>{});
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS slug TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS checkout_prefix TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS checkout_mode TEXT DEFAULT 'dynamic_per_pass'`).catch(()=>{});
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS checkout_static_code TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS merchant_cashier_pin TEXT`).catch(()=>{});
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_merchants_brand_slug ON merchants(brand_id, slug) WHERE slug IS NOT NULL`).catch(()=>{});
+    await pool.query(`CREATE TABLE IF NOT EXISTS redemption_codes (
+      id BIGSERIAL PRIMARY KEY,
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      merchant_id UUID NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+      pass_id TEXT REFERENCES pass_instances(id) ON DELETE SET NULL,
+      serial_number TEXT NOT NULL,
+      offer_id TEXT NOT NULL,
+      checkout_code TEXT NOT NULL,
+      redeemed_at TIMESTAMPTZ,
+      redemption_id BIGINT REFERENCES coupon_redemptions(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(brand_id, checkout_code),
+      UNIQUE(brand_id, serial_number, offer_id, merchant_id)
+    )`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_redemption_codes_lookup ON redemption_codes(brand_id, merchant_id, offer_id)`).catch(()=>{});
+    await pool.query(`ALTER TABLE coupon_redemptions ADD COLUMN IF NOT EXISTS merchant_id UUID REFERENCES merchants(id) ON DELETE SET NULL`).catch(()=>{});
+    await pool.query(`ALTER TABLE coupon_redemptions ADD COLUMN IF NOT EXISTS checkout_code TEXT`).catch(()=>{});
     await pool.query(`CREATE TABLE IF NOT EXISTS commercial_bookings (
       id TEXT PRIMARY KEY,
       brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
@@ -1448,6 +1471,18 @@ async function updatePassInstance(id, data) {
   p++; values.push(id);
   await pool.query(`UPDATE pass_instances SET ${updates.join(', ')} WHERE id = $${p}`, values);
   return getPassInstance(id);
+}
+
+async function mergePassFieldValues(passId, patch) {
+  if (!passId || !patch || typeof patch !== 'object') return getPassInstance(passId);
+  await pool.query(
+    `UPDATE pass_instances
+     SET field_values = COALESCE(field_values, '{}'::jsonb) || $2::jsonb,
+         last_updated = NOW()
+     WHERE id = $1`,
+    [passId, JSON.stringify(patch)]
+  );
+  return getPassInstance(passId);
 }
 
 async function touchPass(id) {
@@ -3263,28 +3298,63 @@ async function finalizeWalletCallbackEvent(id, data = {}) {
 
 // ── HUB Convenzioni — merchants ─────────────────────────────────────────────
 
+function slugifyMerchantName(name) {
+  const base = String(name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return base || 'merchant';
+}
+
+async function ensureUniqueMerchantSlug(brandId, preferredSlug, excludeId = null) {
+  let slug = slugifyMerchantName(preferredSlug);
+  let suffix = 0;
+  for (;;) {
+    const candidate = suffix ? `${slug}-${suffix}` : slug;
+    const params = [brandId, candidate];
+    let sql = 'SELECT id FROM merchants WHERE brand_id = $1 AND slug = $2';
+    if (excludeId) {
+      sql += ' AND id <> $3';
+      params.push(excludeId);
+    }
+    const exists = await pool.query(sql, params);
+    if (!exists.rows.length) return candidate;
+    suffix += 1;
+  }
+}
+
 async function createMerchant(data) {
   const {
     brand_id, name, category, logo_url, description, discount_label, conditions,
     valid_from, valid_until, active = true,
     online_enabled = false, online_url, online_promo_code, physical_enabled = false,
-    sponsored = false, sponsored_rank = 0
+    sponsored = false, sponsored_rank = 0,
+    slug, checkout_prefix, checkout_mode, checkout_static_code, merchant_cashier_pin
   } = data;
   if (!brand_id || !name || !category || !discount_label) {
     throw new Error('brand_id, name, category e discount_label sono obbligatori');
   }
+  const merchantSlug = await ensureUniqueMerchantSlug(brand_id, slug || name);
   const res = await pool.query(
     `INSERT INTO merchants (
       brand_id, name, category, logo_url, description, discount_label, conditions,
       valid_from, valid_until, active, online_enabled, online_url, online_promo_code, physical_enabled,
-      sponsored, sponsored_rank
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+      sponsored, sponsored_rank, slug, checkout_prefix, checkout_mode, checkout_static_code, merchant_cashier_pin
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
     RETURNING *`,
     [
       brand_id, name, category, logo_url || null, description || null, discount_label,
       conditions || null, valid_from || null, valid_until || null, active !== false,
       !!online_enabled, online_url || null, online_promo_code || null, !!physical_enabled,
-      !!sponsored, parseInt(sponsored_rank, 10) || 0
+      !!sponsored, parseInt(sponsored_rank, 10) || 0,
+      merchantSlug,
+      checkout_prefix ? String(checkout_prefix).trim().toUpperCase().slice(0, 12) : null,
+      checkout_mode === 'static' ? 'static' : 'dynamic_per_pass',
+      checkout_static_code ? String(checkout_static_code).trim().toUpperCase() : null,
+      merchant_cashier_pin ? String(merchant_cashier_pin).trim() : null
     ]
   );
   return res.rows[0];
@@ -3337,14 +3407,49 @@ async function listMerchants(brandId, { category, active, search } = {}) {
 const MERCHANT_MUTABLE_FIELDS = [
   'name', 'category', 'logo_url', 'description', 'discount_label', 'conditions',
   'valid_from', 'valid_until', 'active', 'online_enabled', 'online_url',
-  'online_promo_code', 'physical_enabled', 'sponsored', 'sponsored_rank'
+  'online_promo_code', 'physical_enabled', 'sponsored', 'sponsored_rank',
+  'slug', 'checkout_prefix', 'checkout_mode', 'checkout_static_code', 'merchant_cashier_pin'
 ];
 
+async function getMerchantBySlug(brandId, slug) {
+  const key = String(slug || '').trim().toLowerCase();
+  if (!key) return null;
+  const res = await pool.query(
+    `SELECT * FROM merchants
+     WHERE brand_id = $1 AND (LOWER(slug) = $2 OR id::text = $2)
+     LIMIT 1`,
+    [brandId, key]
+  );
+  return res.rows[0] || null;
+}
+
 async function updateMerchant(id, brandId, fields) {
+  const input = { ...(fields || {}) };
+  if (input.slug != null) {
+    input.slug = await ensureUniqueMerchantSlug(brandId, input.slug || input.name, id);
+  }
+  if (input.checkout_prefix != null) {
+    input.checkout_prefix = input.checkout_prefix
+      ? String(input.checkout_prefix).trim().toUpperCase().slice(0, 12)
+      : null;
+  }
+  if (input.checkout_static_code != null) {
+    input.checkout_static_code = input.checkout_static_code
+      ? String(input.checkout_static_code).trim().toUpperCase()
+      : null;
+  }
+  if (input.checkout_mode != null) {
+    input.checkout_mode = input.checkout_mode === 'static' ? 'static' : 'dynamic_per_pass';
+  }
+  if (input.merchant_cashier_pin != null) {
+    input.merchant_cashier_pin = input.merchant_cashier_pin
+      ? String(input.merchant_cashier_pin).trim()
+      : null;
+  }
   const sets = [];
   const vals = [];
   let i = 1;
-  for (const [k, v] of Object.entries(fields || {})) {
+  for (const [k, v] of Object.entries(input)) {
     if (!MERCHANT_MUTABLE_FIELDS.includes(k)) continue;
     sets.push(`${k} = $${i++}`);
     vals.push(v);
@@ -4392,6 +4497,7 @@ module.exports = {
   getPassInstance,
   getPassBySerial,
   updatePassInstance,
+  mergePassFieldValues,
   touchPass,
   touchPassesByIds,
   touchPassesForBrand,
@@ -4514,6 +4620,7 @@ module.exports = {
   // HUB Convenzioni
   createMerchant,
   getMerchant,
+  getMerchantBySlug,
   findMerchantByNameAndBrand,
   listMerchants,
   updateMerchant,

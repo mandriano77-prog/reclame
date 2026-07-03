@@ -12,6 +12,7 @@ const pushDispatch = fs.readFileSync(path.join(root, 'src/engine/push-dispatch.j
 const holderEvents = fs.readFileSync(path.join(root, 'src/engine/holder-events.js'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(root, 'src/dashboard/index.html'), 'utf8');
 const serverJs = fs.readFileSync(path.join(root, 'src/server.js'), 'utf8');
+const cashierJs = fs.readFileSync(path.join(root, 'src/cashier/cashier.js'), 'utf8');
 
 test('coupon redemption engine exposes preview and confirm', () => {
   assert.match(coupon, /previewCouponRedemption/);
@@ -28,7 +29,8 @@ test('API exposes redeem and cashier endpoints', () => {
 
 test('push dispatch marks coupon redeemable on announcement', () => {
   assert.match(pushDispatch, /coupon_redeemable/);
-  assert.match(pushDispatch, /offer_id: booking_id/);
+  assert.match(pushDispatch, /offer_id: offerId/);
+  assert.match(pushDispatch, /issueCodesForPush/);
 });
 
 test('holder insights include closed loop metrics', () => {
@@ -38,9 +40,11 @@ test('holder insights include closed loop metrics', () => {
 
 test('dashboard and server expose cashier UX', () => {
   assert.match(indexHtml, /pushCouponRedeemable/);
+  assert.match(indexHtml, /pushCouponMerchant/);
   assert.match(indexHtml, /audienceClosedLoopStats/);
   assert.match(indexHtml, /loadCashierSetup/);
   assert.match(serverJs, /\/cashier/);
+  assert.match(cashierJs, /checkout_code/);
 });
 
 test('resolveActiveCouponOffer respects redeemable flag', () => {

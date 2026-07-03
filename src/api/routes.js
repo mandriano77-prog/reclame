@@ -1227,18 +1227,27 @@ const {
   ensureBrandCashierPin,
   rotateBrandCashierPin,
   listRecentCouponRedemptions,
-  resolveActiveCouponOffer
+  resolveActiveCouponOffer,
+  listMerchantCashierEndpoints
 } = require('../engine/coupon-redemption');
 
 router.post('/redeem/preview', async (req, res) => {
   try {
     const brandSlug = String(req.body.brand_slug || req.body.slug || '').trim();
+    const merchantSlug = String(req.body.merchant_slug || '').trim() || null;
+    const checkoutCode = String(req.body.checkout_code || req.body.code || '').trim();
     const serialNumber = String(req.body.serial_number || req.body.serial || '').trim();
     const pin = String(req.body.pin || '').trim();
-    if (!brandSlug || !serialNumber || !pin) {
+    if (!brandSlug || !pin || (!checkoutCode && !serialNumber)) {
       return res.status(400).json({ valid: false, reason: 'Parametri mancanti' });
     }
-    const result = await previewCouponRedemption({ brandSlug, serialNumber, pin });
+    const result = await previewCouponRedemption({
+      brandSlug,
+      merchantSlug,
+      checkoutCode,
+      serialNumber,
+      pin
+    });
     res.status(result.valid ? 200 : 422).json(result);
   } catch (err) {
     console.error('redeem/preview error:', err);
@@ -1249,13 +1258,17 @@ router.post('/redeem/preview', async (req, res) => {
 router.post('/redeem/confirm', async (req, res) => {
   try {
     const brandSlug = String(req.body.brand_slug || req.body.slug || '').trim();
+    const merchantSlug = String(req.body.merchant_slug || '').trim() || null;
+    const checkoutCode = String(req.body.checkout_code || req.body.code || '').trim();
     const serialNumber = String(req.body.serial_number || req.body.serial || '').trim();
     const pin = String(req.body.pin || '').trim();
-    if (!brandSlug || !serialNumber || !pin) {
+    if (!brandSlug || !pin || (!checkoutCode && !serialNumber)) {
       return res.status(400).json({ valid: false, reason: 'Parametri mancanti' });
     }
     const result = await confirmCouponRedemption({
       brandSlug,
+      merchantSlug,
+      checkoutCode,
       serialNumber,
       pin,
       storeLabel: req.body.store_label,
@@ -2860,11 +2873,13 @@ router.get('/brands/:brand_id/cashier', async (req, res) => {
     const slug = brand.slug || brand_id;
     const base = resolveBaseUrl(req);
     const offer = resolveActiveCouponOffer(brand);
+    const merchantCashiers = await listMerchantCashierEndpoints(brand_id, base, slug);
     res.json({
       slug,
       pin: pinResult.pin,
       pin_rotated: pinResult.rotated,
       cashier_url: `${base}/cashier/${encodeURIComponent(slug)}`,
+      merchant_cashiers: merchantCashiers,
       active_offer: offer
     });
   } catch (err) {

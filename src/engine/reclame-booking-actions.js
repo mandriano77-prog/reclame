@@ -159,6 +159,7 @@ async function activateCouponCpaBooking(brandId, booking, data) {
     channel,
     update_pass: true,
     coupon_redeemable: true,
+    merchant_id: data.merchant_id || booking.merchant_id || null,
     include_pass_link: !!linkUrl,
     pass_link_url: linkUrl,
     pass_link_label: linkLabel,

@@ -1710,9 +1710,15 @@
                             <div class="form-group" style="margin-top:10px;margin-bottom:0;">
                                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
                                     <input type="checkbox" id="pushCouponRedeemable" checked style="width:auto;accent-color:var(--teal);">
-                                    <span>Abilita riscatto in cassa (QR pass → CPA verificato)</span>
+                                    <span>Abilita riscatto in cassa (codice sul retro pass)</span>
                                 </label>
-                                <p style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Il visitatore mostra il QR del pass alla cassa; il riscatto chiude il loop Push → Tap → Store → Cassa.</p>
+                                <p style="font-size:11px;color:var(--text2);margin:6px 0 8px;line-height:1.45;">Ogni pass riceve un codice univoco sul retro (es. ZARA-8K4M). La cassa del negozio lo digita per chiudere il loop Push → Cassa.</p>
+                                <div id="pushCouponMerchantWrap" class="form-group" style="margin-bottom:0;">
+                                    <label class="form-label" for="pushCouponMerchant">Negozio / merchant</label>
+                                    <select id="pushCouponMerchant" aria-label="Merchant per riscatto">
+                                        <option value="">— Seleziona merchant HUB —</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div class="form-group a2w-push-field--hidden" style="margin-top:8px;" id="pushLegacyLinkOut">
@@ -3426,6 +3432,28 @@
                 <div class="form-group nav-item--reclame-ads">
                     <label><input type="checkbox" name="sponsored"> In evidenza HUB (sponsorizzato)</label>
                 </div>
+                <div class="form-group form-group--full nav-item--reclame-ads">
+                    <div class="sec-title" style="font-size:14px;margin:12px 0 8px;">Riscatto in cassa (CPA)</div>
+                </div>
+                <div class="form-group nav-item--reclame-ads">
+                    <label class="form-label" for="hubMerchantCheckoutPrefix">Prefisso codice cassa</label>
+                    <input type="text" id="hubMerchantCheckoutPrefix" name="checkout_prefix" maxlength="12" placeholder="ZARA">
+                </div>
+                <div class="form-group nav-item--reclame-ads">
+                    <label class="form-label" for="hubMerchantCheckoutMode">Modalità codice</label>
+                    <select id="hubMerchantCheckoutMode" name="checkout_mode">
+                        <option value="dynamic_per_pass">Unico per pass</option>
+                        <option value="static">Statico (stesso per tutti)</option>
+                    </select>
+                </div>
+                <div class="form-group nav-item--reclame-ads">
+                    <label class="form-label" for="hubMerchantStaticCode">Codice statico (opz.)</label>
+                    <input type="text" id="hubMerchantStaticCode" name="checkout_static_code" placeholder="ZARA-PROMO">
+                </div>
+                <div class="form-group nav-item--reclame-ads">
+                    <label class="form-label" for="hubMerchantCashierPin">PIN cassa negozio (opz.)</label>
+                    <input type="text" id="hubMerchantCashierPin" name="merchant_cashier_pin" inputmode="numeric" maxlength="8" placeholder="Sovrascrive PIN centro">
+                </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
                 <button type="button" class="btn sec" data-hub-modal-close>Annulla</button>
@@ -3837,6 +3865,7 @@
     <script src="/dashboard/js/a2w-shell.js"></script>
     <script src="/dashboard/js/a2w-push-ux.js"></script>
     <script src="/dashboard/js/a2w-commercial.js"></script>
+    <script src="/dashboard/js/a2w-hub-merchant.js"></script>
     <script src="/dashboard/js/a2w-template-editor.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
 
@@ -8014,6 +8043,8 @@ function buildImmediatePushBody() {
     }
     if (updatePass) {
         body.coupon_redeemable = !!document.getElementById('pushCouponRedeemable')?.checked;
+        const merchantId = document.getElementById('pushCouponMerchant')?.value;
+        if (body.coupon_redeemable && merchantId) body.merchant_id = merchantId;
     }
     if (!isHrDashboard() && isLegacyCampaignsUiEnabled()) {
         applyPushLinkedContentToBody(body, document.getElementById('pushLinkedContent')?.value);
@@ -9010,16 +9041,22 @@ async function loadCashierSetup() {
             return;
         }
         const offer = data.active_offer
-            ? `<p style="margin:0 0 8px;"><strong>Offerta attiva:</strong> ${esc(data.active_offer.title)}</p>`
-            : '<p style="margin:0 0 8px;color:var(--text2);">Nessuna offerta attiva — invia una push con aggiornamento pass.</p>';
+            ? `<p style="margin:0 0 8px;"><strong>Offerta attiva:</strong> ${esc(data.active_offer.title)}${data.active_offer.merchant_name ? ` · ${esc(data.active_offer.merchant_name)}` : ''}</p>`
+            : '<p style="margin:0 0 8px;color:var(--text2);">Nessuna offerta attiva — invia una push con aggiornamento pass e merchant collegato.</p>';
+        const merchantLinks = Array.isArray(data.merchant_cashiers) && data.merchant_cashiers.length
+            ? `<div style="margin:12px 0 0;"><strong>Casse negozio:</strong><ul style="margin:8px 0 0;padding-left:18px;">${
+                data.merchant_cashiers.map((m) => `<li style="margin-bottom:8px;"><span>${esc(m.name)}</span> · PIN <code>${esc(m.pin)}</code><br><a href="${esc(m.cashier_url)}" target="_blank" rel="noopener">${esc(m.cashier_url)}</a></li>`).join('')
+            }</ul></div>`
+            : '';
         el.innerHTML = `
             ${offer}
-            <p style="margin:0 0 6px;"><strong>Link cassa (tablet):</strong><br>
+            <p style="margin:0 0 6px;"><strong>Link cassa centro (legacy):</strong><br>
             <a href="${esc(data.cashier_url)}" target="_blank" rel="noopener">${esc(data.cashier_url)}</a></p>
-            <p style="margin:0 0 10px;"><strong>PIN cassa:</strong> <code style="font-size:15px;letter-spacing:0.08em;">${esc(data.pin || '—')}</code></p>
+            <p style="margin:0 0 10px;"><strong>PIN cassa centro:</strong> <code style="font-size:15px;letter-spacing:0.08em;">${esc(data.pin || '—')}</code></p>
+            ${merchantLinks}
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button type="button" class="btn sec small" id="audCashierCopyBtn">Copia link cassa</button>
-                <button type="button" class="btn sec small" data-requires-write="audiences" onclick="rotateCashierPin()">Rigenera PIN</button>
+                <button type="button" class="btn sec small" id="audCashierCopyBtn">Copia link cassa centro</button>
+                <button type="button" class="btn sec small" data-requires-write="audiences" onclick="rotateCashierPin()">Rigenera PIN centro</button>
             </div>
         `;
         const copyBtn = document.getElementById('audCashierCopyBtn');

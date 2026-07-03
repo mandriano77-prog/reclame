@@ -5,6 +5,7 @@ const {
   pool,
   getBrand,
   updateBrand,
+  getMerchant,
   getInstantWinCampaign,
   getGamificationCampaign,
   updatePassDynamicLinks,
@@ -22,6 +23,7 @@ const { sendPushBatch, closeApnsSession, shouldPruneApnsRegistration } = require
 const { syncGoogleWalletObjectsForPasses } = require('./google-wallet-sync');
 const googleWallet = require('./google-wallet');
 const samsungWallet = require('./samsung-wallet');
+const { issueCodesForPush } = require('./redemption-codes');
 
 const activeJobIds = new Set();
 const APNS_RESULT_SAMPLE_LIMIT = Math.max(0, Math.min(parseInt(process.env.APNS_RESULT_SAMPLE_LIMIT || '50', 10) || 50, 200));
@@ -150,6 +152,7 @@ async function executeWalletPush(body, ctx = {}) {
     test_pass_id,
     coupon_redeemable,
     booking_id,
+    merchant_id,
   } = body;
 
   if (!brand_id || !title || !message) {
@@ -219,14 +222,27 @@ async function executeWalletPush(body, ctx = {}) {
     }
 
     const config = brand.config || {};
+    const offerId = booking_id ? `booking_${booking_id}` : String(Date.now());
+    const couponMeta = {
+      redeemable: coupon_redeemable !== false,
+      offer_id: offerId
+    };
+
+    if (coupon_redeemable !== false && merchant_id) {
+      const merchant = await getMerchant(merchant_id, brand_id);
+      if (merchant) {
+        couponMeta.merchant_id = merchant.id;
+        couponMeta.merchant_name = merchant.name;
+        couponMeta.merchant_discount = merchant.discount_label;
+        couponMeta.merchant_slug = merchant.slug;
+      }
+    }
+
     config.pushAnnouncement = {
       title,
       message,
       ts: Date.now(),
-      coupon: {
-        redeemable: coupon_redeemable !== false,
-        offer_id: booking_id ? `booking_${booking_id}` : String(Date.now())
-      }
+      coupon: couponMeta
     };
 
     if (!instant_win_id) delete config.instantWinActive;
@@ -295,6 +311,19 @@ async function executeWalletPush(body, ctx = {}) {
     }
 
     await updateBrand(brand_id, { config });
+
+    if (coupon_redeemable !== false && couponMeta.merchant_id && targetPasses.length) {
+      try {
+        await issueCodesForPush({
+          brandId: brand_id,
+          merchantId: couponMeta.merchant_id,
+          offerId,
+          passes: targetPasses
+        });
+      } catch (codeErr) {
+        console.warn('[PUSH] checkout code generation skipped:', codeErr.message);
+      }
+    }
 
     if (sendApple && targetPasses.length) {
       await touchPassesByIds(targetPasses.map((p) => p.id));

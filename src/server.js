@@ -240,7 +240,7 @@ function sendCashierSpa(req, res) {
 }
 
 app.use('/cashier', express.static(cashierDir));
-app.get(['/cashier', '/cashier/', '/cashier/:slug', '/cashier/:slug/'], sendCashierSpa);
+app.get(['/cashier', '/cashier/', '/cashier/:slug', '/cashier/:slug/', '/cashier/:slug/:merchantSlug', '/cashier/:slug/:merchantSlug/'], sendCashierSpa);
 
 // Dashboard boot: product line lock from deploy env (e.g. studio.filodiretto.app → DASHBOARD_PRODUCT_LINE=hr)
 const VALID_DASHBOARD_PRODUCT_LINES = ['ads', 'hr', 'engage', 'live'];

@@ -660,6 +660,25 @@ function generatePassJson(template, instance, brand, options = {}) {
         value: promoBody
       });
     }
+
+    const coupon = brandConfig.pushAnnouncement?.coupon || {};
+    const fv = instance.field_values && typeof instance.field_values === 'object'
+      ? instance.field_values
+      : (typeof instance.field_values === 'string'
+        ? (() => { try { return JSON.parse(instance.field_values); } catch { return {}; } })()
+        : {});
+    const checkoutCode = fv.__checkout_code || fv.checkout_code;
+    if (checkoutCode && coupon.redeemable !== false) {
+      const merchantLine = [
+        fv.__checkout_merchant || coupon.merchant_name,
+        fv.__checkout_discount || coupon.merchant_discount
+      ].filter(Boolean).join(' · ');
+      orderedBackFields.push({
+        key: 'checkout_redeem',
+        label: 'RISCATTO IN CASSA',
+        value: merchantLine ? `${checkoutCode}\n${merchantLine}` : String(checkoutCode)
+      });
+    }
   }
 
   const portalBrand = isPortalPassBrand(brand);
