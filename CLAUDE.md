@@ -8,7 +8,7 @@ Multi-tenant SaaS: brands run loyalty programs via Apple Wallet passes (`.pkpass
 
 - **Runtime**: Node.js 20+ / Express (`src/server.js`)
 - **Database**: PostgreSQL (`pg`), schema auto-applied on boot via `getDb()` in `src/db/index.js`
-- **Hosting**: **DigitalOcean** — App Platform or Droplet (+ optional Managed PostgreSQL); deploy from GitHub (`main` or your release branch)
+- **Hosting**: **Railway** — production service `reclame-production` (`reclame-production.up.railway.app`), Nixpacks builder, **auto-deploy on push to `main`**, healthcheck `/health` (see `railway.json`). (The DigitalOcean section below is kept as an alternative reference, not the current target.)
 - **Domain**: public hostname set in **`CUSTOM_DOMAIN`** (no scheme), e.g. `app.example.com` — used for pass `webServiceURL`, landing links, Google Wallet image URLs
 - **Pass signing**: OpenSSL `cms -sign` (not node-forge)
 - **Push**: APNs HTTP/2 (native Node), JWT auth
@@ -123,8 +123,8 @@ Smoke test after deploy:
 ## Repo & GitHub
 
 - **Remote**: `https://github.com/mandriano77-prog/Wallet_Ads` (verify with `git remote -v`)
-- **Branch**: merge to **`main`** for production deploy workflow you configure on DigitalOcean.
+- **Branch**: merge to **`main`** → Railway auto-deploys the `reclame-production` service.
 
 ---
 
-*Legacy*: `railway.json` may remain in repo for historical tooling; production target is DigitalOcean.
+*Production target is **Railway*** (auto-deploy from `main`, config in `railway.json`). The DigitalOcean section above is an alternative/reference deployment path, not the live target.
