@@ -205,6 +205,7 @@
       'instant-win': 'instantWin',
       gamification: 'gamification',
       conventions: 'promotions',
+      commercial: 'promotions',
       'pga-engagement': 'coin',
       leads: 'contacts',
       audiences: 'audience',

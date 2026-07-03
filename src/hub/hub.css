@@ -772,3 +772,23 @@ input {
   font-size: 0.82rem;
   font-weight: 600;
 }
+
+.hub-card--sponsored {
+  border-color: rgba(251, 191, 36, 0.45);
+  position: relative;
+}
+
+.hub-sponsored-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.92);
+  color: #1a1200;
+}

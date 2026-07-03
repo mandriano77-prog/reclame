@@ -570,6 +570,38 @@ async function getDb() {
       UNIQUE(brand_id, serial_number, offer_id)
     )`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_brand_created ON coupon_redemptions(brand_id, created_at DESC)`).catch(()=>{});
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS sponsored BOOLEAN DEFAULT FALSE`).catch(()=>{});
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS sponsored_rank INTEGER DEFAULT 0`).catch(()=>{});
+    await pool.query(`CREATE TABLE IF NOT EXISTS commercial_bookings (
+      id TEXT PRIMARY KEY,
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      tenant_name TEXT NOT NULL,
+      package_key TEXT NOT NULL,
+      format TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'confirmed',
+      start_at TIMESTAMPTZ,
+      end_at TIMESTAMPTZ,
+      amount_cents INTEGER DEFAULT 0,
+      retailer_share_pct NUMERIC DEFAULT 70,
+      reclame_take_rate_pct NUMERIC DEFAULT 15,
+      merchant_id UUID REFERENCES merchants(id) ON DELETE SET NULL,
+      metadata JSONB DEFAULT '{}',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_commercial_bookings_brand ON commercial_bookings(brand_id, start_at)`).catch(()=>{});
+    await pool.query(`CREATE TABLE IF NOT EXISTS commercial_billing_entries (
+      id BIGSERIAL PRIMARY KEY,
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      booking_id TEXT REFERENCES commercial_bookings(id) ON DELETE SET NULL,
+      tenant_name TEXT,
+      gross_cents INTEGER NOT NULL DEFAULT 0,
+      retailer_cents INTEGER NOT NULL DEFAULT 0,
+      reclame_cents INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_commercial_billing_brand ON commercial_billing_entries(brand_id, created_at DESC)`).catch(()=>{});
     await pool.query(`CREATE TABLE IF NOT EXISTS push_assistant_log (
       id TEXT PRIMARY KEY,
       brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
@@ -1176,6 +1208,8 @@ async function deleteBrand(id) {
   await pool.query('DELETE FROM audiences WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM holder_events WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM coupon_redemptions WHERE brand_id = $1', [id]);
+  await pool.query('DELETE FROM commercial_billing_entries WHERE brand_id = $1', [id]);
+  await pool.query('DELETE FROM commercial_bookings WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM pass_instances WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM members WHERE brand_id = $1', [id]);
   await pool.query('DELETE FROM import_errors WHERE brand_id = $1', [id]);
@@ -3217,7 +3251,8 @@ async function createMerchant(data) {
   const {
     brand_id, name, category, logo_url, description, discount_label, conditions,
     valid_from, valid_until, active = true,
-    online_enabled = false, online_url, online_promo_code, physical_enabled = false
+    online_enabled = false, online_url, online_promo_code, physical_enabled = false,
+    sponsored = false, sponsored_rank = 0
   } = data;
   if (!brand_id || !name || !category || !discount_label) {
     throw new Error('brand_id, name, category e discount_label sono obbligatori');
@@ -3225,13 +3260,15 @@ async function createMerchant(data) {
   const res = await pool.query(
     `INSERT INTO merchants (
       brand_id, name, category, logo_url, description, discount_label, conditions,
-      valid_from, valid_until, active, online_enabled, online_url, online_promo_code, physical_enabled
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+      valid_from, valid_until, active, online_enabled, online_url, online_promo_code, physical_enabled,
+      sponsored, sponsored_rank
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
     RETURNING *`,
     [
       brand_id, name, category, logo_url || null, description || null, discount_label,
       conditions || null, valid_from || null, valid_until || null, active !== false,
-      !!online_enabled, online_url || null, online_promo_code || null, !!physical_enabled
+      !!online_enabled, online_url || null, online_promo_code || null, !!physical_enabled,
+      !!sponsored, parseInt(sponsored_rank, 10) || 0
     ]
   );
   return res.rows[0];
@@ -3284,7 +3321,7 @@ async function listMerchants(brandId, { category, active, search } = {}) {
 const MERCHANT_MUTABLE_FIELDS = [
   'name', 'category', 'logo_url', 'description', 'discount_label', 'conditions',
   'valid_from', 'valid_until', 'active', 'online_enabled', 'online_url',
-  'online_promo_code', 'physical_enabled'
+  'online_promo_code', 'physical_enabled', 'sponsored', 'sponsored_rank'
 ];
 
 async function updateMerchant(id, brandId, fields) {
@@ -3671,7 +3708,8 @@ async function listActiveMerchantsForHub(brandId, { category, search } = {}) {
     idx++;
   }
   const res = await pool.query(
-    `SELECT * FROM merchants WHERE ${clauses.join(' AND ')} ORDER BY name ASC`,
+    `SELECT * FROM merchants WHERE ${clauses.join(' AND ')}
+     ORDER BY sponsored DESC, sponsored_rank DESC, name ASC`,
     params
   );
   return res.rows;

@@ -22,6 +22,7 @@ const SECTION_PERMS = Object.freeze({
     users: 'none',
     welcome: 'full',
     conventions: 'full',
+    commercial: 'full',
     pga_catalog: 'full',
     pga_engagement: 'full',
   },
@@ -58,6 +59,7 @@ const SECTION_PERMS = Object.freeze({
     users: 'none',
     welcome: 'read',
     conventions: 'read',
+    commercial: 'read',
     pga_catalog: 'read',
     pga_engagement: 'read',
   },
@@ -80,6 +82,7 @@ const UI_SECTION_MAP = Object.freeze({
   users: 'users',
   campaigns: 'push',
   conventions: 'conventions',
+  commercial: 'commercial',
   'pga-catalog': 'pga_catalog',
   'pga-engagement': 'pga_engagement',
 });
@@ -219,6 +222,12 @@ function classifyApiRoute(method, path) {
   }
   if (/^\/brands\/[^/]+\/holder-events/.test(p)) return { section: 'audiences', write: false };
   if (/^\/brands\/[^/]+\/(cashier|coupon-redemptions)/.test(p)) return { section: 'audiences', write: /rotate-pin/.test(p) };
+  if (/^\/brands\/[^/]+\/commercial/.test(p) || p === '/commercial/packages') {
+    return { section: 'commercial', write: m !== 'GET' };
+  }
+  if (/^\/brands\/[^/]+\/audience-presets/.test(p) || p === '/audience-presets') {
+    return { section: 'audiences', write: false };
+  }
 
   if (/^\/brands\/[^/]+\/(logo|strip|landing-bg|wallet-icon|ai-strip|ai-copy|ai-creative)/.test(p)) {
     return { section: 'brand_identity', write };

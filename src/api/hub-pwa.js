@@ -75,11 +75,13 @@ async function loadHubContext(claims) {
 }
 
 function publicBrand(brand) {
+  const cfg = brand?.config && typeof brand.config === 'object' ? brand.config : {};
   return {
     id: brand.id,
     name: brand.name,
     slug: brand.slug,
-    logo_url: brand.logo_url || brand.config?.logo_url || null
+    logo_url: brand.logo_url || cfg.logo_url || null,
+    product_line: cfg.product_line || 'ads'
   };
 }
 
@@ -113,7 +115,9 @@ function publicMerchant(row) {
     online_enabled: !!row.online_enabled,
     online_url: row.online_url,
     online_promo_code: row.online_promo_code,
-    physical_enabled: !!row.physical_enabled
+    physical_enabled: !!row.physical_enabled,
+    sponsored: !!row.sponsored,
+    sponsored_rank: row.sponsored_rank || 0
   };
 }
 

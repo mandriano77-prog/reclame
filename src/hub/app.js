@@ -472,15 +472,23 @@
     }
   }
 
+  function hubIsAdsMode() {
+    return String(state.brand?.product_line || 'ads').toLowerCase() === 'ads';
+  }
+
+  function hubListTitle() {
+    return hubIsAdsMode() ? 'Offerte' : 'Convenzioni';
+  }
+
   function renderLoading() {
     $('#hub-back')?.classList.add('hidden');
-    $('#hub-title').textContent = 'Convenzioni';
+    $('#hub-title').textContent = hubListTitle();
     $('#hub-main').innerHTML = '<div class="hub-loading"><div class="hub-spinner"></div><div>Caricamento…</div></div>';
   }
 
   function renderList() {
     $('#hub-back')?.classList.add('hidden');
-    $('#hub-title').textContent = 'Convenzioni';
+    $('#hub-title').textContent = hubListTitle();
 
     const enabled = Array.isArray(state.settings?.categories_enabled)
       ? state.settings.categories_enabled
@@ -500,7 +508,8 @@
           : `<div class="hub-card-logo placeholder">${esc(merchantInitial(m.name))}</div>`;
         const dist = state.nearbyEnabled ? formatDistance(state.nearbyMap[m.id]) : null;
         const distHtml = dist ? `<p class="hub-card-distance">${esc(dist)}</p>` : '';
-        return `<button type="button" class="hub-card" data-merchant-id="${esc(m.id)}">
+        return `<button type="button" class="hub-card${m.sponsored ? ' hub-card--sponsored' : ''}" data-merchant-id="${esc(m.id)}">
+          ${m.sponsored ? '<span class="hub-sponsored-badge">In evidenza</span>' : ''}
           ${logo}
           <p class="hub-card-name">${esc(m.name)}</p>
           <p class="hub-card-discount">${esc(m.discount_label)}</p>

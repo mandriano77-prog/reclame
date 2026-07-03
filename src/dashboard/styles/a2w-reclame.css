@@ -1,0 +1,87 @@
+/* Reclame Media — ads-only nav + commercial UI */
+.nav-item--reclame-ads {
+  display: none;
+}
+
+html.a2w-shell .nav-item--reclame-ads {
+  display: block;
+}
+
+html.a2w-shell #conventions .fd-nav-item--hr-only-copy {
+  display: none;
+}
+
+html.a2w-shell #conventions .conventions-title--ads {
+  display: block;
+}
+
+.conventions-title--ads {
+  display: none;
+}
+
+.a2w-commercial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.a2w-commercial-pkg {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--bg3);
+}
+
+.a2w-commercial-pkg__title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.a2w-commercial-pkg__desc {
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.a2w-commercial-slot {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 3px 0;
+  border-top: 1px solid var(--border);
+}
+
+.a2w-audience-presets {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.a2w-audience-preset {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg3);
+}
+
+.a2w-audience-preset__meta {
+  min-width: 0;
+}
+
+.a2w-audience-preset__title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.a2w-audience-preset__desc {
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 2px;
+}

@@ -82,6 +82,7 @@
     <link rel="stylesheet" href="/dashboard/styles/a2w-template-modal.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-template-campaigns.css">
     <link rel="stylesheet" href="/dashboard/styles/a2w-setup-checklist.css">
+    <link rel="stylesheet" href="/dashboard/styles/a2w-reclame.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-contacts-refactor.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-hr-manual-modal.css">
     <link rel="stylesheet" href="/dashboard/css/layout.css">
@@ -1421,6 +1422,8 @@
                     <div class="nav-item" onclick="nav('push')" data-section-id="push" data-requires-perm="push" role="button" tabindex="0">Push &amp; Notifiche</div>
                     <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards" role="button" tabindex="0">Reward</div>
                     <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges" role="button" tabindex="0">Challenge</div>
+                    <div class="nav-item nav-item--reclame-ads" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">HUB Brand</div>
+                    <div class="nav-item nav-item--reclame-ads" onclick="nav('commercial')" data-section-id="commercial" data-requires-perm="commercial" role="button" tabindex="0">Commerciale</div>
                     <div class="nav-item fd-nav-item--hr" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">Promozioni</div>
                     <div class="nav-item fd-nav-item--hr" onclick="nav('pga-engagement')" data-section-id="pga-engagement" data-requires-perm="pga_engagement" role="button" tabindex="0">Coin</div>
                 </div>
@@ -2563,7 +2566,10 @@
                 </div>
 
                 <div id="audPanel_saved" class="aud-panel" style="display:none;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Preset comportamentali</div>
+                    <p style="font-size:12px;color:var(--text2);margin:0 0 12px;">Segmenti first-party pronti per retargeting push (clic, riscatto cassa, intento).</p>
+                    <div id="audiencePresetsList" class="a2w-audience-presets"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:20px;">
                         <div class="sec-title" style="font-size:16px;margin:0;">Le tue audience</div>
                         <button class="btn" data-requires-write="audiences" onclick="openAudienceEditor()">+ Nuova audience</button>
                     </div>
@@ -2898,10 +2904,74 @@
                 </div>
             </div>
 
+            <!-- COMMERCIALE RECLAME -->
+            <div id="commercial" class="section" data-rbac-section="commercial" hidden aria-hidden="true">
+                <h1 class="sec-title page-title">Commerciale</h1>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:16px;">Calendario inventory retail media, prenotazioni brand-tenant e split fatturazione retailer / Reclame.</p>
+                <div class="stats-grid a2w-commercial-grid" id="commercialBilling"></div>
+                <div class="sec-title" style="font-size:15px;margin:20px 0 10px;">Inventory pacchetti</div>
+                <div id="commercialPackages" class="a2w-commercial-grid"></div>
+                <div class="card" style="margin:20px 0;">
+                    <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Prenotazioni attive</div>
+                    <table class="table">
+                        <thead><tr><th>Brand-tenant</th><th>Pacchetto</th><th>Formato</th><th>Stato</th><th>Importo</th></tr></thead>
+                        <tbody id="commercialBookings"></tbody>
+                    </table>
+                </div>
+                <div class="card fd-rbac-write">
+                    <div class="sec-title" style="font-size:15px;margin-bottom:12px;">Nuova prenotazione</div>
+                    <form id="commercialBookingForm" class="fd-conventions-form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="commercialBookingTenant">Brand-tenant *</label>
+                            <input type="text" id="commercialBookingTenant" required placeholder="Es. Nike Outlet">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="commercialBookingPackage">Pacchetto</label>
+                            <select id="commercialBookingPackage"></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="commercialBookingFormat">Formato</label>
+                            <select id="commercialBookingFormat">
+                                <option value="push_lockscreen">Push lockscreen</option>
+                                <option value="hub_sponsored">HUB sponsorizzato</option>
+                                <option value="geofence_recall">Geofencing richiamo</option>
+                                <option value="coupon_cpa">Coupon CPA cassa</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="commercialBookingMerchant">Merchant HUB (opz.)</label>
+                            <input type="text" id="commercialBookingMerchant" placeholder="ID merchant esistente">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="commercialBookingStart">Inizio</label>
+                            <input type="datetime-local" id="commercialBookingStart">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="commercialBookingEnd">Fine</label>
+                            <input type="datetime-local" id="commercialBookingEnd">
+                        </div>
+                        <div id="commercialPoiFields" class="form-group form-group--full" hidden>
+                            <div class="sec-title" style="font-size:13px;margin-bottom:8px;">POI geofence</div>
+                            <div class="fd-conventions-form-grid">
+                                <div class="form-group"><label class="form-label" for="commercialPoiLat">Latitudine</label><input type="number" step="any" id="commercialPoiLat"></div>
+                                <div class="form-group"><label class="form-label" for="commercialPoiLon">Longitudine</label><input type="number" step="any" id="commercialPoiLon"></div>
+                                <div class="form-group"><label class="form-label" for="commercialPoiRadius">Raggio (m)</label><input type="number" id="commercialPoiRadius" value="300"></div>
+                                <div class="form-group form-group--full"><label class="form-label" for="commercialPoiText">Testo lockscreen</label><input type="text" id="commercialPoiText" placeholder="Sei vicino! Scopri l'offerta"></div>
+                            </div>
+                        </div>
+                        <div class="form-group form-group--full" style="display:flex;justify-content:flex-end;">
+                            <button type="submit" class="btn">Crea prenotazione</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- HUB CONVENZIONI -->
             <div id="conventions" class="section" data-rbac-section="conventions" hidden aria-hidden="true">
-                <h1 class="sec-title page-title">Promozioni</h1>
-                <p id="conventionsPageBlurb" class="fd-conventions-lead" style="color:var(--text2);font-size:13px;margin-bottom:16px;">Gestisci le promozioni, monitora gli utilizzi aggregati e personalizza l'Hub.</p>
+                <h1 class="sec-title page-title fd-nav-item--hr-only-copy">Promozioni</h1>
+                <h1 class="sec-title page-title conventions-title--ads">HUB Brand</h1>
+                <p id="conventionsPageBlurb" class="fd-conventions-lead fd-nav-item--hr-only-copy" style="color:var(--text2);font-size:13px;margin-bottom:16px;">Gestisci le promozioni, monitora gli utilizzi aggregati e personalizza l'Hub.</p>
+                <p class="fd-conventions-lead conventions-title--ads" style="color:var(--text2);font-size:13px;margin-bottom:16px;">HUB brand-tenant sponsorizzati nel pass wallet. I merchant in evidenza compaiono per primi; collega una prenotazione commerciale per attivare slot HUB o geofence.</p>
                 <div class="tabs-bar a2w-section-tabs fd-conventions-tabs" role="tablist" aria-label="Sezione Promozioni" id="conventionsSectionTabs">
                     <button type="button" class="tabs-bar__tab active" role="tab" id="conventionsTab_merchants" aria-selected="true" aria-controls="conventionsTabPanel_merchants" onclick="switchConventionsTab('merchants')">Merchant</button>
                     <button type="button" class="tabs-bar__tab" role="tab" id="conventionsTab_onboarding" aria-selected="false" aria-controls="conventionsTabPanel_onboarding" onclick="switchConventionsTab('onboarding')">Avvio rapido</button>
@@ -3314,6 +3384,9 @@
                 <div class="form-group">
                     <label><input type="checkbox" name="physical_enabled"> Attivazione fisica (QR)</label>
                 </div>
+                <div class="form-group nav-item--reclame-ads">
+                    <label><input type="checkbox" name="sponsored"> In evidenza HUB (sponsorizzato)</label>
+                </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
                 <button type="button" class="btn sec" data-hub-modal-close>Annulla</button>
@@ -3724,6 +3797,7 @@
     <script src="/dashboard/js/a2w-setup-checklist.js"></script>
     <script src="/dashboard/js/a2w-shell.js"></script>
     <script src="/dashboard/js/a2w-push-ux.js"></script>
+    <script src="/dashboard/js/a2w-commercial.js"></script>
     <script src="/dashboard/js/a2w-template-editor.js"></script>
 <script src="/dashboard/js/filo-hr-manual-modal.js"></script>
 
@@ -4746,6 +4820,9 @@ function nav(id, options) {
         },
         conventions: () => {
             if (typeof loadConventionsHub === 'function') loadConventionsHub();
+        },
+        commercial: () => {
+            if (typeof loadCommercialCalendar === 'function') loadCommercialCalendar();
         },
         'pga-catalog': () => {
             if (typeof loadPgaCatalog === 'function') loadPgaCatalog();
@@ -8762,7 +8839,10 @@ function switchAudienceTab(tab) {
     if (activePanel) activePanel.style.display = 'block';
 
     if (key === 'behavior') loadAudienceBehavior();
-    if (key === 'saved' && !audiencesCache.length) loadAudiences();
+    if (key === 'saved') {
+        if (!audiencesCache.length) loadAudiences();
+        if (typeof loadAudiencePresets === 'function') loadAudiencePresets();
+    }
 }
 
 let waiAudienceMode = false;

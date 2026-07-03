@@ -15,7 +15,8 @@ const {
   isPortalPassBrand,
   isPersonalAreaBackLink,
   brandHasWalletLogoAsset,
-  getBrandProductLine
+  getBrandProductLine,
+  isAdsPassBrand
 } = require('./pass-product-line');
 const {
   buildEmployeePass,
@@ -708,8 +709,13 @@ function generatePassJson(template, instance, brand, options = {}) {
     orderedBackFields.push(makeBackLinkField('portal_link', 'Il mio profilo', portalUrl));
   }
 
-  if (hubUrl) {
-    orderedBackFields.push(makeBackLinkField('hub_convenzioni', 'HUB CONVENZIONI', hubUrl));
+  if (hubUrl && !pushBackMode) {
+    const adsHub = isAdsPassBrand(brand);
+    if (adsHub) {
+      orderedBackFields.push(makeBackLinkField('hub_offers', 'Scopri le offerte', hubUrl, { ctaOnly: true }));
+    } else {
+      orderedBackFields.push(makeBackLinkField('hub_convenzioni', 'HUB CONVENZIONI', hubUrl));
+    }
   }
 
   // 5. Any remaining template back fields (fallback)
@@ -1076,11 +1082,11 @@ async function createPkpass(template, instance, brand, options = {}) {
   let meUrl = null;
   let coinBalance = null;
   let hubLocations = [];
-  if (hrBrand && instance?.serial_number && (process.env.JWT_HUB_SECRET || process.env.JWT_SECRET)) {
+  const adsBrand = isAdsPassBrand(brand);
+  if ((hrBrand || adsBrand) && instance?.serial_number && (process.env.JWT_HUB_SECRET || process.env.JWT_SECRET)) {
     try {
       const { signHubToken, buildHubUrl, buildHubAppUrl } = require('./hub-jwt');
       const { listMerchantGeofenceLocationsForBrand, getPgaSettings } = require('../db');
-      const { getCurrentBalance } = require('./coins');
       const userId = member?.id || instance.member_id || null;
       const token = signHubToken({
         user_id: userId,
@@ -1088,12 +1094,17 @@ async function createPkpass(template, instance, brand, options = {}) {
         brand_id: brand.id
       });
       hubUrl = buildHubUrl(token, brand.slug);
-      meUrl = buildHubAppUrl(token, brand.slug, 'me');
+      if (hrBrand) {
+        meUrl = buildHubAppUrl(token, brand.slug, 'me');
+      }
       hubLocations = await listMerchantGeofenceLocationsForBrand(brand.id);
-      const pgaSettings = await getPgaSettings(brand.id);
-      if (pgaSettings.enabled) {
-        pgaUrl = buildHubAppUrl(token, brand.slug, 'pga');
-        coinBalance = await getCurrentBalance(brand.id, instance.serial_number);
+      if (hrBrand) {
+        const { getCurrentBalance } = require('./coins');
+        const pgaSettings = await getPgaSettings(brand.id);
+        if (pgaSettings.enabled) {
+          pgaUrl = buildHubAppUrl(token, brand.slug, 'pga');
+          coinBalance = await getCurrentBalance(brand.id, instance.serial_number);
+        }
       }
     } catch (err) {
       console.warn('[hub] pass back link skipped:', err.message);

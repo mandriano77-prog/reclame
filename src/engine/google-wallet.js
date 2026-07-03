@@ -498,11 +498,12 @@ async function resolveHrPassOptions(brand, instance, memberHint) {
   let meUrl = null;
   let coinBalance = null;
 
-  if (isHrEmployeePass(brand) && instance?.serial_number && (process.env.JWT_HUB_SECRET || process.env.JWT_SECRET)) {
+  if (instance?.serial_number && (process.env.JWT_HUB_SECRET || process.env.JWT_SECRET)) {
+    const { isAdsPassBrand } = require('./pass-product-line');
+    const wantsHub = isHrEmployeePass(brand) || isAdsPassBrand(brand);
+    if (wantsHub) {
     try {
       const { signHubToken, buildHubUrl, buildHubAppUrl } = require('./hub-jwt');
-      const { getPgaSettings } = require('../db');
-      const { getCurrentBalance } = require('./coins');
       const userId = member?.id || instance.member_id || null;
       const token = signHubToken({
         user_id: userId,
@@ -510,14 +511,19 @@ async function resolveHrPassOptions(brand, instance, memberHint) {
         brand_id: brand.id
       });
       hubUrl = buildHubUrl(token, brand.slug);
-      meUrl = buildHubAppUrl(token, brand.slug, 'me');
-      const pgaSettings = await getPgaSettings(brand.id);
-      if (pgaSettings?.enabled) {
-        pgaUrl = buildHubAppUrl(token, brand.slug, 'pga');
-        coinBalance = await getCurrentBalance(brand.id, instance.serial_number);
+      if (isHrEmployeePass(brand)) {
+        meUrl = buildHubAppUrl(token, brand.slug, 'me');
+        const { getPgaSettings } = require('../db');
+        const { getCurrentBalance } = require('./coins');
+        const pgaSettings = await getPgaSettings(brand.id);
+        if (pgaSettings?.enabled) {
+          pgaUrl = buildHubAppUrl(token, brand.slug, 'pga');
+          coinBalance = await getCurrentBalance(brand.id, instance.serial_number);
+        }
       }
     } catch (err) {
       console.warn('[GoogleWallet] hub links skipped:', err.message);
+    }
     }
   }
 
@@ -670,6 +676,18 @@ async function buildPassObject(brand, template, instance, memberHint) {
         }
       }
     });
+  }
+
+  const { isAdsPassBrand } = require('./pass-product-line');
+  if (isAdsPassBrand(brand)) {
+    const adsOpts = await resolveHrPassOptions(brand, instance, memberHint);
+    if (adsOpts.hubUrl) {
+      obj.linksModuleData.uris.push({
+        uri: adsOpts.hubUrl,
+        description: 'Scopri le offerte',
+        id: 'hub_offers'
+      });
+    }
   }
 
   logWalletDebug('buildPassObject', {

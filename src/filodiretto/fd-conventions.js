@@ -366,6 +366,7 @@
       form.online_promo_code.value = m.online_promo_code || '';
       form.physical_enabled.checked = !!m.physical_enabled;
       form.active.checked = m.active !== false;
+      if (form.sponsored) form.sponsored.checked = !!m.sponsored;
     } else {
       if (title) title.textContent = 'Aggiungi merchant';
       form.reset();
@@ -405,7 +406,8 @@
       online_url: form.online_url.value.trim() || null,
       online_promo_code: form.online_promo_code.value.trim() || null,
       physical_enabled: form.physical_enabled.checked,
-      active: form.active.checked
+      active: form.active.checked,
+      sponsored: form.sponsored ? form.sponsored.checked : false
     };
 
     if (!payload.name || !payload.discount_label) {

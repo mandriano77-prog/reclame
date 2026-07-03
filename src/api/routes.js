@@ -110,6 +110,7 @@ const router = express.Router();
 const { registerHubMerchantRoutes } = require('./hub-merchants');
 const { registerHubPwaRoutes } = require('./hub-pwa');
 const { registerPgaDashboardRoutes } = require('./pga-dashboard');
+const { registerCommercialRoutes } = require('./commercial-routes');
 
 function uuidv4() {
   return randomUUID();
@@ -1595,6 +1596,11 @@ registerHubMerchantRoutes(router, {
 registerPgaDashboardRoutes(router, {
   requireBrandId,
   requireOwnedBrandPk,
+  requireWriteAccess
+});
+
+registerCommercialRoutes(router, {
+  requireBrandId,
   requireWriteAccess
 });
 

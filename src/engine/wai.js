@@ -164,8 +164,8 @@ In preview.details includi description_it, prompt_en, style, dimensions "1125x43
       "played_gamification": true|false|null
     },
     "behavior": {
-      "did_action": "opened|link_click|installed|instant_win_played|gamification_played|...|null",
-      "never_did_action": "link_click|...|null",
+      "did_action": "opened|link_click|coupon_redeemed|installed|instant_win_played|gamification_played|...|null",
+      "never_did_action": "link_click|coupon_redeemed|...|null",
       "target_key": "link_0|link_1|link_2|null",
       "since_days": <numero giorni richiesto dall'utente, es. 7 se dice "7gg" o "ultimi 7 giorni">,
       "min_count": 1
@@ -177,7 +177,8 @@ In preview.details includi description_it, prompt_en, style, dimensions "1125x43
 - Per "ha cliccato link 1 / link out / retro" → did_action: "link_click", target_key: "link_0".
 - Per "ha aperto il pass" → did_action: "opened".
 - Per "mai cliccato" / "non ha mai cliccato" / "senza click" → never_did_action: "link_click" (opzionale target_key per un link specifico). Non usare did_action insieme a never_did_action.
-- Per "aperto ma mai cliccato" → behavior: { did_action: "opened", never_did_action: "link_click", since_days: <giorni dalla richiesta> } — il motore applica entrambi i filtri.
+- Per "ha riscattato in cassa" / "coupon CPA" → did_action: "coupon_redeemed".
+- Per "clic ma mai riscattato" → behavior: { did_action: "link_click", never_did_action: "coupon_redeemed", since_days: 90 }.
 - answer: una sola frase fint placeholder (es. "Segmento impostato.") — il server sostituisce con statistiche reali; NON elencare serial, email, stime da contesto LLM né disclaimer su 30 giorni.
 - preview.warnings: sempre [] per audience.query — zero testo qui.
 - type: "query" (non "create"). payload DEVE contenere query_spec completo.
@@ -467,7 +468,8 @@ function coerceAudiencePlatformQuery(prompt, raw) {
     const since_days = parseSinceDaysFromPrompt(prompt) || 30;
     let did_action = null;
     if (/\b(notific|push|avvis)\w*/.test(text) || /\bapert\w*/.test(text)) did_action = 'opened';
-    if (/\bclic\w*/.test(text) || /\blink\b/.test(text)) did_action = 'link_click';
+    if (/\briscatt\w*/.test(text) || /\bcoupon\b/.test(text) || /\bcassa\b/.test(text)) did_action = 'coupon_redeemed';
+    if (/\bclic\w*/.test(text) || /\blink\b/.test(text)) did_action = did_action || 'link_click';
     if (did_action) {
       const behavior = { did_action, since_days, min_count: 1 };
       const linkMatch = text.match(/link\s*([123])/);
