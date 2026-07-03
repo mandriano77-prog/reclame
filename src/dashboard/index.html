@@ -1521,22 +1521,23 @@
 
                 <div class="card" style="margin-bottom:14px;">
                     <h2 class="block-title block-title--sm">Stato integrazioni</h2>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+                    <div id="integrationStatusGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;" aria-live="polite">
                         <div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
-                            Apple Wallet: <strong style="color:var(--green);">OK</strong>
+                            Piattaforma: <strong id="statusPlatform" style="color:var(--text2);">Verifica…</strong>
                         </div>
                         <div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
-                            Google Wallet: <strong style="color:var(--green);">OK</strong>
+                            AI testi (Anthropic): <strong id="statusAiText" style="color:var(--text2);">Verifica…</strong>
                         </div>
                         <div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
-                            Push/Email: <strong style="color:var(--green);">OK</strong>
+                            AI immagini (fal): <strong id="statusAiImage" style="color:var(--text2);">Verifica…</strong>
                         </div>
                     </div>
+                    <div style="font-size:11px;color:var(--text2);margin-top:8px;">Stato di Apple/Google Wallet: usa la diagnostica del pass nella sezione Pass.</div>
                 </div>
 
                 <div class="card" style="border-color:rgba(255,107,107,.35);">
                     <h2 class="block-title block-title--sm">Alert bloccanti</h2>
-                    <div style="font-size:13px;color:var(--text2);">Nessun alert bloccante al momento.</div>
+                    <div id="blockingAlerts" style="font-size:13px;color:var(--text2);" aria-live="polite">Verifica in corso…</div>
                 </div>
                 </div>
             </div>
@@ -7959,6 +7960,40 @@ function dismissPushResult() {
     const box = document.getElementById('pushSendResult');
     if (box) box.hidden = true;
 }
+
+// Home "Stato integrazioni" card — driven by the real /health signal instead of hardcoded OK.
+async function loadIntegrationStatus() {
+    const setStatus = (id, ok, okText, badText) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = ok ? okText : badText;
+        el.style.color = ok ? 'var(--green)' : 'var(--warning, #E8A33D)';
+    };
+    const alertsEl = document.getElementById('blockingAlerts');
+    try {
+        const r = await fetch('/health', { cache: 'no-store' });
+        const h = await r.json().catch(() => ({}));
+        const platformOk = r.ok && h.status === 'ok';
+        const aiText = !!(h.ai && h.ai.anthropic_configured);
+        const aiImg = !!(h.ai && h.ai.fal_configured);
+        setStatus('statusPlatform', platformOk, 'Operativa', 'Non raggiungibile');
+        setStatus('statusAiText', aiText, 'Configurata', 'Non configurata');
+        setStatus('statusAiImage', aiImg, 'Configurata', 'Non configurata');
+        if (alertsEl) {
+            // Only a genuinely blocking condition goes here; unconfigured AI is shown in the grid.
+            const blocking = platformOk ? [] : ['Piattaforma non raggiungibile'];
+            alertsEl.textContent = blocking.length ? blocking.join(' · ') : 'Nessun alert bloccante al momento.';
+            alertsEl.style.color = blocking.length ? 'var(--warning, #E8A33D)' : 'var(--text2)';
+        }
+    } catch (e) {
+        setStatus('statusPlatform', false, 'Operativa', 'Non raggiungibile');
+        setStatus('statusAiText', false, 'Configurata', 'Sconosciuto');
+        setStatus('statusAiImage', false, 'Configurata', 'Sconosciuto');
+        if (alertsEl) alertsEl.textContent = 'Impossibile verificare lo stato dei servizi.';
+    }
+}
+if (document.readyState !== 'loading') loadIntegrationStatus();
+else window.addEventListener('DOMContentLoaded', loadIntegrationStatus);
 
 const PUSH_SEND_TIMEOUT_MS = 60000;
 const PUSH_JOB_POLL_MS = 2000;
