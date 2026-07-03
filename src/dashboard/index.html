@@ -5816,7 +5816,7 @@ async function saveCampaign(openStripUpload = false) {
         start_date: document.getElementById('campStart').value || null,
         end_date: document.getElementById('campEnd').value || null
     };
-    if (!body.name) return alert('Nome campagna obbligatorio');
+    if (!body.name) { toast('Nome campagna obbligatorio'); return; }
     const url = editId ? `${API}/campaigns/${editId}` : `${API}/campaigns`;
     const method = editId ? 'PUT' : 'POST';
     try {
@@ -5837,7 +5837,7 @@ async function saveCampaign(openStripUpload = false) {
             openMediaUpload(savedCampaign.id);
         }
     } catch (err) {
-        alert('Errore salvataggio campagna: ' + err.message);
+        toast('Errore salvataggio campagna: ' + err.message);
     }
 }
 
@@ -5931,13 +5931,13 @@ async function showCampaignQR(id) {
         document.getElementById('qrModal').classList.add('active');
     } catch(err) {
         console.error('showCampaignQR error:', err);
-        alert('Errore generazione QR: ' + err.message);
+        toast('Errore generazione QR: ' + err.message);
     }
 }
 
 async function renderQR() {
     const url = currentQrUrl || (currentQrCampaignId ? await getCampaignDirectUrl(currentQrCampaignId) : '');
-    if (!url) { alert('Impossibile generare URL. Verifica che il brand abbia uno slug.'); return; }
+    if (!url) { toast('Impossibile generare URL. Verifica che il brand abbia uno slug.'); return; }
     document.getElementById('qrUrl').value = url;
     const canvas = document.getElementById('qrCanvas');
     canvas.innerHTML = '';
@@ -6510,7 +6510,7 @@ function csvEscapeCell(v) {
 function downloadPassesTableCsv() {
     const passes = window._lastPassesForExport;
     if (!passes || !passes.length) {
-        alert('Nessun pass da esportare. Apri la sezione Pass e attendi il caricamento.');
+        toast('Nessun pass da esportare. Apri la sezione Pass e attendi il caricamento.');
         return;
     }
     const sep = ';';
@@ -6660,7 +6660,7 @@ async function viewPassDetail(id) {
         document.getElementById('passDetailModal').classList.add('active');
     } catch (err) {
         console.error('viewPassDetail', err);
-        alert('Impossibile caricare il pass: ' + (err.message || err));
+        toast('Impossibile caricare il pass: ' + (err.message || err));
     }
 }
 
@@ -6733,7 +6733,7 @@ async function deletePassInstance(id) {
         toast('Pass eliminato');
         getPassSelectedIds().delete(id);
         loadPasses();
-    } catch (err) { alert('Errore: ' + err.message); }
+    } catch (err) { toast('Errore: ' + err.message); }
 }
 
 // ==================== TEMPLATES ====================
@@ -7648,7 +7648,7 @@ async function loadStripFromPromo() {
             updatePassPreview();
             toast('Strip caricata dalla promo!');
         }
-    } catch(e) { alert('Errore caricamento strip: ' + e.message); }
+    } catch(e) { toast('Errore caricamento strip: ' + e.message); }
 }
 
 // Upload template images after save
@@ -7681,7 +7681,7 @@ async function deleteTemplate(id) {
         toast('Template eliminato');
         invalidateBrandCache();
         loadTemplates();
-    } catch (err) { alert('Errore: ' + err.message); }
+    } catch (err) { toast('Errore: ' + err.message); }
 }
 
 // ==================== PUSH NOTIFICATIONS ====================
@@ -8196,23 +8196,23 @@ async function createScheduledPush() {
     const schedType = document.getElementById('schedType').value;
     const time = document.getElementById('schedTime').value || '09:00';
 
-    if (!title || !message) return alert('Compila titolo e messaggio');
-    if (!brandId) return alert('Seleziona un brand');
+    if (!title || !message) { toast('Compila titolo e messaggio'); return; }
+    if (!brandId) { toast('Seleziona un brand'); return; }
 
     const body = { brand_id: brandId, title, message, update_pass: updatePass, channel, schedule_type: schedType, schedule_time: time };
     if (audienceId) body.audience_id = audienceId;
     else if (campaignId && isLegacyCampaignsUiEnabled()) body.campaign_id = campaignId;
     if (schedType === 'once') {
         body.date = document.getElementById('schedDate').value;
-        if (!body.date) return alert('Seleziona una data');
+        if (!body.date) { toast('Seleziona una data'); return; }
     }
     if (schedType === 'weekly') {
         body.days = [...document.querySelectorAll('.sched-day:checked')].map(cb => parseInt(cb.value));
-        if (!body.days.length) return alert('Seleziona almeno un giorno');
+        if (!body.days.length) { toast('Seleziona almeno un giorno'); return; }
     }
     const res = await fetch(`${API}/push/scheduled`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) { alert(data.error || 'Errore pianificazione'); return; }
+    if (!res.ok) { toast(data.error || 'Errore pianificazione'); return; }
     toast('Notifica programmata!');
     document.getElementById('schedTitle').value = '';
     document.getElementById('schedMessage').value = '';
@@ -8278,7 +8278,7 @@ function geoHasValidCoords(loc) {
 }
 
 function addGeoLocation() {
-    if (geoLocations.length >= 10) return alert('Massimo 10 locations per pass (limite Apple)');
+    if (geoLocations.length >= 10) { toast('Massimo 10 locations per pass (limite Apple)'); return; }
     geoLocations.push({ name: '', latitude: '', longitude: '', radius: 500, relevantText: '', address: '' });
     renderGeoLocations();
 }
@@ -8516,16 +8516,16 @@ async function loadGeofencing() {
 }
 
 async function saveGeofencing() {
-    if (!brandId) return alert('Seleziona un brand');
+    if (!brandId) { toast('Seleziona un brand'); return; }
     // Validate
     for (let i = 0; i < geoLocations.length; i++) {
         const loc = geoLocations[i];
         const la = parseFloat(loc.latitude);
         const lo = parseFloat(loc.longitude);
         if (!Number.isFinite(la) || !Number.isFinite(lo)) {
-            return alert(`POI #${i + 1}: cerca e seleziona un indirizzo dai risultati (oppure compila le coordinate nel blocco back-office).`);
+            { toast(`POI #${i + 1}: cerca e seleziona un indirizzo dai risultati (oppure compila le coordinate nel blocco back-office).`); return; }
         }
-        if (!loc.relevantText || !String(loc.relevantText).trim()) return alert(`POI #${i+1}: inserisci il messaggio lock screen`);
+        if (!loc.relevantText || !String(loc.relevantText).trim()) { toast(`POI #${i+1}: inserisci il messaggio lock screen`); return; }
     }
     const maxDistance = parseInt(document.getElementById('geoMaxDistance').value) || 500;
     const channel = document.getElementById('geoChannel').value || 'apple';
@@ -8777,7 +8777,7 @@ function openStripPromoModal() {
 
 async function saveStripPromo() {
     const name = document.getElementById('spName').value;
-    if (!name) return alert('Nome obbligatorio');
+    if (!name) { toast('Nome obbligatorio'); return; }
     const file = document.getElementById('spImage').files[0];
     let strip_base64 = null;
     if (file) {
@@ -12450,7 +12450,7 @@ async function wzDeleteTemplate(id) {
         toast('Template eliminato');
         invalidateBrandCache();
         loadWzTemplates();
-    } catch(e) { alert('Errore: ' + e.message); }
+    } catch(e) { toast('Errore: ' + e.message); }
 }
 
 // ==================== BRAND IDENTITY ====================
@@ -14052,11 +14052,11 @@ async function saveUser() {
         role: document.getElementById('userRole').value,
         brand_id: document.getElementById('userBrand').value || null
     };
-    if (!body.name || !body.email) return alert('Compila nome ed email');
+    if (!body.name || !body.email) { toast('Compila nome ed email'); return; }
     const role = (typeof FdRbac !== 'undefined' && FdRbac.normalizeRole)
         ? FdRbac.normalizeRole(body.role)
         : body.role;
-    if (role !== 'admin' && !body.brand_id) return alert('Seleziona un brand per questo ruolo');
+    if (role !== 'admin' && !body.brand_id) { toast('Seleziona un brand per questo ruolo'); return; }
     if (role === 'admin') body.brand_id = null;
 
     if (editId) {
@@ -14307,8 +14307,8 @@ async function waiStartComboPushStripFlow(data) {
 
 function waiComboContinueToPush() {
     if (!waiPushComboDraft) return;
-    if (!waiCurrentStripBase64) return alert('Genera prima la strip');
-    if (!waiComboStripSaved) return alert('Salva la strip in libreria prima di continuare');
+    if (!waiCurrentStripBase64) { toast('Genera prima la strip'); return; }
+    if (!waiComboStripSaved) { toast('Salva la strip in libreria prima di continuare'); return; }
     waiDraft = waiPushComboDraft;
     waiSetComboStepLabel('Step 2 di 2 — Push');
     const status = document.getElementById('waiPushStripStatus');
@@ -14347,8 +14347,8 @@ async function applyWaiAskResponse(data, { clearRefineField = false, regenerateS
 }
 
 async function askWai() {
-    if (!brandId) return alert('Seleziona un brand');
-    if (currentUser?.role === 'viewer') return alert('Permessi insufficienti (solo lettura)');
+    if (!brandId) { toast('Seleziona un brand'); return; }
+    if (currentUser?.role === 'viewer') { toast('Permessi insufficienti (solo lettura)'); return; }
     const prompt = document.getElementById('waiPrompt')?.value?.trim() || '';
     if (!prompt) return;
 
@@ -14373,11 +14373,11 @@ async function askWai() {
             body: JSON.stringify({ prompt: routedPrompt, brand_id: brandId })
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) return alert(data.error || 'Errore W.AI');
+        if (!res.ok) { toast(data.error || 'Errore W.AI'); return; }
         waiOriginalPrompt = routedPrompt;
         await applyWaiAskResponse(data);
     } catch (err) {
-        alert(err?.message || 'Errore W.AI');
+        toast(err?.message || 'Errore W.AI');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -14387,13 +14387,13 @@ async function askWai() {
 }
 
 async function refineWai() {
-    if (!brandId) return alert('Seleziona un brand');
-    if (currentUser?.role === 'viewer') return alert('Permessi insufficienti (solo lettura)');
+    if (!brandId) { toast('Seleziona un brand'); return; }
+    if (currentUser?.role === 'viewer') { toast('Permessi insufficienti (solo lettura)'); return; }
     const followup = document.getElementById('waiRefinePrompt')?.value?.trim() || '';
-    if (!followup) return alert('Scrivi cosa vuoi modificare o integrare');
-    if (!waiDraft && !waiPushComboDraft) return alert('Nessuna proposta da aggiornare');
+    if (!followup) { toast('Scrivi cosa vuoi modificare o integrare'); return; }
+    if (!waiDraft && !waiPushComboDraft) { toast('Nessuna proposta da aggiornare'); return; }
     const originalPrompt = waiOriginalPrompt || document.getElementById('waiPrompt')?.value?.trim() || '';
-    if (!originalPrompt) return alert('Prompt originale mancante');
+    if (!originalPrompt) { toast('Prompt originale mancante'); return; }
         const proposal = waiDraft || waiPushComboDraft;
         const wasStrip = proposal?.intent === 'strip.generate' || !!waiCurrentStripBase64 || waiDraftHasPushWithStrip(proposal);
 
@@ -14416,7 +14416,7 @@ async function refineWai() {
             })
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) return alert(data.error || 'Errore W.AI');
+        if (!res.ok) { toast(data.error || 'Errore W.AI'); return; }
         waiIntegrationTrace = waiIntegrationTrace
             ? `${waiIntegrationTrace}\n${followup}`
             : followup;
@@ -14566,7 +14566,7 @@ function renderWaiPreview(data) {
 async function confirmWai() {
     const draft = waiGetActiveDraft();
     if (draft?.intent === 'audience.query') return waiSaveAudience();
-    if (!waiCanConfirm(draft)) return alert('Nessuna azione da confermare. Integra titolo e messaggio push, poi usa «Aggiorna proposta».');
+    if (!waiCanConfirm(draft)) { toast('Nessuna azione da confermare. Integra titolo e messaggio push, poi usa «Aggiorna proposta».'); return; }
     if (draft.intent === 'strip.generate') {
         await waiHandleStripGenerate(waiBuildStripPayload(draft));
         return;
@@ -14577,15 +14577,15 @@ async function confirmWai() {
     }
     const payload = { ...draft.payload, brand_id: draft.payload.brand_id || brandId };
     if (waiIsComboStripStep()) {
-        return alert('Salva la strip in libreria prima di inviare la push');
+        { toast('Salva la strip in libreria prima di inviare la push'); return; }
     }
     const comboPushStrip = waiIsComboPushStep() || (waiDraftHasPushWithStrip(draft) && waiCurrentStripBase64);
     if (comboPushStrip) {
         if (!waiComboStripSaved && waiPushComboDraft) {
-            return alert('Salva la strip in libreria prima di inviare la push');
+            { toast('Salva la strip in libreria prima di inviare la push'); return; }
         }
         if (!waiCurrentStripBase64) {
-            return alert('Strip mancante. Ripeti il flusso da capo.');
+            { toast('Strip mancante. Ripeti il flusso da capo.'); return; }
         }
         payload.strip_base64 = waiCurrentStripBase64;
         delete payload.strip_prompt_en;
@@ -14608,7 +14608,7 @@ async function confirmWai() {
                 preview.innerHTML = prevHtml;
                 preview.style.display = 'block';
             }
-            return alert(data.error || 'Errore esecuzione');
+            { toast(data.error || 'Errore esecuzione'); return; }
         }
         toast(data.message || 'Azione completata');
         dismissWai();
@@ -14618,7 +14618,7 @@ async function confirmWai() {
             preview.innerHTML = prevHtml;
             preview.style.display = 'block';
         }
-        alert(err.message || 'Errore esecuzione');
+        toast(err.message || 'Errore esecuzione');
     }
 }
 
@@ -14700,9 +14700,9 @@ async function waiHandleStripGenerate(payload, { mode = 'library' } = {}) {
 
 async function waiSaveStrip() {
     const name = document.getElementById('wai-strip-name')?.value?.trim() || '';
-    if (!name) return alert('Inserisci un nome per la strip');
-    if (!waiCurrentStripBase64) return alert('Nessuna immagine da salvare');
-    if (!brandId) return alert('Seleziona un brand');
+    if (!name) { toast('Inserisci un nome per la strip'); return; }
+    if (!waiCurrentStripBase64) { toast('Nessuna immagine da salvare'); return; }
+    if (!brandId) { toast('Seleziona un brand'); return; }
 
     try {
         const res = await fetch(`${API}/wai/strip-save`, {
@@ -14727,7 +14727,7 @@ async function waiSaveStrip() {
         dismissWai();
         refreshDashboardSection('strip.generate');
     } catch (err) {
-        alert(err.message || 'Errore nel salvataggio');
+        toast(err.message || 'Errore nel salvataggio');
     }
 }
 
