@@ -3930,6 +3930,124 @@ async function insertCoinLedgerEntry({
   return res.rows[0];
 }
 
+/**
+ * Atomically check the coin balance and insert a debit entry in one transaction.
+ * pass_coin_balance is a SUM-over-ledger VIEW (no row to lock), so we take a
+ * per-(brand,serial) advisory lock to serialize concurrent debits — without it,
+ * N concurrent redemptions all read the same balance and can oversell.
+ * @returns {{ ledger_id: string, new_balance: number }}
+ * @throws Error with code 'INSUFFICIENT_BALANCE' when the balance is too low.
+ */
+async function atomicDebitCoinLedger({
+  brand_id,
+  pass_serial,
+  amount,
+  user_id = null,
+  action_key = 'redemption',
+  description = null,
+  related_entity_type = null,
+  related_entity_id = null,
+  metadata = null
+}) {
+  if (!brand_id || !pass_serial || !action_key) {
+    throw new Error('brand_id, pass_serial e action_key sono obbligatori');
+  }
+  const debit = Math.abs(Number(amount));
+  if (!debit || debit <= 0) throw new Error('amount deve essere positivo');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Transaction-scoped advisory lock keyed on brand+serial (released at COMMIT/ROLLBACK)
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`coin:${brand_id}:${pass_serial}`]);
+
+    const bal = await client.query(
+      `SELECT COALESCE(SUM(coin_amount), 0)::int AS balance
+       FROM coin_ledger WHERE brand_id = $1 AND pass_serial = $2`,
+      [brand_id, pass_serial]
+    );
+    const current = Number(bal.rows[0].balance || 0);
+    if (current < debit) {
+      await client.query('ROLLBACK');
+      const err = new Error('Saldo coin insufficiente');
+      err.code = 'INSUFFICIENT_BALANCE';
+      err.balance = current;
+      throw err;
+    }
+
+    const ins = await client.query(
+      `INSERT INTO coin_ledger (
+        brand_id, pass_serial, user_id, action_key, coin_amount, description,
+        related_entity_type, related_entity_id, metadata
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
+      RETURNING id`,
+      [
+        brand_id,
+        pass_serial,
+        user_id != null ? String(user_id) : null,
+        action_key,
+        -debit,
+        description || null,
+        related_entity_type || null,
+        related_entity_id || null,
+        metadata != null ? JSON.stringify(metadata) : null
+      ]
+    );
+    await client.query('COMMIT');
+    return { ledger_id: ins.rows[0].id, new_balance: current - debit };
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Atomically cancel a pending booking and post its refund in one transaction.
+ * The status flip is a compare-and-set (WHERE status='pending'), so only the caller
+ * that wins the race gets the row and posts the refund — concurrent cancels of the
+ * same booking can't double-refund. Returns the cancelled booking row, or null if
+ * it was not pending (already cancelled / lost the race).
+ */
+async function atomicCancelBookingRefund({ bookingId, brandId, passSerial }) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const upd = await client.query(
+      `UPDATE experience_bookings SET status = 'cancelled', updated_at = NOW()
+       WHERE id = $1 AND brand_id = $2 AND status = 'pending' RETURNING *`,
+      [bookingId, brandId]
+    );
+    const booking = upd.rows[0];
+    if (!booking) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+    await client.query(
+      `INSERT INTO coin_ledger (
+        brand_id, pass_serial, user_id, action_key, coin_amount, description,
+        related_entity_type, related_entity_id, metadata
+      ) VALUES ($1,$2,$3,'booking_refund',$4,'Rimborso prenotazione annullata','booking',$5,$6::jsonb)`,
+      [
+        brandId,
+        passSerial,
+        booking.user_id != null ? String(booking.user_id) : null,
+        Number(booking.coin_amount),
+        booking.id,
+        JSON.stringify({ experience_id: booking.experience_id })
+      ]
+    );
+    await client.query('COMMIT');
+    return booking;
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 async function getPassCoinBalance(brandId, passSerial) {
   const res = await pool.query(
     `SELECT balance, last_activity, total_accruals, total_redemptions
@@ -4654,6 +4772,8 @@ module.exports = {
   logConventionActivation,
   getCoinActionConfig,
   insertCoinLedgerEntry,
+  atomicDebitCoinLedger,
+  atomicCancelBookingRefund,
   getPassCoinBalance,
   getPgaSettings,
   upsertPgaSettings,

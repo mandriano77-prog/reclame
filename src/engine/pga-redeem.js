@@ -121,20 +121,16 @@ async function cancelPendingBooking({ brandId, passSerial, bookingId }) {
     throw err;
   }
 
-  const coinAmount = Number(booking.coin_amount);
-  await db.insertCoinLedgerEntry({
-    brand_id: brandId,
-    pass_serial: passSerial,
-    user_id: booking.user_id,
-    action_key: 'booking_refund',
-    coin_amount: coinAmount,
-    description: 'Rimborso prenotazione annullata',
-    related_entity_type: 'booking',
-    related_entity_id: booking.id,
-    metadata: { experience_id: booking.experience_id }
-  });
+  // Cancel + refund atomically. The status flip is a compare-and-set inside the
+  // transaction, so two concurrent cancels of the same booking can't double-refund:
+  // the loser gets null and is reported as NOT_CANCELLABLE.
+  const updated = await db.atomicCancelBookingRefund({ bookingId, brandId, passSerial });
+  if (!updated) {
+    const err = new Error('Solo le prenotazioni in attesa possono essere annullate');
+    err.code = 'NOT_CANCELLABLE';
+    throw err;
+  }
 
-  const updated = await db.updateExperienceBookingStatus(bookingId, brandId, 'cancelled');
   const balanceRow = await db.getPassCoinBalance(brandId, passSerial);
 
   return {

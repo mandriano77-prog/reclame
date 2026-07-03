@@ -29,7 +29,10 @@ test('Sprint 1: coins.js exposes grantCoin, debitCoin, getCurrentBalance', () =>
   assert.match(COINS_SOURCE, /async function grantCoin/);
   assert.match(COINS_SOURCE, /async function debitCoin/);
   assert.match(COINS_SOURCE, /async function getCurrentBalance/);
-  assert.match(COINS_SOURCE, /INSUFFICIENT_BALANCE/);
+  // debitCoin delegates to the atomic ledger debit; INSUFFICIENT_BALANCE is raised there.
+  assert.match(COINS_SOURCE, /atomicDebitCoinLedger/);
+  assert.match(DB_SOURCE, /INSUFFICIENT_BALANCE/);
+  assert.match(DB_SOURCE, /pg_advisory_xact_lock/);
 });
 
 test('Sprint 1: grantCoin skips when action not configured', async () => {
@@ -49,10 +52,17 @@ test('Sprint 1: grantCoin skips when action not configured', async () => {
   }
 });
 
-test('Sprint 1: debitCoin rejects insufficient balance', async () => {
+test('Sprint 1: debitCoin propagates insufficient balance from atomic debit', async () => {
+  // The balance check now lives inside the atomic transaction (atomicDebitCoinLedger);
+  // debitCoin must surface its INSUFFICIENT_BALANCE code unchanged.
   const db = require('../src/db');
-  const origBalance = db.getPassCoinBalance;
-  db.getPassCoinBalance = async () => ({ balance: 5 });
+  const origAtomic = db.atomicDebitCoinLedger;
+  db.atomicDebitCoinLedger = async () => {
+    const err = new Error('Saldo coin insufficiente');
+    err.code = 'INSUFFICIENT_BALANCE';
+    err.balance = 5;
+    throw err;
+  };
   delete require.cache[require.resolve('../src/engine/coins')];
   try {
     const { debitCoin } = require('../src/engine/coins');
@@ -61,7 +71,7 @@ test('Sprint 1: debitCoin rejects insufficient balance', async () => {
       (err) => err && err.code === 'INSUFFICIENT_BALANCE'
     );
   } finally {
-    db.getPassCoinBalance = origBalance;
+    db.atomicDebitCoinLedger = origAtomic;
     delete require.cache[require.resolve('../src/engine/coins')];
   }
 });

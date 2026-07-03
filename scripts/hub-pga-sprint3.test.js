@@ -192,11 +192,13 @@ test('Sprint 3: redeemExperience fails when monthly limit reached', async () => 
 });
 
 test('Sprint 3: cancelPendingBooking refunds pending booking', async () => {
+  // Cancel + refund are now one atomic transaction (atomicCancelBookingRefund); the
+  // compare-and-set on status prevents double refunds. The ledger insert happens inside
+  // that transaction, so the test asserts the atomic call is made and its result surfaces.
   const origGet = db.getExperienceBookingForPass;
-  const origInsert = db.insertCoinLedgerEntry;
-  const origUpdate = db.updateExperienceBookingStatus;
+  const origAtomic = db.atomicCancelBookingRefund;
   const origBal = db.getPassCoinBalance;
-  const ledgerCalls = [];
+  const atomicCalls = [];
 
   db.getExperienceBookingForPass = async () => ({
     id: 'book-cancel',
@@ -207,15 +209,10 @@ test('Sprint 3: cancelPendingBooking refunds pending booking', async () => {
     coin_amount: 20,
     status: 'pending'
   });
-  db.insertCoinLedgerEntry = async (entry) => {
-    ledgerCalls.push(entry);
-    return { id: 'ref-1', ...entry };
+  db.atomicCancelBookingRefund = async (args) => {
+    atomicCalls.push(args);
+    return { id: 'book-cancel', status: 'cancelled', coin_amount: 20 };
   };
-  db.updateExperienceBookingStatus = async () => ({
-    id: 'book-cancel',
-    status: 'cancelled',
-    coin_amount: 20
-  });
   db.getPassCoinBalance = async () => ({ balance: 120 });
 
   try {
@@ -226,14 +223,42 @@ test('Sprint 3: cancelPendingBooking refunds pending booking', async () => {
     });
     assert.equal(out.new_balance, 120);
     assert.equal(out.booking.status, 'cancelled');
-    assert.equal(ledgerCalls.length, 1);
-    assert.equal(ledgerCalls[0].action_key, 'booking_refund');
-    assert.equal(ledgerCalls[0].coin_amount, 20);
+    assert.equal(atomicCalls.length, 1);
+    assert.equal(atomicCalls[0].bookingId, 'book-cancel');
+    assert.equal(atomicCalls[0].brandId, 'brand-c1');
+    assert.equal(atomicCalls[0].passSerial, 'SN-C1');
   } finally {
     db.getExperienceBookingForPass = origGet;
-    db.insertCoinLedgerEntry = origInsert;
-    db.updateExperienceBookingStatus = origUpdate;
+    db.atomicCancelBookingRefund = origAtomic;
     db.getPassCoinBalance = origBal;
+  }
+});
+
+test('Sprint 3: cancelPendingBooking rejects when the atomic cancel loses the race', async () => {
+  // atomicCancelBookingRefund returns null when the booking was no longer pending
+  // (a concurrent cancel won). cancelPendingBooking must then reject, never refund.
+  const origGet = db.getExperienceBookingForPass;
+  const origAtomic = db.atomicCancelBookingRefund;
+
+  db.getExperienceBookingForPass = async () => ({
+    id: 'book-race',
+    brand_id: 'brand-c1',
+    pass_serial: 'SN-C1',
+    experience_id: 'exp-c1',
+    user_id: 'user-c1',
+    coin_amount: 20,
+    status: 'pending'
+  });
+  db.atomicCancelBookingRefund = async () => null;
+
+  try {
+    await assert.rejects(
+      () => cancelPendingBooking({ brandId: 'brand-c1', passSerial: 'SN-C1', bookingId: 'book-race' }),
+      (err) => err && err.code === 'NOT_CANCELLABLE'
+    );
+  } finally {
+    db.getExperienceBookingForPass = origGet;
+    db.atomicCancelBookingRefund = origAtomic;
   }
 });
 

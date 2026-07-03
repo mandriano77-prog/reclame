@@ -3,6 +3,7 @@
 const {
   getCoinActionConfig,
   insertCoinLedgerEntry,
+  atomicDebitCoinLedger,
   getPassCoinBalance
 } = require('../db');
 
@@ -53,33 +54,24 @@ async function debitCoin(brandId, passSerial, coinAmount, options = {}) {
   const amount = Math.abs(Number(coinAmount));
   if (!amount || amount <= 0) throw new Error('coinAmount deve essere positivo');
 
-  const balanceRow = await getPassCoinBalance(brandId, passSerial);
-  const current = Number(balanceRow.balance || 0);
-  if (current < amount) {
-    const err = new Error('Saldo coin insufficiente');
-    err.code = 'INSUFFICIENT_BALANCE';
-    err.balance = current;
-    throw err;
-  }
-
-  const actionKey = options.action_key || 'redemption';
-  const entry = await insertCoinLedgerEntry({
+  // Balance check + debit insert happen atomically under a per-pass advisory lock
+  // (see atomicDebitCoinLedger) so concurrent redemptions can't oversell the balance.
+  const result = await atomicDebitCoinLedger({
     brand_id: brandId,
     pass_serial: passSerial,
+    amount,
     user_id: options.user_id || null,
-    action_key: actionKey,
-    coin_amount: -amount,
+    action_key: options.action_key || 'redemption',
     description: options.description || null,
     related_entity_type: options.related_entity_type || null,
     related_entity_id: options.related_entity_id || null,
     metadata: options.metadata || null
   });
 
-  const after = await getPassCoinBalance(brandId, passSerial);
   return {
     success: true,
-    new_balance: Number(after.balance || 0),
-    ledger_id: entry.id
+    new_balance: result.new_balance,
+    ledger_id: result.ledger_id
   };
 }
 
