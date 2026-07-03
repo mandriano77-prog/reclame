@@ -318,7 +318,18 @@ app.get(['/dashboard/login', '/dashboard/login/'], (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
 });
-app.use('/filodiretto', express.static(path.join(__dirname, 'filodiretto')));
+// Serve ONLY Filodiretto front-end assets. The same directory also holds internal
+// documents (investor memos, GTM specs, advisor mail) that must never be public;
+// blanket express.static would expose them. Allow fd-*.{css,js}, fd.bundle.* and tokens.css only.
+const FD_PUBLIC_ASSET_RE = /^\/(?:fd[A-Za-z0-9._-]*\.(?:css|js)|tokens\.css)$/;
+app.use(
+  '/filodiretto',
+  (req, res, next) => {
+    if (FD_PUBLIC_ASSET_RE.test(req.path)) return next();
+    return res.status(404).send('Not found');
+  },
+  express.static(path.join(__dirname, 'filodiretto'))
+);
 app.use('/landing', express.static(path.join(__dirname, 'landing')));
 app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
 
