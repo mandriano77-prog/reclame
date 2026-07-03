@@ -985,10 +985,15 @@ function cleanPem(pem) {
  */
 function signManifest(manifestJson, certPath, keyPath, wwdrPath) {
   const { execSync } = require('child_process');
+  const isProd = process.env.NODE_ENV === 'production';
 
   const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
   if (!hasCerts) {
+    if (isProd) {
+      // A mock signature yields a .pkpass iOS silently rejects — never ship one in production.
+      throw new Error('Apple signing certificates missing in production; refusing to emit an unsigned pass');
+    }
     console.warn('⚠️ MOCK MODE: pass not signed (install Apple certificate to enable)');
     return Buffer.from('UNSIGNED_MOCK_SIGNATURE');
   }
@@ -1053,6 +1058,11 @@ function signManifest(manifestJson, certPath, keyPath, wwdrPath) {
       try { execSync(`rm -rf ${tmpDir2}`, { stdio: 'pipe' }); } catch(e) {}
       return sig;
     } catch(e2) {
+      if (isProd) {
+        // Both cms and smime failed with certs present — a real signing outage.
+        // Returning a mock signature would silently serve passes iOS rejects; fail loudly instead.
+        throw new Error(`Apple pass signing failed (cms and smime): ${e2.message}`);
+      }
       console.error('⚠️ MOCK MODE: both cms and smime signing failed:', e2.message);
       return Buffer.from('UNSIGNED_MOCK_SIGNATURE');
     }
