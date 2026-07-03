@@ -9,8 +9,20 @@ const {
   canExecuteWaiIntent,
 } = require('../engine/rbac');
 const { randomUUID } = require('crypto');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
+
+// Throttle cashier PIN attempts. skipSuccessfulRequests: valid redemptions (2xx)
+// don't consume the budget, so only failed attempts (wrong PIN/code → 4xx) count.
+const redeemRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { valid: false, reason: 'Troppi tentativi. Riprova tra un minuto.' }
+});
 const { createHash, randomBytes, timingSafeEqual } = require('crypto');
 const {
   createBrand, getBrand, getBrandBySlug, listBrands, updateBrand, deleteBrand,
@@ -1258,7 +1270,7 @@ const {
   listMerchantCashierEndpoints
 } = require('../engine/coupon-redemption');
 
-router.post('/redeem/preview', async (req, res) => {
+router.post('/redeem/preview', redeemRateLimiter, async (req, res) => {
   try {
     const brandSlug = String(req.body.brand_slug || req.body.slug || '').trim();
     const merchantSlug = String(req.body.merchant_slug || '').trim() || null;
@@ -1282,7 +1294,7 @@ router.post('/redeem/preview', async (req, res) => {
   }
 });
 
-router.post('/redeem/confirm', async (req, res) => {
+router.post('/redeem/confirm', redeemRateLimiter, async (req, res) => {
   try {
     const brandSlug = String(req.body.brand_slug || req.body.slug || '').trim();
     const merchantSlug = String(req.body.merchant_slug || '').trim() || null;

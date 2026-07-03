@@ -11,6 +11,7 @@ const {
   getMerchantBySlug,
   updateBrand
 } = require('../db');
+const crypto = require('crypto');
 const { logHolderEvent } = require('./holder-events');
 const {
   normalizeCheckoutCode,
@@ -30,26 +31,34 @@ function parseBrandConfig(brand) {
 }
 
 function generateCashierPin() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  // Cryptographically strong 6-digit PIN (crypto.randomInt is unbiased over the range)
+  return String(crypto.randomInt(0, 1000000)).padStart(6, '0');
 }
 
 function normalizePin(pin) {
   return String(pin || '').trim().replace(/\s/g, '');
 }
 
+// Constant-time PIN comparison to avoid leaking match progress via response timing
+function pinsMatch(expected, given) {
+  if (!expected || !given) return false;
+  const a = Buffer.from(expected, 'utf8');
+  const b = Buffer.from(given, 'utf8');
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
 function verifyCashierPin(brand, pin) {
   const cfg = parseBrandConfig(brand);
-  const expected = normalizePin(cfg.cashier_pin);
-  const given = normalizePin(pin);
-  if (!expected || !given) return false;
-  return expected === given;
+  return pinsMatch(normalizePin(cfg.cashier_pin), normalizePin(pin));
 }
 
 function verifyMerchantCashierPin(merchant, pin) {
-  const expected = normalizePin(merchant?.merchant_cashier_pin);
-  const given = normalizePin(pin);
-  if (!expected || !given) return false;
-  return expected === given;
+  return pinsMatch(normalizePin(merchant?.merchant_cashier_pin), normalizePin(pin));
 }
 
 function verifyRedemptionPin(brand, merchant, pin) {
