@@ -701,8 +701,13 @@ async function getDb() {
 
     // instant_win_campaigns Ã¢ÂÂ columns added after initial schema
     // Old schema had "title" NOT NULL Ã¢ÂÂ drop constraint, keep column for compat
-    await pool.query(`ALTER TABLE instant_win_campaigns ALTER COLUMN title DROP NOT NULL`).catch(logDdlError);
-    await pool.query(`ALTER TABLE instant_win_campaigns ALTER COLUMN title SET DEFAULT ''`).catch(logDdlError);
+    // Guarded so it's a no-op (not an error) on fresh DBs where "title" never existed.
+    await pool.query(`DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'instant_win_campaigns' AND column_name = 'title') THEN
+        ALTER TABLE instant_win_campaigns ALTER COLUMN title DROP NOT NULL;
+        ALTER TABLE instant_win_campaigns ALTER COLUMN title SET DEFAULT '';
+      END IF;
+    END $$;`).catch(logDdlError);
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''`).catch(logDdlError);
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS brand_id TEXT`).catch(logDdlError);
     await pool.query(`ALTER TABLE instant_win_campaigns ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`).catch(logDdlError);
@@ -758,8 +763,13 @@ async function getDb() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_iw_plays_serial ON instant_win_plays(serial_number)`).catch(logDdlError);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_iw_plays_brand ON instant_win_plays(brand_id)`).catch(logDdlError);
 
-    // Drop legacy member_id NOT NULL constraint (plays use serial_number, not member_id)
-    await pool.query(`ALTER TABLE instant_win_plays ALTER COLUMN member_id DROP NOT NULL`).catch(logDdlError);
+    // Drop legacy member_id NOT NULL constraint (plays use serial_number, not member_id).
+    // Guarded so it's a no-op (not an error) on fresh DBs where the column never existed.
+    await pool.query(`DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'instant_win_plays' AND column_name = 'member_id') THEN
+        ALTER TABLE instant_win_plays ALTER COLUMN member_id DROP NOT NULL;
+      END IF;
+    END $$;`).catch(logDdlError);
 
     // Google Wallet columns
     await pool.query(`ALTER TABLE pass_instances ADD COLUMN IF NOT EXISTS google_wallet_object_id TEXT`);
