@@ -550,7 +550,8 @@ router.get('/debug/push-diagnostics', requireDebugAccess, async (req, res) => {
       ]
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, stack: err.stack });
+    console.error('push-diagnostics error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -684,7 +685,8 @@ router.post('/signup', async (req, res) => {
 
   } catch (err) {
     console.error('Signup error:', err);
-    res.status(500).json({ error: 'Errore creazione pass: ' + err.message });
+    // Generic message — this reaches the public landing page; details stay in logs.
+    res.status(500).json({ error: 'Non è stato possibile creare il pass. Riprova tra poco.' });
   }
 });
 
@@ -848,7 +850,8 @@ router.get('/passes/:id/download', async (req, res) => {
     res.send(pkpassBuffer);
   } catch (err) {
     console.error('Download error:', err);
-    res.status(500).json({ error: err.message });
+    // Generic message — reaches the public landing page; details stay in logs.
+    res.status(500).json({ error: 'Non è stato possibile generare il pass. Riprova tra poco.' });
   }
 });
 
