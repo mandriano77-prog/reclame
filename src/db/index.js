@@ -4008,7 +4008,7 @@ async function atomicDebitCoinLedger({
     );
     const current = Number(bal.rows[0].balance || 0);
     if (current < debit) {
-      await client.query('ROLLBACK');
+      // Throw and let the catch below issue the single ROLLBACK.
       const err = new Error('Saldo coin insufficiente');
       err.code = 'INSUFFICIENT_BALANCE';
       err.balance = current;
