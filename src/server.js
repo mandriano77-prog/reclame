@@ -65,6 +65,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Security headers. Set manually rather than via helmet because helmet's default CSP would
+// break the many pages that rely on inline scripts/styles; a calibrated CSP is a separate task.
+app.use((req, res, next) => {
+  res.set('X-Frame-Options', 'SAMEORIGIN');            // block cross-origin framing (clickjacking)
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (isProduction()) {
+    res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
 // Middleware
 app.use(cors(corsOptions()));
 
