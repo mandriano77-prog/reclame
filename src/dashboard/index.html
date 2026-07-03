@@ -1736,6 +1736,10 @@
                             <p style="font-size:11px;color:var(--text2);margin-top:4px;">Reward, Challenge o Convenzione: il link verrà inserito nel Link 1 del retro di ogni pass.</p>
                         </div>
                         <p class="push-send-error" id="pushSendError" role="alert" hidden></p>
+                        <div id="pushSendResult" role="status" aria-live="polite" hidden style="margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);">
+                            <div id="pushSendResultBody" style="white-space:pre-line;font-size:13px;line-height:1.5;color:var(--text-primary);"></div>
+                            <button type="button" class="btn small sec" style="margin-top:10px;" onclick="dismissPushResult()">Chiudi</button>
+                        </div>
                         <button type="button" class="btn" id="pushSendBtn" style="width:100%;font-weight:700;margin-top:12px;" onclick="sendImmediatePush()">&#9889; Invia Notifica Ora</button>
                     </div>
                     <div class="fd-push-history-wrap">
@@ -7942,6 +7946,20 @@ function buildPushDeliveryMessage(data, intro = 'Invio completato.') {
     return msg;
 }
 
+// Push delivery reports are multi-line and matter — show them in a persistent,
+// dismissible banner (with aria-live) instead of a 3s toast that collapses newlines.
+function showPushResult(data, intro) {
+    const box = document.getElementById('pushSendResult');
+    const body = document.getElementById('pushSendResultBody');
+    if (!box || !body) { toast(buildPushDeliveryMessage(data, intro)); return; }
+    body.textContent = buildPushDeliveryMessage(data, intro);
+    box.hidden = false;
+}
+function dismissPushResult() {
+    const box = document.getElementById('pushSendResult');
+    if (box) box.hidden = true;
+}
+
 const PUSH_SEND_TIMEOUT_MS = 60000;
 const PUSH_JOB_POLL_MS = 2000;
 const PUSH_JOB_POLL_MAX = 300;
@@ -8107,7 +8125,7 @@ async function sendImmediatePush() {
     setPushSendLoading(true);
     try {
         const data = await submitPushAndWait(body, { loadingLabel: true });
-        toast(buildPushDeliveryMessage(data));
+        showPushResult(data);
         resetImmediatePushForm();
         loadPushHistory();
     } catch (e) {
@@ -8653,7 +8671,7 @@ async function resendPushFromHistory(pushId) {
         };
         if (log.campaign_id) body.campaign_id = log.campaign_id;
         const data = await submitPushAndWait(body);
-        alert(buildPushDeliveryMessage(data, 'Reinvio completato.'));
+        showPushResult(data, 'Reinvio completato.');
         toast('Push reinviata');
         await loadPushHistory();
     } catch (err) {
