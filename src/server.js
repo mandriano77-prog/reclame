@@ -510,6 +510,21 @@ app.get('/:slug', (req, res, next) => {
   res.sendFile(path.join(__dirname, 'landing', 'index.html'));
 });
 
+// Global error handler — catches sync throws and rejected promises passed to next(err).
+// Without this, Express leaves errors unhandled; keep responses generic (no stack to clients).
+app.use((err, req, res, next) => {
+  console.error('[unhandled route error]', req.method, req.originalUrl, err && err.stack ? err.stack : err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'Errore interno del server' });
+});
+
+// Last-resort safety net: a stray rejected promise would otherwise crash the process on Node 20.
+// (uncaughtException is intentionally NOT swallowed — a sync throw can corrupt state, so we let
+// the platform restart the process cleanly in that case.)
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason && reason.stack ? reason.stack : reason);
+});
+
 // Initialize database and start server
 getDb().then((db) => {
   const dbHandle = db && db.pool ? db : { pool: db };

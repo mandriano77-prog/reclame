@@ -3180,6 +3180,7 @@ router.get('/creative-formats', (req, res) => {
 
 // List assets for a brand
 router.get('/creative-assets', async (req, res) => {
+  try {
   const { brand_id, segment, campaign_id, limit } = req.query;
   if (!brand_id) return res.status(400).json({ error: 'brand_id richiesto' });
   if (!requireBrandId(req, res, brand_id)) return;
@@ -3189,14 +3190,17 @@ router.get('/creative-assets', async (req, res) => {
   // Don't send image_base64 in list (too heavy) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ send thumbnail info
   const light = assets.map(a => ({ ...a, image_base64: a.image_base64 ? '[has_image]' : null }));
   res.json(light);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Get single asset (with image)
 router.get('/creative-assets/:id', async (req, res) => {
+  try {
   const asset = await getCreativeAsset(req.params.id);
   if (!asset) return res.status(404).json({ error: 'Asset non trovato' });
   if (!requireBrandId(req, res, asset.brand_id)) return;
   res.json(asset);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Upload a creative asset (manual upload)
