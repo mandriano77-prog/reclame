@@ -51,13 +51,32 @@
   }
 
   async function postJson(path, body) {
-    const res = await fetch(`${apiBase()}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await res.json().catch(() => ({}));
-    return { ok: res.ok, status: res.status, data };
+    try {
+      const res = await fetch(`${apiBase()}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch (err) {
+      // Network down / timeout: never leave the caller hanging on "Verifica in corso…"
+      return { ok: false, networkError: true, status: 0, data: {} };
+    }
+  }
+
+  // Clear the stored PIN and route the operator back to the PIN step (escape the typo trap).
+  function resetPin() {
+    sessionPin = '';
+    try { sessionStorage.removeItem(pinKey); } catch (_) {}
+    const result = $('#cashierResult');
+    if (result) result.hidden = true;
+    const codeInput = $('#cashierCode');
+    if (codeInput) codeInput.value = '';
+    const pinInput = $('#cashierPin');
+    if (pinInput) pinInput.value = '';
+    showStep('pin');
+    pinInput?.focus();
   }
 
   function buildRedeemPayload(code, storeLabel) {
@@ -86,8 +105,23 @@
     const btn = $('#cashierPreviewBtn');
     if (btn) btn.disabled = true;
     renderResult('<p>Verifica in corso…</p>', '');
-    const { ok, data } = await postJson('/redeem/preview', buildRedeemPayload(code, storeLabel));
+    const { ok, data, networkError } = await postJson('/redeem/preview', buildRedeemPayload(code, storeLabel));
     if (btn) btn.disabled = false;
+
+    if (networkError) {
+      renderResult('<h2>Rete assente</h2><p>Controlla la connessione e riprova la verifica.</p>', 'ko');
+      return;
+    }
+
+    if (data.code === 'pin_invalid') {
+      renderResult(
+        '<h2>PIN cassa non valido</h2><p>Reinserisci il PIN per continuare.</p>' +
+        '<div class="cashier-actions"><button type="button" class="cashier-btn" id="cashierPinResetBtn">Reinserisci PIN</button></div>',
+        'ko'
+      );
+      $('#cashierPinResetBtn')?.addEventListener('click', resetPin);
+      return;
+    }
 
     if (!ok || !data.valid) {
       renderResult(
@@ -118,6 +152,16 @@
       const confirmBtn = $('#cashierConfirmBtn');
       if (confirmBtn) confirmBtn.disabled = true;
       const out = await postJson('/redeem/confirm', buildRedeemPayload(code, storeLabel));
+      if (out.networkError) {
+        // Server-side confirm is idempotent (ON CONFLICT DO NOTHING), so retrying is safe.
+        renderResult('<h2>Rete assente</h2><p>Riscatto non confermato. Controlla la connessione e riprova.</p>', 'ko');
+        if (confirmBtn) confirmBtn.disabled = false;
+        return;
+      }
+      if (out.data.code === 'pin_invalid') {
+        resetPin();
+        return;
+      }
       if (out.ok && out.data.valid) {
         renderResult(
           `<h2>Riscatto confermato</h2>` +

@@ -200,7 +200,8 @@ async function previewCouponRedemption({
 
   const { brand, merchant, pass, serial, checkout_code: code } = ctx;
   if (!verifyRedemptionPin(brand, merchant, pin)) {
-    return { valid: false, reason: 'PIN cassa non valido' };
+    // Machine-readable code lets the cashier UI route the operator back to the PIN step.
+    return { valid: false, code: 'pin_invalid', reason: 'PIN cassa non valido' };
   }
 
   const offer = resolveActiveCouponOffer(brand);
