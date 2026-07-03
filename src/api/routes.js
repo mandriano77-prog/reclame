@@ -1187,6 +1187,7 @@ router.get('/track/pass-link', async (req, res) => {
     const destination = String(req.query.to || '').trim();
     const key = String(req.query.key || 'link').trim();
     const label = String(req.query.label || '').trim();
+    const bookingId = String(req.query.bid || '').trim();
     if (!destination) return res.status(400).send('Link non valido');
     if (serial) {
       const pass = await getPassBySerial(serial);
@@ -1204,7 +1205,8 @@ router.get('/track/pass-link', async (req, res) => {
           target_url: destination,
           metadata: {
             user_agent: req.headers['user-agent'],
-            referer: req.headers.referer || req.headers.referrer
+            referer: req.headers.referer || req.headers.referrer,
+            booking_id: bookingId || null,
           }
         });
       }

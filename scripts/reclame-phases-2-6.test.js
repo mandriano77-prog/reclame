@@ -17,14 +17,26 @@ const presetsJs = fs.readFileSync(path.join(root, 'src/engine/audience-presets.j
 const rbac = fs.readFileSync(path.join(root, 'src/engine/rbac.js'), 'utf8');
 
 test('commercial engine exposes packages, billing split, geofence booking', () => {
-  const { listPackages, computeBillingSplit, FORMAT_LABELS } = require('../src/engine/reclame-commercial');
+  const {
+    listPackages,
+    computeBillingSplit,
+    FORMAT_LABELS,
+    assertFormatInventoryAvailable,
+    exportCommercialBillingCsv,
+  } = require('../src/engine/reclame-commercial');
+  const actions = require('../src/engine/reclame-booking-actions');
   assert.ok(listPackages().length >= 5);
   assert.ok(FORMAT_LABELS.hub_sponsored);
   const split = computeBillingSplit(100000, 70, 15);
   assert.equal(split.gross_cents, 100000);
   assert.equal(split.reclame_cents, 15000);
   assert.match(commercialJs, /applyGeofenceFromBooking/);
-  assert.match(commercialJs, /commercial_bookings/);
+  assert.match(commercialJs, /assertFormatInventoryAvailable/);
+  assert.match(commercialJs, /getBookingPerformance/);
+  assert.match(commercialJs, /exportCommercialBillingCsv/);
+  assert.match(commercialJs, /paid_at/);
+  assert.ok(typeof actions.syncBrandGeofencePasses === 'function');
+  assert.ok(typeof actions.runBookingFormatActions === 'function');
 });
 
 test('audience presets cover closed-loop segments', () => {
@@ -48,6 +60,14 @@ test('API registers commercial and audience preset routes', () => {
   const commercialRoutes = fs.readFileSync(path.join(root, 'src/api/commercial-routes.js'), 'utf8');
   assert.match(commercialRoutes, /\/commercial\/calendar/);
   assert.match(commercialRoutes, /\/audience-presets/);
+  assert.match(commercialRoutes, /billing\/export\.csv/);
+  assert.match(commercialRoutes, /\/performance/);
+});
+
+test('pass link tracking supports booking attribution', () => {
+  assert.match(routes, /booking_id: bookingId/);
+  assert.match(passkit, /commercial_booking_id/);
+  assert.match(fs.readFileSync(path.join(root, 'src/engine/push-dispatch.js'), 'utf8'), /booking_id/);
 });
 
 test('passkit enables HUB link for ads product line', () => {
@@ -68,6 +88,9 @@ test('dashboard exposes commercial section and audience presets UI', () => {
   assert.match(indexHtml, /nav-item--reclame-ads/);
   assert.match(indexHtml, /a2w-commercial\.js/);
   assert.match(indexHtml, /name="sponsored"/);
+  assert.match(indexHtml, /commercialBillingEntries/);
+  assert.match(indexHtml, /commercialFilterFrom/);
+  assert.match(indexHtml, /commercialPushFields/);
 });
 
 test('RBAC includes commercial section', () => {

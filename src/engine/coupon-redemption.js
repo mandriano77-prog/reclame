@@ -168,7 +168,8 @@ async function confirmCouponRedemption({
     metadata: {
       store_label: storeLabel || null,
       operator_label: operatorLabel || null,
-      redemption_id: insert.rows[0].id
+      redemption_id: insert.rows[0].id,
+      booking_id: String(offer.offer_id || '').startsWith('booking_') ? String(offer.offer_id).replace(/^booking_/, '') : null,
     }
   });
 

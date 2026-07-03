@@ -2907,15 +2907,34 @@
             <!-- COMMERCIALE RECLAME -->
             <div id="commercial" class="section" data-rbac-section="commercial" hidden aria-hidden="true">
                 <h1 class="sec-title page-title">Commerciale</h1>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:16px;">Calendario inventory retail media, prenotazioni brand-tenant e split fatturazione retailer / Reclame.</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:16px;">Calendario inventory retail media, prenotazioni brand-tenant, performance closed-loop e fatturazione.</p>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label" for="commercialFilterFrom">Periodo da</label>
+                        <input type="date" id="commercialFilterFrom">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label" for="commercialFilterTo">a</label>
+                        <input type="date" id="commercialFilterTo">
+                    </div>
+                    <button type="button" class="btn sec" id="commercialFilterApply">Aggiorna periodo</button>
+                    <button type="button" class="btn sec fd-rbac-write" id="commercialBillingExport">⬇ Export fatturazione CSV</button>
+                </div>
                 <div class="stats-grid a2w-commercial-grid" id="commercialBilling"></div>
-                <div class="sec-title" style="font-size:15px;margin:20px 0 10px;">Inventory pacchetti</div>
+                <div class="sec-title" style="font-size:15px;margin:20px 0 10px;">Inventory pacchetti <span style="font-weight:400;font-size:12px;color:var(--text2);">(prenotato / capacità retailer)</span></div>
                 <div id="commercialPackages" class="a2w-commercial-grid"></div>
                 <div class="card" style="margin:20px 0;">
-                    <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Prenotazioni attive</div>
+                    <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Prenotazioni e performance tenant</div>
                     <table class="table">
-                        <thead><tr><th>Brand-tenant</th><th>Pacchetto</th><th>Formato</th><th>Stato</th><th>Importo</th></tr></thead>
+                        <thead><tr><th>Brand-tenant</th><th>Formato</th><th>Periodo</th><th>Stato</th><th>Tap</th><th>Riscatti</th><th>Tap→Cassa</th><th>Importo</th><th></th></tr></thead>
                         <tbody id="commercialBookings"></tbody>
+                    </table>
+                </div>
+                <div class="card" style="margin:20px 0;">
+                    <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Fatturazione</div>
+                    <table class="table">
+                        <thead><tr><th>Tenant</th><th>Lordo</th><th>Retailer</th><th>Reclame</th><th>Stato</th><th>Data</th><th></th></tr></thead>
+                        <tbody id="commercialBillingEntries"></tbody>
                     </table>
                 </div>
                 <div class="card fd-rbac-write">
@@ -2939,16 +2958,24 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="commercialBookingMerchant">Merchant HUB (opz.)</label>
-                            <input type="text" id="commercialBookingMerchant" placeholder="ID merchant esistente">
+                            <label class="form-label" for="commercialBookingMerchant">Merchant HUB</label>
+                            <select id="commercialBookingMerchant"><option value="">— Nessuno —</option></select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="commercialBookingStart">Inizio</label>
-                            <input type="datetime-local" id="commercialBookingStart">
+                            <label class="form-label" for="commercialBookingStart">Inizio *</label>
+                            <input type="datetime-local" id="commercialBookingStart" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="commercialBookingEnd">Fine</label>
                             <input type="datetime-local" id="commercialBookingEnd">
+                        </div>
+                        <div id="commercialPushFields" class="form-group form-group--full" hidden>
+                            <div class="sec-title" style="font-size:13px;margin-bottom:8px;">Push / CPA (auto-attivazione)</div>
+                            <div class="fd-conventions-form-grid">
+                                <div class="form-group"><label class="form-label" for="commercialPushTitle">Titolo push</label><input type="text" id="commercialPushTitle" placeholder="Lascia vuoto = nome tenant"></div>
+                                <div class="form-group form-group--full"><label class="form-label" for="commercialPushMessage">Testo pass / push</label><textarea id="commercialPushMessage" rows="2" placeholder="Messaggio promozionale"></textarea></div>
+                                <div class="form-group form-group--full"><label class="form-label" for="commercialPushLink">Link out (https)</label><input type="url" id="commercialPushLink" placeholder="https://"></div>
+                            </div>
                         </div>
                         <div id="commercialPoiFields" class="form-group form-group--full" hidden>
                             <div class="sec-title" style="font-size:13px;margin-bottom:8px;">POI geofence</div>

@@ -1,5 +1,5 @@
 /**
- * Reclame — commercial calendar, billing summary, audience presets.
+ * Reclame — commercial calendar, billing, tenant performance.
  */
 (function (global) {
   'use strict';
@@ -31,26 +31,80 @@
     return (Number(cents || 0) / 100).toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
   }
 
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    try {
+      return new Date(iso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+    } catch (_) {
+      return String(iso).slice(0, 10);
+    }
+  }
+
+  function calendarQuery() {
+    var from = document.getElementById('commercialFilterFrom')?.value;
+    var to = document.getElementById('commercialFilterTo')?.value;
+    var q = '';
+    if (from) q += '&from=' + encodeURIComponent(new Date(from + 'T00:00:00').toISOString());
+    if (to) q += '&to=' + encodeURIComponent(new Date(to + 'T23:59:59').toISOString());
+    return q;
+  }
+
+  function initCommercialDateFilters() {
+    var fromEl = document.getElementById('commercialFilterFrom');
+    var toEl = document.getElementById('commercialFilterTo');
+    if (!fromEl || fromEl.dataset.init) return;
+    fromEl.dataset.init = '1';
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), 1);
+    var end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    fromEl.value = start.toISOString().slice(0, 10);
+    toEl.value = end.toISOString().slice(0, 10);
+    document.getElementById('commercialFilterApply')?.addEventListener('click', loadCommercialCalendar);
+    document.getElementById('commercialBillingExport')?.addEventListener('click', exportBillingCsv);
+  }
+
+  async function loadMerchantsForCommercial() {
+    var bid = brandId();
+    var sel = document.getElementById('commercialBookingMerchant');
+    if (!bid || !sel) return;
+    try {
+      var res = await fetch(API + '/merchants?brand_id=' + encodeURIComponent(bid), { headers: authHeaders() });
+      var merchants = res.ok ? await res.json() : [];
+      sel.innerHTML = '<option value="">— Nessuno —</option>' + merchants.map(function (m) {
+        return '<option value="' + esc(m.id) + '">' + esc(m.name) + (m.sponsored ? ' ★' : '') + '</option>';
+      }).join('');
+    } catch (_) {}
+  }
+
   async function loadCommercialCalendar() {
     var bid = brandId();
     if (!bid) return;
+    initCommercialDateFilters();
     var pkgEl = document.getElementById('commercialPackages');
     var bookEl = document.getElementById('commercialBookings');
     var billEl = document.getElementById('commercialBilling');
+    var billRows = document.getElementById('commercialBillingEntries');
     if (!pkgEl) return;
 
+    await loadMerchantsForCommercial();
+
     try {
-      var res = await fetch(API + '/brands/' + encodeURIComponent(bid) + '/commercial/calendar', { headers: authHeaders() });
+      var res = await fetch(API + '/brands/' + encodeURIComponent(bid) + '/commercial/calendar?' + calendarQuery().replace(/^&/, ''), { headers: authHeaders() });
       var data = res.ok ? await res.json() : {};
       if (!res.ok) {
         pkgEl.innerHTML = '<p style="color:var(--text2);">Calendario non disponibile.</p>';
         return;
       }
 
+      var perfMap = {};
+      (data.tenant_performance || []).forEach(function (p) { perfMap[p.booking_id] = p; });
+
       var packages = data.packages || [];
       pkgEl.innerHTML = packages.map(function (pkg) {
         var slots = (pkg.formats || []).map(function (f) {
-          return '<div class="a2w-commercial-slot"><span>' + esc(f.label) + '</span><span>' + esc(f.booked) + ' / ' + esc(f.package_slots) + '</span></div>';
+          var cap = f.capacity != null ? f.capacity : f.package_slots;
+          var avail = f.available != null ? f.available : Math.max(0, cap - (f.booked || 0));
+          return '<div class="a2w-commercial-slot"><span>' + esc(f.label) + '</span><span>' + esc(f.booked) + ' / ' + esc(cap) + ' (' + esc(avail) + ' liberi)</span></div>';
         }).join('');
         return '<div class="a2w-commercial-pkg">' +
           '<div class="a2w-commercial-pkg__title">' + esc(pkg.label) + '</div>' +
@@ -61,8 +115,36 @@
 
       var bookings = data.bookings || [];
       bookEl.innerHTML = bookings.length ? bookings.map(function (b) {
-        return '<tr><td>' + esc(b.tenant_name) + '</td><td>' + esc(b.package_key) + '</td><td>' + esc(b.format) + '</td><td>' + esc(b.status) + '</td><td>' + esc(euros(b.amount_cents)) + '</td></tr>';
-      }).join('') : '<tr><td colspan="5" style="color:var(--text2);">Nessuna prenotazione — crea la prima dal form sotto.</td></tr>';
+        var p = perfMap[b.id] || {};
+        var period = fmtDate(b.start_at) + (b.end_at ? ' → ' + fmtDate(b.end_at) : '');
+        var conv = p.tap_to_redeem_pct != null ? p.tap_to_redeem_pct + '%' : '—';
+        return '<tr data-booking-id="' + esc(b.id) + '">' +
+          '<td>' + esc(b.tenant_name) + '</td>' +
+          '<td>' + esc(b.format) + '</td>' +
+          '<td style="font-size:11px;">' + esc(period) + '</td>' +
+          '<td><select class="commercial-status-select fd-rbac-write" data-booking-status="' + esc(b.id) + '">' +
+          ['pending', 'confirmed', 'live', 'completed', 'cancelled'].map(function (s) {
+            return '<option value="' + s + '"' + (b.status === s ? ' selected' : '') + '>' + s + '</option>';
+          }).join('') +
+          '</select></td>' +
+          '<td>' + esc(p.link_clicks != null ? p.link_clicks : '—') + '</td>' +
+          '<td>' + esc(p.coupon_redemptions != null ? p.coupon_redemptions : '—') + '</td>' +
+          '<td>' + esc(conv) + '</td>' +
+          '<td>' + esc(euros(b.amount_cents)) + '</td>' +
+          '<td><button type="button" class="btn sec small" data-refresh-perf="' + esc(b.id) + '">↻</button></td>' +
+          '</tr>';
+      }).join('') : '<tr><td colspan="9" style="color:var(--text2);">Nessuna prenotazione nel periodo.</td></tr>';
+
+      bookEl.querySelectorAll('.commercial-status-select').forEach(function (sel) {
+        sel.addEventListener('change', function () {
+          patchBookingStatus(sel.getAttribute('data-booking-status'), sel.value);
+        });
+      });
+      bookEl.querySelectorAll('[data-refresh-perf]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          refreshBookingPerformance(btn.getAttribute('data-refresh-perf'));
+        });
+      });
 
       var bill = data.billing || {};
       billEl.innerHTML =
@@ -70,6 +152,20 @@
         '<div class="stat-card"><div class="stat-num">' + esc(euros(bill.retailer_cents)) + '</div><div class="stat-label">Quota retailer</div></div>' +
         '<div class="stat-card"><div class="stat-num">' + esc(euros(bill.reclame_cents)) + '</div><div class="stat-label">Take-rate Reclame (' + esc(data.take_rate_pct) + '%)</div></div>' +
         '<div class="stat-card"><div class="stat-num">' + esc(bill.pending || 0) + '</div><div class="stat-label">Fatture pendenti</div></div>';
+
+      var entries = data.billing_entries || [];
+      if (billRows) {
+        billRows.innerHTML = entries.length ? entries.map(function (e) {
+          return '<tr><td>' + esc(e.tenant_name) + '</td><td>' + esc(euros(e.gross_cents)) + '</td><td>' + esc(euros(e.retailer_cents)) + '</td><td>' + esc(euros(e.reclame_cents)) + '</td>' +
+            '<td>' + esc(e.status) + '</td><td style="font-size:11px;">' + esc(fmtDate(e.created_at)) + '</td>' +
+            '<td>' + (e.status === 'pending' ? '<button type="button" class="btn sec small fd-rbac-write" data-mark-paid="' + esc(e.id) + '">Segna pagato</button>' : '') + '</td></tr>';
+        }).join('') : '<tr><td colspan="7" style="color:var(--text2);">Nessuna voce fatturazione.</td></tr>';
+        billRows.querySelectorAll('[data-mark-paid]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            markBillingPaid(btn.getAttribute('data-mark-paid'));
+          });
+        });
+      }
 
       var pkgSel = document.getElementById('commercialBookingPackage');
       if (pkgSel && !pkgSel.dataset.wired) {
@@ -83,6 +179,74 @@
     }
   }
 
+  async function patchBookingStatus(bookingId, status) {
+    var bid = brandId();
+    if (!bid) return;
+    try {
+      var res = await fetch(API + '/brands/' + encodeURIComponent(bid) + '/commercial/bookings/' + encodeURIComponent(bookingId), {
+        method: 'PATCH',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify({ status: status })
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || 'Aggiornamento fallito');
+      toast('Stato prenotazione aggiornato');
+      loadCommercialCalendar();
+    } catch (err) {
+      toast(err.message || 'Errore');
+    }
+  }
+
+  async function refreshBookingPerformance(bookingId) {
+    var bid = brandId();
+    if (!bid || !bookingId) return;
+    try {
+      var res = await fetch(API + '/brands/' + encodeURIComponent(bid) + '/commercial/bookings/' + encodeURIComponent(bookingId) + '/performance', { headers: authHeaders() });
+      if (!res.ok) throw new Error('Performance non disponibile');
+      toast('Performance aggiornata');
+      loadCommercialCalendar();
+    } catch (err) {
+      toast(err.message || 'Errore');
+    }
+  }
+
+  async function markBillingPaid(entryId) {
+    var bid = brandId();
+    if (!bid) return;
+    try {
+      var res = await fetch(API + '/brands/' + encodeURIComponent(bid) + '/commercial/billing/' + encodeURIComponent(entryId), {
+        method: 'PATCH',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify({ status: 'paid' })
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || 'Errore');
+      toast('Voce segnata come pagata');
+      loadCommercialCalendar();
+    } catch (err) {
+      toast(err.message || 'Errore');
+    }
+  }
+
+  function exportBillingCsv() {
+    var bid = brandId();
+    if (!bid) return;
+    var url = API + '/brands/' + encodeURIComponent(bid) + '/commercial/billing/export.csv';
+    fetch(url, { headers: authHeaders() })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Export fallito');
+        return r.blob();
+      })
+      .then(function (blob) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'reclame-billing-' + bid + '.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      })
+      .catch(function (err) { toast(err.message || 'Errore export'); });
+  }
+
   async function submitCommercialBooking(e) {
     if (e) e.preventDefault();
     var bid = brandId();
@@ -94,14 +258,18 @@
     var endAt = document.getElementById('commercialBookingEnd')?.value;
     var merchantId = document.getElementById('commercialBookingMerchant')?.value || null;
     if (!tenant) { toast('Inserisci il nome brand-tenant'); return; }
+    if (!startAt) { toast('Data inizio obbligatoria'); return; }
 
     var body = {
       tenant_name: tenant,
       package_key: packageKey,
       format: format,
-      start_at: startAt ? new Date(startAt).toISOString() : null,
+      start_at: new Date(startAt).toISOString(),
       end_at: endAt ? new Date(endAt).toISOString() : null,
-      merchant_id: merchantId || null
+      merchant_id: merchantId || null,
+      push_title: (document.getElementById('commercialPushTitle')?.value || '').trim() || null,
+      push_message: (document.getElementById('commercialPushMessage')?.value || '').trim() || null,
+      push_link_url: (document.getElementById('commercialPushLink')?.value || '').trim() || null
     };
 
     if (format === 'geofence_recall') {
@@ -115,6 +283,9 @@
           relevantText: (document.getElementById('commercialPoiText')?.value || 'Sei vicino! Scopri l\'offerta').trim(),
           radius: parseInt(document.getElementById('commercialPoiRadius')?.value, 10) || 300
         };
+      } else {
+        toast('Coordinate POI obbligatorie per geofence');
+        return;
       }
     }
 
@@ -126,7 +297,11 @@
       });
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok) throw new Error(data.error || 'Prenotazione non riuscita');
-      toast('Prenotazione commerciale creata');
+      var msg = 'Prenotazione creata';
+      if (data._actions?.geofence?.pushes_sent) msg += ' · ' + data._actions.geofence.pushes_sent + ' push geofence';
+      if (data._actions?.push?.mode) msg += ' · push ' + data._actions.push.mode;
+      if (data._actions?.coupon?.mode) msg += ' · CPA ' + data._actions.coupon.mode;
+      toast(msg);
       document.getElementById('commercialBookingForm')?.reset();
       loadCommercialCalendar();
       if (format === 'geofence_recall' && typeof global.loadGeofencing === 'function') global.loadGeofencing();
@@ -190,17 +365,12 @@
     }
   }
 
-  function toggleCommercialPoiFields() {
+  function toggleCommercialFormatFields() {
     var fmt = document.getElementById('commercialBookingFormat')?.value;
-    var wrap = document.getElementById('commercialPoiFields');
-    if (wrap) wrap.hidden = fmt !== 'geofence_recall';
-  }
-
-  function initReclameAdsCopy() {
-    var blurb = document.getElementById('conventionsPageBlurb');
-    if (blurb && document.documentElement.classList.contains('a2w-shell')) {
-      blurb.textContent = 'HUB brand-tenant sponsorizzati nel pass wallet. I merchant in evidenza compaiono per primi; collega una prenotazione commerciale per attivare slot HUB o geofence.';
-    }
+    var poi = document.getElementById('commercialPoiFields');
+    var push = document.getElementById('commercialPushFields');
+    if (poi) poi.hidden = fmt !== 'geofence_recall';
+    if (push) push.hidden = fmt !== 'push_lockscreen' && fmt !== 'coupon_cpa';
   }
 
   function wireCommercialForm() {
@@ -212,14 +382,13 @@
     var fmt = document.getElementById('commercialBookingFormat');
     if (fmt && !fmt.dataset.wired) {
       fmt.dataset.wired = '1';
-      fmt.addEventListener('change', toggleCommercialPoiFields);
-      toggleCommercialPoiFields();
+      fmt.addEventListener('change', toggleCommercialFormatFields);
+      toggleCommercialFormatFields();
     }
   }
 
   function init() {
     if (!document.documentElement.classList.contains('a2w-shell')) return;
-    initReclameAdsCopy();
     wireCommercialForm();
   }
 

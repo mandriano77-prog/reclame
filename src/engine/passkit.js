@@ -589,6 +589,8 @@ function generatePassJson(template, instance, brand, options = {}) {
       tracked.searchParams.set('key', key);
       tracked.searchParams.set('to', destinationUrl);
       if (label) tracked.searchParams.set('label', label);
+      const bid = instance?.field_values?.commercial_booking_id;
+      if (bid) tracked.searchParams.set('bid', String(bid));
       return tracked.toString();
     } catch (_) {
       return destinationUrl;

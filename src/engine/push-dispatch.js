@@ -149,6 +149,7 @@ async function executeWalletPush(body, ctx = {}) {
     pass_link_expires_at,
     test_pass_id,
     coupon_redeemable,
+    booking_id,
   } = body;
 
   if (!brand_id || !title || !message) {
@@ -224,7 +225,7 @@ async function executeWalletPush(body, ctx = {}) {
       ts: Date.now(),
       coupon: {
         redeemable: coupon_redeemable !== false,
-        offer_id: String(Date.now())
+        offer_id: booking_id ? `booking_${booking_id}` : String(Date.now())
       }
     };
 
@@ -255,7 +256,7 @@ async function executeWalletPush(body, ctx = {}) {
     }
 
     if (passLink) {
-      await updatePassDynamicLinks(targetPasses.map((p) => p.id), passLink);
+      await updatePassDynamicLinks(targetPasses.map((p) => p.id), { ...passLink, booking_id: booking_id || null });
       delete config.pushLinkOut;
     } else {
       delete config.pushLinkOut;

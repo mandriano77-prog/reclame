@@ -28,7 +28,7 @@ test('API exposes redeem and cashier endpoints', () => {
 
 test('push dispatch marks coupon redeemable on announcement', () => {
   assert.match(pushDispatch, /coupon_redeemable/);
-  assert.match(pushDispatch, /offer_id: String\(Date\.now\(\)\)/);
+  assert.match(pushDispatch, /offer_id: booking_id/);
 });
 
 test('holder insights include closed loop metrics', () => {

@@ -602,6 +602,7 @@ async function getDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`).catch(()=>{});
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_commercial_billing_brand ON commercial_billing_entries(brand_id, created_at DESC)`).catch(()=>{});
+    await pool.query(`ALTER TABLE commercial_billing_entries ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ`).catch(()=>{});
     await pool.query(`CREATE TABLE IF NOT EXISTS push_assistant_log (
       id TEXT PRIMARY KEY,
       brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
@@ -1953,19 +1954,34 @@ async function importEmployeesBatch(brandId, employees, options = {}) {
   return summary;
 }
 
-async function updatePassDynamicLinks(passIds, { label, url, expiresAt }) {
+async function updatePassDynamicLinks(passIds, { label, url, expiresAt, booking_id } = {}) {
   const ids = (passIds || []).filter(Boolean);
   if (!ids.length || !url) return { updated: 0 };
-  const result = await pool.query(
-    `UPDATE pass_instances
-     SET dynamic_link_label = $1,
-         dynamic_link_url = $2,
-         dynamic_link_set_at = NOW(),
-         dynamic_link_expires_at = $3,
-         last_updated = NOW()
-     WHERE id = ANY($4::text[])`,
-    [label || 'AZIONE RICHIESTA', url, expiresAt || null, ids]
-  );
+  const bookingPatch = booking_id
+    ? JSON.stringify({ commercial_booking_id: String(booking_id) })
+    : null;
+  const result = bookingPatch
+    ? await pool.query(
+      `UPDATE pass_instances
+       SET dynamic_link_label = $1,
+           dynamic_link_url = $2,
+           dynamic_link_set_at = NOW(),
+           dynamic_link_expires_at = $3,
+           field_values = COALESCE(field_values, '{}'::jsonb) || $4::jsonb,
+           last_updated = NOW()
+       WHERE id = ANY($5::text[])`,
+      [label || 'AZIONE RICHIESTA', url, expiresAt || null, bookingPatch, ids]
+    )
+    : await pool.query(
+      `UPDATE pass_instances
+       SET dynamic_link_label = $1,
+           dynamic_link_url = $2,
+           dynamic_link_set_at = NOW(),
+           dynamic_link_expires_at = $3,
+           last_updated = NOW()
+       WHERE id = ANY($4::text[])`,
+      [label || 'AZIONE RICHIESTA', url, expiresAt || null, ids]
+    );
   return { updated: result.rowCount || 0 };
 }
 
