@@ -559,8 +559,10 @@ process.on('unhandledRejection', (reason) => {
   console.error('[unhandledRejection]', reason && reason.stack ? reason.stack : reason);
 });
 
-// Initialize database and start server
-getDb().then((db) => {
+// Initialize database and start server. Wrapped so tests can require this module to get `app`
+// (with all routes mounted) via supertest without opening a port or starting the cron jobs.
+function startServer() {
+  return getDb().then((db) => {
   const dbHandle = db && db.pool ? db : { pool: db };
   app.locals.db = dbHandle;
   app.listen(PORT, () => {
@@ -615,7 +617,16 @@ getDb().then((db) => {
     setInterval(runHrReminderTick, 6 * 60 * 60 * 1000);
     setTimeout(runHrReminderTick, 2 * 60 * 1000);
   });
-}).catch(err => {
-  console.error('Failed to initialize database:', err);
-  process.exit(1);
-});
+  }).catch(err => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  });
+}
+
+// Boot only when run directly (node src/server.js — the Railway start command). When required
+// by a test, the app is exported without listening or starting cron jobs.
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, startServer };

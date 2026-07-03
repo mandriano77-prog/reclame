@@ -1,0 +1,19 @@
+# Local Postgres for running the integration tests (npm run test:integration).
+# Not used in production (Railway provides its own managed Postgres).
+#   docker compose up -d db     # start
+#   npm run test:integration    # run tests against it
+#   docker compose down         # stop
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: reclame
+      POSTGRES_PASSWORD: reclame
+      POSTGRES_DB: reclame_test
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reclame -d reclame_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
