@@ -11,7 +11,7 @@ const {
 const { randomUUID } = require('crypto');
 const path = require('path');
 const fs = require('fs');
-const { createHash, randomBytes } = require('crypto');
+const { createHash, randomBytes, timingSafeEqual } = require('crypto');
 const {
   createBrand, getBrand, getBrandBySlug, listBrands, updateBrand, deleteBrand,
   createTemplate, getTemplate, listTemplates, updateTemplate, deleteTemplate,
@@ -903,6 +903,23 @@ router.get('/passes/:id/wallet-icon.png', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Apple Wallet Web Service auth: verify `Authorization: ApplePass <token>` against pass.auth_token.
+// Apple sends this header on register, unregister and get-latest-pass. Comparison must be timing-safe.
+function verifyApplePassToken(req, pass) {
+  if (!pass || !pass.auth_token) return false;
+  const header = String(req.headers.authorization || '');
+  const m = header.match(/^ApplePass\s+(.+)$/i);
+  if (!m) return false;
+  const provided = Buffer.from(m[1].trim(), 'utf8');
+  const expected = Buffer.from(String(pass.auth_token), 'utf8');
+  if (provided.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(provided, expected);
+  } catch {
+    return false;
+  }
+}
+
 router.all('/devices/*', (req, res, next) => {
   console.log(`[Apple Wallet] ${req.method} ${req.originalUrl} | Auth: ${req.headers.authorization ? 'yes' : 'no'} | Body: ${JSON.stringify(req.body || {})}`);
   next();
@@ -922,11 +939,14 @@ router.post('/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber',
     console.log(`[Apple Wallet] REGISTER device=${deviceLibraryId.substring(0, 8)}... serial=${serialNumber.substring(0, 8)}... pushToken=${pushToken ? pushToken.substring(0, 8) + '...' : 'MISSING'}`);
     if (!pushToken) return res.status(400).send();
 
+    // Verify the pass authentication token before mutating registration state
+    const pass = await getPassBySerial(serialNumber);
+    if (!verifyApplePassToken(req, pass)) return res.status(401).send();
+
     await registerDevice({ device_library_id: deviceLibraryId, push_token: pushToken, serial_number: serialNumber });
     await updatePassDeviceId(serialNumber, deviceLibraryId, 'apple');
 
     // Track install
-    const pass = await getPassBySerial(serialNumber);
     if (pass) {
       await logEvent({ pass_id: pass.id, brand_id: pass.brand_id, event_type: 'pass_installed', device_id: deviceLibraryId });
       if (pass.campaign_id) await incrementCampaignInstalls(pass.campaign_id);
@@ -946,9 +966,13 @@ router.post('/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber',
 router.delete('/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber', async (req, res) => {
   try {
     const { deviceLibraryId, serialNumber } = req.params;
+
+    // Verify the pass authentication token before deregistering (prevents DoS on other holders' updates)
+    const pass = await getPassBySerial(serialNumber);
+    if (!verifyApplePassToken(req, pass)) return res.status(401).send();
+
     await unregisterDevice(deviceLibraryId, serialNumber);
 
-    const pass = await getPassBySerial(serialNumber);
     if (pass) {
       await logEvent({ pass_id: pass.id, brand_id: pass.brand_id, event_type: 'pass_removed', device_id: deviceLibraryId });
       if (pass.device_source === 'apple') {
@@ -987,6 +1011,9 @@ router.get('/passes/:passTypeId/:serialNumber', async (req, res) => {
   try {
     const pass = await getPassBySerial(req.params.serialNumber);
     if (!pass) return res.status(404).send();
+
+    // Verify the pass authentication token before serving the pass (contains holder PII)
+    if (!verifyApplePassToken(req, pass)) return res.status(401).send();
 
     const brand = await getBrand(pass.brand_id);
     const template = await getTemplate(pass.template_id);
