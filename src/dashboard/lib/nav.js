@@ -51,6 +51,7 @@
         audiences: 'Audience',
         'activity-log': 'Log Attività',
         conventions: 'Promozioni',
+        commercial: 'Commerciale',
         'pga-catalog': 'PGA Catalog',
         'pga-engagement': 'Coin'
     };

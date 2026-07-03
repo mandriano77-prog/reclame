@@ -1,10 +1,24 @@
 /* Reclame Media — ads-only nav + commercial UI */
-.nav-item--reclame-ads {
+.nav-item--reclame-ads,
+.nav-group--reclame-ads {
   display: none;
 }
 
 html.a2w-shell .nav-item--reclame-ads {
   display: block;
+}
+
+html.a2w-shell .nav-group--reclame-ads {
+  display: block;
+}
+
+html.a2w-shell .nav-item--reclame-hide {
+  display: none !important;
+}
+
+/* Audience e tab Contatti: ingresso dedicato in sidebar Attivazione */
+html.a2w-shell #leadsSectionTabs {
+  display: none;
 }
 
 html.a2w-shell #conventions .fd-nav-item--hr-only-copy {

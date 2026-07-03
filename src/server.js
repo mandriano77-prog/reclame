@@ -298,6 +298,10 @@ app.get(['/dashboard/contatti/audience', '/dashboard/contatti/audience/'], (req,
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
 });
+app.get(['/dashboard/audience', '/dashboard/audience/'], (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
+});
 app.get(['/dashboard/analytics', '/dashboard/analytics/'], (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));

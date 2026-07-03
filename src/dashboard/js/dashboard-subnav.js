@@ -10,6 +10,7 @@
   };
 
   var PATH_ROUTES = [
+    { match: /\/dashboard\/audience\/?$/i, section: 'leads', tab: 'audience' },
     { match: /\/dashboard\/contatti\/audience\/?$/i, section: 'leads', tab: 'audience' },
     { match: /\/dashboard\/contatti\/?$/i, section: 'leads', tab: 'contacts' },
     { match: /\/dashboard\/analytics\/log\/?$/i, section: 'analytics', tab: 'activity-log' },
@@ -58,8 +59,9 @@
 
   function navItemHighlightId(sectionId, tab) {
     tab = normalizeTab(sectionId, tab);
-    if (sectionId === 'leads' || sectionId === 'audiences') return 'leads';
-    if (sectionId === 'activity-log' || (sectionId === 'analytics' && tab === 'activity-log')) return 'activity-log';
+    if (sectionId === 'audiences' || (sectionId === 'leads' && tab === 'audience')) return 'audiences';
+    if (sectionId === 'leads') return 'leads';
+    if (sectionId === 'activity-log' || (sectionId === 'analytics' && tab === 'activity-log')) return 'analytics';
     if (sectionId === 'analytics') return 'analytics';
     return sectionId;
   }
@@ -78,8 +80,8 @@
 
   function sectionPath(sectionId, tab) {
     tab = normalizeTab(sectionId, tab);
-    if (sectionId === 'leads') {
-      return tab === 'audience' ? '/dashboard/contatti/audience' : '/dashboard/contatti';
+    if (sectionId === 'leads' || sectionId === 'audiences') {
+      return tab === 'audience' ? '/dashboard/audience' : '/dashboard/contatti';
     }
     if (sectionId === 'analytics') {
       return tab === 'activity-log' ? '/dashboard/analytics/log' : '/dashboard/analytics';

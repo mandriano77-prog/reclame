@@ -1416,14 +1416,21 @@
                 </div>
             </details>
 
+            <details class="nav-group nav-group--reclame-ads" data-nav-group="retail-media" open>
+                <summary class="nav-group-label" data-menu-key="nav_group_retail_media" data-menu-default="Retail Media">Retail Media</summary>
+                <div class="nav-group-items">
+                    <div class="nav-item nav-item--reclame-ads" onclick="nav('commercial')" data-section-id="commercial" data-requires-perm="commercial" role="button" tabindex="0">Commerciale</div>
+                    <div class="nav-item nav-item--reclame-ads" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">HUB Brand</div>
+                </div>
+            </details>
+
             <details class="nav-group" data-nav-group="comunicazione" open>
-                <summary class="nav-group-label">Engagement</summary>
+                <summary class="nav-group-label" data-menu-key="nav_group_engagement" data-menu-default="Engagement">Engagement</summary>
                 <div class="nav-group-items">
                     <div class="nav-item" onclick="nav('push')" data-section-id="push" data-requires-perm="push" role="button" tabindex="0">Push &amp; Notifiche</div>
-                    <div class="nav-item" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards" role="button" tabindex="0">Reward</div>
-                    <div class="nav-item" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges" role="button" tabindex="0">Challenge</div>
-                    <div class="nav-item nav-item--reclame-ads" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">HUB Brand</div>
-                    <div class="nav-item nav-item--reclame-ads" onclick="nav('commercial')" data-section-id="commercial" data-requires-perm="commercial" role="button" tabindex="0">Commerciale</div>
+                    <div class="nav-item nav-item--reclame-hide" onclick="nav('instant-win')" data-section-id="instant-win" data-requires-perm="rewards" role="button" tabindex="0">Reward</div>
+                    <div class="nav-item nav-item--reclame-hide" onclick="nav('gamification')" data-section-id="gamification" data-requires-perm="challenges" role="button" tabindex="0">Challenge</div>
+                    <div class="nav-item nav-item--reclame-ads" onclick="nav('audiences')" data-section-id="audiences" data-requires-perm="audiences" role="button" tabindex="0">Audience</div>
                     <div class="nav-item fd-nav-item--hr" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">Promozioni</div>
                     <div class="nav-item fd-nav-item--hr" onclick="nav('pga-engagement')" data-section-id="pga-engagement" data-requires-perm="pga_engagement" role="button" tabindex="0">Coin</div>
                 </div>
@@ -1433,7 +1440,7 @@
                 <summary class="nav-group-label">Insights</summary>
                 <div class="nav-group-items">
                     <div class="nav-item" onclick="nav('analytics')" data-section-id="analytics" data-requires-perm="analytics" role="button" tabindex="0">Analytics</div>
-                    <div class="nav-item" onclick="nav('activity-log')" data-section-id="activity-log" data-requires-perm="activity_log" role="button" tabindex="0">Log Attività</div>
+                    <div class="nav-item nav-item--reclame-hide" onclick="nav('activity-log')" data-section-id="activity-log" data-requires-perm="activity_log" role="button" tabindex="0">Log Attività</div>
                 </div>
             </details>
 
@@ -5130,7 +5137,16 @@ const PRODUCT_MENU_DEFAULTS = {
 };
 
 const PRODUCT_MENU_COPY = {
-    ads: {},
+    ads: {
+        nav_leads: 'Possessori pass',
+        leads_page_title: 'Possessori pass',
+        leads_page_blurb: 'Elenco dei possessori del pass media: device registrati, segmentazione e attivazione campagne.',
+        leads_stat_total: 'Possessori totali',
+        leads_empty: 'Nessun possessore registrato',
+        leads_export_empty: 'Nessun possessore da esportare',
+        nav_group_engagement: 'Attivazione',
+        nav_group_retail_media: 'Retail Media',
+    },
     live: {},
     hr: {
         nav_leads: 'Dipendenti',

@@ -34,8 +34,8 @@ test('resolveNavTarget maps legacy section ids to parent + tab', () => {
   const log = g.resolveNavTarget('activity-log');
   assert.equal(log.section, 'analytics');
   assert.equal(log.tab, 'activity-log');
-  assert.equal(g.navHighlightSection('leads', 'audience'), 'leads');
-  assert.equal(g.navHighlightSection('analytics', 'activity-log'), 'activity-log');
+  assert.equal(g.navHighlightSection('leads', 'audience'), 'audiences');
+  assert.equal(g.navHighlightSection('analytics', 'activity-log'), 'analytics');
   assert.equal(g.navHighlightSection('analytics', 'metrics'), 'analytics');
 });
 
@@ -62,7 +62,7 @@ test('parseLocationRoute resolves contatti and analytics paths', () => {
 test('sectionPath builds canonical dashboard URLs', () => {
   const g = loadSubnav({ location: { pathname: '/dashboard', search: '', hash: '' }, history: { replaceState() {} } });
   assert.equal(g.sectionPath('leads', 'contacts'), '/dashboard/contatti');
-  assert.equal(g.sectionPath('leads', 'audience'), '/dashboard/contatti/audience');
+  assert.equal(g.sectionPath('leads', 'audience'), '/dashboard/audience');
   assert.equal(g.sectionPath('analytics', 'metrics'), '/dashboard/analytics');
   assert.equal(g.sectionPath('analytics', 'activity-log'), '/dashboard/analytics/log');
 });
@@ -116,9 +116,10 @@ test('index.html analytics tab panel ids use activity slug not activity-log', ()
 
 test('index.html sidebar has merged nav items and section tabs', () => {
   const html = read('src/dashboard/index.html');
-  assert.match(html, /nav-group-label">Engagement<\/summary>/);
+  assert.match(html, /data-menu-key="nav_group_engagement"/);
+  assert.match(html, /data-nav-group="retail-media"/);
   assert.doesNotMatch(html, /data-nav-group="database"/);
-  assert.doesNotMatch(html, /nav-item[^>]+data-section-id="audiences"/);
+  assert.match(html, /nav-item[^>]+data-section-id="audiences"/);
   assert.match(html, /nav-item[^>]+data-section-id="activity-log"/);
   assert.match(html, /id="leadsSectionTabs"/);
   assert.match(html, /id="analyticsSectionTabs"/);
@@ -130,6 +131,7 @@ test('index.html sidebar has merged nav items and section tabs', () => {
 test('server exposes SPA routes for contatti and analytics subpaths', () => {
   const server = read('src/server.js');
   assert.match(server, /\/dashboard\/contatti\/audience/);
+  assert.match(server, /\/dashboard\/audience/);
   assert.match(server, /\/dashboard\/analytics\/log/);
 });
 

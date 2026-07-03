@@ -1,0 +1,42 @@
+---
+description: Scope agente limitato a Reclame Media — vietato Filo Diretto / HR
+alwaysApply: true
+---
+
+# Solo Reclame Media
+
+Prodotto: **Reclame** — retail media wallet-native (pass anonimo, push, HUB, geofencing, calendar commerciale, CPA).
+Deploy: Railway `reclame-production`, hostname `*reclame*` / `*ads2wallet*`.
+UI shell: `html.a2w-shell`, classi `nav-item--reclame-*`, `nav-group--reclame-ads`, file `a2w-*`.
+
+## Vietato modificare
+
+- `src/filodiretto/**` (qualsiasi file)
+- `scripts/build-fd-bundles.js`, `src/filodiretto/fd.bundle.js`
+- Test/e2e HR salvo richiesta esplicita: `e2e/fd-*`, `scripts/fd-*`, `scripts/hub-pga-*`
+- UX/copy HR: Dipendenti, matricola, Growth Activation, Coin, PGA, `fd-nav-item--hr`
+
+## Dove lavorare (priorità)
+
+- `src/engine/reclame-*.js`, `src/engine/reclame-booking-actions.js`
+- `src/api/commercial-routes.js`, endpoint ads in `routes.js`
+- `src/dashboard/js/a2w-*.js`, `a2w-commercial.js`, `dashboard-subnav.js`
+- `src/dashboard/styles/a2w-reclame.css`, `a2w-*.css`
+- `scripts/reclame-*.test.js`, `scripts/a2w-*.test.js`, `scripts/hub-merchants.test.js`
+
+## File condivisi (solo con guard ads)
+
+`index.html`, `server.js`, `src/db/index.js` — ammessi solo se:
+
+- logica gated con `a2w-shell`, `isA2wDeploy()`, `nav-item--reclame-ads`, `PRODUCT_MENU_COPY.ads`
+- **nessun** cambiamento a `fd-nav-item--hr`, `data-app=filodiretto`, caricamento bundle `filodiretto/`
+
+Prima di ogni edit: «Questo impatta Filo Diretto?» → se sì, **stop** e chiedi conferma.
+
+## Verifica locale
+
+```bash
+npm run check:reclame-scope
+```
+
+Bypass emergenza (solo umano): `ALLOW_FILO_EDITS=1 npm run check:reclame-scope`

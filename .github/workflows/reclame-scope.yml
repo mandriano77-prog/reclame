@@ -1,0 +1,53 @@
+name: Reclame scope
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  reclame-scope:
+    name: No Filo Diretto paths
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch base branch (pull_request)
+        if: github.event_name == 'pull_request'
+        run: git fetch origin "${{ github.base_ref }}"
+
+      - name: Check changed files
+        env:
+          ALLOW_FILO_EDITS: ${{ vars.ALLOW_FILO_EDITS }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            export RECLAME_SCOPE_BASE="origin/${{ github.base_ref }}"
+            npm run check:reclame-scope
+          else
+            BEFORE="${{ github.event.before }}"
+            AFTER="${{ github.sha }}"
+            ZERO="0000000000000000000000000000000000000000"
+            if [ "$BEFORE" = "$ZERO" ] || [ -z "$BEFORE" ]; then
+              export RECLAME_SCOPE=range
+              export RECLAME_SCOPE_FROM="${AFTER}~1"
+              export RECLAME_SCOPE_TO="$AFTER"
+            else
+              export RECLAME_SCOPE=range
+              export RECLAME_SCOPE_FROM="$BEFORE"
+              export RECLAME_SCOPE_TO="$AFTER"
+            fi
+            npm run check:reclame-scope
+          fi
