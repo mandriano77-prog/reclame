@@ -63,6 +63,69 @@ html.a2w-shell #conventions .fd-nav-item--hr-only-copy {
   display: none;
 }
 
+/* On Reclame the HUB section already has its ads nav entry ("HUB Brand"); hide the duplicate
+   HR-label nav item ("Promozioni") that points at the same section to avoid the confusion of two
+   menu items opening the same page. */
+html.a2w-shell .nav-item.fd-nav-item--hr[data-section-id="conventions"] {
+  display: none;
+}
+
+/* HUB KPI grid + merchant badges — the fd-conventions.* CSS lives in the HR bundle (not loaded on
+   a2w), so style the markup rendered by a2w-conventions.js here. */
+html.a2w-shell #conventions .fd-conventions-kpi-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+html.a2w-shell #conventions .fd-conventions-kpi-group {
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--rm-surface, rgba(255,255,255,0.03));
+}
+html.a2w-shell #conventions .fd-conventions-kpi-group__title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+html.a2w-shell #conventions .fd-conventions-kpi-group__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 10px;
+}
+html.a2w-shell #conventions .fd-conventions-kpi__label {
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 2px;
+}
+html.a2w-shell #conventions .fd-conventions-kpi__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #F4EDE2);
+}
+html.a2w-shell #conventions .fd-conventions-kpi--primary .fd-conventions-kpi__value {
+  color: var(--rm-brand, #C72E22);
+}
+html.a2w-shell #conventions .fd-conventions-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+html.a2w-shell #conventions .fd-conventions-badge--active { background: rgba(232,163,61,0.16); color: #E8A33D; }
+html.a2w-shell #conventions .fd-conventions-badge--inactive { background: rgba(255,255,255,0.08); color: var(--text2); }
+html.a2w-shell #conventions .fd-conventions-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 10px 8px 0;
+  font-size: 13px;
+}
+
 html.a2w-shell #conventions .conventions-title--ads {
   display: block;
 }
