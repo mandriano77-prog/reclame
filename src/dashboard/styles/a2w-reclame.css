@@ -63,11 +63,11 @@ html.a2w-shell #conventions .fd-nav-item--hr-only-copy {
   display: none;
 }
 
-/* On Reclame the HUB section already has its ads nav entry ("HUB Brand"); hide the duplicate
-   HR-label nav item ("Promozioni") that points at the same section to avoid the confusion of two
-   menu items opening the same page. */
-html.a2w-shell .nav-item.fd-nav-item--hr[data-section-id="conventions"] {
-  display: none;
+/* HR-label nav items don't belong on the Reclame shell: their JS lives only in the HR bundle
+   (never loaded here), so they're either duplicates or dead navs. "Promozioni" duplicates the ads
+   "HUB Brand" entry; "Coin" (PGA) is HR-only and does nothing on Reclame. Hide them all. */
+html.a2w-shell .nav-item.fd-nav-item--hr {
+  display: none !important;
 }
 
 /* HUB KPI grid + merchant badges — the fd-conventions.* CSS lives in the HR bundle (not loaded on

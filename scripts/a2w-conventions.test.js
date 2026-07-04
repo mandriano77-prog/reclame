@@ -41,6 +41,6 @@ test('a2w-conventions adds Content-Type so POST/PUT bodies parse', () => {
   assert.match(conv, /Content-Type/);
 });
 
-test('reclame CSS hides the duplicate HR "Promozioni" nav item on a2w', () => {
-  assert.match(reclameCss, /\.nav-item\.fd-nav-item--hr\[data-section-id="conventions"\]/);
+test('reclame CSS hides HR-label nav items (Promozioni, Coin) on a2w', () => {
+  assert.match(reclameCss, /html\.a2w-shell \.nav-item\.fd-nav-item--hr\s*\{/);
 });
