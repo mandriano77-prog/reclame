@@ -70,7 +70,8 @@
     <link rel="stylesheet" href="/dashboard/styles/filo-a11y.css">
     <link rel="stylesheet" href="/dashboard/styles/filo-layout.css">
     <link rel="stylesheet" href="/dashboard/styles/rm-tokens.css">
-    <link rel="stylesheet" href="/dashboard/styles/a2w-tokens.css">
+    <!-- a2w-tokens.css removed here: it only @imports rm-tokens.css (loaded above), so it was a
+         redundant second load of the same tokens. The file remains for ui-playground / tests. -->
     <link rel="stylesheet" href="/dashboard/styles/a2w-chrome.css?v=20260528-mobile-drawer">
     <link rel="stylesheet" href="/dashboard/styles/a2w-section-tabs.css?v=20260528-nav">
     <link rel="stylesheet" href="/dashboard/styles/a2w-ui-components.css?v=20260527-contacts">
