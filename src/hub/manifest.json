@@ -1,7 +1,7 @@
 {
-  "name": "FiloDiretto HUB",
+  "name": "HUB Offerte",
   "short_name": "HUB",
-  "description": "Convenzioni aziendali FiloDiretto",
+  "description": "Offerte e promozioni dei brand, dal tuo pass",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

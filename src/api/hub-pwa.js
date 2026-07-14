@@ -90,30 +90,66 @@ async function loadHubContext(claims) {
   };
 }
 
+/** The brand's real logo — the same asset used on the pass and its notifications. */
+function brandLogoUrl(brand) {
+  const cfg = brand?.config && typeof brand.config === 'object' ? brand.config : {};
+  if (brand?.logo_url) return brand.logo_url;
+  if (cfg.logo_url) return cfg.logo_url;
+  const assets = cfg.brand_identity_assets || {};
+  const logos = cfg.logos || {};
+  const hasLogo = !!(assets.logo || assets.logo_media_id || logos.logo || logos['logo@2x']);
+  if (!hasLogo || !brand?.slug) return null;
+  // public (unauthenticated) logo endpoint — the HUB runs on a hub token, not an admin session
+  return `/api/v1/brands/by-slug/${encodeURIComponent(brand.slug)}/logo`;
+}
+
 function publicBrand(brand) {
   const cfg = brand?.config && typeof brand.config === 'object' ? brand.config : {};
   return {
     id: brand.id,
     name: brand.name,
     slug: brand.slug,
-    logo_url: brand.logo_url || cfg.logo_url || null,
+    logo_url: brandLogoUrl(brand),
     product_line: cfg.product_line || 'ads'
   };
 }
 
-function publicSettings(settings) {
+function publicSettings(settings, brand) {
   let categories = settings?.categories_enabled;
   if (typeof categories === 'string') {
     try { categories = JSON.parse(categories); } catch { categories = []; }
   }
   if (!Array.isArray(categories)) categories = [];
+  const cfg = brand?.config && typeof brand.config === 'object' ? brand.config : {};
   return {
-    logo_url: settings?.logo_url || null,
-    accent_color: settings?.accent_color || '#8B5CF6',
+    // Fall back to the brand's own logo/accent so the HUB is on-brand out of the box;
+    // Impostazioni Hub still overrides both.
+    logo_url: settings?.logo_url || brandLogoUrl(brand),
+    accent_color: settings?.accent_color || cfg.labelColor || cfg.primaryColor || '#8B5CF6',
     welcome_message: settings?.welcome_message || null,
     categories_enabled: categories,
     geofencing_enabled: settings?.geofencing_enabled !== false
   };
+}
+
+/** First letters of the first two words — "Caffè della Galleria" → "CD". */
+function merchantInitials(name) {
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '';
+  const a = words[0][0] || '';
+  const b = words.length > 1 ? (words[1][0] || '') : (words[0][1] || '');
+  return `${a}${b}`.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 2);
+}
+
+/** Merchants with no logo get a generated one (initials + category color) so the HUB never
+ *  falls back to a bare letter tile. Same-origin URL — works in the PWA and on Google Wallet. */
+function merchantLogoUrl(row) {
+  if (row?.logo_url) return row.logo_url;
+  const params = new URLSearchParams({
+    t: merchantInitials(row?.name) || '?',
+    cat: String(row?.category || '').toLowerCase()
+  });
+  return `/assets/logo-placeholder?${params.toString()}`;
 }
 
 function publicMerchant(row) {
@@ -122,7 +158,7 @@ function publicMerchant(row) {
     id: row.id,
     name: row.name,
     category: row.category,
-    logo_url: row.logo_url,
+    logo_url: merchantLogoUrl(row),
     description: row.description,
     discount_label: row.discount_label,
     conditions: row.conditions,
@@ -306,7 +342,7 @@ function registerHubPwaRoutes(router) {
       res.json({
         profile: ctx.profile,
         brand: publicBrand(ctx.brand),
-        settings: publicSettings(ctx.settings),
+        settings: publicSettings(ctx.settings, ctx.brand),
         pga_settings: publicPgaSettings(pgaSettings),
         coin_balance: coinBalance,
         merchants: merchants.map(publicMerchant),

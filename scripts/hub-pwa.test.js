@@ -80,7 +80,9 @@ test('PWA shell files exist', () => {
     assert.ok(fs.existsSync(path.join(HUB_DIR, file)), `missing ${file}`);
   }
   const manifest = JSON.parse(fs.readFileSync(path.join(HUB_DIR, 'manifest.json'), 'utf8'));
-  assert.equal(manifest.name, 'FiloDiretto HUB');
+  // De-branded: the HUB is the consumer-facing Reclame surface, not a FiloDiretto (HR) app.
+  assert.equal(manifest.name, 'HUB Offerte');
+  assert.doesNotMatch(JSON.stringify(manifest), /filodiretto/i);
   assert.equal(manifest.display, 'standalone');
   assert.ok(manifest.theme_color);
 });

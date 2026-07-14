@@ -3732,10 +3732,14 @@ async function getHubBrandAnalytics(brandId, days = 30) {
 async function getHubSettings(brandId) {
   const res = await pool.query('SELECT * FROM hub_settings WHERE brand_id = $1', [brandId]);
   if (res.rows[0]) return res.rows[0];
+  // No settings saved yet → default the HUB accent to the BRAND's own color, so the hub
+  // looks on-brand out of the box instead of the generic purple. Impostazioni Hub overrides.
+  const brand = await getBrand(brandId).catch(() => null);
+  const cfg = (brand && typeof brand.config === 'object' && brand.config) || {};
   return {
     brand_id: brandId,
     logo_url: null,
-    accent_color: '#8B5CF6',
+    accent_color: cfg.labelColor || cfg.primaryColor || '#8B5CF6',
     welcome_message: null,
     categories_enabled: ['food', 'fitness', 'retail', 'salute', 'viaggi', 'tech', 'servizi'],
     geofencing_enabled: true,

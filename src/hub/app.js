@@ -149,9 +149,70 @@
     return { ok: res.ok, status: res.status, data };
   }
 
+  /** WCAG relative luminance (0 = black, 1 = white) of a #rrggbb color. */
+  function luminance(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+    if (!m) return 0;
+    const n = parseInt(m[1], 16);
+    const ch = (v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const r = ch((n >> 16) & 255);
+    const g = ch((n >> 8) & 255);
+    const b = ch(n & 255);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  /** WCAG contrast ratio between two luminances. */
+  function contrastRatio(l1, l2) {
+    const hi = Math.max(l1, l2);
+    const lo = Math.min(l1, l2);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  const DARK_INK = '#111827';
+
+  /** The label color (white or near-black) that reads best on the given background. */
+  function onColorFor(bg) {
+    const l = luminance(bg);
+    return contrastRatio(l, luminance(DARK_INK)) >= contrastRatio(l, 1) ? DARK_INK : '#ffffff';
+  }
+
+  /** Best contrast achievable on bg with either ink. */
+  function bestContrast(bg) {
+    const l = luminance(bg);
+    return Math.max(contrastRatio(l, 1), contrastRatio(l, luminance(DARK_INK)));
+  }
+
+  function darkenHex(hex, factor) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    const s = (v) => Math.max(0, Math.min(255, Math.round(v * factor)));
+    const rgb = [s((n >> 16) & 255), s((n >> 8) & 255), s(n & 255)]
+      .map((v) => v.toString(16).padStart(2, '0')).join('');
+    return `#${rgb}`;
+  }
+
+  /** Button fill: the brand accent, darkened just enough that its label clears WCAG AA.
+   *  (The stock purple #8B5CF6 only reaches 4.23:1 with white — hence this step.) */
+  function buttonBgFor(accent) {
+    let bg = accent;
+    for (let i = 0; i < 5 && bestContrast(bg) < 4.5; i += 1) {
+      bg = darkenHex(bg, 0.86);
+    }
+    return bg;
+  }
+
   function applyWhiteLabel() {
     const accent = state.settings?.accent_color || '#8B5CF6';
     document.documentElement.style.setProperty('--hub-accent', accent);
+    // Buttons are filled with the brand accent (darkened if needed for contrast), and the
+    // label color is whichever of white/near-black actually reads better on it.
+    const btnBg = buttonBgFor(accent);
+    document.documentElement.style.setProperty('--hub-btn-bg', btnBg);
+    document.documentElement.style.setProperty('--hub-btn-fg', onColorFor(btnBg));
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', accent);
 
@@ -169,6 +230,7 @@
       subtitle.textContent = state.brand.name;
       subtitle.classList.remove('hidden');
     }
+    if (state.brand?.name) document.title = `${state.brand.name} · ${hubListTitle()}`;
     updateCoinWidget();
   }
 
@@ -204,7 +266,7 @@
     }
     bar.classList.remove('hidden');
     bar.innerHTML = `
-      <a href="#" class="hub-tab${active === 'conv' ? ' active' : ''}" data-tab="conv">Convenzioni</a>
+      <a href="#" class="hub-tab${active === 'conv' ? ' active' : ''}" data-tab="conv">${esc(hubListTitle())}</a>
       <a href="#" class="hub-tab${active === 'pga' ? ' active' : ''}" data-tab="pga">PGA</a>
       <a href="#" class="hub-tab${active === 'me' ? ' active' : ''}" data-tab="me">Profilo</a>
     `;
@@ -401,7 +463,7 @@
         state.nearbyMap[m.id] = m.distance_km;
       });
     } catch (_) {
-      state.geoError = 'Errore nel caricamento delle convenzioni vicine';
+      state.geoError = `Errore nel caricamento delle ${hubNoun(true)} vicine`;
     }
   }
 
@@ -480,6 +542,12 @@
     return hubIsAdsMode() ? 'Offerte' : 'Convenzioni';
   }
 
+  /** The noun for what the HUB lists, per product: Reclame sells "offerte", HR "convenzioni". */
+  function hubNoun(plural) {
+    if (hubIsAdsMode()) return plural ? 'offerte' : 'offerta';
+    return plural ? 'convenzioni' : 'convenzione';
+  }
+
   function renderLoading() {
     $('#hub-back')?.classList.add('hidden');
     $('#hub-title').textContent = hubListTitle();
@@ -517,11 +585,11 @@
           ${distHtml}
         </button>`;
       }).join('')
-      : `<div class="hub-empty">${state.nearbyEnabled ? 'Nessuna convenzione entro 5 km.' : 'Nessuna convenzione trovata.'}</div>`;
+      : `<div class="hub-empty">${state.nearbyEnabled ? `Nessuna ${hubNoun(false)} entro 5 km.` : `Nessuna ${hubNoun(false)} trovata.`}</div>`;
 
     const geoBanner = !state.geoConsent ? `
       <div class="hub-geo-banner" id="hub-geo-banner">
-        <p><strong>Posizione (GDPR)</strong> — Per mostrarti le convenzioni vicine usiamo la posizione del dispositivo solo mentre l'app è aperta. Non memorizziamo coordinate permanenti.</p>
+        <p><strong>Posizione (GDPR)</strong> — Per mostrarti le ${hubNoun(true)} vicine usiamo la posizione del dispositivo solo mentre l'app è aperta. Non memorizziamo coordinate permanenti.</p>
         <button type="button" class="hub-btn" id="hub-geo-accept">Accetto e attiva</button>
       </div>
     ` : '';
@@ -546,7 +614,7 @@
       ${geoBanner}
       ${nearbyToggle}
       <div class="hub-search-wrap">
-        <input class="hub-search" id="hub-search" type="search" placeholder="Cerca convenzioni…" value="${esc(state.search)}" autocomplete="off">
+        <input class="hub-search" id="hub-search" type="search" placeholder="Cerca ${hubNoun(true)}…" value="${esc(state.search)}" autocomplete="off">
       </div>
       <div class="hub-chips" id="hub-chips">${chips}</div>
       <div class="hub-grid">${cards}</div>
@@ -604,7 +672,7 @@
     } catch (_) {}
 
     if (!merchant) {
-      $('#hub-main').innerHTML = '<div class="hub-empty">Convenzione non trovata.</div>';
+      $('#hub-main').innerHTML = `<div class="hub-empty">${hubIsAdsMode() ? 'Offerta' : 'Convenzione'} non trovata.</div>`;
       return;
     }
 
@@ -852,7 +920,7 @@
 
       const profileName = [data.profile?.first_name, data.profile?.last_name]
         .filter(Boolean)
-        .join(' ') || 'Dipendente';
+        .join(' ') || (hubIsAdsMode() ? 'Cliente' : 'Dipendente');
       const ledger = Array.isArray(data.ledger) ? data.ledger : [];
       const bookings = Array.isArray(data.bookings) ? data.bookings : [];
 
@@ -922,7 +990,7 @@
 
   async function renderQr(merchantId) {
     $('#hub-back')?.classList.remove('hidden');
-    $('#hub-title').textContent = 'QR convenzione';
+    $('#hub-title').textContent = `QR ${hubNoun(false)}`;
     $('#hub-main').innerHTML = '<div class="hub-loading"><div class="hub-spinner"></div><div>Generazione QR…</div></div>';
 
     try {
@@ -940,8 +1008,8 @@
 
       $('#hub-main').innerHTML = `
         <div class="hub-qr-screen">
-          <img class="hub-qr-image" src="${esc(data.qr_url)}" alt="QR convenzione">
-          <p class="hub-qr-hint">Mostra questo QR al banco per attivare la convenzione.</p>
+          <img class="hub-qr-image" src="${esc(data.qr_url)}" alt="QR ${hubNoun(false)}">
+          <p class="hub-qr-hint">Mostra questo QR al banco per attivare la ${hubNoun(false)}.</p>
           ${expires ? `<p class="hub-meta">Valido fino alle ${esc(expires)}</p>` : ''}
         </div>
       `;
@@ -956,7 +1024,7 @@
     $('#hub-main').innerHTML = `
       <div class="hub-error">
         <h2>Link scaduto o non valido</h2>
-        <p>Apri di nuovo il pass dal Wallet aziendale per accedere alle convenzioni.</p>
+        <p>Apri di nuovo il pass dal Wallet per accedere alle ${hubNoun(true)}.</p>
       </div>
     `;
   }
