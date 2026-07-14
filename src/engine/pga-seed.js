@@ -81,15 +81,70 @@ const COIN_ACTIONS_DEFAULT = [
   { action_key: 'manual_grant', coin_amount: 0, description: 'Assegnazione manuale HR' }
 ];
 
-async function seedPgaDefaultsForBrand(brandId, db) {
+/* ── Reclame (retail media) ──────────────────────────────────────────────
+   A shopper is not an employee: they don't have work anniversaries and they
+   don't book coaching. Coins are earned in the gallery and spent there. */
+
+const RETAIL_DEFAULT_EXPERIENCES = [
+  {
+    key: 'caffe_omaggio', name: 'Caffè omaggio',
+    description: 'Un caffè offerto in uno dei bar della galleria.',
+    category: 'food', coin_cost: 80, internal: true, requires_booking: false, display_order: 10
+  },
+  {
+    key: 'parcheggio_3h', name: 'Parcheggio gratis · 3 ore',
+    description: 'Tre ore di sosta gratuita nel parcheggio.',
+    category: 'servizi', coin_cost: 120, internal: true, requires_booking: false, display_order: 20
+  },
+  {
+    key: 'sconto_extra', name: 'Sconto extra 15%',
+    description: 'Un 15% aggiuntivo su un acquisto, cumulabile con le promo attive.',
+    category: 'retail', coin_cost: 200, internal: true, requires_booking: false, display_order: 30
+  },
+  {
+    key: 'buono_10', name: 'Buono spesa 10€',
+    description: 'Spendibile in tutti i negozi della galleria.',
+    category: 'retail', coin_cost: 250, internal: true, requires_booking: false, display_order: 40
+  },
+  {
+    key: 'personal_shopper', name: 'Personal shopper · 1 ora',
+    description: 'Un’ora con il personal shopper della galleria.',
+    category: 'retail', coin_cost: 600, internal: true, requires_booking: true, display_order: 50
+  }
+];
+
+const COIN_ACTIONS_RETAIL = [
+  { action_key: 'welcome_pass', coin_amount: 100, description: 'Benvenuto: hai aggiunto il pass' },
+  { action_key: 'checkout_coupon', coin_amount: 50, description: 'Coupon riscattato alla cassa' },
+  { action_key: 'merchant_visit', coin_amount: 20, description: 'Visita a un negozio della galleria' },
+  { action_key: 'offer_opened', coin_amount: 5, description: 'Offerta aperta dall’HUB' },
+  { action_key: 'referral', coin_amount: 150, description: 'Un amico aggiunge il pass' },
+  { action_key: 'birthday', coin_amount: 50, description: 'Compleanno' },
+  { action_key: 'manual_grant', coin_amount: 0, description: 'Assegnazione manuale' }
+];
+
+/**
+ * Seed the coin programme defaults for a brand, per product line.
+ * Reclame (ads) gets the retail set; FiloDiretto (hr) keeps the HR/PGA one.
+ */
+async function seedPgaDefaultsForBrand(brandId, db, { productLine = 'hr' } = {}) {
   if (!brandId) throw new Error('brandId richiesto');
-  const experiences = await db.seedExperiencesCatalog(brandId, PGA_DEFAULT_EXPERIENCES);
-  const actions = await db.seedCoinActionsConfig(brandId, COIN_ACTIONS_DEFAULT);
+  const isAds = String(productLine).toLowerCase() === 'ads';
+  const experiences = await db.seedExperiencesCatalog(
+    brandId,
+    isAds ? RETAIL_DEFAULT_EXPERIENCES : PGA_DEFAULT_EXPERIENCES
+  );
+  const actions = await db.seedCoinActionsConfig(
+    brandId,
+    isAds ? COIN_ACTIONS_RETAIL : COIN_ACTIONS_DEFAULT
+  );
   return { experiences_seeded: experiences, actions_seeded: actions };
 }
 
 module.exports = {
   PGA_DEFAULT_EXPERIENCES,
   COIN_ACTIONS_DEFAULT,
+  RETAIL_DEFAULT_EXPERIENCES,
+  COIN_ACTIONS_RETAIL,
   seedPgaDefaultsForBrand
 };

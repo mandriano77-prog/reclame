@@ -4226,10 +4226,14 @@ async function upsertPgaSettings(brandId, fields = {}) {
   const row = res.rows[0];
   if (!wasEnabled && row.enabled) {
     const { seedPgaDefaultsForBrand } = require('../engine/pga-seed');
+    // Seed per product line: a Reclame shopper gets retail earn rules and rewards,
+    // not HR work-anniversaries and coaching sessions.
+    const brand = await getBrand(brandId).catch(() => null);
+    const productLine = String(brand?.config?.product_line || process.env.DASHBOARD_PRODUCT_LINE || 'hr').toLowerCase();
     await seedPgaDefaultsForBrand(brandId, {
       seedExperiencesCatalog,
       seedCoinActionsConfig
-    });
+    }, { productLine });
   }
   return row;
 }

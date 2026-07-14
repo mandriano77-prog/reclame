@@ -28,6 +28,7 @@
     settings: null,
     pga_settings: null,
     coin_balance: 0,
+    coin_actions: [],
     experiences: [],
     meData: null,
     merchants: [],
@@ -250,26 +251,33 @@
     if (val) val.textContent = String(state.coin_balance ?? 0);
   }
 
+  /** Reclame is a two-area product — DEAL (offers) and COIN — so its shell always shows the
+   *  tab bar. HR keeps its own 3-tab layout, gated on the coin program being enabled. */
+  function hasTabBar() {
+    return hubIsAdsMode() || pgaEnabled();
+  }
+
   function setTabbarPadding(on) {
     const main = $('#hub-main');
     if (!main) return;
-    main.classList.toggle('has-tabbar', on && pgaEnabled());
+    main.classList.toggle('has-tabbar', on && hasTabBar());
   }
 
   function renderTabBar(active) {
     const bar = $('#hub-tabbar');
     if (!bar) return;
-    if (!pgaEnabled() || active == null) {
+    if (!hasTabBar() || active == null) {
       bar.classList.add('hidden');
       bar.innerHTML = '';
       return;
     }
     bar.classList.remove('hidden');
-    bar.innerHTML = `
-      <a href="#" class="hub-tab${active === 'conv' ? ' active' : ''}" data-tab="conv">${esc(hubListTitle())}</a>
-      <a href="#" class="hub-tab${active === 'pga' ? ' active' : ''}" data-tab="pga">PGA</a>
-      <a href="#" class="hub-tab${active === 'me' ? ' active' : ''}" data-tab="me">Profilo</a>
-    `;
+    const tabs = hubIsAdsMode()
+      ? [['conv', 'Deal'], ['pga', 'Coin']]
+      : [['conv', hubListTitle()], ['pga', 'PGA'], ['me', 'Profilo']];
+    bar.innerHTML = tabs.map(([key, label]) =>
+      `<a href="#" class="hub-tab${active === key ? ' active' : ''}" data-tab="${key}">${esc(label)}</a>`
+    ).join('');
     bar.querySelectorAll('[data-tab]').forEach((link) => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -338,6 +346,7 @@
       state.settings = data.settings;
       state.pga_settings = data.pga_settings || null;
       state.coin_balance = Number(data.coin_balance || 0);
+      state.coin_actions = Array.isArray(data.coin_actions) ? data.coin_actions : [];
       state.experiences = Array.isArray(data.experiences) ? data.experiences : [];
       state.merchants = Array.isArray(data.merchants) ? data.merchants : [];
       state.bootstrapped = true;
@@ -349,6 +358,7 @@
           settings: state.settings,
           pga_settings: state.pga_settings,
           coin_balance: state.coin_balance,
+          coin_actions: state.coin_actions,
           experiences: state.experiences,
           merchants: state.merchants,
           saved_at: Date.now()
@@ -372,6 +382,7 @@
           state.settings = cached.settings;
           state.pga_settings = cached.pga_settings || null;
           state.coin_balance = Number(cached.coin_balance || 0);
+          state.coin_actions = Array.isArray(cached.coin_actions) ? cached.coin_actions : [];
           state.experiences = Array.isArray(cached.experiences) ? cached.experiences : [];
           state.merchants = cached.merchants;
           state.bootstrapped = true;
@@ -570,19 +581,21 @@
 
     const rows = filteredMerchants();
     const cards = rows.length
-      ? rows.map((m) => {
+      ? rows.map((m, i) => {
         const logo = m.logo_url
           ? `<img class="hub-card-logo" src="${esc(m.logo_url)}" alt="">`
           : `<div class="hub-card-logo placeholder">${esc(merchantInitial(m.name))}</div>`;
         const dist = state.nearbyEnabled ? formatDistance(state.nearbyMap[m.id]) : null;
         const distHtml = dist ? `<p class="hub-card-distance">${esc(dist)}</p>` : '';
-        return `<button type="button" class="hub-card${m.sponsored ? ' hub-card--sponsored' : ''}" data-merchant-id="${esc(m.id)}">
+        return `<button type="button" class="hub-card${m.sponsored ? ' hub-card--sponsored' : ''}" style="--i:${i}" data-merchant-id="${esc(m.id)}">
           ${m.sponsored ? '<span class="hub-sponsored-badge">In evidenza</span>' : ''}
           ${logo}
-          <p class="hub-card-name">${esc(m.name)}</p>
-          <p class="hub-card-discount">${esc(m.discount_label)}</p>
-          <p class="hub-card-cat">${esc(CATEGORY_LABELS[m.category] || m.category || '')}</p>
-          ${distHtml}
+          <span class="hub-card-body">
+            <p class="hub-card-name">${esc(m.name)}</p>
+            <p class="hub-card-discount">${esc(m.discount_label)}</p>
+            <p class="hub-card-cat">${esc(CATEGORY_LABELS[m.category] || m.category || '')}</p>
+            ${distHtml}
+          </span>
         </button>`;
       }).join('')
       : `<div class="hub-empty">${state.nearbyEnabled ? `Nessuna ${hubNoun(false)} entro 5 km.` : `Nessuna ${hubNoun(false)} trovata.`}</div>`;
@@ -757,7 +770,105 @@
     });
   }
 
+  const COIN_ICONS = {
+    checkout: '🧾', purchase: '🧾', scan: '🧾', coupon: '🧾',
+    visit: '📍', geofence: '📍',
+    signup: '🎁', welcome: '🎁',
+    birthday: '🎂', offer: '🏷️',
+    review: '⭐', referral: '👥'
+  };
+
+  function coinActionIcon(key) {
+    const k = String(key || '').toLowerCase();
+    const hit = Object.keys(COIN_ICONS).find((needle) => k.includes(needle));
+    return hit ? COIN_ICONS[hit] : '🪙';
+  }
+
+  /** "checkout_bonus" → "Checkout bonus" — used when the retailer left no description. */
+  function humanizeKey(key) {
+    const s = String(key || '').replace(/[_-]+/g, ' ').trim();
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Azione';
+  }
+
+  /** COIN area (Reclame): balance, how you earn, what you can redeem. */
+  function renderCoin() {
+    $('#hub-back')?.classList.add('hidden');
+    $('#hub-title').textContent = 'Coin';
+
+    if (!pgaEnabled()) {
+      $('#hub-main').innerHTML = `
+        <div class="hub-coin-hero">
+          <p class="hub-coin-hero-label">Il tuo saldo</p>
+          <p class="hub-coin-hero-value">—</p>
+          <p class="hub-coin-hero-sub">Il programma Coin non è ancora attivo.</p>
+        </div>
+        <div class="hub-empty">Quando sarà attivo, qui accumuli coin con i tuoi acquisti e li spendi in premi.</div>`;
+      return;
+    }
+
+    const balance = Number(state.coin_balance || 0);
+    // Only rules the customer can actually earn from — a 0-coin admin grant is not a way to earn.
+    // Highest reward first: it reads as an incentive list, not a config dump.
+    const actions = (Array.isArray(state.coin_actions) ? state.coin_actions : [])
+      .filter((a) => Number(a.coins) > 0)
+      .sort((a, b) => Number(b.coins) - Number(a.coins));
+    const rewards = (Array.isArray(state.experiences) ? [...state.experiences] : [])
+      .sort((a, b) => (Number(a.display_order) || 100) - (Number(b.display_order) || 100));
+
+    const earn = actions.length ? `
+      <p class="hub-section">Come guadagni</p>
+      <div class="hub-earn-list">
+        ${actions.map((a) => `
+          <div class="hub-earn-item">
+            <div class="hub-earn-icon" aria-hidden="true">${esc(coinActionIcon(a.key))}</div>
+            <div class="hub-earn-text">
+              <p class="hub-earn-title">${esc(a.description || humanizeKey(a.key))}</p>
+            </div>
+            <span class="hub-earn-value">+${esc(String(a.coins))}</span>
+          </div>`).join('')}
+      </div>` : '';
+
+    const catalog = rewards.length ? `
+      <p class="hub-section">Premi</p>
+      <div class="hub-pga-grid">
+        ${rewards.map((e, i) => {
+          const cat = e.category ? (CATEGORY_LABELS[e.category] || e.category) : '';
+          const afford = balance >= Number(e.coin_cost || 0);
+          return `<button type="button" class="hub-pga-card" style="--i:${i}" data-exp-id="${esc(e.id)}">
+            <div class="hub-pga-card-head">
+              <strong>${esc(e.name)}</strong>
+              <span class="hub-pga-cost">${esc(String(e.coin_cost))} coin</span>
+            </div>
+            ${cat ? `<span class="hub-pga-category">${esc(cat)}</span>` : ''}
+            ${e.description ? `<p class="hub-pga-desc">${esc(e.description)}</p>` : ''}
+            ${afford ? '' : `<p class="hub-pga-limits">Ti mancano ${esc(String(Number(e.coin_cost || 0) - balance))} coin</p>`}
+          </button>`;
+        }).join('')}
+      </div>`
+      : '<div class="hub-empty">Nessun premio disponibile al momento.</div>';
+
+    const welcome = state.pga_settings?.welcome_message
+      ? `<div class="hub-welcome">${esc(state.pga_settings.welcome_message)}</div>`
+      : '';
+
+    $('#hub-main').innerHTML = `
+      ${welcome}
+      <div class="hub-coin-hero">
+        <p class="hub-coin-hero-label">Il tuo saldo</p>
+        <p class="hub-coin-hero-value">${esc(String(balance))}</p>
+        <p class="hub-coin-hero-sub">coin disponibili</p>
+      </div>
+      ${earn}
+      ${catalog}`;
+
+    $('#hub-main').querySelectorAll('[data-exp-id]').forEach((btn) => {
+      btn.addEventListener('click', () => navigate(`/pga/${btn.getAttribute('data-exp-id')}`));
+    });
+  }
+
   function renderPga() {
+    if (hubIsAdsMode()) return renderCoin();
+
     $('#hub-back')?.classList.add('hidden');
     $('#hub-title').textContent = 'PGA Marketplace';
 

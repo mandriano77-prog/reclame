@@ -173,6 +173,16 @@ function publicMerchant(row) {
   };
 }
 
+/** An earn rule as shown in the COIN area ("come guadagni"). */
+function publicCoinAction(row) {
+  if (!row) return null;
+  return {
+    key: row.action_key,
+    coins: Number(row.coin_amount) || 0,
+    description: row.description || null
+  };
+}
+
 function publicExperience(row) {
   if (!row) return null;
   return {
@@ -334,10 +344,22 @@ function registerHubPwaRoutes(router) {
       const pgaSettings = await db.getPgaSettings(auth.claims.brand_id);
       let coinBalance = 0;
       let experiences = [];
-      if (pgaSettings.enabled && !auth.claims.preview) {
-        const bal = await db.getPassCoinBalance(auth.claims.brand_id, auth.claims.pass_serial);
-        coinBalance = Number(bal.balance || 0);
+      let coinActions = [];
+      if (pgaSettings.enabled) {
+        // Catalog + earn rules are brand-scoped, so the admin preview shows a full COIN
+        // area too (with a zero balance — a preview has no real pass behind it).
         experiences = await db.listExperiences(auth.claims.brand_id, { active: true });
+        // Earn rules are decorative ("come guadagni") — never let them break the bootstrap.
+        try {
+          const rules = await db.listCoinActions(auth.claims.brand_id);
+          coinActions = (Array.isArray(rules) ? rules : []).filter((a) => a.active !== false);
+        } catch (rulesErr) {
+          console.warn('[hub] coin actions unavailable:', rulesErr.message);
+        }
+        if (!auth.claims.preview) {
+          const bal = await db.getPassCoinBalance(auth.claims.brand_id, auth.claims.pass_serial);
+          coinBalance = Number(bal.balance || 0);
+        }
       }
       res.json({
         profile: ctx.profile,
@@ -345,6 +367,7 @@ function registerHubPwaRoutes(router) {
         settings: publicSettings(ctx.settings, ctx.brand),
         pga_settings: publicPgaSettings(pgaSettings),
         coin_balance: coinBalance,
+        coin_actions: coinActions.map(publicCoinAction),
         merchants: merchants.map(publicMerchant),
         experiences: experiences.map(publicExperience)
       });
