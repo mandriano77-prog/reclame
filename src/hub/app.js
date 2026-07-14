@@ -140,6 +140,12 @@
     modal.classList.remove('hidden');
   }
 
+  async function apiGet(path) {
+    const res = await fetch(`${apiBase()}${path}?token=${encodeURIComponent(getToken())}`);
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  }
+
   async function apiPost(path, body) {
     const res = await fetch(`${apiBase()}${path}?token=${encodeURIComponent(getToken())}`, {
       method: 'POST',
@@ -864,6 +870,136 @@
     $('#hub-main').querySelectorAll('[data-exp-id]').forEach((btn) => {
       btn.addEventListener('click', () => navigate(`/pga/${btn.getAttribute('data-exp-id')}`));
     });
+
+    // A live code is the most urgent thing on this screen — put it on top.
+    apiGet('/hub/rewards/active-redemption').then((res) => {
+      const r = res.ok && res.data && res.data.redemption;
+      if (!r) return;
+      const main = $('#hub-main');
+      if (!main) return;
+      const banner = document.createElement('button');
+      banner.type = 'button';
+      banner.className = 'hub-active-ticket';
+      banner.innerHTML = `
+        <span class="hub-active-ticket-label">Da ritirare in cassa</span>
+        <span class="hub-active-ticket-name">${esc(r.reward_name)}</span>
+        <span class="hub-active-ticket-code">${esc(r.code)}</span>`;
+      banner.addEventListener('click', () => renderCoinTicket(res.data));
+      main.insertBefore(banner, main.firstChild);
+    }).catch(() => {});
+  }
+
+  /* ── Coin reward: detail → redeem → till ticket ─────────────────────── */
+
+  let ticketTimer = null;
+
+  function clearTicketTimer() {
+    if (ticketTimer) { clearInterval(ticketTimer); ticketTimer = null; }
+  }
+
+  function formatCountdown(untilIso) {
+    const ms = new Date(untilIso).getTime() - Date.now();
+    if (!(ms > 0)) return null;
+    const total = Math.floor(ms / 1000);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  /** The code the customer shows at the till. Coins are already spent at this point. */
+  function renderCoinTicket(payload) {
+    clearTicketTimer();
+    const r = payload?.redemption;
+    if (!r) return renderCoin();
+
+    $('#hub-back')?.classList.remove('hidden');
+    $('#hub-title').textContent = 'Da ritirare';
+
+    $('#hub-main').innerHTML = `
+      <div class="hub-ticket">
+        <p class="hub-ticket-label">Mostra questo codice alla cassa</p>
+        <p class="hub-ticket-reward">${esc(r.reward_name)}</p>
+        ${payload.qr_url ? `<img class="hub-ticket-qr" src="${esc(payload.qr_url)}" alt="Codice ${esc(r.code)}">` : ''}
+        <p class="hub-ticket-code">${esc(r.code)}</p>
+        <p class="hub-ticket-timer" id="hub-ticket-timer"></p>
+        <p class="hub-ticket-hint">Se scade senza essere ritirato, i <strong>${esc(String(r.coins_spent))} coin</strong> ti tornano indietro.</p>
+      </div>`;
+
+    const timerEl = $('#hub-ticket-timer');
+    const tick = () => {
+      const left = formatCountdown(r.expires_at);
+      if (!left) {
+        clearTicketTimer();
+        if (timerEl) timerEl.textContent = 'Codice scaduto — coin restituiti';
+        showToast('Codice scaduto: i coin ti sono stati restituiti');
+        bootstrap().then(() => navigate('/pga')).catch(() => navigate('/pga'));
+        return;
+      }
+      if (timerEl) timerEl.textContent = `Valido ancora ${left}`;
+    };
+    tick();
+    ticketTimer = setInterval(tick, 1000);
+  }
+
+  async function doRedeem(reward) {
+    const res = await apiPost(`/hub/rewards/${reward.id}/redeem`);
+    if (res.ok) {
+      state.coin_balance = Number(res.data.balance ?? state.coin_balance);
+      updateCoinWidget();
+      renderCoinTicket(res.data);
+      return;
+    }
+    if (res.data?.code === 'redemption_pending' && res.data.redemption) {
+      showToast('Hai già un premio da ritirare');
+      const active = await apiGet('/hub/rewards/active-redemption');
+      if (active.ok && active.data?.redemption) return renderCoinTicket(active.data);
+    }
+    showToast(res.data?.error || 'Riscatto non riuscito');
+  }
+
+  function renderCoinReward(id) {
+    clearTicketTimer();
+    const reward = (state.experiences || []).find((e) => String(e.id) === String(id));
+    if (!reward) return renderCoin();
+
+    $('#hub-back')?.classList.remove('hidden');
+    $('#hub-title').textContent = 'Premio';
+
+    const balance = Number(state.coin_balance || 0);
+    const cost = Number(reward.coin_cost || 0);
+    const afford = balance >= cost;
+    const cat = reward.category ? (CATEGORY_LABELS[reward.category] || reward.category) : '';
+
+    $('#hub-main').innerHTML = `
+      <div class="hub-detail-hero">
+        <div class="hub-detail-logo placeholder">🎁</div>
+        <div>
+          <h2 class="hub-reward-name">${esc(reward.name)}</h2>
+          ${cat ? `<span class="hub-pga-category">${esc(cat)}</span>` : ''}
+        </div>
+      </div>
+      <div class="hub-discount-badge">${esc(String(cost))} coin</div>
+      ${reward.description ? `<div class="hub-field"><p>${esc(reward.description)}</p></div>` : ''}
+      <div class="hub-field">
+        <p class="hub-field-label">Il tuo saldo</p>
+        <p>${esc(String(balance))} coin${afford ? '' : ` — te ne mancano ${esc(String(cost - balance))}`}</p>
+      </div>
+      <button type="button" class="hub-btn" id="hub-redeem-btn" ${afford ? '' : 'disabled'}>
+        ${afford ? 'Riscatta' : 'Coin insufficienti'}
+      </button>
+      <p class="hub-pga-hint">Riscattando ricevi un <strong>codice da mostrare in cassa</strong>, valido pochi minuti. Nessun importo in denaro.</p>`;
+
+    const btn = $('#hub-redeem-btn');
+    btn?.addEventListener('click', () => {
+      showModal({
+        title: 'Confermi il riscatto?',
+        bodyHtml: `Verranno scalati <strong>${esc(String(cost))} coin</strong> e riceverai un codice da mostrare in cassa.`,
+        actions: [
+          { label: 'Riscatta', onClick: () => doRedeem(reward) },
+          { label: 'Annulla', secondary: true }
+        ]
+      });
+    });
   }
 
   function renderPga() {
@@ -1169,7 +1305,8 @@
     if (route.name === 'pga-detail') {
       renderTabBar('pga');
       setTabbarPadding(true);
-      renderPgaDetail(route.id);
+      if (hubIsAdsMode()) renderCoinReward(route.id);
+      else renderPgaDetail(route.id);
       return;
     }
     if (route.name === 'detail') {

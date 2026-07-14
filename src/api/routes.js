@@ -1295,6 +1295,16 @@ router.post('/redeem/preview', redeemRateLimiter, async (req, res) => {
     if (!brandSlug || !pin || (!checkoutCode && !serialNumber)) {
       return res.status(400).json({ valid: false, reason: 'Parametri mancanti' });
     }
+    // The till routes what the operator typed into `checkout_code` or `serial_number` by
+    // guessing on a hyphen (coupon codes have one, coin codes don't) — so a coin code can
+    // land in EITHER field. Try both against the coin flow first; it returns null when the
+    // code isn't one of ours, so coupons fall through and the till app is unchanged.
+    const { previewCoinRedemption } = require('../engine/coin-redeem');
+    const coin = await previewCoinRedemption({
+      brandSlug, merchantSlug, code: checkoutCode || serialNumber, pin
+    });
+    if (coin) return res.status(coin.valid ? 200 : 422).json(coin);
+
     const result = await previewCouponRedemption({
       brandSlug,
       merchantSlug,
@@ -1319,6 +1329,19 @@ router.post('/redeem/confirm', redeemRateLimiter, async (req, res) => {
     if (!brandSlug || !pin || (!checkoutCode && !serialNumber)) {
       return res.status(400).json({ valid: false, reason: 'Parametri mancanti' });
     }
+    // Coin-reward code first (may arrive in either field — see /redeem/preview). Returns
+    // null when it isn't one of ours, and the coupon flow takes over.
+    const { confirmCoinRedemption } = require('../engine/coin-redeem');
+    const coin = await confirmCoinRedemption({
+      brandSlug,
+      merchantSlug,
+      code: checkoutCode || serialNumber,
+      pin,
+      storeLabel: req.body.store_label,
+      operatorLabel: req.body.operator_label
+    });
+    if (coin) return res.status(coin.valid ? 200 : 422).json(coin);
+
     const result = await confirmCouponRedemption({
       brandSlug,
       merchantSlug,

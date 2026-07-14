@@ -740,6 +740,102 @@ body::after {
   font-size: 14px;
 }
 
+/* ── Till ticket: the code you show at the cash desk ─────── */
+.hub-reward-name {
+  margin: 0 0 6px;
+  font-family: var(--hub-display);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.hub-ticket {
+  position: relative;
+  padding: 30px 22px 26px;
+  border-radius: var(--hub-radius);
+  border: 1px solid var(--hub-accent-line);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--hub-accent) 12%, transparent), transparent 65%),
+    var(--hub-surface);
+  text-align: center;
+  animation: hub-rise 0.4s both;
+}
+.hub-ticket-label {
+  margin: 0 0 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--hub-muted);
+}
+.hub-ticket-reward {
+  margin: 0 0 20px;
+  font-family: var(--hub-display);
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--hub-text);
+}
+.hub-ticket-qr {
+  width: 210px;
+  height: 210px;
+  padding: 12px;
+  border-radius: var(--hub-radius-sm);
+  background: #fff;
+}
+.hub-ticket-code {
+  margin: 18px 0 0;
+  font-family: var(--hub-mono);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em; /* keep it optically centred despite the tracking */
+  color: var(--hub-accent);
+}
+.hub-ticket-timer {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hub-text);
+}
+.hub-ticket-hint {
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--hub-muted);
+}
+
+.hub-active-ticket {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: var(--hub-radius);
+  border: 1px solid var(--hub-accent-line);
+  background: var(--hub-accent-soft);
+  color: var(--hub-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hub-active-ticket-label {
+  flex: none;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hub-accent);
+}
+.hub-active-ticket-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 700; }
+.hub-active-ticket-code {
+  flex: none;
+  font-family: var(--hub-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--hub-accent);
+}
+
 /* ── Bottom tab bar: DEAL | COIN ─────────────────────────── */
 .hub-tabbar {
   position: fixed;

@@ -446,6 +446,54 @@ function registerHubPwaRoutes(router) {
     }
   });
 
+  // ── Coin rewards (Reclame): redeem → single-use code shown at the till ──
+  router.post('/hub/rewards/:id/redeem', async (req, res) => {
+    try {
+      const auth = resolveHubAuth(req);
+      if (auth.error) return res.status(auth.error.status).json({ error: auth.error.message });
+      if (auth.claims.preview) {
+        return res.status(403).json({ error: 'Anteprima: il riscatto richiede un pass reale', code: 'preview' });
+      }
+      const ctx = await loadHubContext(auth.claims);
+      if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
+
+      const { redeemReward } = require('../engine/coin-redeem');
+      const result = await redeemReward({
+        brandId: auth.claims.brand_id,
+        passSerial: auth.claims.pass_serial,
+        passId: ctx.pass?.id || null,
+        experienceId: req.params.id
+      });
+      res.status(201).json(result);
+    } catch (err) {
+      const status = err.code === 'insufficient_coins' || err.code === 'redemption_pending' ? 409
+        : err.code === 'reward_unavailable' ? 404
+          : err.code === 'bad_request' ? 400 : 500;
+      res.status(status).json({
+        error: err.message,
+        code: err.code || 'error',
+        balance: err.balance,
+        redemption: err.redemption
+      });
+    }
+  });
+
+  router.get('/hub/rewards/active-redemption', async (req, res) => {
+    try {
+      const auth = resolveHubAuth(req);
+      if (auth.error) return res.status(auth.error.status).json({ error: auth.error.message });
+      if (auth.claims.preview) return res.json({ redemption: null });
+      const ctx = await loadHubContext(auth.claims);
+      if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
+
+      const { getActiveRedemption } = require('../engine/coin-redeem');
+      const active = await getActiveRedemption(auth.claims.brand_id, auth.claims.pass_serial);
+      res.json(active || { redemption: null });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   router.get('/hub/qr-token', async (req, res) => {
     try {
       const auth = resolveHubAuth(req);

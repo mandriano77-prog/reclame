@@ -622,6 +622,34 @@ async function getDb() {
       UNIQUE(brand_id, serial_number, offer_id, merchant_id)
     )`).catch(logDdlError);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_redemption_codes_lookup ON redemption_codes(brand_id, merchant_id, offer_id)`).catch(logDdlError);
+
+    // Coin reward redemptions (Reclame): spending coins mints a single-use, short-lived code
+    // that the customer shows at the till. Deliberately separate from redemption_codes, which
+    // is the merchant-coupon flow (one per offer, no expiry).
+    await pool.query(`CREATE TABLE IF NOT EXISTS coin_redemptions (
+      id BIGSERIAL PRIMARY KEY,
+      brand_id TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      experience_id UUID NOT NULL REFERENCES experiences_catalog(id) ON DELETE CASCADE,
+      reward_name TEXT NOT NULL,
+      pass_id TEXT REFERENCES pass_instances(id) ON DELETE SET NULL,
+      serial_number TEXT NOT NULL,
+      code TEXT NOT NULL,
+      coins_spent INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      store_label TEXT,
+      operator_label TEXT,
+      ledger_id UUID,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(brand_id, code)
+    )`).catch(logDdlError);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_coin_redemptions_pending ON coin_redemptions(brand_id, status, expires_at)`).catch(logDdlError);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_coin_redemptions_serial ON coin_redemptions(brand_id, serial_number, status)`).catch(logDdlError);
+    // "One live code per customer" enforced by the DB, not by a check-then-insert: two taps
+    // racing each other cannot both mint a code (the loser hits this and gets refunded).
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS uniq_coin_redemption_live
+      ON coin_redemptions(brand_id, serial_number) WHERE status = 'pending'`).catch(logDdlError);
     await pool.query(`ALTER TABLE coupon_redemptions ADD COLUMN IF NOT EXISTS merchant_id UUID REFERENCES merchants(id) ON DELETE SET NULL`).catch(logDdlError);
     await pool.query(`ALTER TABLE coupon_redemptions ADD COLUMN IF NOT EXISTS checkout_code TEXT`).catch(logDdlError);
     await pool.query(`CREATE TABLE IF NOT EXISTS commercial_bookings (
@@ -4155,6 +4183,128 @@ async function atomicCancelBookingRefund({ bookingId, brandId, passSerial }) {
   }
 }
 
+/* ── Coin reward redemptions ─────────────────────────────────────────── */
+
+async function insertCoinRedemption({
+  brand_id, experience_id, reward_name, pass_id = null, serial_number,
+  code, coins_spent, expires_at, ledger_id = null
+}) {
+  const res = await pool.query(
+    `INSERT INTO coin_redemptions (
+      brand_id, experience_id, reward_name, pass_id, serial_number,
+      code, coins_spent, status, expires_at, ledger_id
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9)
+    RETURNING *`,
+    [brand_id, experience_id, reward_name, pass_id, serial_number, code, coins_spent, expires_at, ledger_id]
+  );
+  return res.rows[0];
+}
+
+/** The customer's one live code (if any) — we allow a single pending redemption at a time. */
+async function getActiveCoinRedemption(brandId, serialNumber) {
+  const res = await pool.query(
+    `SELECT * FROM coin_redemptions
+     WHERE brand_id = $1 AND serial_number = $2 AND status = 'pending' AND expires_at > NOW()
+     ORDER BY created_at DESC LIMIT 1`,
+    [brandId, serialNumber]
+  );
+  return res.rows[0] || null;
+}
+
+async function getCoinRedemptionByCode(brandId, code) {
+  const res = await pool.query(
+    'SELECT * FROM coin_redemptions WHERE brand_id = $1 AND code = $2',
+    [brandId, String(code || '').trim().toUpperCase()]
+  );
+  return res.rows[0] || null;
+}
+
+/**
+ * Burn the code. The WHERE clause is the guard: only a still-pending, still-valid row flips
+ * to 'used', so two tills scanning the same code at once can never both succeed.
+ */
+async function markCoinRedemptionUsed(brandId, code, { storeLabel = null, operatorLabel = null } = {}) {
+  const res = await pool.query(
+    `UPDATE coin_redemptions
+     SET status = 'used', used_at = NOW(), store_label = $3, operator_label = $4
+     WHERE brand_id = $1 AND code = $2 AND status = 'pending' AND expires_at > NOW()
+     RETURNING *`,
+    [brandId, String(code || '').trim().toUpperCase(), storeLabel, operatorLabel]
+  );
+  return res.rows[0] || null;
+}
+
+/**
+ * Expire codes nobody showed at the till and give the coins back.
+ *
+ * The flip to 'expired' and the refund happen in ONE transaction per row. If the refund
+ * insert fails we roll back, so the row stays 'pending' and the next sweep retries it —
+ * otherwise a failed credit would strand the customer's coins forever (the row would no
+ * longer match `status='pending'` and never be looked at again).
+ *
+ * The `UPDATE ... WHERE status='pending' RETURNING` is the claim: a concurrent sweep (cron
+ * vs. lazy) cannot grab the same row twice, so no double refund either.
+ */
+async function expireStaleCoinRedemptions(brandId = null) {
+  const params = [];
+  let scope = '';
+  if (brandId) {
+    params.push(brandId);
+    scope = ' AND brand_id = $1';
+  }
+  const candidates = await pool.query(
+    `SELECT id FROM coin_redemptions
+     WHERE status = 'pending' AND expires_at <= NOW()${scope}
+     LIMIT 500`,
+    params
+  );
+
+  let expired = 0;
+  let refunded = 0;
+  for (const { id } of candidates.rows) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const claim = await client.query(
+        `UPDATE coin_redemptions SET status = 'expired'
+         WHERE id = $1 AND status = 'pending' AND expires_at <= NOW()
+         RETURNING *`,
+        [id]
+      );
+      if (!claim.rows.length) {
+        await client.query('ROLLBACK');
+        continue; // someone else took it (or it was used in the meantime)
+      }
+      const row = claim.rows[0];
+      await client.query(
+        `INSERT INTO coin_ledger (
+          brand_id, pass_serial, user_id, action_key, coin_amount, description,
+          related_entity_type, related_entity_id, metadata
+        ) VALUES ($1,$2,NULL,'reward_refund',$3,$4,'coin_redemption',$5,$6::jsonb)`,
+        [
+          row.brand_id,
+          row.serial_number,
+          Math.abs(Number(row.coins_spent) || 0),
+          `Rimborso: "${row.reward_name}" non ritirato`,
+          // coin_ledger.related_entity_id is a UUID and the redemption id is a bigserial,
+          // so point at the reward and keep the redemption id in metadata.
+          row.experience_id,
+          JSON.stringify({ redemption_id: String(row.id), code: row.code })
+        ]
+      );
+      await client.query('COMMIT');
+      expired += 1;
+      refunded += 1;
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      console.warn('[coin] expiry+refund failed for redemption', id, '—', err.message, '(stays pending, will retry)');
+    } finally {
+      client.release();
+    }
+  }
+  return { expired, refunded };
+}
+
 async function getPassCoinBalance(brandId, passSerial) {
   const res = await pool.query(
     `SELECT balance, last_activity, total_accruals, total_redemptions
@@ -4888,6 +5038,11 @@ module.exports = {
   atomicDebitCoinLedger,
   atomicCancelBookingRefund,
   getPassCoinBalance,
+  insertCoinRedemption,
+  getActiveCoinRedemption,
+  getCoinRedemptionByCode,
+  markCoinRedemptionUsed,
+  expireStaleCoinRedemptions,
   getPgaSettings,
   upsertPgaSettings,
   seedExperiencesCatalog,

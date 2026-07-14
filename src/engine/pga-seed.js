@@ -85,31 +85,70 @@ const COIN_ACTIONS_DEFAULT = [
    A shopper is not an employee: they don't have work anniversaries and they
    don't book coaching. Coins are earned in the gallery and spent there. */
 
+/**
+ * Retail rewards — deliberately NO monetary value: no cash, no gift cards, no €-denominated
+ * vouchers. Coins buy small in-kind gifts, experiences, access/priority and status. Anything
+ * with a face value in euro is a legal minefield and stays out of the defaults on purpose.
+ */
 const RETAIL_DEFAULT_EXPERIENCES = [
+  // B — omaggi in-kind
   {
     key: 'caffe_omaggio', name: 'Caffè omaggio',
     description: 'Un caffè offerto in uno dei bar della galleria.',
     category: 'food', coin_cost: 80, internal: true, requires_booking: false, display_order: 10
   },
   {
-    key: 'parcheggio_3h', name: 'Parcheggio gratis · 3 ore',
-    description: 'Tre ore di sosta gratuita nel parcheggio.',
-    category: 'servizi', coin_cost: 120, internal: true, requires_booking: false, display_order: 20
+    key: 'dolce_omaggio', name: 'Dolce omaggio',
+    description: 'Un dolce a scelta dalla vetrina, offerto.',
+    category: 'food', coin_cost: 120, internal: true, requires_booking: false, display_order: 20
   },
   {
-    key: 'sconto_extra', name: 'Sconto extra 15%',
-    description: 'Un 15% aggiuntivo su un acquisto, cumulabile con le promo attive.',
-    category: 'retail', coin_cost: 200, internal: true, requires_booking: false, display_order: 30
+    key: 'campione_prodotto', name: 'Campione prodotto',
+    description: 'Un campione o una prova prodotto in un negozio aderente.',
+    category: 'retail', coin_cost: 100, internal: true, requires_booking: false, display_order: 30
+  },
+  // D — accesso e priorità
+  {
+    key: 'anteprima_saldi', name: 'Anteprima saldi · 24h prima',
+    description: 'Accedi ai saldi un giorno prima di tutti gli altri.',
+    category: 'retail', coin_cost: 300, internal: true, requires_booking: false, display_order: 40
   },
   {
-    key: 'buono_10', name: 'Buono spesa 10€',
-    description: 'Spendibile in tutti i negozi della galleria.',
-    category: 'retail', coin_cost: 250, internal: true, requires_booking: false, display_order: 40
+    key: 'fila_prioritaria', name: 'Fila prioritaria',
+    description: 'Salta la coda alla cassa dei negozi aderenti.',
+    category: 'servizi', coin_cost: 150, internal: true, requires_booking: false, display_order: 50
   },
+  {
+    key: 'invito_evento', name: 'Invito a evento privato',
+    description: 'Un posto al prossimo evento riservato della galleria.',
+    category: 'retail', coin_cost: 400, internal: true, requires_booking: true, display_order: 60
+  },
+  // C — esperienze
   {
     key: 'personal_shopper', name: 'Personal shopper · 1 ora',
     description: 'Un’ora con il personal shopper della galleria.',
-    category: 'retail', coin_cost: 600, internal: true, requires_booking: true, display_order: 50
+    category: 'retail', coin_cost: 600, internal: true, requires_booking: true, display_order: 70
+  },
+  {
+    key: 'beauty_session', name: 'Beauty session',
+    description: 'Una consulenza beauty su appuntamento.',
+    category: 'salute', coin_cost: 500, internal: true, requires_booking: true, display_order: 80
+  },
+  {
+    key: 'workshop', name: 'Workshop / laboratorio',
+    description: 'Un posto al prossimo laboratorio in galleria.',
+    category: 'retail', coin_cost: 450, internal: true, requires_booking: true, display_order: 90
+  },
+  // E — status (costa zero al merchant, fidelizza)
+  {
+    key: 'status_silver', name: 'Status Silver',
+    description: 'Badge Silver sul tuo pass e accesso alle promo riservate.',
+    category: 'retail', coin_cost: 700, internal: true, requires_booking: false, display_order: 100
+  },
+  {
+    key: 'status_gold', name: 'Status Gold',
+    description: 'Badge Gold sul tuo pass, promo riservate e priorità sugli eventi.',
+    category: 'retail', coin_cost: 1500, internal: true, requires_booking: false, display_order: 110
   }
 ];
 

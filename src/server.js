@@ -628,6 +628,21 @@ function startServer() {
     setInterval(() => runStripPromoCheck(), 60 * 60 * 1000);
     setTimeout(() => runStripPromoCheck(), 30 * 1000);
 
+    // Coin reward codes: expire the ones nobody showed at the till and give the coins back.
+    // The HUB also sweeps lazily, but a customer who never reopens it must still be refunded.
+    const sweepCoinRedemptions = async () => {
+      try {
+        const { expireStaleCoinRedemptions } = require('./db');
+        const out = await expireStaleCoinRedemptions();
+        if (out.expired) console.log(`🪙 Coin codes expired: ${out.expired}, refunded: ${out.refunded}`);
+      } catch (err) {
+        console.warn('[coin] expiry sweep failed:', err.message);
+      }
+    };
+    console.log('🪙 Coin redemption expiry sweep started (every 5 min)');
+    setInterval(sweepCoinRedemptions, 5 * 60 * 1000);
+    setTimeout(sweepCoinRedemptions, 45 * 1000);
+
     const { runActivationReminders } = require('./engine/hr-activation');
     const dbModule = require('./db');
     function hrReminderDb(dbCtx) {
