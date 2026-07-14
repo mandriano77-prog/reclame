@@ -44,6 +44,26 @@ function signHubToken({ user_id, pass_serial, brand_id }) {
   );
 }
 
+// Short-lived token for the admin "Anteprima HUB" button: no real pass behind it,
+// carries a `preview` claim so the HUB API serves brand-scoped content (merchants,
+// settings) without personal data. Only issuable by an authenticated admin endpoint.
+const HUB_PREVIEW_TTL_SEC = 60 * 60; // 1h
+
+function signHubPreviewToken({ brand_id }) {
+  if (!brand_id) throw new Error('brand_id is required for hub preview JWT');
+  return jwt.sign(
+    {
+      typ: 'hub',
+      preview: true,
+      user_id: null,
+      pass_serial: '__preview__',
+      brand_id: String(brand_id)
+    },
+    getHubSecret(),
+    { algorithm: 'HS256', expiresIn: HUB_PREVIEW_TTL_SEC }
+  );
+}
+
 function verifyHubToken(token) {
   if (!token || typeof token !== 'string') return null;
   try {
@@ -52,7 +72,8 @@ function verifyHubToken(token) {
     return {
       user_id: decoded.user_id || null,
       pass_serial: String(decoded.pass_serial),
-      brand_id: String(decoded.brand_id)
+      brand_id: String(decoded.brand_id),
+      preview: decoded.preview === true
     };
   } catch {
     return null;
@@ -74,9 +95,11 @@ function buildHubAppUrl(token, brandSlug, appPath = '') {
 
 module.exports = {
   HUB_TOKEN_TTL_SEC,
+  HUB_PREVIEW_TTL_SEC,
   getHubSecret,
   getHubBaseUrl,
   signHubToken,
+  signHubPreviewToken,
   verifyHubToken,
   buildHubUrl,
   buildHubAppUrl

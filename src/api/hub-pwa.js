@@ -37,6 +37,22 @@ function parseFieldValues(raw) {
 }
 
 async function loadHubContext(claims) {
+  // Admin preview: no real pass behind the token — serve brand-scoped content only,
+  // with an empty profile (no personal data).
+  if (claims.preview) {
+    const [brand, settings] = await Promise.all([
+      db.getBrand(claims.brand_id),
+      db.getHubSettings(claims.brand_id)
+    ]);
+    if (!brand) return { error: { status: 404, message: 'Brand non trovato' } };
+    return {
+      pass: null,
+      brand,
+      settings,
+      profile: { user_id: null, pass_serial: null, pass_id: null, member_id: null, preview: true }
+    };
+  }
+
   const pass = await db.getPassBySerial(claims.pass_serial);
   if (!pass) return { error: { status: 403, message: 'Pass non trovato' } };
   if (String(pass.brand_id) !== String(claims.brand_id)) {
@@ -282,7 +298,7 @@ function registerHubPwaRoutes(router) {
       const pgaSettings = await db.getPgaSettings(auth.claims.brand_id);
       let coinBalance = 0;
       let experiences = [];
-      if (pgaSettings.enabled) {
+      if (pgaSettings.enabled && !auth.claims.preview) {
         const bal = await db.getPassCoinBalance(auth.claims.brand_id, auth.claims.pass_serial);
         coinBalance = Number(bal.balance || 0);
         experiences = await db.listExperiences(auth.claims.brand_id, { active: true });

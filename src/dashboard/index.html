@@ -3050,6 +3050,7 @@
                             </select>
                         </div>
                         <div class="fd-conventions-toolbar__actions">
+                            <button type="button" class="btn sec small" id="hubPreviewBtn" data-allow-readonly="true" onclick="openHubPreview(this)" title="Apri l'HUB come lo vede chi ha il pass">Anteprima HUB</button>
                             <button type="button" class="btn sec small fd-rbac-write" id="hubMerchantTemplateBtn" data-allow-readonly="true">Scarica template</button>
                             <button type="button" class="btn sec small fd-rbac-write" id="hubMerchantImportBtn">Importa CSV</button>
                             <input type="file" id="hubMerchantCsvInput" accept=".csv,text/csv" hidden>
@@ -3924,6 +3925,26 @@ function getAuthHeaders() {
     const h = {};
     if (t) h.Authorization = `Bearer ${t}`;
     return h;
+}
+
+/** Open the HUB PWA as a pass holder would see it, using a short-lived preview token. */
+async function openHubPreview(btn) {
+    if (!brandId) { toast('Seleziona un brand'); return; }
+    // Open the tab synchronously so it isn't blocked as a popup, then redirect after fetch.
+    const win = window.open('', '_blank');
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch(`${API}/brands/${encodeURIComponent(brandId)}/hub/preview-url`, { headers: getAuthHeaders() });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.url) throw new Error(data.error || `Errore ${res.status}`);
+        if (win) win.location.href = data.url;
+        else window.open(data.url, '_blank');
+    } catch (e) {
+        if (win) win.close();
+        toast(e.message || 'Impossibile aprire l\'anteprima HUB');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
 }
 
 function getDashboardFetchHeaders() {

@@ -15,12 +15,14 @@ const {
   getHubSettings,
   upsertHubSettings,
   findMerchantByNameAndBrand,
+  getBrand,
   createMerchantLocation: dbCreateMerchantLocation
 } = require('../db');
 const {
   parseMerchantCsvText,
   importMerchantsFromCsvRows
 } = require('../engine/hub-csv-import');
+const { signHubPreviewToken, buildHubUrl } = require('../engine/hub-jwt');
 
 const hubDb = {
   createMerchant,
@@ -68,6 +70,21 @@ function registerHubMerchantRoutes(router, { requireBrandId, requireOwnedBrandPk
       if (!requireBrandId(req, res, brand_id)) return;
       const merchants = await listMerchants(brand_id, { category, active, search });
       res.json(merchants);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin "Anteprima HUB": mint a short-lived preview token and return the HUB PWA URL
+  // so the admin can see the merchant hub as a pass holder would, without a real pass.
+  router.get('/brands/:brand_id/hub/preview-url', async (req, res) => {
+    try {
+      const brand_id = req.params.brand_id;
+      if (!requireBrandId(req, res, brand_id)) return;
+      const brand = await getBrand(brand_id);
+      if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+      const token = signHubPreviewToken({ brand_id });
+      res.json({ url: buildHubUrl(token, brand.slug) });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
