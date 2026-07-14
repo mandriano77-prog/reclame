@@ -445,8 +445,9 @@ app.get('/game/puzzle/:serial_number', (req, res) => {
 const {
   getBrand, getBrandBySlug, getCampaign, getTemplate, listTemplates,
   getPassInstance,
-  createPassInstance, logEvent, incrementCampaignDownloads
+  createPassInstance, updatePassInstance, logEvent, incrementCampaignDownloads
 } = require('./db');
+const googleWallet = require('./engine/google-wallet');
 const { renderSaveThankYouPage, resolvePortalHref } = require('./engine/thank-you-html');
 const { isPortalPassBrand } = require('./engine/pass-product-line');
 
@@ -502,21 +503,50 @@ app.get('/save/:slug/:campaignId?', async (req, res) => {
       if (req.query[k]) utm[k.replace('utm_', '')] = req.query[k];
     });
 
-    // Create anonymous pass with browser metadata
-    const passInstance = await createPassInstance({
+    const ua = req.headers['user-agent'] || '';
+    const isAndroid = /android/i.test(ua);
+    const passFields = {
       template_id: template.id,
       brand_id: brand.id,
       campaign_id: campaignId || null,
       field_values: {},
       utm,
-      user_agent: req.headers['user-agent'] || null,
+      user_agent: ua || null,
       referrer_url: req.headers['referer'] || null
-    });
+    };
+    const landingQs = req.originalUrl.includes('?') ? '?' + req.originalUrl.split('?')[1] : '';
 
+    // Android: the Apple .pkpass thank-you is a dead end (Android can't open it). Hand off
+    // straight to Google Wallet so scanning the QR adds the pass automatically.
+    if (isAndroid && googleWallet.isConfigured()) {
+      try {
+        const passInstance = await createPassInstance(passFields);
+        await logEvent({ pass_id: passInstance.id, brand_id: brand.id, event_type: 'pass_created', metadata: { source: 'direct_save_android', campaign_id: campaignId, utm } });
+        if (campaignId) await incrementCampaignDownloads(campaignId);
+        const passObject = await googleWallet.buildPassObject(brand, template, passInstance, passInstance.customer_data || {});
+        await googleWallet.ensurePassReadyOnServer(brand, template, passObject);
+        const saveLink = googleWallet.generateSaveLink(brand, template, passObject);
+        await updatePassInstance(passInstance.id, {
+          google_wallet_object_id: passObject.id,
+          google_wallet_saved: false,
+          google_installed_at: null
+        });
+        await logEvent({ brand_id: brand.id, pass_id: passInstance.id, event_type: 'google_wallet_link_generated', metadata: { source: 'direct_save_android' } });
+        return res.redirect(302, saveLink);
+      } catch (gErr) {
+        console.warn('[save] Android Google Wallet handoff failed, falling back to landing:', gErr.message);
+        return res.redirect(302, `/${encodeURIComponent(slug)}${landingQs}`);
+      }
+    }
+    if (isAndroid) {
+      // Google Wallet not configured → the landing surfaces Samsung/other wallet options.
+      return res.redirect(302, `/${encodeURIComponent(slug)}${landingQs}`);
+    }
+
+    // iOS / desktop → Apple pass auto-download confirmation page.
+    const passInstance = await createPassInstance(passFields);
     await logEvent({ pass_id: passInstance.id, brand_id: brand.id, event_type: 'pass_created', metadata: { source: 'direct_save', campaign_id: campaignId, utm } });
     if (campaignId) await incrementCampaignDownloads(campaignId);
-
-    // Serve confirmation page that auto-downloads the .pkpass via API
     return await renderThankYouForPass(res, passInstance.id);
 
   } catch (err) {
