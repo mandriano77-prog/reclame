@@ -384,7 +384,7 @@
       renderTopMerchants();
       renderMerchantsTable();
     } catch (err) {
-      toast(err.message || 'Errore caricamento convenzioni');
+      toast(err.message || 'Errore caricamento merchant');
       var tbody = document.querySelector('#hubMerchantsTable tbody');
       if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text2);padding:24px;text-align:center">Errore di caricamento. Riprova.</td></tr>';
     }
