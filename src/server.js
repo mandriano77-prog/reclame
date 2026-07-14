@@ -107,6 +107,22 @@ app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/shared', express.static(path.join(__dirname, 'shared')));
 
+// On-the-fly placeholder merchant logo (initials + category color) — real PNG on our
+// domain, usable as merchant logo_url in the HUB and on Google Wallet.
+// e.g. /assets/logo-placeholder?t=MM&cat=retail  (or &c=6C5CE7 for an explicit color)
+const { renderPlaceholderLogo, colorForCategory } = require('./engine/placeholder-logo');
+app.get('/assets/logo-placeholder', async (req, res) => {
+  try {
+    const bg = req.query.c || colorForCategory(req.query.cat) || undefined;
+    const png = await renderPlaceholderLogo({ text: req.query.t, bg, size: req.query.s });
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=86400');
+    return res.send(png);
+  } catch (err) {
+    return res.status(400).send('bad logo params');
+  }
+});
+
 // Apple Wallet debug (public, no auth) — must be before debug router
 app.get('/debug/wallet-check', requireDebugAccess, async (req, res) => {
   try {
