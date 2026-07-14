@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" id="themeColor" content="#0D0B1A">
-  <title>FiloDiretto</title>
+  <title>Aggiungi il pass al Wallet</title>
   <meta name="description" content="Aggiungi il pass al tuo Wallet">
   <link rel="canonical" id="canonicalLink" href="">
   <script src="/public/boot.js"></script>
@@ -258,7 +258,7 @@
   <div class="top">
     <div class="brand-row">
       <span class="brand-dot"></span>
-      <span>Powered by FiloDiretto</span>
+      <span id="poweredByLabel">Powered by Reclame</span>
     </div>
   </div>
 
@@ -316,8 +316,8 @@
     <div class="icon-circle" aria-hidden="true">&#10003;</div>
     <h1>Benvenuto in <span id="tyBrand">Wallet</span>.</h1>
     <p class="body-copy">Se il pass non si è aperto da solo, tocca «Scarica di nuovo» qui sotto.<br>
-    Stai attivando il <strong>filo diretto</strong> con <span id="tyBrandInline">Wallet</span>: le comunicazioni arrivano direttamente sulla lock-screen del tuo iPhone — niente email, niente intranet.</p>
-    <p class="muted">Puoi gestire cosa ricevere dal tuo profilo personale, in qualsiasi momento.</p>
+    Il pass di <span id="tyBrandInline">Wallet</span> è ora nel tuo Wallet: offerte e novità arrivano direttamente sulla lock-screen del tuo iPhone — niente app da scaricare.</p>
+    <p class="muted">Puoi gestire cosa ricevere in qualsiasi momento.</p>
     <div class="cta-stack">
       <a class="btn-primary" id="tyPortalBtn" href="/portal/">Apri il mio profilo →</a>
       <a class="link-secondary" id="tyDownloadLink" href="#">Pass non installato? Scarica di nuovo</a>
@@ -417,7 +417,10 @@
             brandDisplayName = brand.name;
             el.logoLetter.textContent = brand.name.charAt(0).toUpperCase();
             el.brandName.textContent = brand.name;
-            document.title = `${brand.name} · ${(window.__PRODUCT_BRAND_NAME__ || 'FiloDiretto')}`;
+            var productName = window.__PRODUCT_BRAND_NAME__ || 'Reclame';
+            document.title = `${brand.name} · ${productName}`;
+            var poweredBy = document.getElementById('poweredByLabel');
+            if (poweredBy) poweredBy.textContent = `Powered by ${productName}`;
             try {
               const pubBase = (window.__PUBLIC_BASE_URL__ || window.location.origin || '').replace(/\/+$/, '');
               const landingUrl = pubBase ? `${pubBase}/${slug}` : `/${slug}`;

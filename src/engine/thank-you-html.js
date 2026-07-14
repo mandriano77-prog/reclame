@@ -1,6 +1,10 @@
 /**
- * Filodiretto — shared thank-you page markup & styles (post wallet install).
+ * Shared thank-you page markup & styles (post wallet install). Product-neutral: the
+ * platform name comes from getProductBrandName() (e.g. "Reclame Media" on the ads deploy,
+ * "FiloDiretto" on the HR one), never hardcoded.
  */
+
+const { getProductBrandName } = require('./base-url');
 
 function escapeHtml(value) {
   return String(value == null ? '' : value)
@@ -13,7 +17,7 @@ function escapeHtml(value) {
 
 function getThankYouFooter() {
   const custom = String(process.env.WHITE_LABEL_FOOTER || '').trim();
-  return custom || 'Powered by Filodiretto';
+  return custom || `Powered by ${getProductBrandName()}`;
 }
 
 function normalizeHexColor(value) {
@@ -231,7 +235,7 @@ function renderSaveThankYouPage({
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="theme-color" content="#0A0A0A">
-  <title>${safeBrand} · Filo Diretto</title>
+  <title>${safeBrand} · ${escapeHtml(getProductBrandName())}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>${thankYouStyles()}</style>
   <style>${brandVars}</style>
