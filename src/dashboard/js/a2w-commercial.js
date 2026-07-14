@@ -400,6 +400,168 @@
     }
   }
 
+  // ---- Custom package editor ----
+  var commercialFormats = {
+    push_lockscreen: 'Push lockscreen',
+    hub_sponsored: 'HUB sponsor',
+    geofence_recall: 'Geofence recall',
+    coupon_cpa: 'Coupon CPA'
+  };
+
+  function pkgErr(msg) {
+    var el = document.getElementById('commercialPackagesError');
+    if (!el) return;
+    if (msg) {
+      el.textContent = msg;
+      el.style.display = 'block';
+    } else {
+      el.textContent = '';
+      el.style.display = 'none';
+    }
+  }
+
+  function slotInputsHtml(inventory) {
+    inventory = inventory || {};
+    return Object.keys(commercialFormats).map(function (f) {
+      var n = parseInt(inventory[f], 10);
+      if (!Number.isFinite(n) || n < 0) n = 0;
+      return '<label class="a2w-pkg-slot">' + esc(commercialFormats[f]) +
+        '<input type="number" class="pkg-slot" data-format="' + esc(f) + '" min="0" max="9999" value="' + n + '"></label>';
+    }).join('');
+  }
+
+  function packageRowHtml(pkg) {
+    pkg = pkg || {};
+    var euros = pkg.suggested_price_cents != null ? Math.round(Number(pkg.suggested_price_cents) / 100) : '';
+    // Carry the existing key so renaming a package keeps its identity (bookings
+    // reference package_key); new rows have no key and get a label-derived slug server-side.
+    return '<div class="a2w-pkg-row" data-key="' + esc(pkg.key || '') + '">' +
+      '<div class="a2w-pkg-row__head">' +
+        '<input type="text" class="pkg-label" maxlength="60" placeholder="Nome pacchetto *" value="' + esc(pkg.label || '') + '">' +
+        '<button type="button" class="btn sec small" onclick="removeCommercialPackageRow(this)">Rimuovi</button>' +
+      '</div>' +
+      '<input type="text" class="pkg-desc" maxlength="160" placeholder="Descrizione (opzionale)" value="' + esc(pkg.description || '') + '">' +
+      '<label class="a2w-pkg-price">Prezzo indicativo (€)<input type="number" class="pkg-price" min="0" value="' + esc(euros) + '"></label>' +
+      '<div class="a2w-pkg-row__slots">' + slotInputsHtml(pkg.inventory) + '</div>' +
+    '</div>';
+  }
+
+  function addCommercialPackageRow(pkg) {
+    var host = document.getElementById('commercialPackagesEditor');
+    if (!host) return;
+    var wrap = document.createElement('div');
+    wrap.innerHTML = packageRowHtml(pkg);
+    var row = wrap.firstChild;
+    host.appendChild(row);
+    var label = row.querySelector('.pkg-label');
+    if (label) label.focus();
+  }
+
+  function removeCommercialPackageRow(btn) {
+    var row = btn.closest('.a2w-pkg-row');
+    if (row) row.remove();
+  }
+
+  function renderPackageEditor(packages) {
+    var host = document.getElementById('commercialPackagesEditor');
+    if (!host) return;
+    host.innerHTML = '';
+    (packages || []).forEach(function (p) { addCommercialPackageRow(p); });
+  }
+
+  async function openCommercialPackagesModal() {
+    var bid = brandId();
+    if (!bid) { toast('Seleziona un brand'); return; }
+    pkgErr('');
+    var host = document.getElementById('commercialPackagesEditor');
+    if (host) host.innerHTML = '<p style="color:var(--text2);">Caricamento…</p>';
+    var modal = document.getElementById('commercialPackagesModal');
+    if (modal) modal.classList.add('active');
+    document.body.classList.add('modal-open');
+    try {
+      var r = await fetch(API + '/brands/' + encodeURIComponent(bid) + '/commercial/packages', { headers: authHeaders() });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      var data = await r.json();
+      if (data.formats && typeof data.formats === 'object') commercialFormats = data.formats;
+      // Only prefill the editor with rows when the brand already has a custom catalog;
+      // otherwise start empty so saving nothing keeps the standard presets.
+      renderPackageEditor(data.custom ? data.packages : []);
+      if (!data.custom && host) {
+        host.insertAdjacentHTML('afterbegin',
+          '<p style="color:var(--text2);font-size:13px;margin:0 0 10px;">Questo retailer usa i preset standard. Aggiungi pacchetti per personalizzarli.</p>');
+      }
+    } catch (e) {
+      console.error('openCommercialPackagesModal', e);
+      if (host) host.innerHTML = '<p style="color:var(--danger,#c0392b);">Impossibile caricare i pacchetti.</p>';
+    }
+  }
+
+  function collectPackages() {
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#commercialPackagesEditor .a2w-pkg-row'));
+    return rows.map(function (row) {
+      var inventory = {};
+      Array.prototype.slice.call(row.querySelectorAll('.pkg-slot')).forEach(function (inp) {
+        var n = parseInt(inp.value, 10);
+        inventory[inp.dataset.format] = Number.isFinite(n) && n > 0 ? n : 0;
+      });
+      var priceEuros = parseInt((row.querySelector('.pkg-price') || {}).value, 10);
+      return {
+        key: row.dataset.key || '',
+        label: (row.querySelector('.pkg-label') || {}).value || '',
+        description: (row.querySelector('.pkg-desc') || {}).value || '',
+        inventory: inventory,
+        suggested_price_cents: Number.isFinite(priceEuros) && priceEuros > 0 ? priceEuros * 100 : 0
+      };
+    });
+  }
+
+  async function putPackages(packages) {
+    var bid = brandId();
+    if (!bid) { toast('Seleziona un brand'); return false; }
+    var btn = document.getElementById('commercialSavePackagesBtn');
+    if (btn) btn.disabled = true;
+    try {
+      var r = await fetch(API + '/brands/' + encodeURIComponent(bid) + '/commercial/packages', {
+        method: 'PUT',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify({ packages: packages })
+      });
+      var data = await r.json().catch(function () { return {}; });
+      if (!r.ok) { pkgErr(data.error || ('Errore ' + r.status)); return false; }
+      pkgErr('');
+      closeModal('commercialPackagesModal');
+      toast(packages.length ? 'Pacchetti aggiornati' : 'Ripristinati i preset standard');
+      loadCommercialCalendar();
+      return true;
+    } catch (e) {
+      console.error('putPackages', e);
+      pkgErr('Errore di rete durante il salvataggio.');
+      return false;
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function saveCommercialPackages() {
+    var packages = collectPackages();
+    // Client-side mirror of the server validation for immediate feedback.
+    var seen = {};
+    for (var i = 0; i < packages.length; i++) {
+      var p = packages[i];
+      if (!p.label.trim()) { pkgErr('Ogni pacchetto deve avere un nome.'); return; }
+      var hasSlot = Object.keys(p.inventory).some(function (f) { return p.inventory[f] > 0; });
+      if (!hasSlot) { pkgErr('Il pacchetto "' + p.label + '" deve includere almeno uno slot.'); return; }
+      var key = p.label.trim().toLowerCase();
+      if (seen[key]) { pkgErr('Nome pacchetto duplicato: ' + p.label); return; }
+      seen[key] = true;
+    }
+    putPackages(packages);
+  }
+
+  function resetCommercialPackagesToPresets() {
+    putPackages([]);
+  }
+
   function init() {
     if (!document.documentElement.classList.contains('a2w-shell')) return;
     wireCommercialForm();
@@ -407,6 +569,11 @@
 
   global.loadCommercialCalendar = loadCommercialCalendar;
   global.loadAudiencePresets = loadAudiencePresets;
+  global.openCommercialPackagesModal = openCommercialPackagesModal;
+  global.addCommercialPackageRow = addCommercialPackageRow;
+  global.removeCommercialPackageRow = removeCommercialPackageRow;
+  global.saveCommercialPackages = saveCommercialPackages;
+  global.resetCommercialPackagesToPresets = resetCommercialPackagesToPresets;
   global.A2W = global.A2W || {};
   global.A2W.loadCommercialCalendar = loadCommercialCalendar;
 

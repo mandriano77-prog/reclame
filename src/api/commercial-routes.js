@@ -5,6 +5,7 @@ const {
   createCommercialBooking,
   updateBookingStatus,
   listPackages,
+  saveBrandPackages,
   FORMAT_LABELS,
   listCommercialBillingEntries,
   updateBillingEntryStatus,
@@ -12,12 +13,45 @@ const {
   getBookingPerformance,
   getTenantPerformanceSummary,
 } = require('../engine/reclame-commercial');
+const { getBrand } = require('../db');
 const { listAudiencePresets, getAudiencePreset } = require('../engine/audience-presets');
 const { countAudienceMembers } = require('../engine/audiences');
 
 function registerCommercialRoutes(router, { requireBrandId, requireWriteAccess }) {
   router.get('/commercial/packages', (_req, res) => {
     res.json({ packages: listPackages(), formats: FORMAT_LABELS });
+  });
+
+  // Brand's effective package catalog (custom if configured, else the default presets).
+  router.get('/brands/:brand_id/commercial/packages', async (req, res) => {
+    try {
+      const brand_id = req.params.brand_id;
+      if (!requireBrandId(req, res, brand_id)) return;
+      const brand = await getBrand(brand_id);
+      if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+      const custom = Array.isArray(brand.config && brand.config.commercial_packages)
+        && brand.config.commercial_packages.length > 0;
+      res.json({ packages: listPackages(brand), formats: FORMAT_LABELS, custom });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Save the brand's custom package catalog (send [] to revert to the presets).
+  router.put('/brands/:brand_id/commercial/packages', async (req, res) => {
+    try {
+      const brand_id = req.params.brand_id;
+      if (!requireBrandId(req, res, brand_id)) return;
+      if (!requireWriteAccess(req, res)) return;
+      const packages = Array.isArray(req.body) ? req.body : req.body && req.body.packages;
+      if (!Array.isArray(packages)) {
+        return res.status(400).json({ error: 'Attesa una lista di pacchetti' });
+      }
+      const saved = await saveBrandPackages(brand_id, packages);
+      res.json({ packages: saved.packages, formats: FORMAT_LABELS, custom: saved.custom });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   router.get('/brands/:brand_id/commercial/calendar', async (req, res) => {

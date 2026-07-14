@@ -52,12 +52,92 @@ const FORMAT_LABELS = Object.freeze({
 const DEFAULT_TAKE_RATE_PCT = Number(process.env.RECLAME_TAKE_RATE_PCT || 15);
 const DEFAULT_RETAILER_SHARE_PCT = Number(process.env.RECLAME_RETAILER_SHARE_PCT || 70);
 
-function listPackages() {
-  return Object.values(PACKAGE_CATALOG);
+const FORMAT_KEYS = Object.keys(FORMAT_LABELS);
+
+// Ceilings so a single bad/hostile payload can't persist absurd values.
+const MAX_PACKAGES = 50;
+const MAX_SLOTS = 9999;
+const MAX_PRICE_CENTS = 100000000; // €1M
+
+function slugify(s) {
+  return String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
 }
 
-function getPackage(key) {
-  return PACKAGE_CATALOG[String(key || '').toLowerCase()] || null;
+/** Sanitize one custom package definition into the canonical shape. Returns null if unusable. */
+function normalizePackage(raw, idx = 0) {
+  if (!raw || typeof raw !== 'object') return null;
+  // Prefer an explicit key; else derive a stable slug from the label so keys
+  // don't shift with array position when the catalog is reordered/edited.
+  let key = String(raw.key || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  if (!key) key = slugify(raw.label);
+  if (!key) key = `pkg_${idx + 1}`;
+  const label = (String(raw.label || '').trim().slice(0, 60)) || key;
+  const description = String(raw.description || '').trim().slice(0, 160);
+  const inventory = {};
+  FORMAT_KEYS.forEach((f) => {
+    const n = parseInt(raw.inventory ? raw.inventory[f] : undefined, 10);
+    inventory[f] = Number.isFinite(n) && n >= 0 ? Math.min(n, MAX_SLOTS) : 0;
+  });
+  const price = parseInt(raw.suggested_price_cents, 10);
+  return {
+    key,
+    label,
+    description,
+    inventory,
+    suggested_price_cents: Number.isFinite(price) && price >= 0 ? Math.min(price, MAX_PRICE_CENTS) : 0,
+  };
+}
+
+/** Brand's custom packages from config (validated), or null to fall back to the presets. */
+function getBrandPackages(brand) {
+  const raw = brand && brand.config && brand.config.commercial_packages;
+  if (!Array.isArray(raw) || !raw.length) return null;
+  const seen = new Set();
+  const out = [];
+  raw.forEach((p, i) => {
+    const norm = normalizePackage(p, i);
+    if (!norm || seen.has(norm.key)) return;
+    if (!FORMAT_KEYS.some((f) => norm.inventory[f] > 0)) return; // package must bundle at least one slot
+    seen.add(norm.key);
+    out.push(norm);
+  });
+  return out.length ? out : null;
+}
+
+/** Effective packages for a brand: its custom set if any, else the default presets. */
+function listPackages(brand) {
+  return getBrandPackages(brand) || Object.values(PACKAGE_CATALOG);
+}
+
+function getPackage(brand, key) {
+  const k = String(key || '').toLowerCase();
+  return listPackages(brand).find((p) => p.key === k) || null;
+}
+
+/** Persist a brand's custom package catalog (empty array reverts to the presets). */
+async function saveBrandPackages(brandId, packages) {
+  const brand = await getBrand(brandId);
+  if (!brand) throw new Error('Brand non trovato');
+  if (!Array.isArray(packages)) throw new Error('packages deve essere un array');
+  if (packages.length > MAX_PACKAGES) throw new Error(`Massimo ${MAX_PACKAGES} pacchetti`);
+  const seen = new Set();
+  const normalized = [];
+  packages.forEach((p, i) => {
+    const norm = normalizePackage(p, i);
+    if (!norm) return;
+    if (seen.has(norm.key)) throw new Error(`Chiave pacchetto duplicata: ${norm.key}`);
+    if (!FORMAT_KEYS.some((f) => norm.inventory[f] > 0)) {
+      throw new Error(`Il pacchetto "${norm.label}" deve includere almeno uno slot`);
+    }
+    seen.add(norm.key);
+    normalized.push(norm);
+  });
+  const cfg = brand.config || {};
+  cfg.commercial_packages = normalized;
+  await updateBrand(brandId, { config: cfg });
+  // `custom` reflects what was actually persisted, not the raw request (elements
+  // may have been dropped), so the caller can report the true state.
+  return { packages: listPackages({ config: cfg }), custom: normalized.length > 0 };
 }
 
 function computeBillingSplit(grossCents, retailerSharePct = DEFAULT_RETAILER_SHARE_PCT, takeRatePct = DEFAULT_TAKE_RATE_PCT) {
@@ -137,7 +217,7 @@ async function getCommercialCalendar(brandId, { from, to } = {}) {
   const takeRate = brand?.config?.reclame_take_rate_pct ?? DEFAULT_TAKE_RATE_PCT;
   const retailerShare = brand?.config?.retailer_share_pct ?? DEFAULT_RETAILER_SHARE_PCT;
   const booked = await countBookingsByFormat(brandId, { from, to });
-  const packages = listPackages();
+  const packages = listPackages(brand);
   const formatCapacities = {};
   Object.keys(FORMAT_LABELS).forEach((f) => {
     formatCapacities[f] = getFormatCapacity(brand, f);
@@ -194,7 +274,8 @@ async function listCommercialBookings(brandId, { status, from, to, limit = 100 }
 }
 
 async function createCommercialBooking(brandId, data) {
-  const pkg = getPackage(data.package_key);
+  const brandForPkg = await getBrand(brandId);
+  const pkg = getPackage(brandForPkg, data.package_key);
   if (!pkg) throw new Error('Pacchetto non valido');
   const format = String(data.format || '').trim();
   if (!FORMAT_LABELS[format]) throw new Error('Formato non valido');
@@ -454,8 +535,12 @@ async function exportCommercialBillingCsv(brandId) {
 module.exports = {
   PACKAGE_CATALOG,
   FORMAT_LABELS,
+  FORMAT_KEYS,
   listPackages,
   getPackage,
+  normalizePackage,
+  getBrandPackages,
+  saveBrandPackages,
   computeBillingSplit,
   getFormatCapacity,
   assertFormatInventoryAvailable,

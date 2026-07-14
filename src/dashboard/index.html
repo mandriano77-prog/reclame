@@ -2945,7 +2945,10 @@
                     <button type="button" class="btn sec fd-rbac-write" id="commercialBillingExport">⬇ Export fatturazione CSV</button>
                 </div>
                 <div class="stats-grid a2w-commercial-grid" id="commercialBilling"></div>
-                <div class="sec-title" style="font-size:15px;margin:20px 0 10px;">Inventory pacchetti <span style="font-weight:400;font-size:12px;color:var(--text2);">(prenotato / capacità retailer)</span></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px;gap:12px;flex-wrap:wrap;">
+                    <div class="sec-title" style="font-size:15px;margin:0;">Inventory pacchetti <span style="font-weight:400;font-size:12px;color:var(--text2);">(prenotato / capacità retailer)</span></div>
+                    <button type="button" class="btn sec small fd-rbac-write" id="commercialManagePackagesBtn" onclick="openCommercialPackagesModal()">Gestisci pacchetti</button>
+                </div>
                 <div id="commercialPackages" class="a2w-commercial-grid"></div>
                 <div class="card" style="margin:20px 0;">
                     <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Prenotazioni e performance tenant</div>
@@ -3378,6 +3381,27 @@
             <div class="a2w-campaign-modal-actions__secondary">
                 <button type="button" class="btn sec" onclick="saveCampaign(true)" title="Salva la campagna e apri subito il caricamento della strip promozionale">Salva e carica strip</button>
                 <p class="a2w-campaign-modal-actions__hint">Come «Salva campagna», più upload immediato della strip promozionale per il pass.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Commercial Packages Editor Modal -->
+<div id="commercialPackagesModal" class="modal" data-rbac-section="commercial">
+    <div class="modal-content" style="max-width:720px;width:96%;">
+        <button type="button" class="modal-close" onclick="closeModal('commercialPackagesModal')" aria-label="Chiudi modale pacchetti">&times;</button>
+        <div class="modal-header">Gestisci pacchetti commerciali</div>
+        <p style="color:var(--text2);font-size:13px;margin:0 0 14px;">Definisci i pacchetti su misura per questo retailer: nome, descrizione, prezzo indicativo e slot per ciascun formato. Ogni pacchetto deve includere almeno uno slot. Salva vuoto (rimuovi tutti) per tornare ai preset standard.</p>
+        <div id="commercialPackagesEditor" class="a2w-pkg-editor"></div>
+        <div style="margin:12px 0;">
+            <button type="button" class="btn sec small" id="commercialAddPackageBtn" onclick="addCommercialPackageRow()">+ Aggiungi pacchetto</button>
+        </div>
+        <div id="commercialPackagesError" style="display:none;color:var(--danger,#c0392b);font-size:13px;margin:8px 0;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;border-top:1px solid var(--border,#e5e7eb);padding-top:14px;">
+            <button type="button" class="btn sec small" onclick="resetCommercialPackagesToPresets()" title="Rimuove i pacchetti personalizzati e ripristina i preset standard">Ripristina preset standard</button>
+            <div style="display:flex;gap:8px;">
+                <button type="button" class="btn sec" onclick="closeModal('commercialPackagesModal')">Annulla</button>
+                <button type="button" class="btn a2w-btn-primary" id="commercialSavePackagesBtn" onclick="saveCommercialPackages()">Salva pacchetti</button>
             </div>
         </div>
     </div>
