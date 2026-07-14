@@ -730,15 +730,6 @@ function generatePassJson(template, instance, brand, options = {}) {
     orderedBackFields.push(makeBackLinkField('portal_link', 'Il mio profilo', portalUrl));
   }
 
-  if (hubUrl && !pushBackMode) {
-    const adsHub = isAdsPassBrand(brand);
-    if (adsHub) {
-      orderedBackFields.push(makeBackLinkField('hub_offers', 'Scopri le offerte', hubUrl, { ctaOnly: true }));
-    } else {
-      orderedBackFields.push(makeBackLinkField('hub_convenzioni', 'HUB CONVENZIONI', hubUrl));
-    }
-  }
-
   // 5. Any remaining template back fields (fallback)
   backFields.forEach(f => {
     // Skip if already covered by backContent or link slots
@@ -749,6 +740,17 @@ function generatePassJson(template, instance, brand, options = {}) {
     if (!portalBrand && isPersonalAreaBackLink(f.label, f.value)) return;
     orderedBackFields.push(f);
   });
+  }
+
+  // HUB link: OUTSIDE the pushBackMode block on purpose. A running push promo used to
+  // hide it, but the HUB (sponsored merchants / offers) must always stay reachable from
+  // the pass — it's the retail-media surface, not an optional extra.
+  if (hubUrl) {
+    if (isAdsPassBrand(brand)) {
+      orderedBackFields.push(makeBackLinkField('hub_offers', 'Scopri le offerte', hubUrl, { ctaOnly: true }));
+    } else {
+      orderedBackFields.push(makeBackLinkField('hub_convenzioni', 'HUB CONVENZIONI', hubUrl));
+    }
   }
   }
 
