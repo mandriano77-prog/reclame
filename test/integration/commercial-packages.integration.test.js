@@ -25,10 +25,22 @@ let brandId;
 const SLUG = 'itest-commpkg-brand';
 const EMAIL = 'itest-commpkg-admin@example.com';
 
+// A booking fans out into child rows (billing entry, scheduled push); delete
+// them before the brand so the brand row isn't pinned by a FK.
+async function cleanupBrand() {
+  const r = await db.pool.query('SELECT id FROM brands WHERE slug = $1', [SLUG]).catch(() => ({ rows: [] }));
+  for (const { id } of r.rows) {
+    for (const tbl of ['commercial_billing_entries', 'commercial_bookings', 'scheduled_push']) {
+      await db.pool.query(`DELETE FROM ${tbl} WHERE brand_id = $1`, [id]).catch(() => {});
+    }
+  }
+  await db.pool.query('DELETE FROM brands WHERE slug = $1', [SLUG]).catch(() => {});
+}
+
 before(async () => {
   await db.getDb();
   await db.pool.query('DELETE FROM users WHERE email = $1', [EMAIL]).catch(() => {});
-  await db.pool.query('DELETE FROM brands WHERE slug = $1', [SLUG]).catch(() => {});
+  await cleanupBrand();
 
   const brand = await db.createBrand({ name: 'Itest CommPkg Brand', slug: SLUG, config: {} });
   brandId = brand.id;
@@ -42,7 +54,7 @@ before(async () => {
 
 after(async () => {
   await db.pool.query('DELETE FROM users WHERE email = $1', [EMAIL]).catch(() => {});
-  await db.pool.query('DELETE FROM brands WHERE slug = $1', [SLUG]).catch(() => {});
+  await cleanupBrand();
   if (server) await new Promise((r) => server.close(r));
   await db.pool.end().catch(() => {});
 });
@@ -116,8 +128,8 @@ test('commercial packages: a booking accepts the custom package key', async () =
       start_at: new Date('2026-08-01T10:00:00Z').toISOString(),
     }),
   });
-  assert.equal(res.status, 201, await res.text());
   const booking = await res.json();
+  assert.equal(res.status, 201, JSON.stringify(booking));
   assert.equal(booking.package_key, 'flash');
   await db.pool.query('DELETE FROM commercial_bookings WHERE id = $1', [booking.id]).catch(() => {});
 });
