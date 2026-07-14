@@ -3633,9 +3633,6 @@
                             <label class="form-label">Strip Image (PNG, 750x246)</label>
                             <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
                                 <button type="button" class="btn small" onclick="tplPickFromMedia('strip')">Da Media Library</button>
-                                <select id="tplStripPromoSelect" onchange="loadStripFromPromo()" style="flex:1;min-width:140px;font-size:12px;">
-                                    <option value="">-- Strip Promo --</option>
-                                </select>
                             </div>
                             <input type="file" id="tplImgStrip" accept="image/*,.pdf" onchange="previewTplImage(this,'strip')" style="font-size:12px;">
                             <img id="tplImgStripPreview" alt="Anteprima strip template" style="display:none;width:100%;max-width:300px;margin-top:4px;border-radius:4px;">
@@ -7676,6 +7673,7 @@ function previewTplImage(input, imageType) {
 
 async function populateStripPromoSelect() {
     const sel = document.getElementById('tplStripPromoSelect');
+    if (!sel) return; // strip-promo dropdown removed from the template editor
     sel.innerHTML = '<option value="">-- Scegli da Strip Promo --</option>';
     if (!brandId) return;
     try {
@@ -7691,7 +7689,8 @@ async function populateStripPromoSelect() {
 }
 
 async function loadStripFromPromo() {
-    const promoId = document.getElementById('tplStripPromoSelect').value;
+    const sel = document.getElementById('tplStripPromoSelect');
+    const promoId = sel ? sel.value : '';
     if (!promoId) return;
     try {
         const res = await fetch(`${API}/strip-promos/${promoId}/image`);
