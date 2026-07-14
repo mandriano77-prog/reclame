@@ -1,7 +1,7 @@
 /**
  * Reclame — commercial calendar, package inventory, billing take-rate.
  */
-const { pool, getBrand, updateBrand } = require('../db');
+const { pool, getBrand, updateBrand, syncMerchantSponsorship } = require('../db');
 const { runBookingFormatActions, bookingOfferId } = require('./reclame-booking-actions');
 
 const PACKAGE_CATALOG = Object.freeze({
@@ -280,6 +280,9 @@ async function createCommercialBooking(brandId, data) {
   const format = String(data.format || '').trim();
   if (!FORMAT_LABELS[format]) throw new Error('Formato non valido');
   if (!pkg.inventory[format]) throw new Error('Formato non incluso nel pacchetto');
+  if (format === 'hub_sponsored' && !data.merchant_id) {
+    throw new Error('Per uno slot "HUB sponsorizzato" seleziona il merchant da mettere in evidenza');
+  }
   const tenant = String(data.tenant_name || '').trim();
   if (!tenant) throw new Error('Nome brand-tenant obbligatorio');
 
@@ -325,12 +328,15 @@ async function createCommercialBooking(brandId, data) {
     [brandId, booking.id, tenant, split.gross_cents, split.retailer_cents, split.reclame_cents]
   );
 
+  // Booking-driven featuring: recompute the merchant's sponsorship from its live bookings
+  // (sets the [from, until] window). Read-time gating applies start/expiry. Non-fatal: a
+  // sync hiccup must not roll back an already-created booking.
   if (format === 'hub_sponsored' && data.merchant_id) {
-    await pool.query(
-      `UPDATE merchants SET sponsored = TRUE, sponsored_rank = COALESCE(sponsored_rank, 0) + 10
-       WHERE id = $1 AND brand_id = $2`,
-      [data.merchant_id, brandId]
-    );
+    try {
+      await syncMerchantSponsorship(brandId, data.merchant_id);
+    } catch (syncErr) {
+      console.warn('[commercial] sponsorship sync:', syncErr.message);
+    }
   }
 
   if (format === 'geofence_recall') {
@@ -408,14 +414,11 @@ async function updateBookingStatus(brandId, bookingId, status) {
     [bookingId, brandId, status]
   );
   if (!res.rows.length) throw new Error('Prenotazione non trovata');
-  if (status === 'cancelled') {
-    const row = res.rows[0];
-    if (row.format === 'hub_sponsored' && row.merchant_id) {
-      await pool.query(
-        `UPDATE merchants SET sponsored = FALSE WHERE id = $1 AND brand_id = $2`,
-        [row.merchant_id, brandId]
-      );
-    }
+  // Any status change on a HUB-sponsored booking can start or stop the featuring
+  // (confirm/live → on, cancelled/completed → off unless another booking still covers it).
+  const row = res.rows[0];
+  if (row.format === 'hub_sponsored' && row.merchant_id) {
+    await syncMerchantSponsorship(brandId, row.merchant_id);
   }
   return res.rows[0];
 }

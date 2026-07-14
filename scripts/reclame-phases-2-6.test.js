@@ -52,7 +52,10 @@ test('DB schema supports commercial bookings and sponsored merchants', () => {
   assert.match(dbJs, /commercial_bookings/);
   assert.match(dbJs, /commercial_billing_entries/);
   assert.match(dbJs, /sponsored BOOLEAN/);
-  assert.match(dbJs, /ORDER BY sponsored DESC/);
+  // Sponsorship ordering now respects the campaign window (booking-driven featuring with
+  // read-time expiry via sponsored_until), so it sorts by the effective flag.
+  assert.match(dbJs, /sponsored_until/);
+  assert.match(dbJs, /ORDER BY sponsored_effective DESC/);
 });
 
 test('API registers commercial and audience preset routes', () => {

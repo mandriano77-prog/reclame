@@ -384,6 +384,14 @@
     var push = document.getElementById('commercialPushFields');
     if (poi) poi.hidden = fmt !== 'geofence_recall';
     if (push) push.hidden = fmt !== 'push_lockscreen' && fmt !== 'coupon_cpa';
+    // For a HUB-sponsored slot the merchant is what gets featured, so make it required + hinted.
+    var isHubSponsored = fmt === 'hub_sponsored';
+    var merchant = document.getElementById('commercialBookingMerchant');
+    var merchantLabel = document.getElementById('commercialBookingMerchantLabel');
+    var merchantHint = document.getElementById('commercialBookingMerchantHint');
+    if (merchant) merchant.required = isHubSponsored;
+    if (merchantLabel) merchantLabel.textContent = isHubSponsored ? 'Merchant HUB *' : 'Merchant HUB';
+    if (merchantHint) merchantHint.hidden = !isHubSponsored;
   }
 
   function wireCommercialForm() {

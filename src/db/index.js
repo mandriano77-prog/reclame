@@ -597,6 +597,10 @@ async function getDb() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_brand_created ON coupon_redemptions(brand_id, created_at DESC)`).catch(logDdlError);
     await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS sponsored BOOLEAN DEFAULT FALSE`).catch(logDdlError);
     await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS sponsored_rank INTEGER DEFAULT 0`).catch(logDdlError);
+    // Bound a booking-driven sponsorship to the campaign window [sponsored_from, sponsored_until].
+    // Both NULL = manual/open-ended featuring (checkbox); a set sponsored_from marks it booking-driven.
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS sponsored_until TIMESTAMPTZ`).catch(logDdlError);
+    await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS sponsored_from TIMESTAMPTZ`).catch(logDdlError);
     await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS slug TEXT`).catch(logDdlError);
     await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS checkout_prefix TEXT`).catch(logDdlError);
     await pool.query(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS checkout_mode TEXT DEFAULT 'dynamic_per_pass'`).catch(logDdlError);
@@ -3893,12 +3897,60 @@ async function listActiveMerchantsForHub(brandId, { category, search } = {}) {
     params.push(`%${String(search).trim()}%`);
     idx++;
   }
+  // Effective sponsorship = manual flag (sponsored) OR an active booking-driven window
+  // [sponsored_from, sponsored_until]. The window is evaluated at read time, so future-start
+  // campaigns don't feature early and ended ones expire without a cron. Drives ordering + badge.
   const res = await pool.query(
-    `SELECT * FROM merchants WHERE ${clauses.join(' AND ')}
-     ORDER BY sponsored DESC, sponsored_rank DESC, name ASC`,
+    `SELECT *,
+       (sponsored
+        OR (sponsored_from IS NOT NULL
+            AND sponsored_from <= NOW()
+            AND (sponsored_until IS NULL OR sponsored_until >= NOW()))) AS sponsored_effective
+     FROM merchants WHERE ${clauses.join(' AND ')}
+     ORDER BY sponsored_effective DESC, sponsored_rank DESC, name ASC`,
     params
   );
-  return res.rows;
+  return res.rows.map((row) => ({ ...row, sponsored: row.sponsored_effective === true }));
+}
+
+/**
+ * Recompute a merchant's sponsorship from its live `hub_sponsored` bookings — the single
+ * source of truth for booking-driven featuring. Sets sponsored + sponsored_until when at
+ * least one non-cancelled booking's window still covers now; clears them otherwise.
+ * Correctly handles overlapping bookings (won't un-feature while another is active) and
+ * end-of-campaign expiry. Call after creating or changing the status of such a booking.
+ */
+async function syncMerchantSponsorship(brandId, merchantId) {
+  if (!merchantId) return;
+  // Bookings that are not cancelled/completed and whose window hasn't ended yet (future
+  // ones included — read-time gating on sponsored_from holds featuring until the start).
+  const res = await pool.query(
+    `SELECT COUNT(*)::int AS cnt,
+            MIN(start_at) AS min_start,
+            MAX(end_at) AS max_end,
+            bool_or(end_at IS NULL) AS has_open
+     FROM commercial_bookings
+     WHERE brand_id = $1 AND merchant_id = $2 AND format = 'hub_sponsored'
+       AND status IN ('pending', 'confirmed', 'live')
+       AND (end_at IS NULL OR end_at >= NOW())`,
+    [brandId, merchantId]
+  );
+  const row = res.rows[0];
+  // Sync maintains ONLY the booking-driven window (sponsored_from/until). It never touches
+  // `sponsored` — that stays the manual checkbox flag, so manual and booking-driven
+  // featuring are independent sources that don't clobber each other.
+  if (row && row.cnt > 0) {
+    const until = row.has_open ? null : row.max_end; // open-ended booking → no expiry
+    await pool.query(
+      `UPDATE merchants SET sponsored_from = $3, sponsored_until = $4 WHERE id = $1 AND brand_id = $2`,
+      [merchantId, brandId, row.min_start, until]
+    );
+  } else {
+    await pool.query(
+      `UPDATE merchants SET sponsored_from = NULL, sponsored_until = NULL WHERE id = $1 AND brand_id = $2`,
+      [merchantId, brandId]
+    );
+  }
 }
 
 async function logConventionActivation({
@@ -4818,6 +4870,7 @@ module.exports = {
   getHubSettings,
   upsertHubSettings,
   listActiveMerchantsForHub,
+  syncMerchantSponsorship,
   findMerchantsNearby,
   groupNearbyMerchantRows,
   haversineKm,
