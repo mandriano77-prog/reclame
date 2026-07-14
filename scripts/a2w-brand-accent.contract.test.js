@@ -17,12 +17,21 @@ test('applyBrandAccentVars esiste ed è cablata in applyBrandTheme', () => {
   assert.match(indexHtml, /applyBrandAccentVars\(null\)/);
 });
 
-test('accent brand solo con palette_source (auto o manual), non con default fissi', () => {
+test("l'accent della piattaforma è quello del PASS (labelColor), non la sua tela", () => {
   assert.match(indexHtml, /function resolveBrandAccentFromConfig\(config\)/);
-  assert.match(indexHtml, /config\.palette_source/);
-  assert.match(indexHtml, /\(config\.colors && config\.colors\.accent\) \|\| config\.backgroundColor/);
+  // Prima si tingeva col backgroundColor — cioè lo SFONDO del pass — e solo con una
+  // palette_source: la piattaforma restava fuori sintonia col pass. Ora usa labelColor,
+  // lo stesso accento che mostrano pass, landing, thank-you e HUB.
+  assert.match(indexHtml, /\(config\.colors && config\.colors\.accent\) \|\| config\.labelColor \|\| config\.primaryColor/);
+  assert.doesNotMatch(indexHtml, /\|\| config\.backgroundColor\s*\n?\s*\);/);
   assert.match(indexHtml, /function normalizeBrandAccentHex\(/);
   assert.match(indexHtml, /function ensureVisibleBrandAccent\(/);
+});
+
+test('il testo sopra l\'accent si sceglie per contrasto (niente bianco su oro)', () => {
+  assert.match(indexHtml, /function textOnAccent\(hex\)/);
+  assert.match(indexHtml, /setProperty\('--text-on-accent'/);
+  assert.match(indexHtml, /setProperty\('--a2w-text-on-accent'/);
 });
 
 test('tinta limitata alla shell scura e reversibile', () => {

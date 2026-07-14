@@ -102,7 +102,7 @@
 
 .a2w-modal__close:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(199, 46, 34, 0.45);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #C72E22) 45%, transparent);
 }
 
 .a2w-modal__body {
@@ -163,8 +163,8 @@
 .a2w-modal select:focus-visible,
 .a2w-modal textarea:focus-visible {
   outline: none;
-  border-color: rgba(199, 46, 34, 0.65);
-  box-shadow: 0 0 0 3px rgba(199, 46, 34, 0.2);
+  border-color: color-mix(in srgb, var(--accent, #C72E22) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #C72E22) 20%, transparent);
 }
 
 .a2w-modal .a2w-btn-primary {
@@ -201,7 +201,7 @@
 .a2w-modal .a2w-btn-primary:focus-visible,
 .a2w-modal .a2w-btn-ghost:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(199, 46, 34, 0.35);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #C72E22) 35%, transparent);
 }
 
 .a2w-modal__alert {

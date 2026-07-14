@@ -461,8 +461,8 @@ html.a2w-shell #leads .a2w-contacts-kpi-card.is-selected {
 }
 
 html.a2w-shell #leads .a2w-contacts-kpi-card.is-primary {
-  border-color: rgba(199, 46, 34, 0.45);
-  background: rgba(199, 46, 34, 0.08);
+  border-color: color-mix(in srgb, var(--accent, #C72E22) 45%, transparent);
+  background: color-mix(in srgb, var(--accent, #C72E22) 8%, transparent);
 }
 
 html.a2w-shell #leads .a2w-contacts-kpi-main {

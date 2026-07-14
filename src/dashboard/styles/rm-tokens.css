@@ -20,7 +20,7 @@ html[data-shell="dark"].a2w-shell {
   /* Reclame brand → A2W shell tokens (accent = brand red, not teal) */
   --a2w-accent-hsl: 4 71% 46%;
   --a2w-accent: var(--rm-brand);
-  --a2w-accent-soft: rgba(199, 46, 34, 0.12);
+  --a2w-accent-soft: color-mix(in srgb, var(--accent, #C72E22) 12%, transparent);
   --a2w-destructive-hsl: 0 84% 60%;
   --a2w-destructive: hsl(var(--a2w-destructive-hsl));
   --a2w-destructive-soft: hsl(var(--a2w-destructive-hsl) / 0.08);
@@ -33,7 +33,7 @@ html[data-shell="dark"].a2w-shell {
   --a2w-type-micro-size: 12px;
   --a2w-type-micro-weight: 500;
   --a2w-accent-hover: var(--rm-brand-hover);
-  --a2w-accent-subtle: rgba(199, 46, 34, 0.14);
+  --a2w-accent-subtle: color-mix(in srgb, var(--accent, #C72E22) 14%, transparent);
   --a2w-action-primary: var(--rm-brand);
   --a2w-action-primary-hover: var(--rm-brand-hover);
   --a2w-action-secondary: rgba(244, 237, 226, 0.04);
@@ -66,7 +66,7 @@ html[data-shell="dark"].a2w-shell {
   --bg-app: var(--rm-bg-elevated-alt);
   --bg-subtle: var(--rm-bg-elevated);
   --bg-hover: #1E1916;
-  --bg-active: rgba(199, 46, 34, 0.18);
+  --bg-active: color-mix(in srgb, var(--accent, #C72E22) 18%, transparent);
   --bg: var(--bg-app);
   --bg2: var(--bg-canvas);
   --bg3: var(--bg-hover);

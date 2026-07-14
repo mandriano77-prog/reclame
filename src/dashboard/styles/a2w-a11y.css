@@ -44,7 +44,7 @@ html[data-shell="dark"].a2w-shell .wai-panel-btn:focus-visible {
 html[data-shell="dark"].a2w-shell .wai-fab:focus-visible {
   outline: 2px solid var(--a2w-border-focus);
   outline-offset: 3px;
-  box-shadow: 0 0 0 4px rgba(199, 46, 34, 0.28), 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #C72E22) 28%, transparent), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 html[data-shell="dark"].a2w-shell .a2w-sidebar-toggle-btn:focus-visible,

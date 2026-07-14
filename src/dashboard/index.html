@@ -800,7 +800,7 @@
         }
         html[data-shell="dark"] .wai-panel {
             background: var(--rm-bg-elevated, #16110F);
-            border-color: rgba(199, 46, 34, 0.25);
+            border-color: color-mix(in srgb, var(--accent, #C72E22) 25%, transparent);
             color: var(--text-body);
         }
 
@@ -5701,6 +5701,7 @@ function darkenHex(hex, amount) {
 // The dark canvas stays untouched; only accent/action/focus tints change.
 const BRAND_ACCENT_CLEAR_VARS = [
     '--accent-subtle',
+    '--text-on-accent', '--a2w-text-on-accent',
     '--a2w-accent', '--a2w-accent-hover', '--a2w-accent-subtle', '--a2w-accent-soft',
     '--a2w-action-primary', '--a2w-action-primary-hover',
     '--a2w-border-focus', '--border-focus', '--bg-active'
@@ -5740,12 +5741,21 @@ function ensureVisibleBrandAccent(hex) {
 
 function resolveBrandAccentFromConfig(config) {
     if (!config) return null;
-    // Tinge solo con una palette reale (auto dal logo/icona o override manuale):
-    // i default fissi di creazione brand (#0D0B1A) renderebbero la UI quasi nera.
-    if (!config.palette_source) return null;
+    // L'accento del brand è il labelColor: è quello che si vede sul PASS ed è lo stesso che
+    // usano landing, thank-you e HUB. Prima qui si usava backgroundColor — cioè la TELA del
+    // pass, non il suo accento — e solo con una palette_source: la piattaforma finiva così
+    // fuori sintonia col pass (o restava sul rosso di prodotto).
     return normalizeBrandAccentHex(
-        (config.colors && config.colors.accent) || config.backgroundColor
+        (config.colors && config.colors.accent) || config.labelColor || config.primaryColor
     );
+}
+
+/** Il testo che sta sopra l'accento: bianco o quasi-nero, quello che contrasta di più. */
+function textOnAccent(hex) {
+    const l = relativeLuminanceHex(hex);
+    const contrast = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    const ink = '#0B1220';
+    return contrast(l, relativeLuminanceHex(ink)) >= contrast(l, 1) ? ink : '#FFFFFF';
 }
 
 function applyBrandAccentVars(config) {
@@ -5761,9 +5771,14 @@ function applyBrandAccentVars(config) {
     }
     const hover = darkenHex(accent, 30); // ~12% darker
     const subtle = adjustAlpha(accent, 0.14);
+    const onAccent = textOnAccent(accent);
     rootStyle.setProperty('--accent', accent);
     rootStyle.setProperty('--accent-hover', hover);
     rootStyle.setProperty('--accent-subtle', subtle);
+    // Il colore del brand può essere chiaro (oro) o scuro: il testo sopra si sceglie per
+    // contrasto, altrimenti si finisce con bianco-su-oro (illeggibile).
+    rootStyle.setProperty('--text-on-accent', onAccent);
+    rootStyle.setProperty('--a2w-text-on-accent', onAccent);
     rootStyle.setProperty('--a2w-accent', accent);
     rootStyle.setProperty('--a2w-accent-hover', hover);
     rootStyle.setProperty('--a2w-accent-subtle', subtle);
