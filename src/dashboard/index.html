@@ -2945,11 +2945,6 @@
                     <button type="button" class="btn sec fd-rbac-write" id="commercialBillingExport">⬇ Export fatturazione CSV</button>
                 </div>
                 <div class="stats-grid a2w-commercial-grid" id="commercialBilling"></div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px;gap:12px;flex-wrap:wrap;">
-                    <div class="sec-title" style="font-size:15px;margin:0;">Inventory pacchetti <span style="font-weight:400;font-size:12px;color:var(--text2);">(prenotato / capacità retailer)</span></div>
-                    <button type="button" class="btn sec small fd-rbac-write" id="commercialManagePackagesBtn" onclick="openCommercialPackagesModal()">Gestisci pacchetti</button>
-                </div>
-                <div id="commercialPackages" class="a2w-commercial-grid"></div>
                 <div class="card" style="margin:20px 0;">
                     <div class="sec-title" style="font-size:15px;margin-bottom:10px;">Prenotazioni e performance tenant</div>
                     <table class="table">
@@ -2964,6 +2959,17 @@
                         <tbody id="commercialBillingEntries"></tbody>
                     </table>
                 </div>
+                <details class="card a2w-pkg-acc" style="margin:20px 0;">
+                    <summary class="a2w-pkg-acc__summary">
+                        <span class="sec-title" style="font-size:15px;margin:0;">Inventory pacchetti <span style="font-weight:400;font-size:12px;color:var(--text2);">(prenotato / capacità retailer)</span></span>
+                    </summary>
+                    <div class="a2w-pkg-acc__body">
+                        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                            <button type="button" class="btn sec small fd-rbac-write" id="commercialManagePackagesBtn" onclick="openCommercialPackagesModal()">Gestisci pacchetti</button>
+                        </div>
+                        <div id="commercialPackages" class="a2w-commercial-grid"></div>
+                    </div>
+                </details>
                 <div class="card fd-rbac-write">
                     <div class="sec-title" style="font-size:15px;margin-bottom:12px;">Nuova prenotazione</div>
                     <form id="commercialBookingForm" class="fd-conventions-form-grid">
