@@ -3560,28 +3560,15 @@
                 <div id="tplColorsSection" class="a2w-tpl-colors" style="display:none;">
                     <div class="sec-title" style="font-size:14px;margin:16px 0 8px;">Colori pass</div>
                     <div id="tplPaletteAutoBlock">
-                        <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Palette automatica dal logo del brand (pass Apple/Google e accent della piattaforma). Carica o aggiorna il logo per rigenerarla.</p>
+                        <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">I colori sono automatici, generati dal logo del brand (valgono su pass Apple/Google e sull'accent della piattaforma). Per cambiarli, aggiorna il logo in <strong>Identità Brand</strong>.</p>
                         <div id="tplPaletteSwatches" class="a2w-tpl-palette-swatches" aria-live="polite"></div>
                         <p id="tplPaletteAutoHint" style="font-size:11px;color:var(--text2);margin:8px 0 0;line-height:1.45;"></p>
-                        <button type="button" class="btn small sec" id="tplPaletteCustomizeBtn" style="margin-top:10px;">Personalizza colori</button>
                     </div>
-                    <div id="tplPaletteManualBlock" hidden>
-                        <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Override manuale: sostituisce la palette automatica sul pass e sulla piattaforma.</p>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" for="tplColorBg">Sfondo</label>
-                                <input type="color" id="tplColorBg" class="a2w-tpl-color-input" value="#0D0B1A" oninput="updatePassPreview()">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="tplColorFg">Testo</label>
-                                <input type="color" id="tplColorFg" class="a2w-tpl-color-input" value="#FFFFFF" oninput="updatePassPreview()">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="tplColorLabel">Label</label>
-                                <input type="color" id="tplColorLabel" class="a2w-tpl-color-input" value="#A78BFA" oninput="updatePassPreview()">
-                            </div>
-                        </div>
-                        <button type="button" class="btn small sec" id="tplPaletteRestoreAutoBtn" style="margin-top:4px;">Ripristina palette automatica</button>
+                    <!-- Colori automatici, non editabili: questi input nascosti alimentano l'anteprima e il salvataggio del template con la palette del logo. -->
+                    <div hidden aria-hidden="true">
+                        <input type="color" id="tplColorBg" value="#0D0B1A" oninput="updatePassPreview()">
+                        <input type="color" id="tplColorFg" value="#FFFFFF" oninput="updatePassPreview()">
+                        <input type="color" id="tplColorLabel" value="#A78BFA" oninput="updatePassPreview()">
                     </div>
                 </div>
 

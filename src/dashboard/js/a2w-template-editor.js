@@ -14,6 +14,7 @@
 
   var brandPaletteCache = null;
   var manualPaletteOverride = false;
+  var paletteHealAttempted = false;
 
   function isActive() {
     return document.documentElement.classList.contains('a2w-shell') &&
@@ -104,10 +105,8 @@
           hint.textContent = 'Generata dal logo del brand.';
         } else if (cfg && cfg.palette_source === 'icon-auto') {
           hint.textContent = 'Generata dall\'icona notifica (logo non ancora disponibile).';
-        } else if (cfg && cfg.palette_source === 'manual') {
-          hint.textContent = 'Palette personalizzata attiva sul brand.';
         } else {
-          hint.textContent = 'Nessuna palette automatica: carica un logo o usa Personalizza colori.';
+          hint.textContent = 'Carica un logo in Identità Brand per generare la palette.';
         }
       }
     }
@@ -116,7 +115,7 @@
 
   async function loadBrandPaletteForTemplate() {
     brandPaletteCache = null;
-    manualPaletteOverride = false;
+    manualPaletteOverride = false; // niente più override manuale: colori sempre dal logo
     if (!global.brandId || typeof global.fetchBrandById !== 'function') {
       syncTplPaletteUi();
       return;
@@ -124,11 +123,15 @@
     try {
       var brand = await global.fetchBrandById(global.brandId);
       brandPaletteCache = (brand && brand.config) || null;
-      manualPaletteOverride = isManualBrandPalette(brandPaletteCache);
-      // Pre-carica i color picker con la palette EFFETTIVA del brand — manuale o
-      // auto-dal-logo. Prima si aggiornavano solo in manuale: dopo "Ripristina palette
-      // automatica" gli input restavano sui vecchi colori manuali (e un salvataggio li
-      // ri-persisteva come manuali, riportando l'utente al punto di partenza).
+      // Auto-guarigione: se un brand è rimasto con una palette manuale (vecchia UI), la
+      // rigeneriamo dal logo alla prima apertura, così non resta bloccato su colori a mano.
+      // La guardia evita loop se il logo manca (restore fallisce → resta manuale).
+      if (isManualBrandPalette(brandPaletteCache) && !paletteHealAttempted) {
+        paletteHealAttempted = true;
+        await restoreAutoBrandPalette();
+        return; // restoreAutoBrandPalette ricarica la palette e ridisegna
+      }
+      // Alimenta gli input nascosti (anteprima + salvataggio template) con la palette auto.
       var eff = colorsFromBrandConfig(brandPaletteCache) || defaultColors();
       var c = getColorInputs();
       if (c.bg) c.bg.value = eff.backgroundColor;
@@ -136,19 +139,6 @@
       if (c.lbl) c.lbl.value = eff.labelColor;
     } catch (_) {
       brandPaletteCache = null;
-    }
-    syncTplPaletteUi();
-  }
-
-  function setManualPaletteMode(enabled) {
-    manualPaletteOverride = !!enabled;
-    var cfg = brandPaletteCache;
-    if (enabled) {
-      var colors = colorsFromBrandConfig(cfg) || defaultColors();
-      var c = getColorInputs();
-      if (c.bg) c.bg.value = colors.backgroundColor;
-      if (c.fg) c.fg.value = colors.foregroundColor;
-      if (c.lbl) c.lbl.value = colors.labelColor;
     }
     syncTplPaletteUi();
   }
@@ -175,48 +165,10 @@
     }
   }
 
-  async function persistManualBrandPaletteIfNeeded() {
-    if (!manualPaletteOverride || !global.brandId) return;
-    var colors = getTemplatePreviewColors();
-    var existing = typeof global.fetchBrandById === 'function'
-      ? await global.fetchBrandById(global.brandId)
-      : null;
-    var cfg = Object.assign({}, (existing && existing.config) || {});
-    cfg.backgroundColor = colors.backgroundColor;
-    cfg.foregroundColor = colors.foregroundColor;
-    cfg.labelColor = colors.labelColor;
-    cfg.colors = Object.assign({}, cfg.colors || {}, {
-      background: colors.backgroundColor,
-      text: colors.foregroundColor,
-      accent: colors.backgroundColor
-    });
-    cfg.palette_source = 'manual';
-    cfg.palette_updated_at = new Date().toISOString();
-    var res = await fetch((global.API || '/api/v1') + '/brands/' + global.brandId, {
-      method: 'PUT',
-      headers: typeof global.waiFetchHeaders === 'function' ? global.waiFetchHeaders() : { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ config: cfg })
-    });
-    if (!res.ok) {
-      var err = await res.json().catch(function () { return {}; });
-      throw new Error(err.error || 'Errore salvataggio palette brand');
-    }
-    brandPaletteCache = cfg;
-    if (typeof global.invalidateBrandCache === 'function') global.invalidateBrandCache();
-    if (typeof global.applyBrandTheme === 'function') global.applyBrandTheme();
-  }
 
   function initPaletteControls() {
-    var customizeBtn = document.getElementById('tplPaletteCustomizeBtn');
-    var restoreBtn = document.getElementById('tplPaletteRestoreAutoBtn');
-    if (customizeBtn && customizeBtn.dataset.a2wBound !== '1') {
-      customizeBtn.dataset.a2wBound = '1';
-      customizeBtn.addEventListener('click', function () { setManualPaletteMode(true); });
-    }
-    if (restoreBtn && restoreBtn.dataset.a2wBound !== '1') {
-      restoreBtn.dataset.a2wBound = '1';
-      restoreBtn.addEventListener('click', function () { restoreAutoBrandPalette(); });
-    }
+    // Nessun controllo manuale: i colori sono automatici dal logo. Funzione mantenuta come
+    // no-op per compatibilità con i chiamanti esistenti.
   }
 
   function getTemplatePreviewColors() {
@@ -615,7 +567,6 @@
       setSaveStatus('saving', 'Salvataggio…');
       try {
         await orig.apply(this, arguments);
-        if (manualPaletteOverride) await persistManualBrandPaletteIfNeeded();
         setSaveStatus('ok', 'Salvato');
       } catch (e) {
         setSaveStatus('error', e.message || 'Errore salvataggio');

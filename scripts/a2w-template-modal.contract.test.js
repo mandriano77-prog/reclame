@@ -49,29 +49,34 @@ test('STEP 6: unified upload zones sync from style.images and media library', ()
   assert.match(indexHtml, /a2wApplyTplStyleImages\(existingImages\)/);
 });
 
-test('STEP 7: auto palette UI and manual override in template modal', () => {
+test('STEP 7: palette SOLO automatica dal logo (nessun override manuale)', () => {
   assert.match(modalBlock, /id="tplColorsSection"/);
   assert.match(modalBlock, /id="tplPaletteAutoBlock"/);
   assert.match(modalBlock, /id="tplPaletteSwatches"/);
-  assert.match(modalBlock, /id="tplPaletteCustomizeBtn"/);
-  assert.match(modalBlock, /Personalizza colori/);
-  assert.match(modalBlock, /id="tplPaletteManualBlock"/);
-  assert.match(modalBlock, /id="tplPaletteRestoreAutoBtn"/);
+  // gli input colore restano (nascosti) per alimentare anteprima + salvataggio
   assert.match(modalBlock, /id="tplColorBg"/);
+  // ma NIENTE UI per modificarli a mano: rimossi il toggle e il blocco manuale
+  assert.doesNotMatch(modalBlock, /id="tplPaletteCustomizeBtn"/);
+  assert.doesNotMatch(modalBlock, /Personalizza colori/);
+  assert.doesNotMatch(modalBlock, /id="tplPaletteManualBlock"/);
+  assert.doesNotMatch(modalBlock, /id="tplPaletteRestoreAutoBtn"/);
   assert.match(tplEditor, /loadBrandPaletteForTemplate/);
-  assert.match(tplEditor, /persistManualBrandPaletteIfNeeded/);
   assert.match(tplEditor, /getTemplatePreviewColors/);
   assert.match(tplEditor, /applyPreviewColors/);
 });
 
-test('STEP 7a: senza override manuale il template non fissa i colori (comanda brand.config)', () => {
+test('STEP 7a: il template non fissa mai i colori a mano (comanda sempre il logo del brand)', () => {
   assert.match(tplEditor, /a2wIsTplManualPaletteOn/);
   assert.match(indexHtml, /a2wIsTplManualPaletteOn/);
   assert.match(indexHtml, /delete styleBase\.backgroundColor/);
   assert.match(indexHtml, /delete styleBase\.foregroundColor/);
   assert.match(indexHtml, /delete styleBase\.labelColor/);
-  // override manuale: scrive anche i colori sul brand (palette_source='manual')
-  assert.match(tplEditor, /palette_source = 'manual'/);
+  // il percorso di scrittura palette manuale è stato rimosso del tutto
+  assert.doesNotMatch(tplEditor, /palette_source = 'manual'/);
+  assert.doesNotMatch(tplEditor, /persistManualBrandPaletteIfNeeded/);
+  // e un brand rimasto in manuale viene auto-rigenerato dal logo all'apertura
+  assert.match(tplEditor, /isManualBrandPalette\(brandPaletteCache\)/);
+  assert.match(tplEditor, /restoreAutoBrandPalette/);
 });
 
 test('STEP 7b: wallet notification icon in template modal (Ads shell)', () => {
