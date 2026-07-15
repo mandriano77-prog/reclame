@@ -125,14 +125,15 @@
       var brand = await global.fetchBrandById(global.brandId);
       brandPaletteCache = (brand && brand.config) || null;
       manualPaletteOverride = isManualBrandPalette(brandPaletteCache);
-      if (manualPaletteOverride) {
-        // Pickers pre-caricati con i colori manuali salvati sul brand.
-        var manual = colorsFromBrandConfig(brandPaletteCache) || defaultColors();
-        var c = getColorInputs();
-        if (c.bg) c.bg.value = manual.backgroundColor;
-        if (c.fg) c.fg.value = manual.foregroundColor;
-        if (c.lbl) c.lbl.value = manual.labelColor;
-      }
+      // Pre-carica i color picker con la palette EFFETTIVA del brand — manuale o
+      // auto-dal-logo. Prima si aggiornavano solo in manuale: dopo "Ripristina palette
+      // automatica" gli input restavano sui vecchi colori manuali (e un salvataggio li
+      // ri-persisteva come manuali, riportando l'utente al punto di partenza).
+      var eff = colorsFromBrandConfig(brandPaletteCache) || defaultColors();
+      var c = getColorInputs();
+      if (c.bg) c.bg.value = eff.backgroundColor;
+      if (c.fg) c.fg.value = eff.foregroundColor;
+      if (c.lbl) c.lbl.value = eff.labelColor;
     } catch (_) {
       brandPaletteCache = null;
     }
