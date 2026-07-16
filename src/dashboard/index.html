@@ -2020,7 +2020,6 @@
                             <div><strong style="color:var(--text)">Icona notifiche Wallet</strong>: PNG/JPG quadrata 512×512 px.</div>
                             <div><strong style="color:var(--text)">Strip</strong>: PNG/JPG 750x246 px.</div>
                             <div><strong style="color:var(--text)">Thumbnail</strong>: PNG/JPG 90x90 px (event ticket).</div>
-                            <div><strong style="color:var(--text)">Background</strong>: PNG/JPG 360x440 px (event ticket).</div>
                         </div>
                     </div>
                     <div class="a2w-media-tabs" id="a2wMediaTabs" data-a2w-component="media-tabs">
@@ -2031,7 +2030,6 @@
                                 <option value="wallet_icon">Icona notifiche</option>
                                 <option value="strip">Strip</option>
                                 <option value="thumbnail">Thumbnail</option>
-                                <option value="background">Background</option>
                             </select>
                         </div>
                         <ul class="a2w-media-tabs__list" role="tablist" aria-label="Categorie asset">
@@ -2039,7 +2037,6 @@
                             <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_wallet_icon" data-media-type="wallet_icon" aria-controls="a2wMediaWalletIconCard" aria-selected="false" tabindex="-1">Icona notifiche</button></li>
                             <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_strip" data-media-type="strip" aria-controls="a2wMediaStripCard" aria-selected="false" tabindex="-1">Strip</button></li>
                             <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_thumbnail" data-media-type="thumbnail" aria-controls="a2wMediaThumbCard" aria-selected="false" tabindex="-1">Thumbnail</button></li>
-                            <li role="presentation"><button type="button" class="a2w-media-tabs__tab" role="tab" id="a2wMediaTab_background" data-media-type="background" aria-controls="a2wMediaBackgroundCard" aria-selected="false" tabindex="-1">Background</button></li>
                         </ul>
                     </div>
                     <div class="a2w-media-buckets-grid a2w-media-buckets-grid--tabs">
@@ -2066,11 +2063,6 @@
                             <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">90x90 px — usato su Event Ticket (fronte pass).</p>
                             <div id="mediaThumbnailGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
                         </div>
-                        <div class="card a2w-media-bucket" id="a2wMediaBackgroundCard" data-a2w-bucket-type="background" data-a2w-bucket="background" role="tabpanel" aria-labelledby="a2wMediaTab_background" hidden>
-                            <div class="sec-title" style="font-size:15px;margin-bottom:8px;">Background</div>
-                            <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">360x440 px — sfondo intero su Event Ticket.</p>
-                            <div id="mediaBackgroundGrid" class="strip-gallery"><p style="color:var(--text2)">Caricamento...</p></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2087,7 +2079,6 @@
                             <option value="logo">Logo</option>
                             <option value="wallet_icon">Icona notifiche Wallet</option>
                             <option value="thumbnail">Thumbnail</option>
-                            <option value="background">Background</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -2149,7 +2140,6 @@
                   <button class="mp-filter" data-type="wallet_icon" onclick="mpFilter('wallet_icon')">Icona Wallet</button>
                   <button class="mp-filter" data-type="strip" onclick="mpFilter('strip')">Strip</button>
                   <button class="mp-filter" data-type="thumbnail" onclick="mpFilter('thumbnail')">Thumbnail</button>
-                  <button class="mp-filter" data-type="background" onclick="mpFilter('background')">Background</button>
                   <button class="mp-filter" data-type="generic" onclick="mpFilter('generic')">Altro</button>
                 </div>
                 <div id="mpGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-bottom:16px"></div>
@@ -2161,7 +2151,6 @@
                     <option value="wallet_icon">Icona notifiche Wallet</option>
                     <option value="strip">Strip</option>
                     <option value="thumbnail">Thumbnail</option>
-                    <option value="background">Background</option>
                   </select>
                   <button onclick="mpUpload()" style="padding:6px 14px;background:#7c3aed;color:#fff;border:none;border-radius:6px;cursor:pointer">Carica</button>
                 </div>
@@ -3625,24 +3614,18 @@
                             <img id="tplImgStripPreview" alt="Anteprima strip template" style="display:none;width:100%;max-width:300px;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
+                    <!-- Background rimossa. La thumbnail non esiste sui pass Ads — lì si
+                         usano solo logo, strip e icona notifica — e resta solo a
+                         FiloDiretto, che la incolla sulla strip del pass dipendente:
+                         questa riga la mostra soltanto syncEmployeePassTypeUi. -->
                     <div class="form-row" id="tplImgThumbRow" style="display:none;">
                         <div class="form-group" style="flex:1;">
-                            <label class="form-label">Thumbnail (PNG, 90x90 — mostrato sul fronte)</label>
+                            <label class="form-label">Foto dipendente (PNG, 90x90)</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
                                 <button type="button" class="btn small" onclick="tplPickFromMedia('thumbnail')">Da Media Library</button>
                             </div>
                             <input type="file" id="tplImgThumb" accept="image/*,.pdf" onchange="previewTplImage(this,'thumbnail')" style="font-size:12px;">
-                            <img id="tplImgThumbPreview" alt="Anteprima thumbnail template" style="display:none;width:60px;height:60px;object-fit:cover;margin-top:4px;border-radius:4px;">
-                        </div>
-                    </div>
-                    <div class="form-row" id="tplImgBgRow" style="display:none;">
-                        <div class="form-group" style="flex:1;">
-                            <label class="form-label">Background (PNG, 360x440 — sfondo intero pass)</label>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-                                <button type="button" class="btn small" onclick="tplPickFromMedia('background')">Da Media Library</button>
-                            </div>
-                            <input type="file" id="tplImgBg" accept="image/*,.pdf" onchange="previewTplImage(this,'background')" style="font-size:12px;">
-                            <img id="tplImgBgPreview" alt="Anteprima sfondo template" style="display:none;width:100px;margin-top:4px;border-radius:4px;">
+                            <img id="tplImgThumbPreview" alt="Anteprima foto dipendente" style="display:none;width:60px;height:60px;object-fit:cover;margin-top:4px;border-radius:4px;">
                         </div>
                     </div>
                 </div>
@@ -7009,11 +6992,9 @@ function syncEmployeePassTypeUi() {
     if (hr) {
         const stripRow = document.getElementById('tplImgStripRow');
         const thumbRow = document.getElementById('tplImgThumbRow');
-        const bgRow = document.getElementById('tplImgBgRow');
         const hrNote = document.getElementById('tplFrontHrNote');
         if (stripRow) stripRow.style.display = '';
         if (thumbRow) thumbRow.style.display = '';
-        if (bgRow) bgRow.style.display = 'none';
         if (hrNote) hrNote.style.display = 'block';
     } else {
         const hrNote = document.getElementById('tplFrontHrNote');
@@ -7141,8 +7122,8 @@ async function openTemplateModal() {
     document.getElementById('templateEditId').value = '';
     document.getElementById('templateModalTitle').textContent = 'Nuovo Template';
     ['tplName','tplDescription','tplHeaderLabel','tplHeaderValue','tplSecLabel','tplSecValue','tplAuxLabel','tplAuxValue','tplLink1Label','tplLink1Url','tplLink2Label','tplLink2Url','tplLink3Label','tplLink3Url','tplRegolamento','tplContatti'].forEach(id => document.getElementById(id).value = '');
-    ['tplImgLogo','tplImgStrip','tplImgThumb','tplImgBg'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-    ['tplImgLogoPreview','tplImgStripPreview','tplImgThumbPreview','tplImgBgPreview'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+    ['tplImgLogo','tplImgStrip','tplImgThumb'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    ['tplImgLogoPreview','tplImgStripPreview','tplImgThumbPreview'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
     tplImageCache = {};
     tplWalletIconMediaId = null;
     const wiPreview = document.getElementById('tplImgWalletIconPreview');
@@ -7202,12 +7183,12 @@ async function editTemplate(id) {
     if (isTplWalletIconUiEnabled()) await loadHrWalletIconPreview();
     // Reset and load existing images
     tplImageCache = {};
-    ['tplImgLogo','tplImgStrip','tplImgThumb','tplImgBg'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    ['tplImgLogo','tplImgStrip','tplImgThumb'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
     const existingImages = t.style?.images || {};
     if (typeof a2wApplyTplStyleImages === 'function') {
         a2wApplyTplStyleImages(existingImages);
     } else {
-        ['logo','strip','thumbnail','background'].forEach(imgType => {
+        ['logo','strip','thumbnail'].forEach(imgType => {
             const previewEl = document.getElementById(tplMediaPreviewId(imgType));
             if (existingImages[imgType] && previewEl) {
                 previewEl.src = 'data:image/png;base64,' + existingImages[imgType];
@@ -7493,11 +7474,13 @@ function updatePassPreview() {
 }
 
 // Image slots per pass type
+// Le uniche immagini di un pass: logo, strip e icona notifica (quest'ultima vive sul
+// brand, non sul template). Thumbnail e background sono state rimosse.
 const PASS_IMAGE_SLOTS = {
-    storeCard: { logo: true, strip: true, thumbnail: false, background: false },
-    coupon:    { logo: true, strip: true, thumbnail: false, background: false },
-    eventTicket: { logo: true, strip: true, thumbnail: true, background: true },
-    generic:   { logo: true, strip: false, thumbnail: true, background: false }
+    storeCard: { logo: true, strip: true },
+    coupon:    { logo: true, strip: true },
+    eventTicket: { logo: true, strip: true },
+    generic:   { logo: true, strip: false }
 };
 
 const PASS_TYPE_INFO = {
@@ -7517,15 +7500,15 @@ const PASS_TYPE_INFO = {
     },
     eventTicket: {
         title: 'Event Ticket',
-        desc: 'Per eventi, biglietti e prenotazioni. Il layout più flessibile: puoi usare strip banner OPPURE background + thumbnail per un look più immersivo.',
-        slots: 'Logo · Strip (banner) OPPURE Background (sfondo intero, 360x440px) + Thumbnail (90x90px, mostrato sul fronte)',
+        desc: 'Per eventi, biglietti e prenotazioni. Mostra un banner strip in alto, come lo Store Card, con campi pensati per data, luogo e posto.',
+        slots: 'Logo (in alto a sinistra) · Strip (banner, 750x246px)',
         fields: 'Header (alto dx) · Secondary (data, luogo) · Auxiliary (posto, fila) · Retro (info evento, mappa, contatti)',
         use: 'Biglietti concerti, ingressi fiera, prenotazioni ristorante, pass evento'
     },
     generic: {
         title: 'Generic',
-        desc: 'Il formato più pulito e minimale. Nessun banner strip — solo logo, testo e opzionalmente un thumbnail quadrato sul fronte.',
-        slots: 'Logo (in alto a sinistra) · Thumbnail (quadrato 90x90px, opzionale)',
+        desc: 'Il formato più pulito e minimale: nessun banner, solo logo e testo.',
+        slots: 'Logo (in alto a sinistra)',
         fields: 'Header (alto dx) · Secondary · Auxiliary · Retro (link, info, contatti)',
         use: 'Badge identificativi, pass accesso, card informative, boarding pass custom'
     }
@@ -7566,8 +7549,6 @@ function onPassTypeChange() {
     const type = document.getElementById('tplType').value;
     const slots = PASS_IMAGE_SLOTS[type] || PASS_IMAGE_SLOTS.storeCard;
     document.getElementById('tplImgStripRow').style.display = slots.strip ? '' : 'none';
-    document.getElementById('tplImgThumbRow').style.display = slots.thumbnail ? '' : 'none';
-    document.getElementById('tplImgBgRow').style.display = slots.background ? '' : 'none';
     // Update info box if visible
     if (document.getElementById('passTypeInfoBox').style.display !== 'none') updatePassTypeInfo();
     updatePassPreview();
@@ -7635,7 +7616,7 @@ function tplMediaPreviewId(imageType) {
         wallet_icon: 'tplImgWalletIconPreview',
         strip: 'tplImgStripPreview',
         thumbnail: 'tplImgThumbPreview',
-        background: 'tplImgBgPreview'
+        background: null
     };
     return ids[imageType] || ('tplImg' + imageType.charAt(0).toUpperCase() + imageType.slice(1) + 'Preview');
 }
@@ -7758,7 +7739,9 @@ async function loadStripFromPromo() {
 
 // Upload template images after save
 async function uploadTemplateImages(templateId) {
-    const types = ['logo', 'strip', 'thumbnail', 'background'];
+    // Su Ads le immagini di un pass sono logo e strip (l'icona vive sul brand). La
+    // thumbnail è solo di FiloDiretto, che la incolla sulla strip del pass dipendente.
+    const types = isHrDashboard() ? ['logo', 'strip', 'thumbnail'] : ['logo', 'strip'];
     const failed = [];
     for (const imgType of types) {
         if (tplImageCache[imgType]) {
@@ -12584,7 +12567,6 @@ const A2W_BRAND_IDENTITY_ASSET_SPECS = {
     wallet_icon: { label: 'Icona notifiche Wallet', hint: 'Quadrata 512×512 PNG — per push iPhone', mediaType: 'wallet_icon' },
     strip: { label: 'Strip default', hint: 'Consigliato 1125x432 px', mediaType: 'strip' },
     thumbnail: { label: 'Thumbnail', hint: 'Consigliato 90x90 px', mediaType: 'thumbnail' },
-    background: { label: 'Background pass', hint: 'Consigliato 360x440 px', mediaType: 'background' }
 };
 
 const brandIdentityState = {
@@ -12990,13 +12972,13 @@ async function a2wBiLoadMediaByType() {
         wallet_icon: list.filter((x) => x.type === 'wallet_icon'),
         strip: list.filter((x) => x.type === 'strip'),
         thumbnail: list.filter((x) => x.type === 'thumbnail'),
-        background: list.filter((x) => x.type === 'background')
+        background: []
     };
 }
 
 function a2wBiApplySelectedAssetsFromConfig(config) {
     const saved = config?.brand_identity_assets || {};
-    ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].forEach((type) => {
+    ['logo', 'wallet_icon', 'strip', 'thumbnail'].forEach((type) => {
         const byId = String(saved[type] || '');
         const pool = brandIdentityState.mediaByType[type] || [];
         brandIdentityState.selectedAssets[type] = pool.find((x) => String(x.id) === byId) || null;
@@ -13030,7 +13012,7 @@ function a2wBiBindAssetSlotActions(type) {
 function a2wBiRenderAssetsGrid() {
     const host = a2wBiField('a2wBiAssetsGrid');
     if (!host) return;
-    host.innerHTML = ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].map((type) => {
+    host.innerHTML = ['logo', 'wallet_icon', 'strip', 'thumbnail'].map((type) => {
         const spec = A2W_BRAND_IDENTITY_ASSET_SPECS[type];
         const item = brandIdentityState.selectedAssets[type];
         const isSquare = type === 'wallet_icon' || type === 'thumbnail';
@@ -13052,7 +13034,7 @@ function a2wBiRenderAssetsGrid() {
           </article>
         `;
     }).join('');
-    ['logo', 'wallet_icon', 'strip', 'thumbnail', 'background'].forEach(a2wBiBindAssetSlotActions);
+    ['logo', 'wallet_icon', 'strip', 'thumbnail'].forEach(a2wBiBindAssetSlotActions);
 }
 
 function a2wBiUpdatePreviewCard() {
@@ -13921,7 +13903,7 @@ async function doMediaUpload() {
         let base64;
         if (mediaUploadEditedBase64) {
             base64 = mediaUploadEditedBase64;
-        } else if (autoFit && ['strip', 'logo', 'wallet_icon', 'thumbnail', 'background'].includes(type)) {
+        } else if (autoFit && ['strip', 'logo', 'wallet_icon', 'thumbnail'].includes(type)) {
             base64 = await normalizeMediaForUpload(file, type);
         } else {
             base64 = await new Promise((resolve, reject) => {

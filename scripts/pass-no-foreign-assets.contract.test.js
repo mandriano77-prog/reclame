@@ -27,10 +27,25 @@ test('la generazione del pass non carica asset di default da file', () => {
 
 test('Ads: senza le immagini del brand un pass nuovo non si emette', () => {
   assert.match(passkitCode, /err\.code = 'brand_images_missing'/);
-  assert.match(passkitCode, /if \(!iconBuffers\?\.icon\) missing\.push\('icona notifica'\)/);
-  assert.match(passkitCode, /if \(!logoBuffers\?\.logo\) missing\.push\('logo'\)/);
-  // la strip si pretende solo dove il pass la mostra davvero
-  assert.match(passkitCode, /stripIsShown && !stripBuffers\?\.strip/);
+  // Una regola sola, riusata da chi emette il pass e da chi rifiuta prima del database:
+  // due copie divergerebbero, e una delle due lascerebbe passare il caso sbagliato.
+  assert.match(passkitCode, /async function missingBrandPassImages\(brand, template\)/);
+  assert.match(passkitCode, /missing\.push\('logo'\)/);
+  assert.match(passkitCode, /missing\.push\('icona notifica'\)/);
+  assert.match(passkitCode, /missing\.push\('strip'\)/);
+  // l'icona dev'essere caricata: quella ricavata dal logo non vale
+  assert.match(passkitCode, /icon\.source === 'logo_derived'/);
+});
+
+test('le uniche immagini di un pass Ads sono logo, strip e icona notifica', () => {
+  // Niente thumbnail né background: non arrivano su nessun pass Ads.
+  assert.doesNotMatch(passkitCode, /files\['thumbnail\.png'\]/);
+  assert.doesNotMatch(passkitCode, /files\['background\.png'\]/);
+  // la thumbnail resta solo a FiloDiretto, che la incolla sulla strip
+  assert.match(passkitCode, /if \(hrBrand && tplImages\.thumbnail\)/);
+  // e il server non le accetta più in upload da un brand Ads
+  const tplRoutes = fs.readFileSync(path.join(root, 'src/api/template-routes.js'), 'utf8');
+  assert.match(tplRoutes, /isHrBrand\(brandForImages\) \? \['logo', 'strip', 'thumbnail'\] : \['logo', 'strip'\]/);
 });
 
 test('il blocco vale solo alla nascita del pass, mai sugli aggiornamenti', () => {

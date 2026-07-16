@@ -7,10 +7,10 @@
   var TPL_SLOTS = {
     logo: { accept: 'image/png,image/jpeg,image/webp,image/svg+xml,.pdf', hint: 'PNG consigliato, max 320×100 px' },
     wallet_icon: { accept: 'image/png,image/jpeg,image/webp', hint: 'PNG quadrato 512×512 px' },
-    strip: { accept: 'image/png,image/jpeg,image/webp', hint: 'PNG 750×246 px (rapporto 1125:432)' },
-    thumbnail: { accept: 'image/png,image/jpeg,image/webp', hint: 'PNG 90×90 px' },
-    background: { accept: 'image/png,image/jpeg,image/webp', hint: 'PNG 360×440 px' }
+    strip: { accept: 'image/png,image/jpeg,image/webp', hint: 'PNG 750×246 px (rapporto 1125:432)' }
   };
+  // Le uniche immagini di un pass: logo, icona notifica, strip. Thumbnail e background
+  // sono state rimosse — non finivano su nessun pass Ads.
 
   var brandPaletteCache = null;
   var manualPaletteOverride = false;
@@ -237,9 +237,7 @@
     var map = {
       logo: 'tplImgLogo',
       wallet_icon: 'tplImgWalletIcon',
-      strip: 'tplImgStrip',
-      thumbnail: 'tplImgThumb',
-      background: 'tplImgBg'
+      strip: 'tplImgStrip'
     };
     return document.getElementById(map[slot]);
   }
@@ -317,7 +315,7 @@
     if (src) {
       zone.innerHTML = '';
       var img = document.createElement('img');
-      img.className = 'a2w-tpl-upload__thumb' + (slot === 'wallet_icon' || slot === 'thumbnail' ? ' a2w-tpl-upload__thumb--square' : '');
+      img.className = 'a2w-tpl-upload__thumb' + (slot === 'wallet_icon' ? ' a2w-tpl-upload__thumb--square' : '');
       // Se la src non carica (es. media cancellato dalla libreria) la zona deve tornare
       // vuota e ricaricabile, non restare bloccata su un'icona rotta. Staccare l'img dal
       // DOM non annulla la richiesta in volo: senza la guardia, un error in ritardo

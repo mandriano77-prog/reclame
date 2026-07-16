@@ -15,15 +15,18 @@ process.env.JWT_SECRET = 'itest-secret';
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const sharp = require('sharp');
+const jwt = require('jsonwebtoken');
 
 const db = require('../../src/db');
 const { app } = require('../../src/server');
-const { createPkpass } = require('../../src/engine/passkit');
+const { createPkpass, missingBrandPassImages } = require('../../src/engine/passkit');
 const { buildPkpassCached } = require('../../src/engine/pkpass-cache');
 
 let server;
 let base;
 const SLUG = 'itest-imgreq';
+const EMAIL = 'itest-imgreq@example.com';
+let token;
 let brandId;
 let templateId;
 
@@ -35,6 +38,7 @@ async function cleanup() {
     }
   }
   await db.pool.query('DELETE FROM brands WHERE slug LIKE $1', [SLUG + '%']).catch(() => {});
+  await db.pool.query('DELETE FROM users WHERE email = $1', [EMAIL]).catch(() => {});
 }
 
 before(async () => {
@@ -44,6 +48,8 @@ before(async () => {
   brandId = brand.id;
   const tpl = await db.createTemplate({ brand_id: brandId, name: 'T', pass_type: 'storeCard', style: {}, fields: {} });
   templateId = tpl.id;
+  const user = await db.createUser({ email: EMAIL, password: 'pw-itest-12345', name: 'Itest Admin', role: 'admin', brand_id: null });
+  token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: 'admin', brand_id: null }, 'itest-secret', { expiresIn: '1h' });
 
   server = app.listen(0);
   await new Promise((r) => server.once('listening', r));
@@ -66,10 +72,24 @@ test("emettere un pass nuovo è rifiutato, e dice quali immagini mancano", async
     () => createPkpass(tpl, pass, brand, { requireBrandImages: true }),
     (err) => {
       assert.equal(err.code, 'brand_images_missing');
-      assert.deepEqual(err.missing, ['icona notifica', 'logo', 'strip']);
+      assert.deepEqual(err.missing, ['logo', 'icona notifica', 'strip']);
       return true;
     }
   );
+});
+
+test("il logo non fa da icona notifica: va caricata davvero", async () => {
+  // Il motore sa ricavare un'icona ritagliando il logo. Comodo, ma qui significherebbe
+  // emettere un pass senza l'icona che il brand ha scelto — cioè esattamente la cosa
+  // che non si vuole più.
+  const square = (await sharp({ create: { width: 512, height: 512, channels: 4, background: { r: 10, g: 80, b: 60, alpha: 1 } } }).png().toBuffer()).toString('base64');
+  const solo = await db.createBrand({
+    name: 'Itest Solo Logo', slug: SLUG + '-sologo',
+    config: { product_line: 'ads', logos: { logo: square } },
+  });
+  const tpl = await db.createTemplate({ brand_id: solo.id, name: 'T', pass_type: 'storeCard', style: { images: { strip: square } }, fields: {} });
+  const missing = await missingBrandPassImages(await db.getBrand(solo.id), await db.getTemplate(tpl.id));
+  assert.deepEqual(missing, ['icona notifica'], 'logo e strip ci sono, manca solo l\'icona');
 });
 
 test("un pass GIÀ INSTALLATO continua ad aggiornarsi anche se il brand è incompleto", async () => {
@@ -104,6 +124,27 @@ test("con le immagini del brand il pass si crea", async () => {
   });
   const buf = await createPkpass(freshTpl, pass, fresh, { requireBrandImages: true });
   assert.ok(buf.length > 1000, 'il .pkpass viene prodotto');
+});
+
+test("nemmeno dal back office nasce un pass senza immagini", async () => {
+  // Questo percorso creava il pass senza controllare nulla, e restava pure scaricabile
+  // con la grafica di ripiego: la falla che vanificava tutto il resto.
+  const naked = await db.createBrand({ name: 'Itest Img Req 3', slug: SLUG + '-3', config: { product_line: 'ads' } });
+  const tpl = await db.createTemplate({ brand_id: naked.id, name: 'T3', pass_type: 'storeCard', style: {}, fields: {} });
+  const res = await fetch(`${base}/api/v1/passes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ brand_id: naked.id, template_id: tpl.id }),
+  });
+  assert.equal(res.status, 422);
+  const body = await res.json();
+  assert.equal(body.code, 'brand_images_missing');
+  // all'operatore si dice cosa manca: è lui che può rimediare
+  assert.match(body.error, /logo/);
+  assert.match(body.error, /Template Pass/);
+
+  const passes = await db.listPasses(naked.id);
+  assert.equal(passes.length, 0, 'e non resta un pass orfano a database');
 });
 
 test("sulla landing il consumatore non legge gergo da back office", async () => {

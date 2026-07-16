@@ -98,7 +98,7 @@ const {
   TZ
 } = require('../engine/audience-prompt');
 const { getHolderBehaviorInsights, listRecentHolderEvents, exportHolderEvents } = require('../engine/holder-events');
-const { createPkpass } = require('../engine/passkit');
+const { createPkpass, missingBrandPassImages, brandImagesMissingError } = require('../engine/passkit');
 const { buildPkpassCached } = require('../engine/pkpass-cache');
 const googleWallet = require('../engine/google-wallet');
 const samsungWallet = require('../engine/samsung-wallet');
@@ -644,6 +644,15 @@ router.post('/signup', async (req, res) => {
     }
     if (!template) return res.status(400).json({ error: 'Nessun template configurato per questo brand' });
 
+    // Rifiuto PRIMA di scrivere: controllare dopo lasciava a database un pass mai
+    // consegnato, un evento pass_created e un download di campagna gonfiato a ogni
+    // tentativo su un brand incompleto.
+    const missingSignupImgs = await missingBrandPassImages(brand, template);
+    if (missingSignupImgs.length) {
+      console.error('[signup] pass non creato per brand %s: immagini mancanti (%s)', brand.slug, missingSignupImgs.join(', '));
+      return res.status(422).json({ error: 'Il pass di questo brand non è ancora disponibile.' });
+    }
+
     // Create anonymous pass instance with browser metadata
     const passData = {
       template_id: template.id,
@@ -728,6 +737,15 @@ router.post('/signup/google-wallet', async (req, res) => {
     }
     if (!template) return res.status(400).json({ error: 'Nessun template configurato' });
 
+    // Senza le immagini del brand il pass non nasce, su nessun wallet: si rifiuta prima di
+    // creare qualcosa a database. Al consumatore niente gergo interno; l'operatore lo trova
+    // nei log, dove è azionabile.
+    const missingWalletImgs = await missingBrandPassImages(brand, template);
+    if (missingWalletImgs.length) {
+      console.error('[signup] pass non creato per brand %s: immagini mancanti (%s)', brand.slug, missingWalletImgs.join(', '));
+      return res.status(422).json({ error: 'Il pass di questo brand non è ancora disponibile.' });
+    }
+
     // Create anonymous pass instance (same as Apple Wallet signup)
     const passData = {
       template_id: template.id,
@@ -790,6 +808,15 @@ router.post('/signup/samsung-wallet', async (req, res) => {
       template = templates[0];
     }
     if (!template) return res.status(400).json({ error: 'Nessun template configurato' });
+
+    // Senza le immagini del brand il pass non nasce, su nessun wallet: si rifiuta prima di
+    // creare qualcosa a database. Al consumatore niente gergo interno; l'operatore lo trova
+    // nei log, dove è azionabile.
+    const missingWalletImgs = await missingBrandPassImages(brand, template);
+    if (missingWalletImgs.length) {
+      console.error('[signup] pass non creato per brand %s: immagini mancanti (%s)', brand.slug, missingWalletImgs.join(', '));
+      return res.status(422).json({ error: 'Il pass di questo brand non è ancora disponibile.' });
+    }
 
     const passData = {
       template_id: template.id,
@@ -2367,6 +2394,16 @@ router.post('/passes', async (req, res) => {
     const { brand_id, template_id, campaign_id, field_values } = req.body;
     if (!brand_id || !template_id) return res.status(400).json({ error: 'brand_id e template_id richiesti' });
     if (!requireBrandId(req, res, brand_id)) return;
+
+    // Senza le immagini del brand il pass non nasce: si rifiuta prima di creare qualcosa,
+    // altrimenti resterebbe a database un pass che non si può scaricare.
+    const brandForPass = await getBrand(brand_id);
+    const tplForPass = await getTemplate(template_id);
+    const missingImgs = await missingBrandPassImages(brandForPass, tplForPass);
+    if (missingImgs.length) {
+      const e = brandImagesMissingError(missingImgs);
+      return res.status(422).json({ error: e.message, code: e.code, missing: e.missing });
+    }
 
     const passInstance = await createPassInstance({ template_id, brand_id, campaign_id, field_values });
     await logEvent({ pass_id: passInstance.id, brand_id, event_type: 'pass_created', metadata: { source: 'backoffice' } });
@@ -4440,6 +4477,15 @@ router.post('/brands/:brand_id/leads', async (req, res) => {
 
     let passInstance = null;
     if (createPass && templateId) {
+      // Anche da qui un pass nasce: senza le immagini del brand non deve nascere. Prima si
+      // creava e restava pure scaricabile, con la grafica di ripiego.
+      const brandForLead = await getBrand(brand_id);
+      const tplForLead = await getTemplate(templateId);
+      const missingLeadImgs = await missingBrandPassImages(brandForLead, tplForLead);
+      if (missingLeadImgs.length) {
+        const e = brandImagesMissingError(missingLeadImgs);
+        return res.status(422).json({ error: e.message, code: e.code, missing: e.missing });
+      }
       const field_values = {
         email,
         phone,

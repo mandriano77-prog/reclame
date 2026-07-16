@@ -90,9 +90,13 @@ function registerTemplateRoutes(router, deps) {
       if (!template) return res.status(404).json({ error: 'Template non trovato' });
       if (!requireBrandId(req, res, template.brand_id)) return;
       const { image_type, image_base64 } = req.body;
-      // image_type: 'logo', 'strip', 'thumbnail', 'background'
-      if (!['logo', 'strip', 'thumbnail', 'background'].includes(image_type)) {
-        return res.status(400).json({ error: 'image_type deve essere: logo, strip, thumbnail, background' });
+      // Su un pass Ads le uniche immagini sono logo e strip (l'icona notifica vive sul
+      // brand, non sul template). La thumbnail resta solo a FiloDiretto, che la incolla
+      // sulla strip del pass dipendente. La background non esiste più per nessuno.
+      const brandForImages = await getBrand(template.brand_id);
+      const allowed = isHrBrand(brandForImages) ? ['logo', 'strip', 'thumbnail'] : ['logo', 'strip'];
+      if (!allowed.includes(image_type)) {
+        return res.status(400).json({ error: `image_type deve essere: ${allowed.join(', ')}` });
       }
       if (!image_base64) return res.status(400).json({ error: 'image_base64 richiesto' });
       const style = template.style || {};

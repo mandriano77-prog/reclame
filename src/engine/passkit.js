@@ -1074,6 +1074,43 @@ function signManifest(manifestJson, certPath, keyPath, wwdrPath) {
 /**
  * Create the complete .pkpass file
  */
+/**
+ * Le uniche immagini di un pass Ads: logo, strip, icona notifica. Restituisce quali
+ * mancano ([] se è tutto a posto), così ogni punto in cui un pass nasce applica la stessa
+ * regola invece di reinventarla — e può rifiutare PRIMA di creare qualcosa nel database.
+ * L'icona dev'essere caricata davvero: quella ricavata dal logo non conta, altrimenti
+ * "senza icona notifica" passerebbe lo stesso.
+ */
+async function missingBrandPassImages(brand, template) {
+  if (isHrPassBrand(brand)) return [];
+  const tplImages = template?.style?.images || {};
+  const missing = [];
+
+  const resolvedLogo = await resolveWalletLogoRawBuffer(brand, template);
+  if (!resolvedLogo?.buffer) missing.push('logo');
+
+  const icon = await resolvePassIconBuffers(brand, resolvedLogo);
+  if (!icon?.iconBuffers?.icon || icon.source === 'logo_derived') missing.push('icona notifica');
+
+  const passType = template?.pass_type || 'storeCard';
+  const stripIsShown = passType === 'coupon' || passType === 'storeCard' || passType === 'eventTicket';
+  if (stripIsShown && !tplImages.strip && !brand?.config?.logos?.strip && !brand?.config?.stripOverride) {
+    missing.push('strip');
+  }
+  return missing;
+}
+
+function brandImagesMissingError(missing) {
+  const err = new Error(
+    `Pass non creato: mancano le immagini del brand (${missing.join(', ')}). ` +
+    'Caricale in Template Pass e riprova.'
+  );
+  err.code = 'brand_images_missing';
+  err.missing = missing;
+  err.status = 422;
+  return err;
+}
+
 async function createPkpass(template, instance, brand, options = {}) {
   const hrBrand = isHrPassBrand(brand);
   const {
@@ -1224,9 +1261,10 @@ async function createPkpass(template, instance, brand, options = {}) {
   }
   // Emissione di un pass nuovo senza strip del brand: nessun ripiego, si fallisce sotto.
 
-  // Thumbnail — for generic and eventTicket; su storeCard HR viene composita sulla strip
+  // Le uniche immagini di un pass Ads sono logo, strip e icona notifica. La thumbnail
+  // resta solo per FiloDiretto, che la incolla sulla strip del pass dipendente.
   let thumbnailBuffers = null;
-  if (tplImages.thumbnail) {
+  if (hrBrand && tplImages.thumbnail) {
     const rawThumb = Buffer.from(tplImages.thumbnail, 'base64');
     thumbnailBuffers = {
       thumb: await sharp(rawThumb).resize(90, 90, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer(),
@@ -1235,16 +1273,8 @@ async function createPkpass(template, instance, brand, options = {}) {
     console.log('✓ Using template-level thumbnail');
   }
 
-  // Background — loyalty / event layouts only (not employee pass)
-  let backgroundBuffers = null;
-  if (!hrBrand && tplImages.background) {
-    const rawBg = Buffer.from(tplImages.background, 'base64');
-    backgroundBuffers = {
-      bg: await sharp(rawBg).resize(180, 220, { fit: 'cover' }).png().toBuffer(),
-      bg2x: await sharp(rawBg).resize(360, 440, { fit: 'cover' }).png().toBuffer()
-    };
-    console.log('✓ Using template-level background');
-  }
+  // Background rimossa: non è più un'immagine che si possa usare su un pass.
+  const backgroundBuffers = null;
 
   if (hrBrand && thumbnailBuffers) {
     stripBuffers.strip = await compositeThumbnailOnStrip(stripBuffers.strip, thumbnailBuffers.thumb, 375, 123);
@@ -1253,27 +1283,11 @@ async function createPkpass(template, instance, brand, options = {}) {
   }
 
   // Un pass NUOVO si emette solo con le immagini vere del brand: un pass con la grafica
-  // sbagliata è peggio di nessun pass. Si controlla qui perché solo ora è noto quali
-  // immagini questo pass mostra davvero (la strip non compare su tutti i tipi: non ha
-  // senso pretenderla dove non si vede).
+  // sbagliata è peggio di nessun pass. Stessa regola dei punti che rifiutano prima ancora
+  // di scrivere sul database, così non possono divergere.
   if (requireBrandImages && !hrBrand) {
-    const passTypeForCheck = template.pass_type || 'storeCard';
-    const stripIsShown = passTypeForCheck === 'coupon' || passTypeForCheck === 'storeCard'
-      || (passTypeForCheck === 'eventTicket' && !backgroundBuffers);
-    const missing = [];
-    if (!iconBuffers?.icon) missing.push('icona notifica');
-    if (!logoBuffers?.logo) missing.push('logo');
-    if (stripIsShown && !stripBuffers?.strip) missing.push('strip');
-    if (missing.length) {
-      const err = new Error(
-        `Pass non creato: mancano le immagini del brand (${missing.join(', ')}). ` +
-        'Caricale in Template Pass e riprova.'
-      );
-      err.code = 'brand_images_missing';
-      err.missing = missing;
-      err.status = 422;
-      throw err;
-    }
+    const missing = await missingBrandPassImages(brand, template);
+    if (missing.length) throw brandImagesMissingError(missing);
   }
 
   // Build file map
@@ -1290,20 +1304,11 @@ async function createPkpass(template, instance, brand, options = {}) {
     files['strip.png'] = stripBuffers.strip;
     files['strip@2x.png'] = stripBuffers.strip2x;
   } else {
+    // Ads: solo logo, strip e icona notifica. Niente thumbnail né background.
     const passType = template.pass_type || 'storeCard';
-    if (passType === 'coupon' || passType === 'storeCard' || (passType === 'eventTicket' && !backgroundBuffers)) {
+    if (passType === 'coupon' || passType === 'storeCard' || passType === 'eventTicket') {
       files['strip.png'] = stripBuffers.strip;
       files['strip@2x.png'] = stripBuffers.strip2x;
-    }
-    if (thumbnailBuffers && (passType === 'generic' || passType === 'eventTicket')) {
-      files['thumbnail.png'] = thumbnailBuffers.thumb;
-      files['thumbnail@2x.png'] = thumbnailBuffers.thumb2x;
-    } else if (thumbnailBuffers && (passType === 'storeCard' || passType === 'coupon')) {
-      console.warn('[passkit] thumbnail ignorata su Apple Wallet per pass_type=%s — usa eventTicket', passType);
-    }
-    if (backgroundBuffers && passType === 'eventTicket') {
-      files['background.png'] = backgroundBuffers.bg;
-      files['background@2x.png'] = backgroundBuffers.bg2x;
     }
   }
 
@@ -1367,5 +1372,7 @@ module.exports = {
   generateManifest,
   signManifest,
   createPkpass,
+  missingBrandPassImages,
+  brandImagesMissingError,
   generateDefaultImages
 };
