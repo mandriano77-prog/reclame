@@ -1181,33 +1181,22 @@ async function createPkpass(template, instance, brand, options = {}) {
     }
   }
 
-  // Fall back to default icon files, then generated (HR skips Hirostar default assets)
+  // Senza icona propria si genera dall'iniziale e dai colori del brand. Mai un file di
+  // default: quelli in public/assets erano il marchio "H" di Hirostar, e finivano sul pass
+  // di chiunque non avesse ancora caricato la sua icona.
   if (!iconBuffers?.icon) {
-    if (hrBrand) {
-      iconBuffers = await generateIcon(brand.name, bgColor, fgColor);
-      console.log('✓ HR: icon from brand initial (no wallet logo source)');
-    } else {
-      const defaultIconPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-icon.png');
-      const defaultIcon2xPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-icon@2x.png');
-      if (fs.existsSync(defaultIconPath)) {
-        iconBuffers = {
-          icon: fs.readFileSync(defaultIconPath),
-          icon2x: fs.existsSync(defaultIcon2xPath) ? fs.readFileSync(defaultIcon2xPath) : fs.readFileSync(defaultIconPath)
-        };
-        console.log('✓ Using default icon (H mark from assets)');
-      } else {
-        iconBuffers = await generateIcon(brand.name, bgColor, fgColor);
-      }
-    }
+    iconBuffers = await generateIcon(brand.name, bgColor, fgColor);
+    console.log('✓ Notification icon generated from brand initial');
   }
   if (!logoBuffers?.logo) {
     const logos = await generateLogo(brand.name, bgColor, fgColor);
     logoBuffers = logos;
   }
 
-  // Strip images — push override → template → brand → default file → generated
+  // Strip images — push override → template → brand → generata dal brand.
+  // Nessun file di default: quello in public/assets era la promo "1° Maggio Campo
+  // Gratuito" di Hirostar, e compariva sul pass di ogni brand senza strip propria.
   let stripBuffers;
-  const defaultStripPath = path.join(__dirname, '..', '..', 'public', 'assets', 'default-strip.png');
   const pushStripB64 = brandCfg.stripOverride;
   if (pushStripB64) {
     const rawStrip = Buffer.from(pushStripB64, 'base64');
@@ -1227,14 +1216,9 @@ async function createPkpass(template, instance, brand, options = {}) {
     const strip2x = await sharp(rawStrip).resize(750, 246, { fit: 'cover' }).png().toBuffer();
     stripBuffers = { strip: strip1x, strip2x: strip2x };
     console.log('✓ Using custom strip image (from brand)');
-  } else if (fs.existsSync(defaultStripPath)) {
-    const rawStrip = fs.readFileSync(defaultStripPath);
-    const strip1x = await sharp(rawStrip).resize(375, 123, { fit: 'cover' }).png().toBuffer();
-    const strip2x = await sharp(rawStrip).resize(750, 246, { fit: 'cover' }).png().toBuffer();
-    stripBuffers = { strip: strip1x, strip2x: strip2x };
-    console.log('✓ Using default strip image (from file)');
   } else {
     stripBuffers = await generateStrip(brand.name, bgColor, fgColor);
+    console.log('✓ Strip generated from brand name and colors');
   }
 
   // Thumbnail — for generic and eventTicket; su storeCard HR viene composita sulla strip
