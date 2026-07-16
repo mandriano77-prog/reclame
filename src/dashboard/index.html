@@ -678,7 +678,12 @@
 
         .toast {
             position: fixed;
-            bottom: var(--space-6);
+            /* Nello stesso angolo vivono il pulsante W.AI (.wai-fab, 56px, z-index 10050) e
+               il suo pannello (.wai-panel, bottom 92px, z-index 10049): i toast ci finivano
+               sotto e ogni messaggio — errori compresi — arrivava tagliato. Si sale sopra il
+               pulsante, ma da solo non basta: senza z-index il toast sparirebbe dietro al
+               pannello aperto, cioè proprio dove W.AI segnala i suoi errori. */
+            bottom: calc(var(--space-6) + 56px + var(--space-2));
             right: var(--space-6);
             background: var(--text-primary);
             color: var(--bg-canvas);
@@ -686,7 +691,9 @@
             border-radius: var(--radius-md);
             font-weight: 500;
             font-size: var(--text-sm);
-            z-index: 2000;
+            /* Sopra il FAB (10050) e il suo pannello (10049): un messaggio che nessuno legge
+               non è un messaggio. */
+            z-index: 10060;
             opacity: 0;
             transform: translateY(20px);
             transition: all var(--transition-base);
@@ -2498,7 +2505,13 @@
                   </div>
                   <div class="a2w-contacts-header-actions" id="a2wContactsHeaderActions">
                     <button type="button" class="btn a2w-contacts-header-btn" id="a2wContactsAddBtn" data-menu-key="leads_add_btn" data-menu-default="＋ Aggiungi contatto" aria-label="Aggiungi contatto">＋ Aggiungi contatto</button>
-                    <button type="button" class="btn sec a2w-contacts-header-btn a2w-contacts-header-btn--secondary" id="a2wContactsImportBtn" data-menu-key="leads_import_btn" data-menu-default="Importa CSV" aria-label="Importa contatti da CSV">Importa CSV</button>
+                    <!-- Niente bottone "Importa": un import contatti su Ads non esiste. Questo
+                         apriva il wizard dipendenti di FiloDiretto (chiedeva la matricola e
+                         avrebbe rifiutato ogni riga). Questa barra è solo di Reclame — in HR
+                         l'intero contenitore viene nascosto e l'import vive nella sua toolbar
+                         (#leadsImportBtn). Toglierlo dal markup è l'unico modo di non
+                         mostrarlo anche nel tab Audience, che non passa dal codice JS. -->
+
                   </div>
                 </div>
                 <div class="tabs-bar a2w-section-tabs" role="tablist" aria-label="Sezione Contatti" id="leadsSectionTabs">
@@ -5216,12 +5229,10 @@ const PRODUCT_MENU_COPY = {
         leads_stat_email: 'Con email',
         leads_search_placeholder: 'Cerca nome, email, telefono…',
         leads_add_btn: '＋ Aggiungi profilo',
-        leads_import_btn: 'Importa contatti (CSV)',
         leads_empty: 'Nessun profilo identificato',
         leads_empty_title: 'Nessun profilo identificato',
-        leads_empty_desc: 'I pass anonimi sono elencati in Pass Emessi. Qui compaiono solo possessori con dati personali (form, import o integrazione).',
+        leads_empty_desc: 'I pass anonimi sono elencati in Pass Emessi. Qui compaiono solo possessori con dati personali, raccolti dal form della landing o aggiunti a mano.',
         leads_empty_add: 'Aggiungi profilo',
-        leads_empty_import: 'Importa contatti (CSV)',
         leads_empty_goto_passes: 'Vai a Pass Emessi',
         leads_export_empty: 'Nessun profilo da esportare',
         aud_overview_title: 'Panoramica possessori',
@@ -9752,11 +9763,6 @@ function ensureA2wLeadsHeaderChrome() {
         title.appendChild(wrap);
     }
 
-    const importBtn = document.getElementById('a2wContactsImportBtn');
-    if (importBtn && importBtn.dataset.bound !== '1') {
-        importBtn.dataset.bound = '1';
-        importBtn.addEventListener('click', openEmployeeImportModal);
-    }
     const addBtn = document.getElementById('a2wContactsAddBtn');
     if (addBtn && addBtn.dataset.bound !== '1') {
         addBtn.dataset.bound = '1';
@@ -10396,11 +10402,6 @@ async function loadLeads() {
             addBtn.textContent = '＋ Aggiungi dipendente';
             addBtn.setAttribute('aria-label', 'Aggiungi dipendente');
         }
-        const importBtnHr = document.getElementById('a2wContactsImportBtn');
-        if (importBtnHr) {
-            importBtnHr.textContent = 'Importa dipendenti';
-            importBtnHr.setAttribute('aria-label', 'Importa dipendenti da CSV o Excel');
-        }
         const headerActions = document.getElementById('a2wContactsHeaderActions');
         if (headerActions) headerActions.hidden = true;
     } else {
@@ -10410,11 +10411,6 @@ async function loadLeads() {
         if (addBtn) {
             addBtn.textContent = mc.leads_add_btn || '＋ Aggiungi profilo';
             addBtn.setAttribute('aria-label', mc.leads_add_btn || 'Aggiungi profilo');
-        }
-        const importBtnAds = document.getElementById('a2wContactsImportBtn');
-        if (importBtnAds) {
-            importBtnAds.textContent = mc.leads_import_btn || 'Importa contatti (CSV)';
-            importBtnAds.setAttribute('aria-label', mc.leads_import_btn || 'Importa contatti da CSV');
         }
     }
     const searchEl = document.getElementById('leadsSearch');
@@ -10601,7 +10597,6 @@ function renderLeadsTable(leads) {
         const emptyTitle = mc.leads_empty_title || mc.leads_empty || 'Nessun contatto ancora';
         const emptyDesc = mc.leads_empty_desc || 'Crea una campagna con landing page per raccogliere dati personali.';
         const emptyAdd = mc.leads_empty_add || 'Aggiungi manualmente';
-        const emptyImport = mc.leads_empty_import || 'Importa CSV';
         const gotoPasses = mc.leads_empty_goto_passes || 'Vai a Pass Emessi';
         if (emptyHost) {
             emptyHost.hidden = false;
@@ -10618,8 +10613,6 @@ function renderLeadsTable(leads) {
                 <p class="a2w-contacts-empty__or" aria-hidden="true">add-on dati personali</p>
                 <div class="a2w-contacts-empty__actions a2w-contacts-empty__actions--secondary">
                   <button type="button" class="a2w-contacts-empty__link" onclick="openA2wAddContactModal()">${esc(emptyAdd)}</button>
-                  <span class="a2w-contacts-empty__sep" aria-hidden="true">·</span>
-                  <button type="button" class="a2w-contacts-empty__link a2w-contacts-empty__link--muted" onclick="openEmployeeImportModal()">${esc(emptyImport)}</button>
                 </div>
               </div>
             `;

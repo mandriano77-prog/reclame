@@ -4041,6 +4041,11 @@ router.post('/brands/:brand_id/employees/import/preview', async (req, res) => {
     if (!requireBrandId(req, res, brand_id)) return;
     const brand = await getBrand(brand_id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    // Stesso cancello degli altri endpoint dipendenti (righe ~3894, ~3921): l'import è HR.
+    // Su un brand Ads importerebbe matricole e reparti in una lista contatti retail.
+    if (!isHrBrand(brand, req)) {
+      return res.status(400).json({ error: 'Endpoint dipendenti disponibile solo per brand HR' });
+    }
 
     const { file_base64, filename, csv_text, mapping } = req.body || {};
     if (!file_base64 && !csv_text) {
@@ -4059,6 +4064,9 @@ router.post('/brands/:brand_id/employees/import', async (req, res) => {
     if (!requireBrandId(req, res, brand_id)) return;
     const brand = await getBrand(brand_id);
     if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    if (!isHrBrand(brand, req)) {
+      return res.status(400).json({ error: 'Endpoint dipendenti disponibile solo per brand HR' });
+    }
 
     const {
       file_base64,
@@ -4150,6 +4158,11 @@ router.get('/brands/:brand_id/employees/import/errors', async (req, res) => {
     const { brand_id } = req.params;
     const { import_batch_id } = req.query;
     if (!requireBrandId(req, res, brand_id)) return;
+    const brandForErrors = await getBrand(brand_id);
+    if (!brandForErrors) return res.status(404).json({ error: 'Brand non trovato' });
+    if (!isHrBrand(brandForErrors, req)) {
+      return res.status(400).json({ error: 'Endpoint dipendenti disponibile solo per brand HR' });
+    }
     if (!import_batch_id) {
       return res.status(400).json({ error: 'import_batch_id richiesto' });
     }

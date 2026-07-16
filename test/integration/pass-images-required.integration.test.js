@@ -164,3 +164,16 @@ test("sulla landing il consumatore non legge gergo da back office", async () => 
   assert.doesNotMatch(body.error, /Template Pass|icona notifica|strip/i, 'niente gergo interno al consumatore');
   assert.doesNotMatch(body.error, /riprova/i, 'niente false promesse: riprovare non aiuta');
 });
+
+test("l'import dipendenti è chiuso ai brand Ads", async () => {
+  // Da Reclame il bottone "Importa contatti (CSV)" apriva il wizard dipendenti: avrebbe
+  // scritto matricole e reparti in una lista contatti retail. Il bottone è stato tolto,
+  // ma il cancello vero è qui: gli altri endpoint dipendenti ce l'avevano già, l'import no.
+  const res = await fetch(`${base}/api/v1/brands/${brandId}/employees/import/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ csv_text: 'matricola,nome\n1,Mario' }),
+  });
+  assert.equal(res.status, 400);
+  assert.match((await res.json()).error, /solo per brand HR/i);
+});
