@@ -384,7 +384,7 @@ html[data-shell="dark"].a2w-shell .a2w-nav-group-toggle {
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--a2w-text-tertiary);
   cursor: pointer;
@@ -455,7 +455,7 @@ html[data-shell="dark"].a2w-shell .nav-item {
   min-height: 38px;
   padding: 7px var(--space-3);
   margin-bottom: 2px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   font-size: var(--text-sm);
   color: var(--a2w-text-secondary);
   cursor: pointer;
@@ -1102,7 +1102,7 @@ html[data-shell="dark"].a2w-shell .wai-fab {
     padding: 0;
     flex-shrink: 0;
     border: 1px solid var(--a2w-border-default);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-control);
     background: var(--bg-canvas);
     cursor: pointer;
     color: var(--a2w-text-primary);
