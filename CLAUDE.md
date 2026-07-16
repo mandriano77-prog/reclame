@@ -55,6 +55,8 @@ Auth, brands, templates, passes, signup, Apple Wallet device protocol, push, ana
 
 **Google Wallet** (optional): `GOOGLE_WALLET_ISSUER_ID`, service account (`GOOGLE_WALLET_SA_BASE64` or `GOOGLE_WALLET_SERVICE_ACCOUNT_JSON`)
 
+**Samsung Wallet** (spento di default): le credenziali (`SAMSUNG_WALLET_CARD_ID`, `SAMSUNG_WALLET_CERTIFICATE_ID`, `SAMSUNG_WALLET_PARTNER_ID`) **non bastano** a mostrarlo: serve anche `SAMSUNG_WALLET_ENABLED=true`. Senza, Samsung sparisce da ogni superficie — pulsante sulla landing, canale push, filtro audience, bottone sul pass — e `/signup/samsung-wallet` rifiuta. Le credenziali restano dove sono, così il giorno che lo si vende basta la variabile. L'interruttore blocca ciò che nasce: i pass già su Samsung continuano ad aggiornarsi (`isConfigured()`), e la diagnostica tecnica continua a dire la verità sulle credenziali.
+
 **Optional**: `APNS_ENV`, `FROM_EMAIL`, `FROM_NAME`, `PORT` (default 3000), `FAL_API_KEY`, …
 
 ## Development

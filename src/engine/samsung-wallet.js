@@ -104,6 +104,20 @@ function isConfigured() {
   return !!(getSamsungCardId() && getCertificateId() && getPartnerId());
 }
 
+/**
+ * Samsung è acceso? Avere le credenziali non basta: servono anche a tenerlo pronto per
+ * quando lo si venderà, e nel frattempo non deve comparire da nessuna parte — né come
+ * pulsante sulla landing, né come canale push o filtro in dashboard.
+ * Interruttore esplicito, spento di default: si accende con SAMSUNG_WALLET_ENABLED=true.
+ * isConfigured() resta separata e continua a dire la verità sulle credenziali, perché è
+ * quella che alimenta la diagnostica tecnica.
+ */
+function isEnabled() {
+  const flag = String(process.env.SAMSUNG_WALLET_ENABLED || '').trim().toLowerCase();
+  const on = flag === 'true' || flag === '1' || flag === 'yes' || flag === 'si';
+  return on && isConfigured();
+}
+
 function outboundAuthReady() {
   const tok = resolveEnv('SAMSUNG_WALLET_ACCESS_TOKEN', ['SAMSUNG_ACCESS_TOKEN']);
   if (tok) return true;
@@ -437,6 +451,7 @@ async function notifySavedPassesUpdates(passes) {
 
 module.exports = {
   isConfigured,
+  isEnabled,
   getStatusInfo,
   refIdForPass,
   generateDataFetchLink,

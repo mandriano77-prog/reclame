@@ -568,7 +568,8 @@ router.get('/brands/by-slug/:slug', async (req, res) => {
     res.json({
       ...brand,
       config: safeConfig,
-      wallet: { google: googleWallet.isConfigured(), samsung: samsungWallet.isConfigured() }
+      // isEnabled(): avere le credenziali non basta per mostrarlo al pubblico.
+      wallet: { google: googleWallet.isConfigured(), samsung: samsungWallet.isEnabled() }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -804,7 +805,7 @@ router.post('/signup/google-wallet', async (req, res) => {
 
 router.post('/signup/samsung-wallet', async (req, res) => {
   try {
-    if (!samsungWallet.isConfigured()) {
+    if (!samsungWallet.isEnabled()) {
       return res.status(501).json({ error: 'Samsung Wallet non configurato sul server' });
     }
 

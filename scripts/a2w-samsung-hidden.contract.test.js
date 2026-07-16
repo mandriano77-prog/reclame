@@ -21,7 +21,9 @@ test('/health dice quali wallet sono davvero attivi', () => {
   // i moduli si richiedono a chiamata: server.js non li importa in cima, e un riferimento
   // a un modulo non importato avrebbe fatto esplodere /health — cioè il healthcheck su cui
   // Railway decide se il servizio è vivo.
-  assert.match(server, /samsung: \(\) => require\('\.\/engine\/samsung-wallet'\)\.isConfigured\(\)/);
+  // isEnabled, non isConfigured: le credenziali Samsung sono in produzione ma il wallet
+  // non è in uso, e la UI deve sparire lo stesso (vedi samsung-switch.test.js).
+  assert.match(server, /samsung: \(\) => require\('\.\/engine\/samsung-wallet'\)\.isEnabled\(\)/);
 });
 
 test('la dashboard nasconde Samsung solo quando non è configurato', () => {

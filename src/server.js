@@ -415,7 +415,7 @@ app.get('/privacy-policy', (req, res) => {
 const BUILD_VERSION = '3.0.0-' + Date.now();
 const healthWallets = {
   google: () => require('./engine/google-wallet').isConfigured(),
-  samsung: () => require('./engine/samsung-wallet').isConfigured()
+  samsung: () => require('./engine/samsung-wallet').isEnabled()
 };
 app.get('/health', async (req, res) => {
   const base = {
