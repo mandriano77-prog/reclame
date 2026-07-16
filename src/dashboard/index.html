@@ -6091,7 +6091,7 @@ function renderPassTableLegendHtml() {
             <span><strong>Installato</strong> ☑ salvato nel wallet · ☐ solo generato (link non completato)</span>
             <span><strong>Apple</strong> 🔔 token push (APNs) · 🔕 nessun token</span>
             <span><strong>Google</strong> <span class="legend-pill legend-pill--ok">GW</span> salvato · <span class="legend-pill legend-pill--pending">GW°</span> in attesa · — non usato</span>
-            <span><strong>Samsung</strong> <span class="legend-pill legend-pill--ok">SW</span> salvato · <span class="legend-pill legend-pill--pending">SW°</span> in attesa</span>
+            <span data-wallet="samsung"><strong>Samsung</strong> <span class="legend-pill legend-pill--ok">SW</span> salvato · <span class="legend-pill legend-pill--pending">SW°</span> in attesa</span>
             <span><strong>Push (APNs)</strong> ✔ ultima consegnata · ✖ errore · <em>Nx</em> = numero invii</span>
             <span><strong>Pass ID</strong> clic per copiare l'identificativo completo</span>
             <span><strong>Selezione multipla</strong> ☑ prima colonna → <em>Elimina selezionati</em></span>
@@ -8084,6 +8084,22 @@ function dismissPushResult() {
 }
 
 // Home "Stato integrazioni" card — driven by the real /health signal instead of hardcoded OK.
+/**
+ * Nasconde le superfici Samsung quando Samsung non è configurato su questo deploy. Offriva
+ * un canale push, un filtro audience e un bottone sul pass anche dove Samsung non esiste:
+ * scelte che l'operatore poteva fare e che non producevano nulla (l'API risponde 501).
+ * Non si cancella niente: il giorno che le variabili Samsung ci sono, tutto ricompare da
+ * sé — nessuno deve ricordarsi di riaccenderlo.
+ */
+function a2wHideSamsungUiIfUnconfigured(wallet) {
+    if (!wallet || wallet.samsung) return;
+    document.querySelectorAll('option[value="samsung"]').forEach((o) => o.remove());
+    ['passDetailSamsungBtn', 'samsungLegendRow'].forEach((id) => {
+        document.getElementById(id)?.remove();
+    });
+    document.querySelectorAll('[data-wallet="samsung"]').forEach((e) => e.remove());
+}
+
 async function loadIntegrationStatus() {
     const setStatus = (id, ok, okText, badText) => {
         const el = document.getElementById(id);
@@ -8101,6 +8117,7 @@ async function loadIntegrationStatus() {
         setStatus('statusPlatform', platformOk, 'Operativa', 'Non raggiungibile');
         setStatus('statusAiText', aiText, 'Configurata', 'Non configurata');
         setStatus('statusAiImage', aiImg, 'Configurata', 'Non configurata');
+        a2wHideSamsungUiIfUnconfigured(h.wallet);
         if (alertsEl) {
             // Only a genuinely blocking condition goes here; unconfigured AI is shown in the grid.
             const blocking = platformOk ? [] : ['Piattaforma non raggiungibile'];

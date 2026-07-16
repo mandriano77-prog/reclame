@@ -413,6 +413,10 @@ app.get('/privacy-policy', (req, res) => {
 
 // Health check + wallet debug
 const BUILD_VERSION = '3.0.0-' + Date.now();
+const healthWallets = {
+  google: () => require('./engine/google-wallet').isConfigured(),
+  samsung: () => require('./engine/samsung-wallet').isConfigured()
+};
 app.get('/health', async (req, res) => {
   const base = {
     status: 'ok',
@@ -422,6 +426,15 @@ app.get('/health', async (req, res) => {
     ai: {
       anthropic_configured: isAnthropicConfigured(),
       fal_configured: isFalConfigured()
+    },
+    // Quali wallet sono davvero attivi su questo deploy. La dashboard ci nasconde le
+    // superfici di un wallet non configurato: senza questo, offriva Samsung come canale
+    // push, come filtro audience e come bottone sul pass anche dove Samsung non esiste —
+    // scelte che l'utente poteva fare e che non producevano nulla.
+    wallet: {
+      apple: true,
+      google: healthWallets.google(),
+      samsung: healthWallets.samsung()
     }
   };
   if (req.query.wallet) {

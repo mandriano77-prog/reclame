@@ -1,0 +1,42 @@
+'use strict';
+
+// Samsung Wallet non è in uso ("non ancora"): il codice resta, le superfici spariscono.
+// Offriva un canale push, un filtro audience, un bottone sul pass e una legenda anche
+// dove Samsung non è configurato — scelte che l'operatore poteva fare e che non
+// producevano nulla (l'API risponde 501). Non si cancella niente: tutto è legato allo
+// stato reale della configurazione, quindi il giorno che le variabili ci sono la UI
+// ricompare da sé, senza che nessuno debba ricordarsene.
+
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.join(__dirname, '..');
+const indexHtml = fs.readFileSync(path.join(root, 'src/dashboard/index.html'), 'utf8');
+const server = fs.readFileSync(path.join(root, 'src/server.js'), 'utf8');
+
+test('/health dice quali wallet sono davvero attivi', () => {
+  assert.match(server, /wallet: \{\s*\n\s*apple: true,\s*\n\s*google: healthWallets\.google\(\),\s*\n\s*samsung: healthWallets\.samsung\(\)/);
+  // i moduli si richiedono a chiamata: server.js non li importa in cima, e un riferimento
+  // a un modulo non importato avrebbe fatto esplodere /health — cioè il healthcheck su cui
+  // Railway decide se il servizio è vivo.
+  assert.match(server, /samsung: \(\) => require\('\.\/engine\/samsung-wallet'\)\.isConfigured\(\)/);
+});
+
+test('la dashboard nasconde Samsung solo quando non è configurato', () => {
+  assert.match(indexHtml, /function a2wHideSamsungUiIfUnconfigured\(wallet\)/);
+  // esce subito se Samsung c'è (ricompare da sé) e se /health non ha risposto (prudente)
+  assert.match(indexHtml, /if \(!wallet \|\| wallet\.samsung\) return;/);
+  assert.match(indexHtml, /a2wHideSamsungUiIfUnconfigured\(h\.wallet\);/);
+});
+
+test('copre tutte le superfici che offrivano una scelta inerte', () => {
+  const fn = indexHtml.match(/function a2wHideSamsungUiIfUnconfigured\(wallet\) \{[\s\S]*?\n\}/);
+  assert.ok(fn, 'funzione trovata');
+  assert.match(fn[0], /option\[value="samsung"\]/);      // canale push + filtro audience
+  assert.match(fn[0], /passDetailSamsungBtn/);            // bottone nel dettaglio pass
+  assert.match(fn[0], /\[data-wallet="samsung"\]/);       // legenda
+  // e la legenda è marcata nel markup, altrimenti il selettore non troverebbe nulla
+  assert.match(indexHtml, /<span data-wallet="samsung"><strong>Samsung<\/strong>/);
+});
