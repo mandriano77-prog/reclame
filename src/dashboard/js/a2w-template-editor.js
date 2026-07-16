@@ -319,8 +319,11 @@
       var img = document.createElement('img');
       img.className = 'a2w-tpl-upload__thumb' + (slot === 'wallet_icon' || slot === 'thumbnail' ? ' a2w-tpl-upload__thumb--square' : '');
       // Se la src non carica (es. media cancellato dalla libreria) la zona deve tornare
-      // vuota e ricaricabile, non restare bloccata su un'icona rotta.
+      // vuota e ricaricabile, non restare bloccata su un'icona rotta. Staccare l'img dal
+      // DOM non annulla la richiesta in volo: senza la guardia, un error in ritardo
+      // cancellerebbe la thumb valida dipinta nel frattempo da un sync successivo.
       img.onerror = function () {
+        if (!zone.contains(img)) return;
         zone.innerHTML = '<span>Trascina un file o clicca per caricare</span>';
       };
       img.src = src;

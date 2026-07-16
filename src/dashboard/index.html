@@ -7050,16 +7050,18 @@ async function loadHrWalletIconPreview() {
     try {
         const brand = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() }).then((r) => r.json());
         tplWalletIconMediaId = brand?.config?.brand_identity_assets?.wallet_icon || null;
-        // Fonte di verità: l'icona salvata sul brand — è quella che finisce davvero sul pass
-        // e sulle notifiche. Il media è solo la provenienza e può sparire.
-        const iconB64 = brand?.config?.logos?.icon;
-        if (iconB64) {
-            preview.src = 'data:image/png;base64,' + iconB64;
-            preview.style.display = 'block';
-            return;
-        }
+        // Senza un asset dedicato non c'è icona notifica da mostrare: config.logos.icon
+        // esiste comunque, ma è solo un ritaglio del logo generato in automatico (vedi
+        // applyBrandLogoBase64). Mostrarlo direbbe "icona configurata" a chi non l'ha mai
+        // impostata. Stesso gate del server (resolvePassIconBuffers).
         if (!tplWalletIconMediaId) { hide(); return; }
-        preview.src = `/api/v1/media/${tplWalletIconMediaId}/image?t=${Date.now()}`;
+        // Con l'asset dedicato, l'icona sincronizzata sul brand è la fonte di verità: è
+        // quella che finisce sul pass, e non sparisce se il media viene cancellato.
+        // icon@3x (87px) perché il box è 48px: icon è 29px e verrebbe sgranata.
+        const iconB64 = brand?.config?.logos?.['icon@3x'] || brand?.config?.logos?.icon;
+        preview.src = iconB64
+            ? 'data:image/png;base64,' + iconB64
+            : `/api/v1/media/${tplWalletIconMediaId}/image?t=${Date.now()}`;
         preview.style.display = 'block';
     } catch (_) {
         hide();

@@ -93,11 +93,16 @@ test("STEP 7c: l'anteprima icona non mostra mai un'immagine rotta", () => {
   const fn = indexHtml.match(/async function loadHrWalletIconPreview\(\)[\s\S]*?\n    \}/);
   assert.ok(fn, 'corpo di loadHrWalletIconPreview trovato');
   assert.match(fn[0], /preview\.onerror = hide/);
-  // fonte di verità: l'icona salvata sul brand, non il riferimento al media
-  assert.match(fn[0], /logos\?\.icon/);
+  // senza asset dedicato non si mostra nulla: config.logos.icon esiste sempre (ritaglio
+  // automatico del logo) e mostrarlo fingerebbe un'icona notifica mai impostata
+  assert.match(fn[0], /if \(!tplWalletIconMediaId\) \{ hide\(\); return; \}/);
+  // con l'asset, fonte di verità = icona sincronizzata sul brand, a 87px per un box da 48
+  assert.match(fn[0], /logos\?\.\['icon@3x'\]/);
   assert.match(fn[0], /'data:image\/png;base64,' \+ iconB64/);
-  // e la dropzone torna caricabile invece di restare bloccata sull'immagine rotta
+  // e la dropzone torna caricabile invece di restare bloccata sull'immagine rotta,
+  // senza però cancellare una thumb valida arrivata dopo
   assert.match(tplEditor, /img\.onerror = function \(\)/);
+  assert.match(tplEditor, /if \(!zone\.contains\(img\)\) return;/);
 });
 
 test('STEP 8: save button in footer with async feedback', () => {
