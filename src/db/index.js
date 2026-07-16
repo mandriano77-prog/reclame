@@ -1196,6 +1196,15 @@ async function getDb() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )`).catch(logDdlError);
 
+    // L'icona notifica vive sul brand: è da lì che la prende il pass. Le copie rimaste sui
+    // template sono di una versione vecchia — nessuno le scrive né le legge più, ma finché
+    // ci sono l'anteprima rischia di ripescarle e mostrare l'icona superata.
+    await pool.query(
+      `UPDATE pass_templates
+          SET style = jsonb_set(style, '{images}', (style->'images') - 'wallet_icon')
+        WHERE style->'images' ? 'wallet_icon'`
+    ).catch(logDdlError);
+
     // Seed admin
     await seedAdminUser();
     await ensureAllowlistPlatformAdmins();

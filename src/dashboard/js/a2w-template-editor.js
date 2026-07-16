@@ -374,6 +374,10 @@
     persistedImages = {};
     if (!styleImages || typeof styleImages !== 'object') return;
     Object.keys(TPL_SLOTS).forEach(function (slot) {
+      // L'icona notifica vive sul brand (è da lì che la prende il pass): la copia sul
+      // template è un residuo che non viene mai riscritto quando l'icona cambia, e
+      // applicarla qui sovrascriveva l'icona nuova con quella vecchia.
+      if (slot === 'wallet_icon') return;
       if (!styleImages[slot]) return;
       persistedImages[slot] = styleImages[slot];
       setSlotPreview(slot, 'data:image/png;base64,' + styleImages[slot], { skipPassPreview: true });
