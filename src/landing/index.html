@@ -118,6 +118,8 @@
     }
     .cta:active { transform: scale(0.988); }
     .cta[disabled] { opacity: 0.6; cursor: default; }
+    /* Google e Samsung sono <a>: `disabled` non morde su un link, serve aria-disabled. */
+    .cta[aria-disabled="true"] { opacity: 0.6; cursor: default; pointer-events: none; }
     .cta-icon { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; }
     .cta-icon svg { width: 26px; height: 26px; display: block; }
     .cta-wallet--apple {
@@ -491,7 +493,10 @@
         /* Mobile-first policy: mobile first, but keep desktop CTAs visible to avoid "empty page". */
         if (isIOS) {
           appleBtn.style.display = 'flex';
-          if (el.deviceNote) el.deviceNote.textContent = 'Consigliato: apri da iPhone per installazione diretta Apple Wallet.';
+          // Questo ramo lo legge SOLO chi è già su iPhone: gli si diceva di aprire la pagina
+          // da iPhone. Il consiglio giusto sta nel ramo desktop, più sotto. Qui serve invece
+          // togliere il dubbio sul cosa succede toccando il pulsante.
+          if (el.deviceNote) el.deviceNote.textContent = 'Il pass si aggiunge direttamente ad Apple Wallet.';
           return;
         }
         if (isAndroid) {
@@ -590,7 +595,9 @@
           });
           if (!r.ok) {
             const err = await r.json().catch(() => ({}));
-            throw new Error(err.error || 'Errore download pass');
+            const e2 = new Error(err.error || 'Errore download pass');
+            e2.permanente = erroreIrrimediabile(r.status);
+            throw e2;
           }
           const portalHref = r.headers.get('X-Portal-Href');
           const passDownloadUrl = r.headers.get('X-Pass-Download-Url')
@@ -617,8 +624,15 @@
           }, 1200);
         } catch (e) {
           el.error.textContent = e.message;
-          el.btn.disabled = false;
-          el.btnLabel.textContent = 'Riprova';
+          if (e.permanente) {
+            // Il pulsante resta spento: insistere non porterebbe da nessuna parte, e
+            // "Riprova" sarebbe una bugia. Il messaggio del server dice già cosa succede.
+            el.btn.disabled = true;
+            el.btnLabel.textContent = 'Non disponibile';
+          } else {
+            el.btn.disabled = false;
+            el.btnLabel.textContent = 'Riprova';
+          }
         }
       }
 
@@ -627,13 +641,44 @@
       loadBrand();
     })();
 
+    /**
+     * Riprovare ha senso solo se qualcosa può cambiare da solo. Non cambiano da soli: le
+     * immagini che mancano al brand (422), il template mai creato (400), il brand
+     * inesistente (404), Google Wallet non configurato (501). Cambiano invece un blip di
+     * rete o un 5xx, e lì "Riprova" è il consiglio giusto. Timeout (408) e troppe
+     * richieste (429) sono 4xx ma passano: quelli si ritentano.
+     */
+    function erroreIrrimediabile(status) {
+      if (status === 408 || status === 429) return false;
+      return status === 501 || (status >= 400 && status < 500);
+    }
+
+    /**
+     * Un errore va detto una volta sola, e nel posto giusto. Prima Google e Samsung
+     * buttavano via il messaggio del server e scrivevano "Errore — riprova" dentro
+     * l'etichetta del bottone, che dopo due secondi tornava com'era: chi guardava altrove
+     * non vedeva nulla e il bottone sembrava semplicemente non funzionare.
+     */
+    function mostraErroreWallet(btn, labelEl, etichettaOriginale, err) {
+      var box = document.getElementById('error');
+      var msg = (err && err.message) ? err.message : 'Errore';
+      if (box) box.textContent = msg;
+      if (err && err.permanente) {
+        labelEl.textContent = 'Non disponibile';
+        btn.setAttribute('aria-disabled', 'true');
+        return;
+      }
+      labelEl.textContent = 'Errore — riprova';
+      setTimeout(function () { labelEl.textContent = etichettaOriginale; }, 2200);
+    }
+
     async function addToGoogleWallet(e) {
       e.preventDefault();
       var btn = document.getElementById('googleBtn');
       var lbl = btn && btn.querySelector('.cta-label');
       if (!lbl) return;
       var ctx = window.__landingSignupContext || {};
-      var origHTML = btn.innerHTML;
+      var origHTML = lbl.textContent;
       lbl.textContent = 'Caricamento…';
       try {
         var res = await fetch('/api/v1/signup/google-wallet', {
@@ -647,7 +692,9 @@
         });
         if (!res.ok) {
           var err = await res.json().catch(function(){ return {}; });
-          throw new Error(err.error || 'Errore');
+          var e2 = new Error(err.error || 'Errore');
+          e2.permanente = erroreIrrimediabile(res.status);
+          throw e2;
         }
         var data = await res.json();
         if (data.save_link) {
@@ -656,8 +703,7 @@
           throw new Error('Save link non disponibile');
         }
       } catch(err) {
-        lbl.textContent = 'Errore — riprova';
-        setTimeout(function(){ btn.innerHTML = origHTML; }, 2000);
+        mostraErroreWallet(btn, lbl, origHTML, err);
       }
     }
 
@@ -682,7 +728,9 @@
         });
         if (!res.ok) {
           var err = await res.json().catch(function(){ return {}; });
-          throw new Error(err.error || 'Errore');
+          var e2 = new Error(err.error || 'Errore');
+          e2.permanente = erroreIrrimediabile(res.status);
+          throw e2;
         }
         var data = await res.json();
         if (data.save_link) {
@@ -691,8 +739,7 @@
           throw new Error('Link Samsung non disponibile');
         }
       } catch (err) {
-        label.textContent = 'Errore — riprova';
-        setTimeout(function(){ label.textContent = orig; }, 2200);
+        mostraErroreWallet(btn, label, orig, err);
       }
     }
     </script>

@@ -119,6 +119,15 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        /* I controlli di form non ereditano il font dalla pagina: senza questa riga il
+           browser ci mette il suo (Arial 13.33px). Il progetto lo sapeva e scriveva
+           `font-family: inherit` componente per componente — ma chi se ne dimenticava
+           cadeva in Arial, e così finivano 69 fra bottoni, tab e voci di menu: Inter
+           veniva scaricato e ignorato proprio dove si guarda di più. Qui alla radice,
+           una volta per tutte. Solo la famiglia: il corpo resta quello di ogni
+           componente, per non spostare le altezze già tarate. */
+        button, input, select, textarea, optgroup { font-family: inherit; }
+
         h1.page-title, h2.block-title, h3.block-title { color: var(--text-primary); font-weight: 600; }
         h1, h2, h3, .sec-title { color: var(--text-primary); font-weight: 600; }
         h1, .sec-title { font-size: var(--text-xl); margin-bottom: var(--space-5); }
