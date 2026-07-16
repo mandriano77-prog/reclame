@@ -2019,7 +2019,7 @@
                             <div><strong style="color:var(--text)">Logo</strong>: PNG trasparente, max 320x100 px.</div>
                             <div><strong style="color:var(--text)">Icona notifiche Wallet</strong>: PNG/JPG quadrata 512×512 px.</div>
                             <div><strong style="color:var(--text)">Strip</strong>: PNG/JPG 750x246 px.</div>
-                            <div><strong style="color:var(--text)">Thumbnail</strong>: PNG/JPG 90x90 px (event ticket).</div>
+                            <div id="a2wMediaThumbHint"><strong style="color:var(--text)">Thumbnail</strong>: PNG/JPG 90x90 px (foto dipendente).</div>
                         </div>
                     </div>
                     <div class="a2w-media-tabs" id="a2wMediaTabs" data-a2w-component="media-tabs">
@@ -13540,8 +13540,27 @@ async function deleteBrandAction() {
 }
 
 // ==================== MEDIA LIBRARY ====================
+/**
+ * La thumbnail è solo di FiloDiretto, che ci mette la foto del dipendente sulla strip. Su
+ * un pass Ads le immagini sono logo, strip e icona notifica: lasciare qui il bucket
+ * significherebbe farci caricare dentro roba che nessun pass userà mai. Si toglie dalla
+ * UI invece che dal markup perché il markup è condiviso con FiloDiretto.
+ */
+function a2wHideThumbnailUiForAds() {
+    if (typeof isHrDashboard === 'function' && isHrDashboard()) return;
+    const tab = document.getElementById('a2wMediaTab_thumbnail');
+    if (tab) (tab.closest('li') || tab).remove();
+    document.getElementById('a2wMediaThumbCard')?.remove();
+    document.getElementById('a2wMediaThumbHint')?.remove();
+    document.querySelectorAll('.mp-filter[data-type="thumbnail"]').forEach((el) => el.remove());
+    ['a2wMediaCategorySelect', 'mediaUploadType', 'mpTypeSelect'].forEach((id) => {
+        document.getElementById(id)?.querySelector('option[value="thumbnail"]')?.remove();
+    });
+}
+
 async function loadMediaLibrary() {
     if (!brandId) return;
+    a2wHideThumbnailUiForAds();
     const logoBox = document.getElementById('mediaLogoBox');
     const stripGrid = document.getElementById('mediaStripGrid');
     const thumbGrid = document.getElementById('mediaThumbnailGrid');
@@ -13806,6 +13825,9 @@ let mpCallback = null;
 let mpCurrentFilter = 'all';
 
 function openMediaPicker(callback, defaultFilter) {
+  // Il selettore si apre anche senza passare dalla Media Library: la thumbnail va tolta
+  // pure qui, altrimenti resterebbe un filtro che su Ads non porta a nulla.
+  a2wHideThumbnailUiForAds();
   mpCallback = callback;
   mpCurrentFilter = defaultFilter || 'all';
   const modal = document.getElementById('mediaPickerModal');

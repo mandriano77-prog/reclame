@@ -65,3 +65,17 @@ test('gli asset di altri brand non sono più nel repo', () => {
     assert.equal(fs.existsSync(path.join(assets, f)), false, `${f} deve restare fuori dal repo`);
   }
 });
+
+test('la Media Library non offre la thumbnail a un brand Ads', () => {
+  // Il markup è condiviso con FiloDiretto, che la thumbnail la usa davvero (foto del
+  // dipendente sulla strip): si toglie dalla UI a runtime, non dal markup. Su Ads
+  // resterebbe un bucket in cui caricare immagini che nessun pass userà mai.
+  const html = fs.readFileSync(path.join(root, 'src/dashboard/index.html'), 'utf8');
+  assert.match(html, /function a2wHideThumbnailUiForAds\(\)/);
+  assert.match(html, /if \(typeof isHrDashboard === 'function' && isHrDashboard\(\)\) return;/);
+  // agganciata sia alla Media Library sia al selettore, che si apre per conto suo
+  assert.match(html, /async function loadMediaLibrary\(\) \{\s*\n\s*if \(!brandId\) return;\s*\n\s*a2wHideThumbnailUiForAds\(\);/);
+  assert.match(html, /a2wHideThumbnailUiForAds\(\);\s*\n\s*mpCallback = callback;/);
+  // e il background non è più nemmeno nel markup: era morto per tutti
+  assert.doesNotMatch(html, /a2wMediaTab_background|a2wMediaBackgroundCard/);
+});
