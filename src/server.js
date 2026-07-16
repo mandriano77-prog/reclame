@@ -164,6 +164,21 @@ app.get('/debug/wallet-check', requireDebugAccess, async (req, res) => {
   }
 });
 
+// Le risposte JSON dell'API sono stato vivo e non vanno mai riusate dalla cache. Senza
+// Cache-Control esplicito il browser applica una freschezza euristica (Safari in modo
+// aggressivo): dopo un salvataggio la dashboard rileggeva brand e template dalla cache e
+// mostrava i dati vecchi — il salvataggio era andato a buon fine, ma sembrava di no.
+// Solo JSON: gli endpoint che servono immagini (HUB, Google Wallet) restano cacheabili,
+// e una rotta che imposta già un suo Cache-Control mantiene il proprio.
+app.use('/api/v1', (req, res, next) => {
+  const sendJson = res.json.bind(res);
+  res.json = (body) => {
+    if (!res.get('Cache-Control')) res.set('Cache-Control', 'no-store');
+    return sendJson(body);
+  };
+  next();
+});
+
 // API routes
 app.use('/api/v1', apiRoutes);
 // Legacy pass back-link tracking (passes issued before /api/v1 fix)
