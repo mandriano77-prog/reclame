@@ -318,6 +318,11 @@
       zone.innerHTML = '';
       var img = document.createElement('img');
       img.className = 'a2w-tpl-upload__thumb' + (slot === 'wallet_icon' || slot === 'thumbnail' ? ' a2w-tpl-upload__thumb--square' : '');
+      // Se la src non carica (es. media cancellato dalla libreria) la zona deve tornare
+      // vuota e ricaricabile, non restare bloccata su un'icona rotta.
+      img.onerror = function () {
+        zone.innerHTML = '<span>Trascina un file o clicca per caricare</span>';
+      };
       img.src = src;
       img.alt = '';
       zone.appendChild(img);

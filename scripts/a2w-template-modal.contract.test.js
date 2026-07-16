@@ -86,6 +86,20 @@ test('STEP 7b: wallet notification icon in template modal (Ads shell)', () => {
   assert.match(indexHtml, /persistHrWalletIcon/);
 });
 
+test("STEP 7c: l'anteprima icona non mostra mai un'immagine rotta", () => {
+  // Il media referenziato può sparire dalla Media Library: il riferimento restava e
+  // l'anteprima (più la dropzone, che ne rispecchia la src) mostrava un'icona rotta
+  // per sempre, facendo sembrare che il salvataggio non funzionasse.
+  const fn = indexHtml.match(/async function loadHrWalletIconPreview\(\)[\s\S]*?\n    \}/);
+  assert.ok(fn, 'corpo di loadHrWalletIconPreview trovato');
+  assert.match(fn[0], /preview\.onerror = hide/);
+  // fonte di verità: l'icona salvata sul brand, non il riferimento al media
+  assert.match(fn[0], /logos\?\.icon/);
+  assert.match(fn[0], /'data:image\/png;base64,' \+ iconB64/);
+  // e la dropzone torna caricabile invece di restare bloccata sull'immagine rotta
+  assert.match(tplEditor, /img\.onerror = function \(\)/);
+});
+
 test('STEP 8: save button in footer with async feedback', () => {
   assert.match(modalBlock, /id="tplSaveBtn"/);
   assert.match(modalBlock, /id="tplSaveStatus"/);

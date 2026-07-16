@@ -7042,19 +7042,27 @@ function togglePassBackEditorMode() {
 async function loadHrWalletIconPreview() {
     const preview = document.getElementById('tplImgWalletIconPreview');
     if (!preview || !brandId) return;
+    const hide = () => { preview.style.display = 'none'; preview.removeAttribute('src'); };
+    // Mai mostrare un'immagine che non carica: se il media referenziato viene cancellato
+    // dalla Media Library, il riferimento resta e l'anteprima mostrava un'icona rotta per
+    // sempre (e la dropzone, che rispecchia questa src, pure).
+    preview.onerror = hide;
     try {
         const brand = await fetch(`${API}/brands/${brandId}`, { headers: getAuthHeaders() }).then((r) => r.json());
-        const mediaId = brand?.config?.brand_identity_assets?.wallet_icon;
-        tplWalletIconMediaId = mediaId || null;
-        if (!mediaId) {
-            preview.style.display = 'none';
-            preview.removeAttribute('src');
+        tplWalletIconMediaId = brand?.config?.brand_identity_assets?.wallet_icon || null;
+        // Fonte di verità: l'icona salvata sul brand — è quella che finisce davvero sul pass
+        // e sulle notifiche. Il media è solo la provenienza e può sparire.
+        const iconB64 = brand?.config?.logos?.icon;
+        if (iconB64) {
+            preview.src = 'data:image/png;base64,' + iconB64;
+            preview.style.display = 'block';
             return;
         }
-        preview.src = `/api/v1/media/${mediaId}/image?t=${Date.now()}`;
+        if (!tplWalletIconMediaId) { hide(); return; }
+        preview.src = `/api/v1/media/${tplWalletIconMediaId}/image?t=${Date.now()}`;
         preview.style.display = 'block';
     } catch (_) {
-        preview.style.display = 'none';
+        hide();
     }
 }
 
