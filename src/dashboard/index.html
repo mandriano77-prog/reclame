@@ -7659,15 +7659,50 @@ function renderMediaGalleryCards(items, emptyMsg) {
     `).join('');
 }
 
+// Box massimi per tipo immagine (px). Le foto a piena risoluzione, se caricate a crudo,
+// sforano il limite del body (15MB) e il salvataggio va in 500: le riduciamo qui, nel
+// browser, prima di caricarle. Retina 2x rispetto alle dimensioni mostrate sul pass.
+const TPL_IMG_MAX_DIMS = {
+    logo: [640, 200],
+    strip: [1500, 492],
+    thumbnail: [360, 360],
+    background: [720, 900],
+    wallet_icon: [512, 512]
+};
+
+function downscaleImageDataUrl(dataUrl, maxW, maxH) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const w0 = img.naturalWidth || img.width;
+            const h0 = img.naturalHeight || img.height;
+            if (!w0 || !h0 || (w0 <= maxW && h0 <= maxH)) { resolve(dataUrl); return; }
+            const ratio = Math.min(maxW / w0, maxH / h0);
+            const w = Math.max(1, Math.round(w0 * ratio));
+            const h = Math.max(1, Math.round(h0 * ratio));
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            try {
+                c.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(c.toDataURL('image/png'));
+            } catch (_) { resolve(dataUrl); }
+        };
+        img.onerror = () => resolve(dataUrl); // es. PDF: lo gestisce il server
+        img.src = dataUrl;
+    });
+}
+
 function previewTplImage(input, imageType) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
-        const base64 = e.target.result.split(',')[1];
-        tplImageCache[imageType] = base64;
+    reader.onload = async (e) => {
+        let dataUrl = e.target.result;
+        const box = TPL_IMG_MAX_DIMS[imageType];
+        if (box) { try { dataUrl = await downscaleImageDataUrl(dataUrl, box[0], box[1]); } catch (_) {} }
+        tplImageCache[imageType] = dataUrl.split(',')[1];
         const preview = document.getElementById(tplMediaPreviewId(imageType));
-        if (preview) { preview.src = e.target.result; preview.style.display = 'block'; }
+        if (preview) { preview.src = dataUrl; preview.style.display = 'block'; }
         updatePassPreview();
     };
     reader.readAsDataURL(file);
@@ -7711,14 +7746,28 @@ async function loadStripFromPromo() {
 // Upload template images after save
 async function uploadTemplateImages(templateId) {
     const types = ['logo', 'strip', 'thumbnail', 'background'];
+    const failed = [];
     for (const imgType of types) {
         if (tplImageCache[imgType]) {
-            await fetch(`${API}/templates/${templateId}/images`, {
-                method: 'POST',
-                headers: waiFetchHeaders(),
-                body: JSON.stringify({ image_type: imgType, image_base64: tplImageCache[imgType] })
-            });
+            let res;
+            try {
+                res = await fetch(`${API}/templates/${templateId}/images`, {
+                    method: 'POST',
+                    headers: waiFetchHeaders(),
+                    body: JSON.stringify({ image_type: imgType, image_base64: tplImageCache[imgType] })
+                });
+            } catch (e) { res = null; }
+            if (!res || !res.ok) {
+                // Non ingoiare: prima un upload fallito (es. immagine troppo grande) passava
+                // inosservato e il template risultava "salvato" senza l'immagine.
+                const err = res ? await res.json().catch(() => ({})) : {};
+                console.warn('[tpl] upload immagine fallito:', imgType, res && res.status, err.error);
+                failed.push(imgType);
+            }
         }
+    }
+    if (failed.length) {
+        throw new Error('Immagini non salvate (' + failed.join(', ') + '). Riprova con file più leggeri.');
     }
 }
 
