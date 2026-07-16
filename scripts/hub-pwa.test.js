@@ -191,3 +191,20 @@ test('hub events rejects invalid activation_type', async () => {
     db.getMerchant = origMerchant;
   }
 });
+
+test("in testa all'HUB va l'icona notifica, non il logo", () => {
+  // Il riquadro in testa è quadrato con object-fit: cover: un logo largo ci veniva
+  // tagliato a metà. L'icona notifica è quadrata per natura ed è la stessa che il
+  // cliente vede sulle push — stesso marchio, stesso posto.
+  const r = path.join(__dirname, '..');
+  const hubApi = fs.readFileSync(path.join(r, 'src/api/hub-pwa.js'), 'utf8');
+  assert.match(hubApi, /function brandIconUrl\(brand\)/);
+  assert.match(hubApi, /by-slug\/\$\{encodeURIComponent\(brand\.slug\)\}\/icon/);
+  // l'icona precede il logo, ma Impostazioni Hub scavalca comunque tutto
+  assert.match(hubApi, /logo_url: settings\?\.logo_url \|\| brandIconUrl\(brand\) \|\| brandLogoUrl\(brand\)/);
+  const app = fs.readFileSync(path.join(r, 'src/hub/app.js'), 'utf8');
+  assert.match(app, /state\.settings\?\.logo_url \|\| state\.brand\?\.icon_url \|\| state\.brand\?\.logo_url/);
+  // endpoint pubblico: l'HUB gira su un token hub, non su una sessione admin
+  const routes = fs.readFileSync(path.join(r, 'src/api/routes.js'), 'utf8');
+  assert.match(routes, /router\.get\('\/brands\/by-slug\/:slug\/icon'/);
+});

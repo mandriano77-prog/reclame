@@ -224,7 +224,9 @@
     if (meta) meta.setAttribute('content', accent);
 
     const logoEl = $('#hub-logo');
-    const logoUrl = state.settings?.logo_url || state.brand?.logo_url;
+    // Icona notifica prima del logo: il riquadro in testa è quadrato e taglierebbe un
+    // logo largo (object-fit: cover).
+    const logoUrl = state.settings?.logo_url || state.brand?.icon_url || state.brand?.logo_url;
     if (logoEl && logoUrl) {
       logoEl.src = logoUrl;
       logoEl.classList.remove('hidden');

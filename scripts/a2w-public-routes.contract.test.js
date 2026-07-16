@@ -20,6 +20,10 @@ const EXPECTED_PUBLIC = new Set([
   'get /activate/:token',
   'get /brands/by-slug/:slug',
   'get /brands/by-slug/:slug/landing-bg',
+  // Approvata dall'utente: la usa l'HUB, che gira su un token hub e non su una sessione
+  // admin. Espone l'icona notifica del brand a chi ne conosce lo slug — la stessa immagine
+  // già visibile sul pass e nelle push, come la rotta gemella /logo qui sotto.
+  'get /brands/by-slug/:slug/icon',
   'get /brands/by-slug/:slug/logo',
   'get /brands/by-slug/:slug/strip',
   'get /click/:campaign_id',

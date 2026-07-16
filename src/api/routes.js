@@ -596,6 +596,22 @@ router.get('/brands/by-slug/:slug/logo', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Icona notifica del brand, pubblica: la usa l'HUB, che gira su un token hub e non su una
+// sessione admin. È quadrata — al contrario del logo, che è largo e in un contenitore
+// quadrato verrebbe tagliato.
+router.get('/brands/by-slug/:slug/icon', async (req, res) => {
+  try {
+    const brand = await getBrandBySlug(req.params.slug);
+    if (!brand) return res.status(404).json({ error: 'Brand non trovato' });
+    const logos = brand?.config?.logos || {};
+    const iconB64 = logos['icon@3x'] || logos['icon@2x'] || logos.icon;
+    if (!iconB64) return res.status(404).json({ error: 'Nessuna icona notifica' });
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(Buffer.from(iconB64, 'base64'));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/brands/by-slug/:slug/strip', async (req, res) => {
   try {
     const brand = await getBrandBySlug(req.params.slug);

@@ -103,12 +103,26 @@ function brandLogoUrl(brand) {
   return `/api/v1/brands/by-slug/${encodeURIComponent(brand.slug)}/logo`;
 }
 
+/**
+ * L'icona notifica del brand: quadrata, la stessa che compare sulle push. In testa all'HUB
+ * ci va lei — il logo è largo e nel riquadro quadrato dell'header verrebbe tagliato a metà.
+ */
+function brandIconUrl(brand) {
+  const cfg = brand?.config && typeof brand.config === 'object' ? brand.config : {};
+  const logos = cfg.logos || {};
+  const hasIcon = !!(logos['icon@3x'] || logos['icon@2x'] || logos.icon);
+  if (!hasIcon || !brand?.slug) return null;
+  // endpoint pubblico: l'HUB gira su un token hub, non su una sessione admin
+  return `/api/v1/brands/by-slug/${encodeURIComponent(brand.slug)}/icon`;
+}
+
 function publicBrand(brand) {
   const cfg = brand?.config && typeof brand.config === 'object' ? brand.config : {};
   return {
     id: brand.id,
     name: brand.name,
     slug: brand.slug,
+    icon_url: brandIconUrl(brand),
     logo_url: brandLogoUrl(brand),
     product_line: cfg.product_line || 'ads'
   };
@@ -122,9 +136,10 @@ function publicSettings(settings, brand) {
   if (!Array.isArray(categories)) categories = [];
   const cfg = brand?.config && typeof brand.config === 'object' ? brand.config : {};
   return {
-    // Fall back to the brand's own logo/accent so the HUB is on-brand out of the box;
-    // Impostazioni Hub still overrides both.
-    logo_url: settings?.logo_url || brandLogoUrl(brand),
+    // In testa all'HUB va l'icona notifica: quadrata, la stessa delle push. Il logo resta
+    // solo come ultima spiaggia per un brand che l'icona non ce l'ha ancora.
+    // Impostazioni Hub continua a scavalcare tutto: se l'operatore ha scelto, comanda lui.
+    logo_url: settings?.logo_url || brandIconUrl(brand) || brandLogoUrl(brand),
     accent_color: settings?.accent_color || cfg.labelColor || cfg.primaryColor || '#8B5CF6',
     welcome_message: settings?.welcome_message || null,
     categories_enabled: categories,
