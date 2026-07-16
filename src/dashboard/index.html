@@ -488,10 +488,6 @@
         }
         .bulk-action-bar[hidden],
         .pass-bulk-bar[hidden] { display: none !important; }
-        .bulk-select-hint {
-            font-size: 12px; color: var(--text2); margin: 0 0 10px; padding: 8px 12px;
-            border-radius: var(--radius-md); border: 1px dashed var(--border); background: var(--bg-subtle, var(--bg2));
-        }
         .pass-bulk-bar__count { font-size: 13px; font-weight: 600; color: var(--text); }
         .pass-table-legend {
             margin-bottom: 12px;
@@ -511,6 +507,16 @@
             color: var(--text-primary, var(--text));
             margin-bottom: 8px;
         }
+        /* La legenda dei pass è a scomparsa: sette righe sempre aperte sopra una tabella
+           che spesso ne ha una sola erano rumore. Gli stili sono legati al <summary>
+           perché la stessa classe è riusata come <div> per "Collegamenti Wallet". */
+        summary.pass-table-legend__title {
+            cursor: pointer;
+            margin-bottom: 0;
+            user-select: none;
+        }
+        summary.pass-table-legend__title:hover { color: var(--accent); }
+        details.pass-table-legend[open] > summary.pass-table-legend__title { margin-bottom: 8px; }
         .pass-table-legend__grid {
             display: flex;
             flex-wrap: wrap;
@@ -1615,7 +1621,7 @@
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
                         <div>
                             <h1 class="sec-title page-title" data-menu-key="passes_page_title" data-menu-default="Pass Emessi" style="margin-bottom:6px;">Pass Emessi</h1>
-                            <p class="passes-page-blurb a2w-reclame-only" data-menu-key="passes_page_blurb" data-menu-default="Tutti i possessori del pass media, anonimi inclusi. Stato installazione, wallet e reachability push.">Tutti i possessori del pass media, anonimi inclusi. Stato installazione, wallet e reachability push.</p>
+                            <p class="passes-page-blurb a2w-reclame-only" data-menu-key="passes_page_blurb" data-menu-default="Tutti i possessori del pass, anonimi inclusi: se il pass è installato, su quale wallet e se riceve le notifiche.">Tutti i possessori del pass, anonimi inclusi: se il pass è installato, su quale wallet e se riceve le notifiche.</p>
                         </div>
                         <div style="display:flex;gap:8px;">
                             <select id="passFilterCampaign" onchange="loadPasses(true)" style="width:auto;min-width:160px;">
@@ -5236,7 +5242,7 @@ const PRODUCT_MENU_COPY = {
     ads: {
         nav_passes: 'Pass Emessi',
         passes_page_title: 'Pass Emessi',
-        passes_page_blurb: 'Tutti i possessori del pass media, anonimi inclusi. Stato installazione, wallet e reachability push.',
+        passes_page_blurb: 'Tutti i possessori del pass, anonimi inclusi: se il pass è installato, su quale wallet e se riceve le notifiche.',
         passes_empty_desc: 'I pass compariranno qui dopo la pubblicazione del QR o l\'iscrizione dalla landing. Ogni riga è un possessore, anche senza dati personali.',
         nav_leads: 'Profili identificati',
         leads_page_title: 'Profili identificati',
@@ -6094,19 +6100,39 @@ function walletDiagCode(t) {
     return `<div class="wallet-diag-code">${esc(t)}</div>`;
 }
 
+/**
+ * La legenda occupava sette righe sempre aperte sopra una tabella che spesso ne ha una:
+ * si legge una volta nella vita e poi è rumore. Ora è a scomparsa — chiusa di default,
+ * a un clic quando serve.
+ * Si disegna sapendo quali wallet esistono: prima la riga Samsung veniva rigenerata a
+ * ogni tabella, annullando la rimozione fatta al caricamento.
+ */
+/** L'intestazione della colonna wallet nomina solo quelli che esistono su questo deploy. */
+function walletColumnLabel() {
+    return ['Apple', a2wWalletOn('google') && 'Google', a2wWalletOn('samsung') && 'Samsung']
+        .filter(Boolean).join(' · ');
+}
+
 function renderPassTableLegendHtml() {
-    return `<div class="pass-table-legend" role="note" aria-label="Legenda tabella pass emessi">
-        <div class="pass-table-legend__title">Legenda tabella</div>
+    const righe = [
+        '<span><strong>Installato</strong> ☑ salvato nel wallet · ☐ solo generato (link non completato)</span>',
+        '<span><strong>Apple</strong> 🔔 token push (APNs) · 🔕 nessun token</span>',
+        a2wWalletOn('google')
+            ? '<span><strong>Google</strong> <span class="legend-pill legend-pill--ok">GW</span> salvato · <span class="legend-pill legend-pill--pending">GW°</span> in attesa · — non usato</span>'
+            : '',
+        a2wWalletOn('samsung')
+            ? '<span><strong>Samsung</strong> <span class="legend-pill legend-pill--ok">SW</span> salvato · <span class="legend-pill legend-pill--pending">SW°</span> in attesa</span>'
+            : '',
+        '<span><strong>Push (APNs)</strong> ✔ ultima consegnata · ✖ errore · <em>Nx</em> = numero invii</span>',
+        '<span><strong>Pass ID</strong> clic per copiare l\'identificativo completo</span>',
+        '<span><strong>Selezione multipla</strong> ☑ prima colonna → <em>Elimina selezionati</em></span>'
+    ].filter(Boolean).join('\n            ');
+    return `<details class="pass-table-legend" aria-label="Legenda tabella pass emessi">
+        <summary class="pass-table-legend__title">Come leggere la tabella</summary>
         <div class="pass-table-legend__grid">
-            <span><strong>Installato</strong> ☑ salvato nel wallet · ☐ solo generato (link non completato)</span>
-            <span><strong>Apple</strong> 🔔 token push (APNs) · 🔕 nessun token</span>
-            <span><strong>Google</strong> <span class="legend-pill legend-pill--ok">GW</span> salvato · <span class="legend-pill legend-pill--pending">GW°</span> in attesa · — non usato</span>
-            <span data-wallet="samsung"><strong>Samsung</strong> <span class="legend-pill legend-pill--ok">SW</span> salvato · <span class="legend-pill legend-pill--pending">SW°</span> in attesa</span>
-            <span><strong>Push (APNs)</strong> ✔ ultima consegnata · ✖ errore · <em>Nx</em> = numero invii</span>
-            <span><strong>Pass ID</strong> clic per copiare l'identificativo completo</span>
-            <span><strong>Selezione multipla</strong> ☑ prima colonna → <em>Elimina selezionati</em></span>
+            ${righe}
         </div>
-    </div>`;
+    </details>`;
 }
 
 function getPassSelectedIds() {
@@ -6417,10 +6443,9 @@ async function loadPasses(resetPage = false) {
     const totalLabel = passTotalCount != null ? String(passTotalCount) : '—';
     const statsHtml = `<div class="stats-grid" style="margin-bottom:16px;">
         <div class="stat-card"><div class="stat-label">Pass totali (brand)</div><div class="stat-value">${totalLabel}</div></div>
-        <div class="stat-card"><div class="stat-label">In questa pagina</div><div class="stat-value">${filteredPasses.length}</div></div>
         <div class="stat-card"><div class="stat-label">Installazioni wallet confermate</div><div class="stat-value">${installed}</div></div>
         <div class="stat-card"><div class="stat-label">Download da desktop (info)</div><div class="stat-value">${desktopPasses}</div></div>
-        <div class="stat-card"><div class="stat-label">Raggiungibili (Apple / Google / Samsung)</div><div class="stat-value">${reachableWallet}</div></div>
+        <div class="stat-card"><div class="stat-label">Raggiungibili da notifica</div><div class="stat-value">${reachableWallet}</div></div>
         <div class="stat-card"><div class="stat-label">Push inviate (APNs)</div><div class="stat-value">${pushSent}</div></div>
     </div>`;
 
@@ -6428,7 +6453,6 @@ async function loadPasses(resetPage = false) {
     const allOnPageSelected = filteredPasses.length > 0 && selectedOnPage === filteredPasses.length;
 
     el.innerHTML = statsHtml + renderPassTableLegendHtml() + `
-        <p class="bulk-select-hint">Seleziona uno o più pass con la <strong>casella ☑</strong> a sinistra (o tutti dalla testata), poi usa <strong>Elimina selezionati</strong>.</p>
         <div id="passBulkBar" class="pass-bulk-bar bulk-action-bar" hidden>
             <span class="pass-bulk-bar__count"><span id="passBulkCount">0</span> pass selezionati</span>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -6456,7 +6480,7 @@ async function loadPasses(resetPage = false) {
                 <th title="Identificativo univoco del pass (clic per copiare)">Pass ID</th>
                 <th title="Momento in cui il pass è stato generato sul server (non è l'aggiunta al Wallet)">Pass creato</th>
                 <th>Installato</th>
-                <th title="Apple: campanella = APNs. Google: GW / GW°. Samsung: SW / SW° (ref salvato sul server Samsung).">Apple · Google · Samsung</th>
+                <th title="Dove il pass è stato salvato. Apple: campanella = riceve notifiche.">${walletColumnLabel()}</th>
                 <th title="Storico notifiche inviate via Apple Push (APNs)">Push (APNs)</th>
                 <th>Device ID</th>
                 <th>Stato</th>
@@ -8095,18 +8119,26 @@ function dismissPushResult() {
 
 // Home "Stato integrazioni" card — driven by the real /health signal instead of hardcoded OK.
 /**
- * Nasconde le superfici Samsung quando Samsung non è configurato su questo deploy. Offriva
- * un canale push, un filtro audience e un bottone sul pass anche dove Samsung non esiste:
+ * Quali wallet esistono davvero su questo deploy. Lo chiede /health all'avvio.
+ * Serve al DISEGNO, non solo alla pulizia: le sezioni si ridisegnano da sole (la legenda
+ * dei pass, per esempio, viene rigenerata a ogni tabella) e una rimozione fatta una volta
+ * al caricamento veniva puntualmente annullata. Chi disegna deve sapere.
+ * Ottimista di default: se /health non risponde non si nasconde nulla.
+ */
+let a2wWallets = { apple: true, google: true, samsung: true };
+function a2wWalletOn(nome) { return a2wWallets[nome] !== false; }
+
+/**
+ * Toglie le superfici Samsung già a schermo quando Samsung non è configurato. Offriva un
+ * canale push, un filtro audience e un bottone sul pass anche dove Samsung non esiste:
  * scelte che l'operatore poteva fare e che non producevano nulla (l'API risponde 501).
- * Non si cancella niente: il giorno che le variabili Samsung ci sono, tutto ricompare da
- * sé — nessuno deve ricordarsi di riaccenderlo.
+ * Non si cancella niente: il giorno che le variabili ci sono, tutto ricompare da sé.
  */
 function a2wHideSamsungUiIfUnconfigured(wallet) {
+    if (wallet) a2wWallets = { ...a2wWallets, ...wallet };
     if (!wallet || wallet.samsung) return;
     document.querySelectorAll('option[value="samsung"]').forEach((o) => o.remove());
-    ['passDetailSamsungBtn', 'samsungLegendRow'].forEach((id) => {
-        document.getElementById(id)?.remove();
-    });
+    document.getElementById('passDetailSamsungBtn')?.remove();
     document.querySelectorAll('[data-wallet="samsung"]').forEach((e) => e.remove());
 }
 
@@ -8793,7 +8825,6 @@ async function loadPushHistory() {
     const selectedOnPage = logs.filter((l) => getPushSelectedIds().has(String(l.id))).length;
     const allOnPageSelected = logs.length > 0 && selectedOnPage === logs.length;
     el.innerHTML = `
-        <p class="bulk-select-hint" style="margin-bottom:10px;">Seleziona le notifiche con ☑ e usa <strong>Elimina selezionate</strong> per rimuoverle dallo storico.</p>
         <div id="pushBulkBar" class="bulk-action-bar" hidden>
             <span class="pass-bulk-bar__count"><span id="pushBulkCount">0</span> notifiche selezionate</span>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">

@@ -33,12 +33,21 @@ test('la dashboard nasconde Samsung solo quando non è configurato', () => {
   assert.match(indexHtml, /a2wHideSamsungUiIfUnconfigured\(h\.wallet\);/);
 });
 
-test('copre tutte le superfici che offrivano una scelta inerte', () => {
+test('copre le superfici statiche che offrivano una scelta inerte', () => {
   const fn = indexHtml.match(/function a2wHideSamsungUiIfUnconfigured\(wallet\) \{[\s\S]*?\n\}/);
   assert.ok(fn, 'funzione trovata');
   assert.match(fn[0], /option\[value="samsung"\]/);      // canale push + filtro audience
   assert.match(fn[0], /passDetailSamsungBtn/);            // bottone nel dettaglio pass
-  assert.match(fn[0], /\[data-wallet="samsung"\]/);       // legenda
-  // e la legenda è marcata nel markup, altrimenti il selettore non troverebbe nulla
-  assert.match(indexHtml, /<span data-wallet="samsung"><strong>Samsung<\/strong>/);
+  assert.match(fn[0], /\[data-wallet="samsung"\]/);       // markup marcato a mano
+});
+
+test('le parti che si ridisegnano non si puliscono: si disegnano già senza Samsung', () => {
+  // Rimuovere dal DOM una volta al caricamento non regge dove la UI si rigenera: la
+  // legenda dei pass veniva ricostruita a ogni tabella e Samsung ricompariva. Chi disegna
+  // deve sapere quali wallet esistono.
+  assert.match(indexHtml, /let a2wWallets = \{ apple: true, google: true, samsung: true \};/);
+  assert.match(indexHtml, /function a2wWalletOn\(nome\) \{ return a2wWallets\[nome\] !== false; \}/);
+  assert.match(indexHtml, /if \(wallet\) a2wWallets = \{ \.\.\.a2wWallets, \.\.\.wallet \};/);
+  // ottimista: se /health non risponde non si nasconde nulla
+  assert.match(indexHtml, /a2wWalletOn\('samsung'\)\s*\n?\s*\? '<span><strong>Samsung/);
 });
