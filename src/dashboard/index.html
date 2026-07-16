@@ -7615,8 +7615,11 @@ async function persistHrWalletIcon({ reapplyExisting = false } = {}) {
             }
             return { ok: true };
         }
-        if (res.status === 400) return { ok: false, skipped: true };
         const err = await res.json().catch(() => ({}));
+        // Solo "non c'era nulla da sincronizzare" si salta in silenzio. Un fallimento vero
+        // va detto: prima ogni 400 veniva inghiottito e l'icona non si salvava senza un
+        // messaggio, indistinguibile da un salvataggio riuscito.
+        if (res.status === 400 && err.code === 'no_icon_configured') return { ok: false, skipped: true };
         toast(err.error || 'Sync icona notifiche fallita');
         return { ok: false };
     } catch (e) {

@@ -1933,11 +1933,13 @@ router.post('/brands/:id/wallet-icon/sync', async (req, res) => {
     const { assignWalletIconMedia, syncWalletIconFromBrandIdentity } = require('../engine/brand-wallet-logo');
     const mediaId = req.body?.media_id || brand?.config?.brand_identity_assets?.wallet_icon;
     if (!mediaId) {
-      return res.status(400).json({ error: 'Nessuna icona notifiche configurata per questo brand' });
+      // Niente da fare, non un errore: il client lo salta in silenzio.
+      return res.status(400).json({ code: 'no_icon_configured', error: 'Nessuna icona notifiche configurata per questo brand' });
     }
     const synced = await assignWalletIconMedia(req.params.id, mediaId, { touchPasses: true })
       || await syncWalletIconFromBrandIdentity(req.params.id, brand, { touchPasses: true, mediaId });
-    if (!synced) return res.status(400).json({ error: 'Impossibile sincronizzare icona notifiche' });
+    // Fallimento vero (es. media sparito): va detto, altrimenti l'icona non si salva in silenzio.
+    if (!synced) return res.status(400).json({ code: 'sync_failed', error: 'Icona notifiche non salvata: immagine non più disponibile nella Media Library. Ricaricala e riprova.' });
     res.json({ success: true, wallet_icon_media_id: mediaId });
   } catch (err) {
     console.error('Wallet icon sync error:', err);
