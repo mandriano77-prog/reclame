@@ -25,9 +25,23 @@ test('la generazione del pass non carica asset di default da file', () => {
   assert.doesNotMatch(passkitCode, /hirostar/i);
 });
 
-test('senza strip o icona propria si genera dal brand, non si ripiega su un file', () => {
-  assert.match(passkit, /stripBuffers = await generateStrip\(brand\.name/);
-  assert.match(passkit, /iconBuffers = await generateIcon\(brand\.name/);
+test('Ads: senza le immagini del brand un pass nuovo non si emette', () => {
+  assert.match(passkitCode, /err\.code = 'brand_images_missing'/);
+  assert.match(passkitCode, /if \(!iconBuffers\?\.icon\) missing\.push\('icona notifica'\)/);
+  assert.match(passkitCode, /if \(!logoBuffers\?\.logo\) missing\.push\('logo'\)/);
+  // la strip si pretende solo dove il pass la mostra davvero
+  assert.match(passkitCode, /stripIsShown && !stripBuffers\?\.strip/);
+});
+
+test('il blocco vale solo alla nascita del pass, mai sugli aggiornamenti', () => {
+  // createPkpass ricostruisce anche i pass già installati (aggiornamenti Apple Wallet):
+  // se il blocco fosse sempre attivo, i pass nel telefono dei clienti si congelerebbero.
+  // Quindi è opt-in e spento di default, e lo accendono solo i punti di emissione.
+  assert.match(passkitCode, /requireBrandImages = false/);
+  assert.match(passkitCode, /if \(requireBrandImages && !hrBrand\)/);
+  const routes = fs.readFileSync(path.join(root, 'src/api/routes.js'), 'utf8');
+  const accesi = routes.match(/requireBrandImages: true/g) || [];
+  assert.equal(accesi.length, 2, 'solo iscrizione pubblica e rigenera da back office');
 });
 
 test('gli asset di altri brand non sono più nel repo', () => {

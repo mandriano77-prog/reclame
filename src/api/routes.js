@@ -671,7 +671,9 @@ router.post('/signup', async (req, res) => {
     const pkpassBuffer = await createPkpass(template, passInstance, brand, {
       baseUrl,
       passTypeIdentifier: process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj',
-      teamIdentifier: process.env.TEAM_IDENTIFIER || 'YOUR_TEAM_ID'
+      teamIdentifier: process.env.TEAM_IDENTIFIER || 'YOUR_TEAM_ID',
+      // Qui nasce un pass nuovo: senza le immagini del brand non deve nascere affatto.
+      requireBrandImages: true
     });
 
     res.set({
@@ -686,6 +688,13 @@ router.post('/signup', async (req, res) => {
 
   } catch (err) {
     console.error('Signup error:', err);
+    // Il brand non ha ancora caricato le sue immagini: riprovare non serve a nulla, e
+    // "Riprova tra poco" sarebbe una promessa falsa. Al consumatore si dice la verità
+    // senza gergo interno; l'operatore lo trova nei log, dove è azionabile.
+    if (err.code === 'brand_images_missing') {
+      console.error('[signup] pass non creato per brand %s: immagini mancanti (%s)', req.body?.brand_slug || '?', (err.missing || []).join(', '));
+      return res.status(422).json({ error: 'Il pass di questo brand non è ancora disponibile.' });
+    }
     // Generic message — this reaches the public landing page; details stay in logs.
     res.status(500).json({ error: 'Non è stato possibile creare il pass. Riprova tra poco.' });
   }
@@ -851,6 +860,10 @@ router.get('/passes/:id/download', async (req, res) => {
     res.send(pkpassBuffer);
   } catch (err) {
     console.error('Download error:', err);
+    if (err.code === 'brand_images_missing') {
+      console.error('[download] pass %s non generato: immagini brand mancanti (%s)', req.params.id, (err.missing || []).join(', '));
+      return res.status(422).json({ error: 'Il pass di questo brand non è ancora disponibile.' });
+    }
     // Generic message — reaches the public landing page; details stay in logs.
     res.status(500).json({ error: 'Non è stato possibile generare il pass. Riprova tra poco.' });
   }
@@ -2411,7 +2424,10 @@ router.post('/passes/:id/regenerate', async (req, res) => {
       baseUrl,
       passTypeIdentifier: process.env.PASS_TYPE_IDENTIFIER || 'pass.com.nudj',
       teamIdentifier: process.env.TEAM_IDENTIFIER || 'YOUR_TEAM_ID',
-      rotatePortalLink: true
+      rotatePortalLink: true,
+      // Rigenerazione voluta dall'operatore: è il momento giusto per dirgli che mancano
+      // le immagini, invece di sfornargli l'ennesimo pass con la grafica di ripiego.
+      requireBrandImages: true
     });
 
     if (!wantsJson) {

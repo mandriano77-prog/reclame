@@ -610,6 +610,13 @@ app.get('/:slug', (req, res, next) => {
 app.use((err, req, res, next) => {
   console.error('[unhandled route error]', req.method, req.originalUrl, err && err.stack ? err.stack : err);
   if (res.headersSent) return next(err);
+  // Un errore deliberato con status 4xx è già scritto per chi lo legge e dice cosa fare
+  // (es. 422 immagini del brand mancanti): trasformarlo in "Errore interno" butterebbe via
+  // l'unica informazione utile. Tutto il resto resta generico: niente interni all'esterno.
+  const status = Number(err && err.status);
+  if (status >= 400 && status < 500 && err.message) {
+    return res.status(status).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
+  }
   res.status(500).json({ error: 'Errore interno del server' });
 });
 

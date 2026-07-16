@@ -1084,7 +1084,12 @@ async function createPkpass(template, instance, brand, options = {}) {
     issuePortalLink = isPortalPassBrand(brand),
     rotatePortalLink = false,
     portalUrl: portalUrlOption = undefined,
-    member: memberOption = undefined
+    member: memberOption = undefined,
+    // Solo alla NASCITA di un pass: senza le immagini del brand non lo si emette.
+    // Di default è spento perché questa funzione ricostruisce anche i pass già installati
+    // (aggiornamenti Apple Wallet): lì un errore li congelerebbe per sempre nel telefono
+    // del cliente, e non è quello che si vuole bloccare.
+    requireBrandImages = false
   } = options;
 
   let member = memberOption;
@@ -1181,16 +1186,14 @@ async function createPkpass(template, instance, brand, options = {}) {
     }
   }
 
-  // Senza icona propria si genera dall'iniziale e dai colori del brand. Mai un file di
-  // default: quelli in public/assets erano il marchio "H" di Hirostar, e finivano sul pass
-  // di chiunque non avesse ancora caricato la sua icona.
-  if (!iconBuffers?.icon) {
-    iconBuffers = await generateIcon(brand.name, bgColor, fgColor);
-    console.log('✓ Notification icon generated from brand initial');
-  }
-  if (!logoBuffers?.logo) {
-    const logos = await generateLogo(brand.name, bgColor, fgColor);
-    logoBuffers = logos;
+  // Quando si emette un pass nuovo (requireBrandImages) non si ripiega su niente: il
+  // controllo è più sotto, dove si sa quali immagini servono davvero a questo pass.
+  // Negli altri casi — pass già installati che si aggiornano, pass storici — si genera
+  // dall'iniziale e dai colori del BRAND: mai il marchio di un altro cliente, ma neanche
+  // un pass che smette di funzionare in tasca a qualcuno.
+  if (!requireBrandImages || hrBrand) {
+    if (!iconBuffers?.icon) iconBuffers = await generateIcon(brand.name, bgColor, fgColor);
+    if (!logoBuffers?.logo) logoBuffers = await generateLogo(brand.name, bgColor, fgColor);
   }
 
   // Strip images — push override → template → brand → generata dal brand.
@@ -1216,10 +1219,10 @@ async function createPkpass(template, instance, brand, options = {}) {
     const strip2x = await sharp(rawStrip).resize(750, 246, { fit: 'cover' }).png().toBuffer();
     stripBuffers = { strip: strip1x, strip2x: strip2x };
     console.log('✓ Using custom strip image (from brand)');
-  } else {
+  } else if (!requireBrandImages || hrBrand) {
     stripBuffers = await generateStrip(brand.name, bgColor, fgColor);
-    console.log('✓ Strip generated from brand name and colors');
   }
+  // Emissione di un pass nuovo senza strip del brand: nessun ripiego, si fallisce sotto.
 
   // Thumbnail — for generic and eventTicket; su storeCard HR viene composita sulla strip
   let thumbnailBuffers = null;
@@ -1247,6 +1250,30 @@ async function createPkpass(template, instance, brand, options = {}) {
     stripBuffers.strip = await compositeThumbnailOnStrip(stripBuffers.strip, thumbnailBuffers.thumb, 375, 123);
     stripBuffers.strip2x = await compositeThumbnailOnStrip(stripBuffers.strip2x, thumbnailBuffers.thumb2x, 750, 246);
     console.log('[passkit] Employee pass: thumbnail composita sulla strip');
+  }
+
+  // Un pass NUOVO si emette solo con le immagini vere del brand: un pass con la grafica
+  // sbagliata è peggio di nessun pass. Si controlla qui perché solo ora è noto quali
+  // immagini questo pass mostra davvero (la strip non compare su tutti i tipi: non ha
+  // senso pretenderla dove non si vede).
+  if (requireBrandImages && !hrBrand) {
+    const passTypeForCheck = template.pass_type || 'storeCard';
+    const stripIsShown = passTypeForCheck === 'coupon' || passTypeForCheck === 'storeCard'
+      || (passTypeForCheck === 'eventTicket' && !backgroundBuffers);
+    const missing = [];
+    if (!iconBuffers?.icon) missing.push('icona notifica');
+    if (!logoBuffers?.logo) missing.push('logo');
+    if (stripIsShown && !stripBuffers?.strip) missing.push('strip');
+    if (missing.length) {
+      const err = new Error(
+        `Pass non creato: mancano le immagini del brand (${missing.join(', ')}). ` +
+        'Caricale in Template Pass e riprova.'
+      );
+      err.code = 'brand_images_missing';
+      err.missing = missing;
+      err.status = 422;
+      throw err;
+    }
   }
 
   // Build file map
