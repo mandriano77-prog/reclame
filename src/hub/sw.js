@@ -2,7 +2,7 @@
 
 // Bump this on every shell change (app.js / hub.css / index.html) or installed PWAs keep
 // serving the cached old assets. v2: de-branded HUB + brand logo/colors + merchant logos.
-const CACHE_NAME = 'hub-v7';
+const CACHE_NAME = 'hub-v8';
 const SHELL_ASSETS = ['./', './index.html', './app.js', './hub.css', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (event) => {

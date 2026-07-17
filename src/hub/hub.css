@@ -19,7 +19,12 @@
 
   --hub-text: #F4F4F5;
   --hub-muted: #8A8A94;
-  --hub-faint: #5C5C66;
+  /* Era #5C5C66: 2.84:1 sulla card — sotto la soglia di leggibilità. E non è decorativo:
+     ci scriviamo la categoria di ogni offerta, le date dei movimenti, il segnaposto della
+     ricerca e "Ti mancano N coin", che è l'informazione su cui il cliente decide.
+     #7C7C86 è il grigio più scuro che passa (4.54:1): resta il terzo livello di
+     gerarchia, sotto --hub-muted (5.48:1), ma si legge davvero. */
+  --hub-faint: #7C7C86;
 
   --hub-accent-soft: color-mix(in srgb, var(--hub-accent) 16%, transparent);
   --hub-accent-line: color-mix(in srgb, var(--hub-accent) 45%, transparent);
