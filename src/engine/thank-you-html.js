@@ -51,6 +51,11 @@ function thankYouStyles() {
       --brand-dark: #7C3AED;
       --brand-light: #A78BFA;
       --brand-subtle: #F5F3FF;
+      /* Tinte derivate dal colore del pass: prima erano rgba(139,92,246,…) inchiodato,
+         così i cerchi restavano viola mentre il resto prendeva l'accent del brand.
+         color-mix le ricava da --brand, che è il labelColor del pass. */
+      --brand-soft: color-mix(in srgb, var(--brand) 12%, transparent);
+      --brand-line: color-mix(in srgb, var(--brand) 38%, transparent);
       --bg-canvas: #0A0A0A;
       --bg-card: #141414;
       --text-primary: #F4EDE2;
@@ -58,7 +63,8 @@ function thankYouStyles() {
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      /* Stessi font di landing e HUB: è la terza superficie che vede il cliente. */
+      font-family: 'Manrope', ui-sans-serif, -apple-system, system-ui, sans-serif;
       background: var(--bg-canvas);
       color: var(--text-primary);
       min-height: 100vh;
@@ -86,8 +92,11 @@ function thankYouStyles() {
       width: 56px;
       height: 56px;
       border-radius: 14px;
-      background: rgba(139, 92, 246, 0.12);
-      border: 2px solid rgba(139, 92, 246, 0.35);
+      /* Ripiego neutro per iOS senza color-mix: una tinta chiara invece del viola sbagliato. */
+      background: rgba(255, 255, 255, 0.08);
+      background: var(--brand-soft);
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      border: 2px solid var(--brand-line);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -96,12 +105,25 @@ function thankYouStyles() {
       color: var(--brand);
       margin: 0 auto;
     }
+    /* L'icona notifica del brand, quadrata: è quella che il cliente rivedrà sulle push. */
+    .logo-area .brand-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      border: 2px solid var(--brand-line);
+      display: block;
+      margin: 0 auto;
+    }
     .icon-circle {
       width: 72px;
       height: 72px;
       border-radius: 50%;
-      background: rgba(139, 92, 246, 0.12);
-      border: 2px solid rgba(139, 92, 246, 0.4);
+      background: rgba(255, 255, 255, 0.08);
+      background: var(--brand-soft);
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      border: 2px solid var(--brand-line);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -115,10 +137,12 @@ function thankYouStyles() {
     }
     .icon-circle .check { font-size: 36px; color: var(--brand); }
     h1 {
-      font-size: 22px;
-      font-weight: 700;
+      font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.015em;
       margin-bottom: 14px;
-      line-height: 1.3;
+      line-height: 1.2;
       color: var(--text-primary);
     }
     .body-copy {
@@ -215,12 +239,17 @@ function thankYouSuccessBlock({ brandName, portalHref, passDownloadUrl, showPort
 function renderSaveThankYouPage({
   brandName,
   logoUrl,
+  iconUrl,
   passDownloadUrl,
   portalHref,
   brandColor,
   showPortal = true,
   footer = getThankYouFooter()
 }) {
+  // In testa va l'icona notifica del brand — quadrata, la stessa che il cliente rivedrà
+  // sulle push. Il logo largo verrebbe schiacciato nel riquadro quadrato. Se manca si
+  // ripiega sull'iniziale.
+  const headerImageUrl = iconUrl || logoUrl;
   const safeBrand = escapeHtml(brandName);
   const initial = escapeHtml((brandName || 'B').charAt(0).toUpperCase());
   const successBlock = thankYouSuccessBlock({ brandName, portalHref, passDownloadUrl, showPortal });
@@ -236,7 +265,9 @@ function renderSaveThankYouPage({
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="theme-color" content="#0A0A0A">
   <title>${safeBrand} · ${escapeHtml(getProductBrandName())}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>${thankYouStyles()}</style>
   <style>${brandVars}</style>
 </head>
@@ -282,15 +313,20 @@ function renderSaveThankYouPage({
   </div>
 
   <script>
-    const logoImg = new Image();
-    logoImg.onload = () => {
-      document.getElementById('logoLetter').style.display = 'none';
-      const img = document.createElement('img');
-      img.src = logoImg.src;
-      img.alt = ${JSON.stringify(brandName || '')};
-      document.getElementById('logoArea').appendChild(img);
-    };
-    logoImg.src = ${JSON.stringify(logoUrl)};
+    const headerImgUrl = ${JSON.stringify(headerImageUrl || '')};
+    if (headerImgUrl) {
+      const iconImg = new Image();
+      iconImg.onload = () => {
+        document.getElementById('logoLetter').style.display = 'none';
+        const img = document.createElement('img');
+        img.className = 'brand-icon';
+        img.src = iconImg.src;
+        img.alt = ${JSON.stringify(brandName || '')};
+        document.getElementById('logoArea').appendChild(img);
+      };
+      // se l'icona non carica resta l'iniziale, già a schermo
+      iconImg.src = headerImgUrl;
+    }
 
     (function() {
       const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');

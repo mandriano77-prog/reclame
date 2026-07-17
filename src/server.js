@@ -504,12 +504,17 @@ async function renderThankYouForPass(res, passId) {
   const brandName = brand.name || 'Wallet';
   const passDownloadUrl = `/api/v1/passes/${passInstance.id}/download`;
   const logoUrl = `/api/v1/brands/${encodeURIComponent(String(brand.id))}/logo?t=${Date.now()}`;
+  // Icona notifica quadrata, endpoint pubblico (la thank-you gira senza sessione).
+  const iconUrl = brand.slug
+    ? `/api/v1/brands/by-slug/${encodeURIComponent(brand.slug)}/icon?t=${Date.now()}`
+    : null;
   const portalHref = await resolvePortalHref(passInstance.id, brand);
   const showPortal = isPortalPassBrand(brand);
 
   return res.send(renderSaveThankYouPage({
     brandName,
     logoUrl,
+    iconUrl,
     passDownloadUrl,
     portalHref,
     showPortal,
