@@ -13,6 +13,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const app = fs.readFileSync(path.join(root, 'src/hub/app.js'), 'utf8');
 const hubPwa = fs.readFileSync(path.join(root, 'src/api/hub-pwa.js'), 'utf8');
+const indexHtml = fs.readFileSync(path.join(root, 'src/hub/index.html'), 'utf8');
 
 test('le due schede sono in italiano: Offerte e Gettoni', () => {
   assert.match(app, /\[\['conv', 'Offerte'\], \['pga', 'Gettoni'\]\]/);
@@ -43,6 +44,17 @@ test('nessun "coin" visibile: si dice gettoni', () => {
   assert.equal(visibili.length, 0, 'coin ancora visibile: ' + visibili.length + ' occorrenze');
   assert.match(app, /gettoni disponibili/);
   assert.match(app, /Il programma Gettoni non è ancora attivo/);
+});
+
+test("nessun 'coin' visibile anche nella shell index.html (aria-label compresi)", () => {
+  // La shell HTML ha classi/id hub-coin-* (identificatori, restano) ma anche testo e
+  // aria-label che il cliente/screen-reader percepisce. Un aria-label="Saldo coin" era
+  // sfuggito: il test di app.js non guarda index.html. Qui lo copriamo: neutralizziamo
+  // gli attributi che contengono identificatori (class/id) e cerchiamo "coin" nel resto.
+  const senzaId = indexHtml.replace(/(?:class|id)="[^"]*"/g, '');
+  const residui = senzaId.match(/\bcoin\b/gi) || [];
+  assert.equal(residui.length, 0, 'coin visibile nella shell: ' + senzaId.match(/[^\n]*\bcoin\b[^\n]*/gi));
+  assert.doesNotMatch(senzaId, /\bDeal\b/);
 });
 
 test("l'accent segue la palette del pass, non il viola di default", () => {
