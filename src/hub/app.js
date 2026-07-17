@@ -202,6 +202,49 @@
     return `#${rgb}`;
   }
 
+  function lightenHex(hex, amount) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    const s = (v) => Math.max(0, Math.min(255, Math.round(v + (255 - v) * amount)));
+    const rgb = [s((n >> 16) & 255), s((n >> 8) & 255), s(n & 255)]
+      .map((v) => v.toString(16).padStart(2, '0')).join('');
+    return `#${rgb}`;
+  }
+
+  /** La superficie delle card: rgba(255,255,255,.035) sopra --hub-bg #08090B. */
+  const CARD_SURFACE = '#111214';
+  /** Quanto accent c'è in --hub-accent-soft (vedi hub.css). */
+  const ACCENT_SOFT_MIX = 0.16;
+
+  function mixHex(fg, bg, amount) {
+    const p = (h) => { const n = parseInt(String(h).replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    const A = p(fg); const B = p(bg);
+    return '#' + A.map((v, i) => Math.round(B[i] + (v - B[i]) * amount).toString(16).padStart(2, '0')).join('');
+  }
+
+  /**
+   * L'accent come COLORE TESTO, schiarito quanto basta a leggersi.
+   * buttonBgFor() protegge solo il riempimento dei bottoni: l'accent grezzo finiva sullo
+   * sconto delle card, sul saldo coin e sul codice da mostrare in cassa — e lì è testo.
+   * Falliva per OGNI accent realistico, incluso il viola di default (4.43:1) e il rosso
+   * del brand (3.43:1); su un blu scendeva a 1.64:1.
+   * Su fondo scuro si schiarisce: scurire, come fanno i bottoni, peggiorerebbe.
+   * Il riferimento è il fondo PIÙ CHIARO su cui questo colore farà da testo, cioè
+   * --hub-accent-soft (accent al 16% sulla card) di .hub-promo e .hub-discount-badge:
+   * è lì che il cliente legge il codice da mostrare in cassa. Tarare sulla card e basta
+   * lasciava indietro gli accent più chiari — il magenta si fermava a 4.37:1.
+   */
+  function accentTextFor(accent) {
+    const fondoPeggiore = mixHex(accent, CARD_SURFACE, ACCENT_SOFT_MIX);
+    const lFondo = luminance(fondoPeggiore);
+    let c = accent;
+    for (let i = 0; i < 12 && contrastRatio(luminance(c), lFondo) < 4.5; i += 1) {
+      c = lightenHex(c, 0.14);
+    }
+    return c;
+  }
+
   /** Button fill: the brand accent, darkened just enough that its label clears WCAG AA.
    *  (The stock purple #8B5CF6 only reaches 4.23:1 with white — hence this step.) */
   function buttonBgFor(accent) {
@@ -214,7 +257,11 @@
 
   function applyWhiteLabel() {
     const accent = state.settings?.accent_color || '#8B5CF6';
+    // --hub-accent resta grezzo: è giusto per bordi, riempimenti e aloni, dove il colore
+    // non deve essere letto. Dove invece è TESTO si usa --hub-accent-text, schiarito
+    // quanto basta: senza, lo sconto e il saldo coin erano illeggibili per ogni brand.
     document.documentElement.style.setProperty('--hub-accent', accent);
+    document.documentElement.style.setProperty('--hub-accent-text', accentTextFor(accent));
     // Buttons are filled with the brand accent (darkened if needed for contrast), and the
     // label color is whichever of white/near-black actually reads better on it.
     const btnBg = buttonBgFor(accent);
