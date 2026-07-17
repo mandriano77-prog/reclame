@@ -212,12 +212,19 @@ html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-slug-row {
   gap: 8px;
 }
 
+/* Era un glifo centrato in 26px accanto al campo. Ora è una riga sotto: le parole hanno
+   spazio e non schiacciano l'input. Il colore distingue a colpo d'occhio le tre nature —
+   va bene, non va bene, non lo sappiamo — ma il senso sta nel testo, non nel colore. */
 html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-slug-status {
-  min-width: 26px;
-  text-align: center;
+  margin-top: 6px;
   font-size: 12px;
+  line-height: 1.4;
   color: var(--a2w-text-secondary);
+  min-height: 17px;
 }
+html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-slug-status--ok { color: var(--success, #10B981); }
+html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-slug-status--ko { color: var(--danger, #DC2626); }
+html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-slug-status--warn { color: var(--warning, #E8A33D); }
 
 html[data-shell="dark"].a2w-shell #brand-identity .a2w-bi-url-preview {
   margin-top: 8px;

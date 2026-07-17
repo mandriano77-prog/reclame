@@ -1921,7 +1921,7 @@
                             <section class="card a2w-bi-section a2w-bi-section--base">
                                 <div class="a2w-bi-section__head">
                                     <h2>Informazioni base</h2>
-                                    <p>Definisci nome, slug e lingua principale del brand.</p>
+                                    <p>Nome, indirizzo pubblico e lingua del brand.</p>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" for="biName">Nome brand</label>
@@ -1929,11 +1929,17 @@
                                     <p class="a2w-bi-field-error" id="biNameError" role="alert"></p>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label" for="biSlug">Slug</label>
+                                    <label class="form-label" for="biSlug">Indirizzo pagina pubblica</label>
                                     <div class="a2w-bi-slug-row">
-                                        <input type="text" id="biSlug" maxlength="64" placeholder="motor-k" autocomplete="off">
-                                        <span id="biSlugStatus" class="a2w-bi-slug-status" aria-live="polite">…</span>
+                                        <input type="text" id="biSlug" maxlength="64" placeholder="motor-k" autocomplete="off" aria-describedby="biSlugHelp">
                                     </div>
+                                    <p id="biSlugStatus" class="a2w-bi-slug-status" aria-live="polite"></p>
+                                    <!-- a2wBiUpdateSlugPreview() calcolava già l'indirizzo completo e cercava
+                                         questo elemento, che però non è mai esistito: il valore finiva nel
+                                         nulla e il campo restava muto. Vedere l'indirizzo vero spiega meglio
+                                         di qualsiasi didascalia. -->
+                                    <p class="a2w-bi-url-preview">I clienti apriranno: <strong id="a2wBiPreviewUrl"></strong></p>
+                                    <p class="a2w-bi-field-help" id="biSlugHelp">Lo sistemiamo noi: spazi e accenti diventano trattini.</p>
                                     <p class="a2w-bi-field-error" id="biSlugError" role="alert"></p>
                                 </div>
                                 <div class="form-group">
@@ -6025,7 +6031,7 @@ async function showCampaignQR(id) {
 
 async function renderQR() {
     const url = currentQrUrl || (currentQrCampaignId ? await getCampaignDirectUrl(currentQrCampaignId) : '');
-    if (!url) { toast('Impossibile generare URL. Verifica che il brand abbia uno slug.'); return; }
+    if (!url) { toast('Link non generato: imposta l\'indirizzo pagina pubblica in Identità Brand'); return; }
     document.getElementById('qrUrl').value = url;
     const canvas = document.getElementById('qrCanvas');
     canvas.innerHTML = '';
@@ -6893,7 +6899,7 @@ async function hydrateTemplateIssueUrls() {
         if (!templateId) return;
         try {
             const url = await getTemplatePassDirectUrl(templateId);
-            host.textContent = url || 'Configura lo slug del brand in Identità Brand';
+            host.textContent = url || 'Imposta l\'indirizzo pagina pubblica in Identità Brand';
             if (url) host.title = url;
         } catch (_) {
             host.textContent = '—';
@@ -6904,7 +6910,7 @@ async function hydrateTemplateIssueUrls() {
 async function createTemplatePassLink(templateId) {
     const url = await getTemplatePassDirectUrl(templateId);
     if (!url) {
-        toast('Impossibile creare il link: verifica slug del brand in Identità Brand');
+        toast('Link non creato: manca l\'indirizzo pagina pubblica, impostalo in Identità Brand');
         return;
     }
     const host = document.querySelector(`#templatesList [data-template-url-host="${CSS.escape(templateId)}"]`);
@@ -6923,7 +6929,7 @@ async function createTemplatePassLink(templateId) {
 async function copyTemplatePassLink(templateId) {
     const url = await getTemplatePassDirectUrl(templateId);
     if (!url) {
-        toast('Link non disponibile: verifica slug del brand');
+        toast('Link non disponibile: manca l\'indirizzo pagina pubblica del brand');
         return;
     }
     navigator.clipboard.writeText(url).then(() => toast('Link copiato!'));
@@ -6933,7 +6939,7 @@ async function showTemplatePassQR(templateId) {
     try {
         const url = await getTemplatePassDirectUrl(templateId);
         if (!url) {
-            toast('Impossibile generare QR: verifica slug del brand');
+            toast('QR non generato: manca l\'indirizzo pagina pubblica del brand');
             return;
         }
         currentQrCampaignId = null;
@@ -12925,7 +12931,7 @@ function a2wBiRefreshSaveUi() {
         if (brandIdentityState.slugChecking) {
             btn.disabled = true;
             btn.removeAttribute('title');
-            btn.textContent = 'Verifica slug…';
+            btn.textContent = 'Controllo indirizzo…';
             return;
         }
         if (errorCount > 0) {
@@ -12993,30 +12999,52 @@ function a2wBiUpdateSlugPreview() {
     if (previewSlug) previewSlug.textContent = slug || '—';
 }
 
+/**
+ * Lo stato dell'indirizzo pubblico si diceva a simboli: ! ✓ ✕ ? — e "!" (formato non
+ * valido) e "?" (non siamo riusciti a controllare) erano due problemi diversi con lo
+ * stesso geroglifico. Ora ognuno dice cosa succede e, quando serve, cosa fare.
+ */
+function a2wBiSetSlugStatus(status, testo, tono) {
+    if (!status) return;
+    status.textContent = testo;
+    status.className = 'a2w-bi-slug-status' + (tono ? ' a2w-bi-slug-status--' + tono : '');
+}
+
 async function a2wBiCheckSlugAvailabilityNow() {
     if (!isA2wBrandIdentityV2Enabled()) return;
     const slug = a2wBiCollectFormData().slug;
     const status = a2wBiField('biSlugStatus');
-    if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+    if (!slug) {
         brandIdentityState.slugAvailable = null;
-        if (status) status.textContent = '!';
+        a2wBiSetSlugStatus(status, '', '');
+        return;
+    }
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+        brandIdentityState.slugAvailable = null;
+        a2wBiSetSlugStatus(status, 'Usa solo minuscole, numeri e trattini — niente spazi né accenti.', 'ko');
         return;
     }
     brandIdentityState.slugChecking = true;
-    if (status) status.textContent = '…';
+    a2wBiSetSlugStatus(status, 'Controllo…', '');
     try {
         const res = await fetch(`${API}/brands/by-slug/${encodeURIComponent(slug)}`, { headers: getAuthHeaders() });
         if (!res.ok) {
             brandIdentityState.slugAvailable = true;
-            if (status) status.textContent = '✓';
+            a2wBiSetSlugStatus(status, 'Libero', 'ok');
             return;
         }
         const data = await res.json().catch(() => ({}));
         brandIdentityState.slugAvailable = String(data.id || '') === String(brandId || '');
-        if (status) status.textContent = brandIdentityState.slugAvailable ? '✓' : '✕';
+        a2wBiSetSlugStatus(
+            status,
+            brandIdentityState.slugAvailable ? 'Libero' : 'Già usato da un altro brand — scegline un altro.',
+            brandIdentityState.slugAvailable ? 'ok' : 'ko'
+        );
     } catch (_) {
         brandIdentityState.slugAvailable = null;
-        if (status) status.textContent = '?';
+        // Diverso dal formato sbagliato: qui l'indirizzo può andare benissimo, siamo noi
+        // a non aver potuto controllare.
+        a2wBiSetSlugStatus(status, 'Non riusciamo a verificarlo ora — riprova fra poco.', 'warn');
     } finally {
         brandIdentityState.slugChecking = false;
         a2wBiSyncDirtyState();
