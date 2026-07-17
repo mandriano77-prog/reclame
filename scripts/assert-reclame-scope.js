@@ -20,7 +20,12 @@ const FORBIDDEN_PATTERNS = [
   /^scripts\/build-fd-bundles\.js$/,
   /^e2e\/fd-/,
   /^scripts\/fd-/,
-  /^scripts\/hub-pga-/,
+  // hub-pga-* sono i test dello Sprint "HUB Convenzioni": alcuni leggono file HR-only
+  // (employee-pass.js, mailer dipendenti, src/filodiretto/fd-*) e restano bloccati. Ma
+  // hub-pga-sprint2 verifica solo la shell HUB condivisa (src/hub/*, hub-pwa.js) — e da
+  // quando Reclame ha i Gettoni (17/07/2026) è codice Reclame a tutti gli effetti: bloccarlo
+  // impediva di aggiornare quel test dopo un cambio legittimo lato Reclame (rimozione pill).
+  /^scripts\/hub-pga-(?!sprint2\.test\.js$)/,
 ];
 
 function sh(cmd) {

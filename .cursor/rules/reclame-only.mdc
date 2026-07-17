@@ -14,6 +14,9 @@ UI shell: `html.a2w-shell`, classi `nav-item--reclame-*`, `nav-group--reclame-ad
 - `src/filodiretto/**` (qualsiasi file)
 - `scripts/build-fd-bundles.js`, `src/filodiretto/fd.bundle.js`
 - Test/e2e HR salvo richiesta esplicita: `e2e/fd-*`, `scripts/fd-*`, `scripts/hub-pga-*`
+  (eccezione: `scripts/hub-pga-sprint2.test.js` verifica la shell HUB condivisa — niente
+  file `filodiretto/` o `employee-pass.js` — ed è codice Reclame da quando esistono i
+  Gettoni; modificabile liberamente)
 - UX/copy HR: Dipendenti, matricola, Growth Activation, Coin, PGA, `fd-nav-item--hr`
 
 ## Dove lavorare (priorità)
