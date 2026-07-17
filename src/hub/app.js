@@ -2,12 +2,12 @@
   'use strict';
 
   const CATEGORY_LABELS = {
-    food: 'Food',
-    fitness: 'Fitness',
-    retail: 'Retail',
+    food: 'Ristorazione',
+    fitness: 'Sport',
+    retail: 'Negozi',
     salute: 'Salute',
     viaggi: 'Viaggi',
-    tech: 'Tech',
+    tech: 'Tecnologia',
     servizi: 'Servizi',
     altro: 'Altro',
     career: 'Carriera',
@@ -328,7 +328,7 @@
     }
     bar.classList.remove('hidden');
     const tabs = hubIsAdsMode()
-      ? [['conv', 'Deal'], ['pga', 'Coin']]
+      ? [['conv', 'Offerte'], ['pga', 'Gettoni']]
       : [['conv', hubListTitle()], ['pga', 'PGA'], ['me', 'Profilo']];
     bar.innerHTML = tabs.map(([key, label]) =>
       `<a href="#" class="hub-tab${active === key ? ' active' : ''}" data-tab="${key}">${esc(label)}</a>`
@@ -848,16 +848,16 @@
   /** COIN area (Reclame): balance, how you earn, what you can redeem. */
   function renderCoin() {
     $('#hub-back')?.classList.add('hidden');
-    $('#hub-title').textContent = 'Coin';
+    $('#hub-title').textContent = 'Gettoni';
 
     if (!pgaEnabled()) {
       $('#hub-main').innerHTML = `
         <div class="hub-coin-hero">
           <p class="hub-coin-hero-label">Il tuo saldo</p>
           <p class="hub-coin-hero-value">—</p>
-          <p class="hub-coin-hero-sub">Il programma Coin non è ancora attivo.</p>
+          <p class="hub-coin-hero-sub">Il programma Gettoni non è ancora attivo.</p>
         </div>
-        <div class="hub-empty">Quando sarà attivo, qui accumuli coin con i tuoi acquisti e li spendi in premi.</div>`;
+        <div class="hub-empty">Quando sarà attivo, qui accumuli gettoni con i tuoi acquisti e li spendi in premi.</div>`;
       return;
     }
 
@@ -892,11 +892,11 @@
           return `<button type="button" class="hub-pga-card" style="--i:${i}" data-exp-id="${esc(e.id)}">
             <div class="hub-pga-card-head">
               <strong>${esc(e.name)}</strong>
-              <span class="hub-pga-cost">${esc(String(e.coin_cost))} coin</span>
+              <span class="hub-pga-cost">${esc(String(e.coin_cost))} gettoni</span>
             </div>
             ${cat ? `<span class="hub-pga-category">${esc(cat)}</span>` : ''}
             ${e.description ? `<p class="hub-pga-desc">${esc(e.description)}</p>` : ''}
-            ${afford ? '' : `<p class="hub-pga-limits">Ti mancano ${esc(String(Number(e.coin_cost || 0) - balance))} coin</p>`}
+            ${afford ? '' : `<p class="hub-pga-limits">Ti mancano ${esc(String(Number(e.coin_cost || 0) - balance))} gettoni</p>`}
           </button>`;
         }).join('')}
       </div>`
@@ -911,7 +911,7 @@
       <div class="hub-coin-hero">
         <p class="hub-coin-hero-label">Il tuo saldo</p>
         <p class="hub-coin-hero-value">${esc(String(balance))}</p>
-        <p class="hub-coin-hero-sub">coin disponibili</p>
+        <p class="hub-coin-hero-sub">gettoni disponibili</p>
       </div>
       ${earn}
       ${catalog}`;
@@ -971,7 +971,7 @@
         ${payload.qr_url ? `<img class="hub-ticket-qr" src="${esc(payload.qr_url)}" alt="Codice ${esc(r.code)}">` : ''}
         <p class="hub-ticket-code">${esc(r.code)}</p>
         <p class="hub-ticket-timer" id="hub-ticket-timer"></p>
-        <p class="hub-ticket-hint">Se scade senza essere ritirato, i <strong>${esc(String(r.coins_spent))} coin</strong> ti tornano indietro.</p>
+        <p class="hub-ticket-hint">Se scade senza essere ritirato, i <strong>${esc(String(r.coins_spent))} gettoni</strong> ti tornano indietro.</p>
       </div>`;
 
     const timerEl = $('#hub-ticket-timer');
@@ -979,8 +979,8 @@
       const left = formatCountdown(r.expires_at);
       if (!left) {
         clearTicketTimer();
-        if (timerEl) timerEl.textContent = 'Codice scaduto — coin restituiti';
-        showToast('Codice scaduto: i coin ti sono stati restituiti');
+        if (timerEl) timerEl.textContent = 'Codice scaduto — gettoni restituiti';
+        showToast('Codice scaduto: i gettoni ti sono stati restituiti');
         bootstrap().then(() => navigate('/pga')).catch(() => navigate('/pga'));
         return;
       }
@@ -1027,14 +1027,14 @@
           ${cat ? `<span class="hub-pga-category">${esc(cat)}</span>` : ''}
         </div>
       </div>
-      <div class="hub-discount-badge">${esc(String(cost))} coin</div>
+      <div class="hub-discount-badge">${esc(String(cost))} gettoni</div>
       ${reward.description ? `<div class="hub-field"><p>${esc(reward.description)}</p></div>` : ''}
       <div class="hub-field">
         <p class="hub-field-label">Il tuo saldo</p>
-        <p>${esc(String(balance))} coin${afford ? '' : ` — te ne mancano ${esc(String(cost - balance))}`}</p>
+        <p>${esc(String(balance))} gettoni${afford ? '' : ` — te ne mancano ${esc(String(cost - balance))}`}</p>
       </div>
       <button type="button" class="hub-btn" id="hub-redeem-btn" ${afford ? '' : 'disabled'}>
-        ${afford ? 'Riscatta' : 'Coin insufficienti'}
+        ${afford ? 'Riscatta' : 'Gettoni insufficienti'}
       </button>
       <p class="hub-pga-hint">Riscattando ricevi un <strong>codice da mostrare in cassa</strong>, valido pochi minuti. Nessun importo in denaro.</p>`;
 
@@ -1042,7 +1042,7 @@
     btn?.addEventListener('click', () => {
       showModal({
         title: 'Confermi il riscatto?',
-        bodyHtml: `Verranno scalati <strong>${esc(String(cost))} coin</strong> e riceverai un codice da mostrare in cassa.`,
+        bodyHtml: `Verranno scalati <strong>${esc(String(cost))} gettoni</strong> e riceverai un codice da mostrare in cassa.`,
         actions: [
           { label: 'Riscatta', onClick: () => doRedeem(reward) },
           { label: 'Annulla', secondary: true }
@@ -1078,7 +1078,7 @@
         return `<button type="button" class="hub-pga-card" data-exp-id="${esc(e.id)}">
           <div class="hub-pga-card-head">
             <strong>${esc(e.name)}</strong>
-            <span class="hub-pga-cost">${esc(String(e.coin_cost))} coin</span>
+            <span class="hub-pga-cost">${esc(String(e.coin_cost))} gettoni</span>
           </div>
           ${cat ? `<span class="hub-pga-category">${esc(cat)}</span>` : ''}
           ${e.description ? `<p class="hub-meta hub-pga-desc">${esc(e.description)}</p>` : ''}
@@ -1146,12 +1146,12 @@
           <h2 style="margin-top:0">${esc(exp.name)}</h2>
           ${cat ? `<span class="hub-pga-category">${esc(cat)}</span>` : ''}
           ${exp.description ? `<p>${esc(exp.description)}</p>` : ''}
-          <span class="hub-pga-cost">${esc(String(exp.coin_cost))} coin</span>
+          <span class="hub-pga-cost">${esc(String(exp.coin_cost))} gettoni</span>
           ${limits.length ? `<ul class="hub-pga-limits">${limits.map((l) => `<li>${l}</li>`).join('')}</ul>` : ''}
           ${slotPicker}
           ${blockReason ? `<p class="hub-pga-blocked">${esc(blockReason)}</p>` : ''}
           <button type="button" class="hub-btn" id="hub-pga-redeem"${canRedeem ? '' : ' disabled'}>
-            Riscatta con ${esc(String(exp.coin_cost))} coin
+            Riscatta con ${esc(String(exp.coin_cost))} gettoni
           </button>
         </section>
       `;
@@ -1163,8 +1163,8 @@
         showModal({
           title: 'Conferma riscatto',
           bodyHtml: `
-            <p>Stai per riscattare <strong>${esc(exp.name)}</strong> per <strong>${esc(String(exp.coin_cost))} coin</strong>.</p>
-            <p class="hub-meta">Saldo dopo il riscatto: <strong>${esc(String(afterBalance))} coin</strong></p>
+            <p>Stai per riscattare <strong>${esc(exp.name)}</strong> per <strong>${esc(String(exp.coin_cost))} gettoni</strong>.</p>
+            <p class="hub-meta">Saldo dopo il riscatto: <strong>${esc(String(afterBalance))} gettoni</strong></p>
           `,
           actions: [
             { label: 'Annulla', secondary: true },
@@ -1256,7 +1256,7 @@
         <p class="hub-meta" style="margin-top:0">${esc(profileName)}</p>
         <div class="hub-me-balance">
           <div class="hub-me-balance-value">${esc(String(data.coin_balance ?? 0))}</div>
-          <div class="hub-me-balance-label">Coin disponibili</div>
+          <div class="hub-me-balance-label">Gettoni disponibili</div>
         </div>
         <section class="hub-section"><h2>Ultimi movimenti</h2>${ledgerHtml}</section>
         ${bookings.length ? `<section class="hub-section"><h2>Prenotazioni</h2>${bookingsHtml}</section>` : ''}
@@ -1275,7 +1275,7 @@
           }
           state.coin_balance = Number(out.data.new_balance ?? state.coin_balance);
           updateCoinWidget();
-          showToast('Prenotazione annullata — coin rimborsati');
+          showToast('Prenotazione annullata — gettoni rimborsati');
           renderMe();
         });
       });

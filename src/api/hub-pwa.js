@@ -135,12 +135,20 @@ function publicSettings(settings, brand) {
   }
   if (!Array.isArray(categories)) categories = [];
   const cfg = brand?.config && typeof brand.config === 'object' ? brand.config : {};
+  // Il viola #8B5CF6 è il DEFAULT della colonna accent_color: appena esiste una riga di
+  // impostazioni HUB (creata anche solo importando i merchant) quel viola veniva salvato
+  // senza che nessuno lo scegliesse, e vinceva sul colore del pass — così l'HUB restava
+  // viola mentre il pass era, per dire, salmone. Lo trattiamo come "non scelto": comanda
+  // la palette del pass (labelColor). Un accent scelto davvero dall'operatore (≠ default)
+  // continua a vincere.
+  const brandAccent = cfg.labelColor || cfg.primaryColor;
+  const savedAccent = String(settings?.accent_color || '').toUpperCase();
+  const accentChosen = savedAccent && savedAccent !== '#8B5CF6' ? settings.accent_color : null;
   return {
     // In testa all'HUB va l'icona notifica: quadrata, la stessa delle push. Il logo resta
     // solo come ultima spiaggia per un brand che l'icona non ce l'ha ancora.
-    // Impostazioni Hub continua a scavalcare tutto: se l'operatore ha scelto, comanda lui.
     logo_url: settings?.logo_url || brandIconUrl(brand) || brandLogoUrl(brand),
-    accent_color: settings?.accent_color || cfg.labelColor || cfg.primaryColor || '#8B5CF6',
+    accent_color: accentChosen || brandAccent || '#8B5CF6',
     welcome_message: settings?.welcome_message || null,
     categories_enabled: categories,
     geofencing_enabled: settings?.geofencing_enabled !== false
