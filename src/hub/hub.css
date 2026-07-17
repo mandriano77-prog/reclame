@@ -104,7 +104,7 @@ body::after {
 
 .hub-header-inner {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
 }
 
@@ -132,7 +132,14 @@ body::after {
   background: var(--hub-surface);
 }
 
-.hub-header-text { flex: 1; min-width: 0; }
+.hub-header-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
 
 .hub-title {
   margin: 0;
@@ -193,7 +200,10 @@ body::after {
   padding: 20px 20px 40px;
   outline: none;
 }
-.hub-main.has-tabbar { padding-bottom: calc(96px + var(--hub-safe-bottom)); }
+/* La navigazione ora vive nell'header (rail verticale in alto a destra): il fondo pagina
+   resta libero, niente più padding per una barra flottante. .has-tabbar è conservata come
+   hook JS ma non aggiunge spazio. */
+.hub-main.has-tabbar { padding-bottom: 40px; }
 
 .hub-section {
   margin: 0 0 12px;
@@ -853,34 +863,34 @@ body::after {
   color: var(--hub-accent-text, var(--hub-accent));
 }
 
-/* ── Bottom tab bar: DEAL | COIN ─────────────────────────── */
+/* ── Rail di navigazione: OFFERTE / GETTONI ──────────────────
+   Un tempo era una pill orizzontale flottante in basso (position: fixed), che galleggiava
+   sopra il contenuto. Ora è un interruttore verticale nell'angolo in alto a destra
+   dell'header: sempre visibile, non copre mai la pagina, e con 2 aree è il pattern più
+   naturale. Vive dentro .hub-header-inner, quindi scorre e si posiziona con l'header. */
 .hub-tabbar {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(14px + var(--hub-safe-bottom));
-  z-index: 30;
+  flex: none;
   display: flex;
+  flex-direction: column;
   gap: 4px;
-  padding: 5px;
-  border-radius: 999px;
+  padding: 4px;
+  border-radius: 16px;
   border: 1px solid var(--hub-border-strong);
-  background: rgba(16, 17, 21, 0.82);
-  backdrop-filter: blur(20px) saturate(160%);
-  box-shadow: 0 18px 45px -20px rgba(0, 0, 0, 0.9);
+  background: var(--hub-surface-2);
 }
 .hub-tab {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 10px 22px;
+  justify-content: center;
+  padding: 8px 16px;
+  min-width: 82px;
   min-height: 44px;
-  border-radius: 999px;
+  border-radius: 12px;
   text-decoration: none;
   color: var(--hub-muted);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   transition: color 0.2s, background 0.2s;
 }
@@ -911,7 +921,9 @@ body::after {
 .hub-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(90px + var(--hub-safe-bottom));
+  /* 24px dal fondo: prima erano 90px per scavalcare la barra flottante, che non c'è più
+     (la navigazione è salita nell'header). Ora il toast siede vicino al bordo inferiore. */
+  bottom: calc(24px + var(--hub-safe-bottom));
   transform: translateX(-50%);
   z-index: 60;
   max-width: 88%;

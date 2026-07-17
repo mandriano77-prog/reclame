@@ -24,16 +24,18 @@
         <div class="hub-header-text">
           <h1 class="hub-title" id="hub-title">Offerte</h1>
           <p class="hub-subtitle hidden" id="hub-subtitle"></p>
+          <div class="hub-coin-pill hidden" id="hub-coin-pill" aria-label="Saldo gettoni">
+            <span class="hub-coin-icon" aria-hidden="true">🪙</span>
+            <span class="hub-coin-value" id="hub-coin-value">0</span>
+            <button type="button" class="hub-coin-link" id="hub-coin-link" aria-label="Vai al profilo">→</button>
+          </div>
         </div>
-        <div class="hub-coin-pill hidden" id="hub-coin-pill" aria-label="Saldo gettoni">
-          <span class="hub-coin-icon" aria-hidden="true">🪙</span>
-          <span class="hub-coin-value" id="hub-coin-value">0</span>
-          <button type="button" class="hub-coin-link" id="hub-coin-link" aria-label="Vai al profilo">→</button>
-        </div>
+        <!-- Rail di navigazione verticale (Offerte / Gettoni): vive nell'header, in alto a
+             destra. Prima era una pill flottante in fondo che copriva il contenuto. -->
+        <nav class="hub-tabbar hidden" id="hub-tabbar" aria-label="Navigazione principale"></nav>
       </div>
     </header>
     <main class="hub-main" id="hub-main" tabindex="-1"></main>
-    <nav class="hub-tabbar hidden" id="hub-tabbar" aria-label="Navigazione principale"></nav>
     <div class="hub-toast hidden" id="hub-toast" role="status" aria-live="polite"></div>
   </div>
   <script src="app.js" defer></script>
