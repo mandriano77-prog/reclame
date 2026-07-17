@@ -217,9 +217,12 @@ body::after {
 /* .hub-section fa doppio lavoro: etichetta nuda (In evidenza, Come guadagni, Premi) E
    contenitore di titoletto+contenuto (Descrizione, Condizioni, In negozio, movimenti…).
    Nel secondo caso l'h2 resta l'etichetta, ma il contenuto (p/li) NON deve ereditare
-   maiuscolo/sbiadito: torna testo di lettura. E le sezioni-contenitore respirano di più. */
-.hub-section:has(h2) { margin-bottom: 22px; }
-.hub-section h2 {
+   maiuscolo/sbiadito: torna testo di lettura. E le sezioni-contenitore respirano di più.
+   ECCEZIONE .hub-pga-detail: lì .hub-section è una CARD e l'h2 è il TITOLO del premio
+   (contenuto, non etichetta) — va escluso, sennò il titolo diventa una micro-etichetta.
+   E .hub-meta resta una didascalia sbiadita anche dentro una sezione. */
+.hub-section:not(.hub-pga-detail):has(h2) { margin-bottom: 22px; }
+.hub-section:not(.hub-pga-detail) h2 {
   margin: 0 0 8px;
   font-size: 10.5px;
   font-weight: 700;
@@ -227,8 +230,8 @@ body::after {
   text-transform: uppercase;
   color: var(--hub-faint);
 }
-.hub-section > p,
-.hub-section li {
+.hub-section:not(.hub-pga-detail) > p:not(.hub-meta),
+.hub-section:not(.hub-pga-detail) li {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: normal;
@@ -236,7 +239,7 @@ body::after {
   line-height: 1.5;
   color: var(--hub-text);
 }
-.hub-section > p { margin: 0; }
+.hub-section:not(.hub-pga-detail) > p:not(.hub-meta) { margin: 0; }
 
 .hub-welcome {
   margin-bottom: 18px;
