@@ -105,8 +105,8 @@ body::after {
 
 .hub-back {
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--hub-border);
   background: var(--hub-surface);
@@ -171,7 +171,15 @@ body::after {
   color: var(--hub-accent-text, var(--hub-accent));
   cursor: pointer;
   font-size: 13px;
-  padding: 0 2px;
+  /* Era 17×16px: il bersaglio più piccolo dell'HUB, ed è l'unico accesso al profilo.
+     Il tocco cresce a 44, il disegno resta identico (margin negativo compensa). */
+  padding: 0 14px;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -11px -14px;
 }
 
 /* ── Main ────────────────────────────────────────────────── */
@@ -239,6 +247,7 @@ body::after {
 .hub-chip {
   flex: none;
   padding: 8px 14px;
+  min-height: 44px;
   border-radius: 999px;
   border: 1px solid var(--hub-border);
   background: transparent;
@@ -268,6 +277,8 @@ body::after {
 .hub-toggle {
   display: inline-flex;
   align-items: center;
+  /* La label è il bersaglio della spunta: era alta 22px. La spunta resta 16px. */
+  min-height: 44px;
   gap: 8px;
   font-size: 13px;
   color: var(--hub-muted);
@@ -719,6 +730,7 @@ body::after {
 .hub-booking-cancel {
   flex: none;
   padding: 7px 12px;
+  min-height: 44px;
   border-radius: 999px;
   border: 1px solid var(--hub-border);
   background: transparent;
@@ -857,6 +869,7 @@ body::after {
   align-items: center;
   gap: 7px;
   padding: 10px 22px;
+  min-height: 44px;
   border-radius: 999px;
   text-decoration: none;
   color: var(--hub-muted);
