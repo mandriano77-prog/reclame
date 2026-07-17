@@ -1352,15 +1352,18 @@
       return;
     }
     if (route.name === 'pga-detail') {
-      renderTabBar('pga');
-      setTabbarPadding(true);
+      // Dentro il singolo premio/negozio niente rail: c'è la freccia indietro per uscire,
+      // e il toggle Offerte/Gettoni in testa affollerebbe l'header (il titolo veniva tagliato).
+      renderTabBar(null);
+      setTabbarPadding(false);
       if (hubIsAdsMode()) renderCoinReward(route.id);
       else renderPgaDetail(route.id);
       return;
     }
     if (route.name === 'detail') {
-      renderTabBar('conv');
-      setTabbarPadding(true);
+      // Idem: aperto il singolo negozio, l'header resta pulito (solo indietro + brand + titolo).
+      renderTabBar(null);
+      setTabbarPadding(false);
       renderDetail(route.id);
       return;
     }
