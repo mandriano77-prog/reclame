@@ -1469,6 +1469,7 @@
                 <div class="nav-group-items">
                     <div class="nav-item nav-item--reclame-ads" onclick="nav('commercial')" data-section-id="commercial" data-requires-perm="commercial" role="button" tabindex="0">Commerciale</div>
                     <div class="nav-item nav-item--reclame-ads" onclick="nav('conventions')" data-section-id="conventions" data-requires-perm="conventions" role="button" tabindex="0">HUB Brand</div>
+                    <div class="nav-item nav-item--reclame-ads" onclick="nav('gettoni')" data-section-id="gettoni" data-requires-perm="pga_catalog" role="button" tabindex="0">Gettoni</div>
                 </div>
             </details>
 
@@ -2417,6 +2418,59 @@
             </div>
 
             <!-- INSTANT WIN -->
+            <div id="gettoni" class="section" data-rbac-section="pga-catalog">
+                <h1 class="sec-title page-title">Gettoni</h1>
+                <p style="color:var(--text2);font-size:13px;margin:-6px 0 20px;max-width:640px;">Assegna gettoni ai clienti e gestisci i premi che possono riscattare dall'HUB del pass.</p>
+
+                <div id="gtProgram" class="card" style="margin-bottom:16px;"></div>
+
+                <div class="card" style="margin-bottom:16px;">
+                    <h2 style="margin:0 0 4px;font-size:16px;">Assegna gettoni</h2>
+                    <p style="color:var(--text2);font-size:13px;margin:0 0 14px;">Scegli il cliente e accredita i gettoni: compaiono nel suo saldo entro pochi secondi.</p>
+                    <div class="form-group">
+                        <label class="form-label" for="gtPass">Cliente (pass)</label>
+                        <select id="gtPass"><option value="">—</option></select>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <div class="form-group" style="flex:1;min-width:120px;">
+                            <label class="form-label" for="gtAmount">Quantità</label>
+                            <input id="gtAmount" type="number" min="1" step="1" placeholder="es. 50">
+                        </div>
+                        <div class="form-group" style="flex:2;min-width:180px;">
+                            <label class="form-label" for="gtDesc">Causale (facoltativa)</label>
+                            <input id="gtDesc" type="text" maxlength="120" placeholder="es. acquisto in negozio">
+                        </div>
+                    </div>
+                    <button type="button" class="btn" id="gtGrantBtn" onclick="grantGettoni()">Assegna gettoni</button>
+                </div>
+
+                <div class="card">
+                    <h2 style="margin:0 0 4px;font-size:16px;">Premi</h2>
+                    <p style="color:var(--text2);font-size:13px;margin:0 0 14px;">Il catalogo che i clienti riscattano con i gettoni. Nessun valore in denaro: si mostra un codice in cassa.</p>
+                    <div class="form-group">
+                        <label class="form-label" for="gtRewardName">Nome premio</label>
+                        <input id="gtRewardName" type="text" maxlength="80" placeholder="es. Caffè omaggio">
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <div class="form-group" style="flex:1;min-width:120px;">
+                            <label class="form-label" for="gtRewardCost">Costo (gettoni)</label>
+                            <input id="gtRewardCost" type="number" min="1" step="1" placeholder="es. 30">
+                        </div>
+                        <div class="form-group" style="flex:1;min-width:140px;">
+                            <label class="form-label" for="gtRewardCat">Categoria</label>
+                            <select id="gtRewardCat"></select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gtRewardDesc">Descrizione (facoltativa)</label>
+                        <input id="gtRewardDesc" type="text" maxlength="160" placeholder="es. Un caffè al banco">
+                    </div>
+                    <button type="button" class="btn" id="gtRewardAddBtn" onclick="createGettoniReward()">+ Aggiungi premio</button>
+                    <div style="border-top:1px solid var(--border, rgba(255,255,255,.1));margin:18px 0 14px;"></div>
+                    <div id="gtRewardsList"></div>
+                </div>
+            </div>
+
             <div id="instant-win" class="section" data-rbac-section="instant-win">
                 <h1 class="sec-title page-title">Reward</h1>
                 <p id="iwPageBlurb" data-menu-key="reward_page_blurb" style="color:var(--text2);font-size:13px;margin-bottom:20px;">Crea campagne Reward per premiare i possessori del pass con giochi istantanei, voucher e premi a sorpresa.</p>
@@ -4985,7 +5039,8 @@ function nav(id, options) {
         },
         'pga-engagement': () => {
             if (typeof loadPgaEngagement === 'function') loadPgaEngagement();
-        }
+        },
+        gettoni: () => { if (typeof loadGettoni === 'function') loadGettoni(); }
     };
     if (loaders[id]) loaders[id]();
 }
@@ -5054,6 +5109,173 @@ function closeModal(id) {
     if (!document.querySelector('.modal.active')) document.body.classList.remove('modal-open');
 }
 function toast(msg) { const t = document.getElementById('toastEl'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+
+// ===== Gettoni (Reclame): assegna gettoni a un pass + catalogo premi =====
+// Backend già pronto (pga-dashboard.js): POST /coins/manual-grant, GET/POST/DELETE /experiences.
+// Qui c'è solo l'interfaccia lato brand, che nel bundle HR esisteva ma in Reclame mancava.
+const GETTONI_CATEGORIES = [
+    ['food', 'Ristorazione'], ['fitness', 'Sport'], ['retail', 'Negozi'], ['salute', 'Salute'],
+    ['viaggi', 'Viaggi'], ['tech', 'Tecnologia'], ['servizi', 'Servizi'], ['altro', 'Altro']
+];
+let gettoniRewardsCache = [];
+function gettoniSlug(s) {
+    // Basta ridurre a [a-z0-9]: accenti e simboli diventano trattini. L'unicità della key
+    // è comunque garantita dal suffisso temporale in createGettoniReward().
+    return String(s || '').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'premio';
+}
+let gettoniEnabled = false;
+function loadGettoni() {
+    if (!brandId) return;
+    const catSel = document.getElementById('gtRewardCat');
+    if (catSel && !catSel.options.length) {
+        catSel.innerHTML = GETTONI_CATEGORIES.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('');
+    }
+    loadGettoniStatus();
+    loadGettoniPasses();
+    loadGettoniRewards();
+}
+// Il programma Gettoni (PGA) dev'essere ATTIVO sul brand: senza, l'azione manual_grant non
+// esiste (la grant sarebbe un no-op silenzioso) e l'HUB mostra "programma non attivo".
+// Attivandolo si seminano i default retail (incl. manual_grant e qualche premio d'esempio).
+async function loadGettoniStatus() {
+    const box = document.getElementById('gtProgram');
+    gettoniEnabled = false;
+    try {
+        const res = await fetch(`${API}/brands/${encodeURIComponent(brandId)}/pga-settings`, { headers: getAuthHeaders() });
+        if (res.ok) { const s = await res.json(); gettoniEnabled = !!s.enabled; }
+    } catch (e) { /* lasciamo enabled=false: mostreremo l'invito ad attivare */ }
+    if (box) {
+        box.style.borderColor = gettoniEnabled ? '' : 'var(--accent, #C72E22)';
+        box.innerHTML = gettoniEnabled
+            ? `<div style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;"><span style="color:#3ddc84;">●</span> Programma Gettoni <strong style="color:var(--text);">attivo</strong> — i clienti vedono la scheda Gettoni nell'HUB.</div>`
+            : `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <div style="min-width:200px;flex:1;"><strong>Il programma Gettoni non è ancora attivo</strong><p style="color:var(--text2);font-size:13px;margin:4px 0 0;">Attivalo per assegnare gettoni e mostrare i premi nell'HUB. Vengono creati alcuni premi d'esempio, che puoi modificare o eliminare.</p></div>
+                    <button type="button" class="btn" id="gtEnableBtn" onclick="enableGettoniProgram()">Attiva programma</button>
+               </div>`;
+    }
+    ['gtGrantBtn', 'gtRewardAddBtn'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = !gettoniEnabled; });
+}
+async function enableGettoniProgram() {
+    const btn = document.getElementById('gtEnableBtn');
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch(`${API}/brands/${encodeURIComponent(brandId)}/pga-settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ enabled: true })
+        });
+        if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Errore attivazione'); }
+        toast('Programma Gettoni attivato');
+        loadGettoni();
+    } catch (e) { toast(e.message || 'Errore'); if (btn) btn.disabled = false; }
+}
+async function loadGettoniPasses() {
+    const sel = document.getElementById('gtPass');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Caricamento…</option>';
+    try {
+        const res = await fetch(`${API}/passes?brand_id=${encodeURIComponent(brandId)}&limit=600`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Errore caricamento pass');
+        const payload = await res.json();
+        const passes = Array.isArray(payload) ? payload : (payload.passes || []);
+        const withSerial = passes.filter(p => p.serial_number);
+        if (!withSerial.length) { sel.innerHTML = '<option value="">Nessun pass emesso</option>'; return; }
+        sel.innerHTML = '<option value="">— scegli un cliente —</option>' + withSerial.map(p => {
+            const s = String(p.serial_number);
+            const extra = [p.status, String(p.created_at || '').slice(0, 10)].filter(Boolean).join(' · ');
+            return `<option value="${esc(s)}">${esc(s.slice(0, 12))}${extra ? ' · ' + esc(extra) : ''}</option>`;
+        }).join('');
+    } catch (e) { sel.innerHTML = '<option value="">Errore caricamento</option>'; }
+}
+async function grantGettoni() {
+    const serial = document.getElementById('gtPass').value;
+    const amount = parseInt(document.getElementById('gtAmount').value, 10);
+    const desc = document.getElementById('gtDesc').value.trim();
+    if (!serial) { toast('Scegli un cliente'); return; }
+    if (!Number.isFinite(amount) || amount <= 0) { toast('Inserisci una quantità positiva'); return; }
+    const btn = document.getElementById('gtGrantBtn');
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch(`${API}/coins/manual-grant`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ brand_id: brandId, pass_serial: serial, coin_amount: amount, description: desc || 'Assegnazione manuale' })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Errore assegnazione');
+        // Il backend risponde 201 anche quando NON accredita (es. programma non attivo →
+        // manual_grant assente): lo intercettiamo, sennò mentiremmo all'operatore.
+        if (data.skipped || data.success === false) throw new Error('Programma Gettoni non attivo: attivalo qui sopra e riprova.');
+        const bal = data.balance ?? data.new_balance ?? data.coin_balance;
+        toast(bal != null ? `Assegnati ${amount} gettoni — saldo cliente: ${bal}` : `Assegnati ${amount} gettoni`);
+        document.getElementById('gtAmount').value = '';
+        document.getElementById('gtDesc').value = '';
+    } catch (e) { toast(e.message || 'Errore'); }
+    finally { if (btn) btn.disabled = false; }
+}
+async function loadGettoniRewards() {
+    const el = document.getElementById('gtRewardsList');
+    if (!el) return;
+    el.innerHTML = '<p style="color:var(--text2);">Caricamento…</p>';
+    try {
+        const res = await fetch(`${API}/experiences?brand_id=${encodeURIComponent(brandId)}`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Errore caricamento premi');
+        const rows = await res.json();
+        gettoniRewardsCache = Array.isArray(rows) ? rows : [];
+        if (!gettoniRewardsCache.length) {
+            el.innerHTML = renderEmptyState({ title: 'Nessun premio', description: 'Aggiungi qui sopra il primo premio che i clienti potranno riscattare.', icon: 'inbox' });
+            return;
+        }
+        el.innerHTML = gettoniRewardsCache.map(r => {
+            const cat = (GETTONI_CATEGORIES.find(c => c[0] === r.category) || [])[1] || r.category || '';
+            return `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;">
+                <div><strong>${esc(r.name)}</strong> <span style="color:var(--text2);">— ${esc(String(r.coin_cost))} gettoni${cat ? ' · ' + esc(cat) : ''}</span>${r.description ? `<br><span style="color:var(--text2);font-size:12px;">${esc(r.description)}</span>` : ''}</div>
+                <button type="button" class="btn small sec" onclick="deleteGettoniReward('${esc(String(r.id))}')">Elimina</button>
+            </div>`;
+        }).join('');
+    } catch (e) { el.innerHTML = `<p style="color:var(--text2);">${esc(e.message || 'Errore')}</p>`; }
+}
+async function createGettoniReward() {
+    const name = document.getElementById('gtRewardName').value.trim();
+    const cost = parseInt(document.getElementById('gtRewardCost').value, 10);
+    const category = document.getElementById('gtRewardCat').value || 'altro';
+    const description = document.getElementById('gtRewardDesc').value.trim();
+    if (!name) { toast('Inserisci il nome del premio'); return; }
+    if (!Number.isFinite(cost) || cost <= 0) { toast('Inserisci un costo positivo'); return; }
+    const btn = document.getElementById('gtRewardAddBtn');
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch(`${API}/experiences`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({
+                brand_id: brandId, key: gettoniSlug(name) + '-' + Date.now().toString(36),
+                name, category, coin_cost: cost, description: description || null,
+                internal: true, requires_booking: false, active: true
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Errore creazione premio');
+        toast('Premio aggiunto');
+        document.getElementById('gtRewardName').value = '';
+        document.getElementById('gtRewardCost').value = '';
+        document.getElementById('gtRewardDesc').value = '';
+        loadGettoniRewards();
+    } catch (e) { toast(e.message || 'Errore'); }
+    finally { if (btn) btn.disabled = false; }
+}
+async function deleteGettoniReward(id) {
+    const r = gettoniRewardsCache.find(x => String(x.id) === String(id));
+    const ok = await appConfirm({ title: 'Elimina premio', message: `Eliminare "${r ? r.name : 'questo premio'}"? Non sarà più riscattabile.`, confirmLabel: 'Elimina', tone: 'danger' });
+    if (!ok) return;
+    try {
+        const res = await fetch(`${API}/experiences/${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
+        if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Errore eliminazione'); }
+        toast('Premio eliminato');
+        loadGettoniRewards();
+    } catch (e) { toast(e.message || 'Errore'); }
+}
 
 // ==================== BRANDS ====================
 async function loadBrands() {
