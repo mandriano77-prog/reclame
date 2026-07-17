@@ -1655,7 +1655,6 @@
             <!-- PUSH NOTIFICATIONS -->
             <div id="push" class="section">
                 <h1 class="sec-title page-title">Push &amp; Notifiche</h1>
-                <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Gestisci le 3 modalità di notifica: push diretta, programmata nel tempo, e prossimità geofencing. Nella push diretta puoi scegliere il canale: <strong>Apple (APNs)</strong>, <strong>Google Wallet</strong> o entrambi.</p>
 
                 <!-- Sub-tab navigation -->
                 <div class="tabs-bar" role="tablist" aria-label="Modalità push">
@@ -1706,7 +1705,7 @@
                         <div class="form-group">
                             <label class="form-label" for="pushMessage">Testo promozione (retro pass)</label>
                             <textarea id="pushMessage" rows="8" maxlength="1200" placeholder="Descrivi l'offerta, le condizioni, la validità… (fino a 1200 caratteri)" style="resize:vertical;min-height:140px;" aria-describedby="pushMessageError pushMessageHint"></textarea>
-                            <p class="push-field-hint" id="pushMessageHint" style="font-size:11px;color:var(--text2);margin:4px 0 0;">Spazio ampio sul retro del pass. Sul fronte e lock screen si vedono solo i primi caratteri + il titolo.</p>
+                            <p class="push-field-hint" id="pushMessageHint" style="font-size:11px;color:var(--text2);margin:4px 0 0;">Sul retro del pass. Sul fronte si vedono solo i primi caratteri.</p>
                             <p class="push-field-error" id="pushMessageError" role="alert"></p>
                         </div>
                         <div class="form-group" style="margin-top:4px;">
@@ -1717,7 +1716,7 @@
                         </div>
                         <div id="pushStripBlock" class="form-group" style="margin-top:8px;">
                             <label class="form-label">Strip per questa push (opzionale)</label>
-                            <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Solo per questo invio — non modifica la strip permanente del brand. La strip della campagna collegata ha priorità su questa strip temporanea.</p>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 10px;line-height:1.45;">Vale solo per questo invio. Se la campagna collegata ha una sua strip, vince quella.</p>
                             <div id="pushStripPreview" class="dropzone" role="button" tabindex="0" title="Scegli una strip temporanea per questa push" onclick="pushPickStripFromMedia()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pushPickStripFromMedia();}">
                                 <span class="dropzone__placeholder">Trascina o clicca per scegliere una strip temporanea</span>
                             </div>
@@ -1727,8 +1726,8 @@
                             </div>
                         </div>
                         <div id="pushBackSetupBlock" class="form-group" style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);">
-                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Link out (CTA)</div>
-                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Un pulsante cliccabile sul retro: l'URL resta nascosto, visibile solo il testo del link.</p>
+                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Pulsante sul retro</div>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">L'indirizzo resta nascosto: il cliente vede solo il testo del link.</p>
                             <div class="form-group" style="margin-bottom:10px;">
                                 <label class="form-label" for="pushPassLinkLabel">Testo del link (CTA)</label>
                                 <input type="text" id="pushPassLinkLabel" maxlength="64" placeholder="es. Scopri l'offerta" oninput="if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
