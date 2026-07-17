@@ -780,12 +780,10 @@
     ` : '';
 
     $('#hub-main').innerHTML = `
-      <div class="hub-detail-hero">
+      <div class="hub-detail-hero hub-detail-hero--stack">
+        <h2 class="hub-detail-name">${esc(merchant.name)}</h2>
         ${logo}
-        <div>
-          <h2 style="margin:0;font-size:1.1rem;">${esc(merchant.name)}</h2>
-          <span class="hub-discount-badge">${esc(merchant.discount_label)}</span>
-        </div>
+        ${merchant.discount_label ? `<span class="hub-discount-badge">${esc(merchant.discount_label)}</span>` : ''}
       </div>
       ${merchant.description ? `<section class="hub-section"><h2>Descrizione</h2><p>${esc(merchant.description)}</p></section>` : ''}
       ${merchant.conditions ? `<section class="hub-section"><h2>Condizioni</h2><p>${esc(merchant.conditions)}</p></section>` : ''}

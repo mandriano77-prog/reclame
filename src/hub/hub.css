@@ -513,6 +513,25 @@ body::after {
   gap: 16px;
   margin-bottom: 22px;
 }
+/* Dettaglio offerta: hero verticale centrato — il nome brand in cima e ben visibile,
+   logo e promo sotto. Prima erano affastellati a sinistra con il nome minuscolo. */
+.hub-detail-hero--stack {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.hub-detail-name {
+  margin: 0;
+  font-family: var(--hub-display);
+  font-weight: 600;
+  font-size: 1.45rem;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--hub-text);
+}
+.hub-detail-hero--stack .hub-discount-badge { margin: 0; }
 .hub-detail-logo {
   width: 76px;
   height: 76px;
