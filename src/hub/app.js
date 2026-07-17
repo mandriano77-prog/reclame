@@ -840,6 +840,23 @@
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Azione';
   }
 
+  /** Storico movimenti gettoni: lista +/− con data. Retro della card saldo (e vista profilo). */
+  function renderLedgerList(ledger) {
+    return `<ul class="hub-ledger-list">${ledger.map((row) => {
+      const amt = Number(row.coin_amount || 0);
+      const cls = amt >= 0 ? 'positive' : 'negative';
+      const sign = amt >= 0 ? '+' : '';
+      const when = formatDateTime(row.created_at);
+      return `<li class="hub-ledger-item ${cls}">
+        <div class="hub-ledger-row">
+          <span>${esc(row.description || row.action_key || 'Movimento')}</span>
+          <span class="hub-ledger-amount">${sign}${amt}</span>
+        </div>
+        ${when ? `<p class="hub-meta">${esc(when)}</p>` : ''}
+      </li>`;
+    }).join('')}</ul>`;
+  }
+
   /** COIN area (Reclame): balance, how you earn, what you can redeem. */
   function renderCoin() {
     $('#hub-back')?.classList.add('hidden');
@@ -903,10 +920,22 @@
 
     $('#hub-main').innerHTML = `
       ${welcome}
-      <div class="hub-coin-hero">
-        <p class="hub-coin-hero-label">Il tuo saldo</p>
-        <p class="hub-coin-hero-value">${esc(String(balance))}</p>
-        <p class="hub-coin-hero-sub">gettoni disponibili</p>
+      <div class="hub-flip" id="hub-flip">
+        <div class="hub-flip-inner">
+          <div class="hub-coin-hero hub-flip-front" id="hub-flip-front" role="button" tabindex="0" aria-label="Mostra lo storico dei movimenti">
+            <p class="hub-coin-hero-label">Il tuo saldo</p>
+            <p class="hub-coin-hero-value">${esc(String(balance))}</p>
+            <p class="hub-coin-hero-sub">gettoni disponibili</p>
+            <span class="hub-flip-hint" aria-hidden="true">↻ tocca per lo storico</span>
+          </div>
+          <div class="hub-flip-back" id="hub-flip-back" aria-hidden="true">
+            <div class="hub-flip-back-head">
+              <span>Storico movimenti</span>
+              <button type="button" class="hub-flip-close" id="hub-flip-close" aria-label="Torna al saldo">↺ Saldo</button>
+            </div>
+            <div class="hub-flip-body" id="hub-flip-body"><div class="hub-flip-loading">Caricamento…</div></div>
+          </div>
+        </div>
       </div>
       ${earn}
       ${catalog}`;
@@ -914,6 +943,51 @@
     $('#hub-main').querySelectorAll('[data-exp-id]').forEach((btn) => {
       btn.addEventListener('click', () => navigate(`/pga/${btn.getAttribute('data-exp-id')}`));
     });
+
+    // La card del saldo si gira: tocca il fronte → si volta e mostra lo storico movimenti,
+    // caricato al primo giro da /hub/me. Il tasto "Saldo" (o Esc) la rigira.
+    const flip = $('#hub-flip');
+    const flipFront = $('#hub-flip-front');
+    let ledgerLoaded = false;
+    const openStorico = async () => {
+      if (!flip) return;
+      flip.classList.add('flipped');
+      $('#hub-flip-back')?.setAttribute('aria-hidden', 'false');
+      // Il fronte è nascosto: niente tab-stop fantasma (focusabile dentro aria-hidden). Il
+      // focus va al tasto "Saldo" così chi naviga da tastiera non resta bloccato sul fronte.
+      flipFront?.setAttribute('aria-hidden', 'true');
+      flipFront?.setAttribute('tabindex', '-1');
+      $('#hub-flip-close')?.focus();
+      if (ledgerLoaded) return;
+      ledgerLoaded = true;
+      const body = $('#hub-flip-body');
+      try {
+        const res = await fetch(`${apiBase()}/hub/me?token=${encodeURIComponent(getToken())}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Errore');
+        state.meData = data;
+        if (data.coin_balance != null) state.coin_balance = Number(data.coin_balance);
+        const ledger = Array.isArray(data.ledger) ? data.ledger : [];
+        if (body) body.innerHTML = ledger.length
+          ? renderLedgerList(ledger)
+          : '<div class="hub-flip-empty">Ancora nessun movimento.</div>';
+      } catch (_) {
+        ledgerLoaded = false; // così riprova al prossimo giro
+        if (body) body.innerHTML = '<div class="hub-flip-empty">Storico non disponibile ora. Riprova.</div>';
+      }
+    };
+    const closeStorico = () => {
+      flip?.classList.remove('flipped');
+      $('#hub-flip-back')?.setAttribute('aria-hidden', 'true');
+      flipFront?.removeAttribute('aria-hidden');
+      flipFront?.setAttribute('tabindex', '0');
+      flipFront?.focus();
+    };
+    flipFront?.addEventListener('click', openStorico);
+    flipFront?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStorico(); }
+    });
+    $('#hub-flip-close')?.addEventListener('click', closeStorico);
 
     // A live code is the most urgent thing on this screen — put it on top.
     apiGet('/hub/rewards/active-redemption').then((res) => {

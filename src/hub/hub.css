@@ -617,6 +617,91 @@ body::after {
   color: var(--hub-muted);
 }
 
+/* ── Card saldo che si gira: fronte = saldo, retro = storico movimenti ───── */
+.hub-flip { perspective: 1400px; margin-bottom: 24px; }
+.hub-flip-inner {
+  position: relative;
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.hub-flip.flipped .hub-flip-inner { transform: rotateY(180deg); }
+/* Il fronte è la hero-card, resa cliccabile (div role=button, così i <p> restano validi). */
+.hub-flip-front {
+  margin-bottom: 0;
+  cursor: pointer;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.hub-flip-front:focus-visible { outline: 2px solid var(--hub-accent-line); outline-offset: 2px; }
+.hub-flip-hint {
+  display: block;
+  margin-top: 12px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--hub-faint);
+}
+.hub-flip-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--hub-radius);
+  border: 1px solid var(--hub-accent-line);
+  background: var(--hub-surface);
+  overflow: hidden;
+}
+.hub-flip-back-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--hub-border);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hub-faint);
+  flex: none;
+}
+.hub-flip-close {
+  border: 1px solid var(--hub-border-strong);
+  background: none;
+  color: var(--hub-text);
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 7px 13px;
+  min-height: 36px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.hub-flip-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.hub-flip-loading, .hub-flip-empty {
+  padding: 26px 16px;
+  text-align: center;
+  color: var(--hub-muted);
+  font-size: 13px;
+}
+
+/* Storico movimenti (retro della card, e vista profilo) */
+.hub-ledger-list { list-style: none; margin: 0; padding: 0; }
+.hub-ledger-item { padding: 12px 16px; border-bottom: 1px solid var(--hub-border); }
+.hub-ledger-item:last-child { border-bottom: none; }
+.hub-ledger-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.hub-ledger-row > span:first-child { color: var(--hub-text); font-size: 14px; }
+.hub-ledger-amount { flex: none; font-family: var(--hub-display); font-weight: 600; font-size: 15px; }
+.hub-ledger-item.positive .hub-ledger-amount { color: #3ddc84; }
+.hub-ledger-item.negative .hub-ledger-amount { color: var(--hub-accent-text, var(--hub-accent)); }
+.hub-ledger-item .hub-meta { margin: 3px 0 0; font-size: 11px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-flip-inner { transition: none; }
+}
+
 /* how you earn */
 .hub-earn-list {
   display: flex;
