@@ -297,7 +297,11 @@
   function updateCoinWidget() {
     const pill = $('#hub-coin-pill');
     if (!pill) return;
-    if (!pgaEnabled()) {
+    // Sulla scheda Gettoni il saldo è già l'hero grande al centro: la pill in testa sarebbe
+    // un doppione. La teniamo solo dove serve davvero (scheda Offerte), dove è l'unico saldo
+    // a colpo d'occhio e l'accesso al profilo.
+    const onCoinTab = (() => { try { return parseRoute().name === 'pga'; } catch (_) { return false; } })();
+    if (!pgaEnabled() || onCoinTab) {
       pill.classList.add('hidden');
       return;
     }
