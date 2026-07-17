@@ -267,11 +267,15 @@ html[data-shell="dark"].a2w-shell .btn-secondary:hover {
   border-color: var(--a2w-action-secondary-border);
 }
 
+/* #05211d era un nero-verdastro: residuo dell'accent teal di prima. Sul rosso del brand
+   dà 3.43:1 — sotto la soglia di leggibilità — e su un accent blu scende a 1.97:1. Vale
+   per OGNI bottone primario della piattaforma, non solo per quelli nelle modali.
+   --text-on-accent esiste, è calcolato per contrasto e passa (4.70:1 sul rosso). */
 html[data-shell="dark"].a2w-shell .btn:not(.sec):not(.danger):not(.btn-secondary):not(.btn-link),
 html[data-shell="dark"].a2w-shell .a2w-btn-primary {
   background: var(--a2w-action-primary);
   border-color: var(--a2w-action-primary);
-  color: #05211d;
+  color: var(--text-on-accent, #F4EDE2);
 }
 
 html[data-shell="dark"].a2w-shell .btn:not(.sec):not(.danger):not(.btn-secondary):not(.btn-link):hover:not(:disabled),

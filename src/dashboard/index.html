@@ -649,7 +649,12 @@
         .modal-content {
             background: var(--bg-canvas);
             border: 1px solid var(--border-default);
-            border-radius: var(--radius-lg);
+            /* Una modale è una superficie come una card: stesso raggio. Convivevano tre
+               linguaggi — 8px qui (13 modali), 16px in .a2w-modal__dialog (una sola) e
+               12px nel wizard import: aprendone due di fila si vedeva. Vince quello delle
+               card, che è il più diffuso a schermo. Il ripiego copre le shell senza tema
+               di prodotto. */
+            border-radius: var(--a2w-radius-card, var(--radius-lg));
             padding: var(--space-6);
             max-width: 520px;
             width: 92%;

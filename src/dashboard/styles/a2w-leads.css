@@ -160,9 +160,10 @@ html.a2w-shell #leads .a2w-contacts-header-btn {
 }
 
 html.a2w-shell #leads .a2w-contacts-header-btn.a2w-btn-primary,
+/* stesso residuo dell'era teal di a2w-chrome.css: testo quasi nero sull'accent */
 html.a2w-shell #leads .a2w-btn-primary {
   background: var(--a2w-action-primary, var(--rm-brand, #C72E22));
-  color: #0b1220;
+  color: var(--text-on-accent, #F4EDE2);
   border: 0;
   font-weight: 600;
 }
@@ -815,10 +816,11 @@ html.a2w-shell #leads .a2w-contacts-help-trigger {
   cursor: help;
 }
 
+/* era un blu-notte con testo slate: palette estranea a una shell calda */
 html.a2w-shell #leads .a2w-contacts-help-tooltip {
-  background: #0b1220;
-  border-color: rgba(148, 163, 184, 0.18);
-  color: rgba(226, 232, 240, 0.85);
+  background: var(--bg-hover, #0b1220);
+  border-color: var(--border-default, rgba(148, 163, 184, 0.18));
+  color: var(--text-body, rgba(226, 232, 240, 0.85));
 }
 
 html.a2w-shell #leads .a2w-contacts-empty,

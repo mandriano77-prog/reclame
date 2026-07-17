@@ -85,10 +85,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.6);
-  color: #e2e8f0;
+  border: 1px solid var(--border-default, rgba(148, 163, 184, 0.25));
+  border-radius: var(--radius-control, 10px);
+  background: var(--bg-hover, rgba(15, 23, 42, 0.6));
+  color: var(--text-body, #e2e8f0);
   font-size: 1.35rem;
   line-height: 1;
   cursor: pointer;
@@ -167,13 +167,18 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #C72E22) 20%, transparent);
 }
 
+/* Erano 44px e 10px inchiodati: ogni altro bottone della piattaforma è 40px e usa
+   --radius-control, quindi aprendo questa modale i bottoni cambiavano taglia.
+   E il testo era #0b1220 — quasi nero sul rosso del brand: 3.43:1, sotto la soglia di
+   leggibilità. Il token giusto (--text-on-accent) esiste e passa a 4.70:1: era un
+   residuo dell'accent teal di prima. */
 .a2w-modal .a2w-btn-primary {
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 18px;
-  border-radius: 10px;
+  border-radius: var(--radius-control, 10px);
   border: 0;
   background: var(--a2w-action-primary, var(--rm-brand, #C72E22));
-  color: #0b1220;
+  color: var(--text-on-accent, #F4EDE2);
   font-weight: 600;
   cursor: pointer;
 }
@@ -183,13 +188,15 @@
   cursor: not-allowed;
 }
 
+/* #e2e8f0 è uno slate: un bianco-azzurro che non è la crema del resto della piattaforma.
+   Accanto al testo vero si vedeva la differenza di temperatura. */
 .a2w-modal .a2w-btn-ghost {
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 16px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: var(--radius-control, 10px);
+  border: 1px solid var(--border-default, rgba(148, 163, 184, 0.3));
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text-body, #e2e8f0);
   font-weight: 500;
   cursor: pointer;
 }

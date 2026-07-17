@@ -98,7 +98,9 @@ html[data-shell="light"] .confirm-dialog__actions {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 12px;
+  /* Terzo raggio di dialogo del progetto (era 12px): allineato a quello delle card,
+     come .modal-content. Il ripiego tiene il valore storico per le shell senza tema. */
+  border-radius: var(--a2w-radius-card, 12px);
 }
 
 html[data-shell="light"] .import-wizard__header {
