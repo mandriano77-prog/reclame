@@ -89,10 +89,34 @@ html[data-shell="dark"].a2w-shell {
   --purple: var(--rm-brand-hover);
   --font-sans: var(--rm-font-body);
   --font-mono: var(--rm-font-mono);
+
+  /* Ombre ritarate per il fondo scuro. Quelle di tokens.css sono nero al 4–8%: calibrate
+     su una pagina bianca, dove danno ~20/255 di stacco e bastano. Su #0A0908 = rgb(10,9,8)
+     non c'è margine: anche a opacità 1 il nero può togliere al massimo 10/255. Un'ombra
+     nera sul quasi-nero è quasi un placebo — l'elevazione, nel buio, la fanno il bordo e
+     la superficie più chiara, non l'ombra.
+     Queste servono comunque dove un contrasto c'è: il toast (fondo crema), e i modali che
+     stanno sopra un overlay. Costano poco e lì si vedono.
+     NIENTE anello nel token: un'elevazione non è un bordo. Ci avevo messo
+     `0 0 0 1px rgba(244,237,226,0.06)` e disegnava un secondo bordo grigio attorno al
+     pannello W.AI, che un bordo colorato ce l'ha già — ammorbidendo proprio lo spigolo
+     scelto apposta. Chi non ha un bordo se lo dichiara (vedi .confirm-dialog). */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.62), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 html[data-shell="dark"].a2w-shell code,
 html[data-shell="dark"].a2w-shell pre,
 html[data-shell="dark"].a2w-shell .mono {
   font-family: var(--rm-font-mono);
+}
+
+/* Il dialogo di conferma dichiara `border: none` e uno sfondo pari al canvas: nel tema
+   scuro era una scatola invisibile su un fondo invisibile, tenuta insieme da un'ombra che
+   sul nero non si vede. Sul buio lo spigolo lo fa il bordo, non l'ombra.
+   (.wallet-diag-shell un bordo ce l'ha già, e dentro l'accordion "Collegamenti tecnici"
+   glielo tolgono apposta perché è annidata in un contenitore che ne ha uno: non si tocca.) */
+html[data-shell="dark"].a2w-shell .confirm-dialog {
+  border: 1px solid var(--border-default);
 }

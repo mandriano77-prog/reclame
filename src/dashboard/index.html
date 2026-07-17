@@ -316,14 +316,24 @@
         .stat-card {
             background: var(--bg-canvas);
             border: 1px solid var(--border-default);
-            border-radius: var(--radius-lg);
-            padding: var(--space-5);
+            /* Stessa card, stesso raggio, ovunque. Prima era 8px di base e 16px dentro
+               .a2w-stats-grid — classe che ricevono solo Contatti e Analytics: le KPI di
+               Commerciale e Pass Emessi erano quindi diverse dalle altre, cambiando
+               sezione. Il ripiego copre le shell scure senza tema di prodotto; FiloDiretto
+               NON ci arriva (css/components/stat-card.css dichiara già raggio e padding
+               con più specificità, e i 16px li aveva di suo: per lui non cambia nulla). */
+            border-radius: var(--a2w-radius-card, var(--radius-lg));
+            padding: var(--space-4);
             box-shadow: var(--shadow-sm);
             transition: border-color var(--transition-fast);
         }
         .stat-card:hover { border-color: var(--border-strong); }
         .stat-label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-secondary); margin-bottom: var(--space-2); font-weight: 500; opacity: 1; }
-        .stat-value { font-size: var(--text-2xl); font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+        /* .stat-num è la variante usata da Commerciale e Audiences. Non aveva regola base:
+           era stilata solo nella shell chiara e solo dentro #leadsStats, quindi nel tema
+           scuro il numero cadeva sul testo di pagina — 14px/400, grande quanto la propria
+           etichetta. Stesso componente, stessa gerarchia. */
+        .stat-value, .stat-num { font-size: var(--text-2xl); font-weight: 600; color: var(--text-primary); line-height: 1.2; }
         .stat-delta { font-size: var(--text-xs); color: var(--success); margin-top: var(--space-1); }
 
         input:not([type="checkbox"]):not([type="radio"]),
