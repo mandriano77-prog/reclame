@@ -62,9 +62,12 @@ test('Sprint 2: PWA routes conv / pga / me in app.js', () => {
   assert.match(APP_JS, /hub-tabbar/);
 });
 
-test('Sprint 2: index.html coin pill and tab bar shell', () => {
-  assert.match(INDEX_HTML, /id="hub-coin-pill"/);
+test('Sprint 2: index.html tab bar shell', () => {
+  // La pill del saldo in testa (#hub-coin-pill) è stata RIMOSSA su richiesta: era un
+  // doppione del saldo, che ora vive solo nell'hero grande della scheda Gettoni. Resta la
+  // tab bar (rail Offerte/Gettoni).
   assert.match(INDEX_HTML, /id="hub-tabbar"/);
+  assert.doesNotMatch(INDEX_HTML, /id="hub-coin-pill"/);
 });
 
 test('Sprint 2: server SPA routes for conv, pga, me', () => {

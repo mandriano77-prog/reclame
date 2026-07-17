@@ -85,5 +85,8 @@ test('il colore grezzo resta dove non si legge', () => {
 test('nessun testo usa più l\'accent grezzo', () => {
   const testoGrezzo = css.match(/(^|[{;\s])color: var\(--hub-accent\)(?!-)/gm) || [];
   assert.equal(testoGrezzo.length, 0, 'trovato testo ancora sull\'accent non verificato');
-  assert.ok((css.match(/color: var\(--hub-accent-text, var\(--hub-accent\)\)/g) || []).length >= 15);
+  // Soglia: tanti punti usano la variante a contrasto --hub-accent-text. Era ≥15; la
+  // rimozione della pill saldo (.hub-coin-value/.hub-coin-link ne usavano 2) l'ha portata a
+  // 14. Resta un pavimento: il vero guardiano è l'assert sopra (zero accent grezzo su testo).
+  assert.ok((css.match(/color: var\(--hub-accent-text, var\(--hub-accent\)\)/g) || []).length >= 13);
 });

@@ -19,12 +19,11 @@ function regola(nome) {
   return css.slice(i, css.indexOf('}', i));
 }
 
-test("l'accesso al profilo è un bersaglio vero", () => {
-  const r = regola('.hub-coin-link');
-  assert.match(r, /min-height: 44px/);
-  assert.match(r, /min-width: 44px/);
-  // il margine negativo compensa il padding: l'aspetto resta quello di prima
-  assert.match(r, /margin: -11px -14px/);
+test('la pill saldo (e il suo link profilo) è stata rimossa dall\'header', () => {
+  // Era il bersaglio più piccolo dell'HUB (.hub-coin-link ~17px, poi portato a 44). La pill
+  // del saldo è stata rimossa su richiesta (doppione del saldo, che vive nella scheda
+  // Gettoni): niente più .hub-coin-link, quindi niente più bersaglio da presidiare qui.
+  assert.doesNotMatch(css, /\.hub-coin-link\s*\{/);
 });
 
 test('i comandi che si toccano di più arrivano a 44px', () => {

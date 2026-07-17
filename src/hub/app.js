@@ -295,17 +295,10 @@
   }
 
   function updateCoinWidget() {
+    // La pill del saldo è stata rimossa dall'header (il saldo vive nella scheda Gettoni, come
+    // hero grande). Resta un no-op sicuro: diversi punti la chiamano dopo un cambio di saldo.
     const pill = $('#hub-coin-pill');
     if (!pill) return;
-    // Sulla scheda Gettoni il saldo è già l'hero grande al centro: la pill in testa sarebbe
-    // un doppione. La teniamo solo dove serve davvero (scheda Offerte), dove è l'unico saldo
-    // a colpo d'occhio e l'accesso al profilo.
-    const onCoinTab = (() => { try { return parseRoute().name === 'pga'; } catch (_) { return false; } })();
-    if (!pgaEnabled() || onCoinTab) {
-      pill.classList.add('hidden');
-      return;
-    }
-    pill.classList.remove('hidden');
     const val = $('#hub-coin-value');
     if (val) val.textContent = String(state.coin_balance ?? 0);
   }
