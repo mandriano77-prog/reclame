@@ -435,6 +435,12 @@ app.get('/health', async (req, res) => {
       apple: true,
       google: healthWallets.google(),
       samsung: healthWallets.samsung()
+    },
+    // Il QR "Mostra in cassa" dell'HUB si firma con QR_HMAC_SECRET: senza, la generazione
+    // fallisce e il cliente non vede il QR. Qui diciamo solo SE è configurato (mai il valore),
+    // così l'assenza si vede da fuori invece di scoprirla dal pass rotto.
+    hub: {
+      qr_signing: !!String(process.env.QR_HMAC_SECRET || '').trim()
     }
   };
   if (req.query.wallet) {
