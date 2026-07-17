@@ -562,7 +562,10 @@ function registerHubPwaRoutes(router) {
         expires_at: signed.expires_at
       });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      // Il dettaglio tecnico (es. "QR_HMAC_SECRET is required…") resta nei log per l'ops,
+      // al cliente va un messaggio umano: non deve mai leggere errori interni (S13).
+      console.error('[hub/qr-token] generazione QR fallita:', err && err.message);
+      res.status(500).json({ error: 'QR temporaneamente non disponibile. Riprova tra poco.' });
     }
   });
 
