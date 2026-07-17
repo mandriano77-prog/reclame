@@ -29,9 +29,19 @@ test("l'accesso al profilo è un bersaglio vero", () => {
 
 test('i comandi che si toccano di più arrivano a 44px', () => {
   assert.match(regola('.hub-chip'), /min-height: 44px/);        // filtri categoria
-  assert.match(regola('.hub-tab'), /min-height: 44px/);         // schede Offerte/Coin
   assert.match(regola('.hub-toggle'), /min-height: 44px/);      // "Vicino a me"
   assert.match(regola('.hub-booking-cancel'), /min-height: 44px/);
+});
+
+test('le schede Offerte/Gettoni: compatte ma comode (40px)', () => {
+  // Eccezione voluta: sono un rail verticale a 2 segmenti nell'header. A 44px l'uno
+  // farebbero ~100px e dominerebbero la testata (feedback del cliente: "troppo grande").
+  // 40px resta un bersaglio comodo, ben sopra il minimo WCAG 2.5.8 AA (24px). Sotto i 40
+  // il test scatta: non si scende di soppiatto.
+  const r = regola('.hub-tab');
+  const m = r.match(/min-height:\s*(\d+)px/);
+  assert.ok(m, '.hub-tab deve dichiarare min-height');
+  assert.ok(Number(m[1]) >= 40, `.hub-tab min-height ${m[1]}px < 40px`);
 });
 
 test('il tasto indietro è 44 e non 38', () => {

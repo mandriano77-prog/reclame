@@ -104,7 +104,7 @@ body::after {
 
 .hub-header-inner {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
 }
 
@@ -872,9 +872,9 @@ body::after {
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 16px;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 12px;
   border: 1px solid var(--hub-border-strong);
   background: var(--hub-surface-2);
 }
@@ -882,15 +882,18 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  min-width: 82px;
-  min-height: 44px;
-  border-radius: 12px;
+  padding: 6px 13px;
+  min-width: 64px;
+  /* 40px: sotto i 44px degli altri comandi, ma un toggle verticale a 2 segmenti da 44px
+     sarebbe alto ~100px e dominava la testata. Resta un bersaglio comodo (ben sopra il
+     minimo WCAG 2.5.8 AA di 24px); i comandi critici restano a 44px. */
+  min-height: 40px;
+  border-radius: 9px;
   text-decoration: none;
   color: var(--hub-muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   transition: color 0.2s, background 0.2s;
 }
