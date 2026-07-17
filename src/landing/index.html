@@ -9,12 +9,16 @@
   <link rel="canonical" id="canonicalLink" href="">
   <script src="/public/boot.js"></script>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Stessi font dell'HUB: il cliente vede prima la landing e poi l'HUB dentro il pass.
+       Fraunces sul titolo, Manrope nel corpo — devono sembrare un prodotto solo. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/theme.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      font-family: 'Manrope', ui-sans-serif, -apple-system, system-ui, sans-serif;
       background: var(--bg, #0D0B1A);
       color: var(--fg, #fff);
       min-height: 100vh;
@@ -81,14 +85,18 @@
       margin-top: 12px;
     }
     h1 {
-      font-size: 26px; font-weight: 700; line-height: 1.2;
-      letter-spacing: -0.02em;
+      /* Fraunces, come il titolo dell'HUB (.hub-title): è la firma editoriale che rende
+         riconoscibile il prodotto. Il claim sotto (small) resta in Manrope. */
+      font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+      font-size: 30px; font-weight: 600; line-height: 1.1;
+      letter-spacing: -0.015em;
       color: var(--fg, #ffffff);
       text-shadow: 0 1px 8px rgba(0,0,0,0.12);
     }
     h1 small {
       display: block;
-      font-size: 15px; font-weight: 400;
+      font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+      font-size: 15px; font-weight: 500;
       color: var(--fg-soft, rgba(255,255,255,0.72));
       margin-top: 8px;
       letter-spacing: 0;
@@ -200,7 +208,7 @@
       justify-content: center;
       text-align: center;
       gap: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
     }
     .thank-you-view .logo-area { margin-bottom: 8px; }
     .thank-you-view .logo-letter {
@@ -222,7 +230,8 @@
       font-size: 36px;
     }
     .thank-you-view h1 {
-      font-size: 22px; font-weight: 700; margin-bottom: 14px;
+      font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+      font-size: 24px; font-weight: 600; letter-spacing: -0.015em; margin-bottom: 14px;
       color: #F4EDE2; text-shadow: none;
     }
     .thank-you-view .body-copy {
