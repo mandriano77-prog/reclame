@@ -1757,16 +1757,17 @@
                                 <input type="datetime-local" id="pushPassLinkExpires">
                             </div>
                             <div class="form-group" style="margin-top:10px;margin-bottom:0;">
-                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-                                    <input type="checkbox" id="pushCouponRedeemable" checked style="width:auto;accent-color:var(--teal);">
-                                    <span>Abilita riscatto in cassa (codice sul retro pass)</span>
-                                </label>
-                                <p style="font-size:11px;color:var(--text2);margin:6px 0 8px;line-height:1.45;">Ogni pass riceve un codice univoco sul retro (es. ZARA-8K4M). La cassa del negozio lo digita per chiudere il loop Push → Cassa.</p>
-                                <div id="pushCouponMerchantWrap" class="form-group" style="margin-bottom:0;">
-                                    <label class="form-label" for="pushCouponMerchant">Negozio / merchant</label>
-                                    <select id="pushCouponMerchant" aria-label="Merchant per riscatto">
-                                        <option value="">— Seleziona merchant HUB —</option>
-                                    </select>
+                                <label class="form-label" for="pushCouponMerchant">Negozio / merchant</label>
+                                <select id="pushCouponMerchant" aria-label="Merchant per riscatto">
+                                    <option value="">— Nessuno —</option>
+                                </select>
+                                <p style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Scegli il negozio: è l'offerta di QUEL negozio a poter diventare riscattabile in cassa.</p>
+                                <div id="pushCouponRedeemableWrap" class="form-group" style="margin-top:10px;margin-bottom:0;" hidden>
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                                        <input type="checkbox" id="pushCouponRedeemable" checked style="width:auto;accent-color:var(--teal);">
+                                        <span id="pushCouponRedeemableLabel">Rendi riscattabile in cassa</span>
+                                    </label>
+                                    <p style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Ogni pass riceve un codice univoco sul retro (es. ZARA-8K4M). La cassa del negozio lo digita per chiudere il loop Push → Cassa.</p>
                                 </div>
                             </div>
                         </div>
