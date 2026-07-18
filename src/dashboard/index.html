@@ -1742,33 +1742,46 @@
                             </div>
                         </div>
                         <div id="pushBackSetupBlock" class="form-group" style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);">
-                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Pulsante sul retro</div>
-                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">L'indirizzo resta nascosto: il cliente vede solo il testo del link.</p>
-                            <div class="form-group" style="margin-bottom:10px;">
-                                <label class="form-label" for="pushPassLinkLabel">Testo del link (CTA)</label>
-                                <input type="text" id="pushPassLinkLabel" maxlength="64" placeholder="es. Scopri l'offerta" oninput="if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
+                            <div class="sec-title" style="font-size:14px;margin-bottom:6px;">Sul retro del pass</div>
+                            <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">Una cosa sola per volta: un link cliccabile, oppure un codice da riscattare in cassa. Insieme confondono.</p>
+                            <fieldset style="border:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:6px;">
+                                <legend style="font-size:11px;font-weight:600;color:var(--text2);padding:0;margin:0 0 4px;">Cosa mettere sul retro</legend>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                                    <input type="radio" name="pushBackMode" id="pushBackModeNone" value="none" checked onchange="syncPushBackMode()">
+                                    <span>Niente</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                                    <input type="radio" name="pushBackMode" id="pushBackModeLink" value="link" onchange="syncPushBackMode()">
+                                    <span>Link con CTA</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                                    <input type="radio" name="pushBackMode" id="pushBackModeCoupon" value="coupon" onchange="syncPushBackMode()">
+                                    <span>Codice da riscattare in cassa</span>
+                                </label>
+                            </fieldset>
+
+                            <div id="pushBackLinkFieldsWrap" hidden>
+                                <p style="font-size:11px;color:var(--text2);margin:0 0 12px;line-height:1.45;">L'indirizzo resta nascosto: il cliente vede solo il testo del link.</p>
+                                <div class="form-group" style="margin-bottom:10px;">
+                                    <label class="form-label" for="pushPassLinkLabel">Testo del link (CTA)</label>
+                                    <input type="text" id="pushPassLinkLabel" maxlength="64" placeholder="es. Scopri l'offerta" oninput="if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label class="form-label" for="pushPassLinkUrl">URL di destinazione (https://)</label>
+                                    <input type="url" id="pushPassLinkUrl" placeholder="https://..." oninput="syncPushPassLinkLabel(); if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
+                                </div>
+                                <input type="hidden" id="pushIncludePassLink" value="">
+                                <div id="pushPassLinkFields" hidden aria-hidden="true">
+                                    <input type="datetime-local" id="pushPassLinkExpires">
+                                </div>
                             </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label" for="pushPassLinkUrl">URL di destinazione (https://)</label>
-                                <input type="url" id="pushPassLinkUrl" placeholder="https://..." oninput="syncPushPassLinkLabel(); if(typeof a2wSyncPushPassPreview==='function') a2wSyncPushPassPreview();">
-                            </div>
-                            <input type="hidden" id="pushIncludePassLink" value="">
-                            <div id="pushPassLinkFields" hidden aria-hidden="true">
-                                <input type="datetime-local" id="pushPassLinkExpires">
-                            </div>
-                            <div class="form-group" style="margin-top:10px;margin-bottom:0;">
+
+                            <div id="pushBackCouponFieldsWrap" hidden>
                                 <label class="form-label" for="pushCouponMerchant">Negozio / merchant</label>
                                 <select id="pushCouponMerchant" aria-label="Merchant per riscatto">
-                                    <option value="">— Nessuno —</option>
+                                    <option value="">— Seleziona negozio —</option>
                                 </select>
-                                <p style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Scegli il negozio: è l'offerta di QUEL negozio a poter diventare riscattabile in cassa.</p>
-                                <div id="pushCouponRedeemableWrap" class="form-group" style="margin-top:10px;margin-bottom:0;" hidden>
-                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-                                        <input type="checkbox" id="pushCouponRedeemable" checked style="width:auto;accent-color:var(--teal);">
-                                        <span id="pushCouponRedeemableLabel">Rendi riscattabile in cassa</span>
-                                    </label>
-                                    <p style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Ogni pass riceve un codice univoco sul retro (es. ZARA-8K4M). La cassa del negozio lo digita per chiudere il loop Push → Cassa.</p>
-                                </div>
+                                <p style="font-size:11px;color:var(--text2);margin:6px 0 0;line-height:1.45;">Ogni pass riceve un codice univoco sul retro (es. ZARA-8K4M), legato a questo negozio. La cassa lo digita per chiudere il loop Push → Cassa.</p>
                             </div>
                         </div>
                         <div class="form-group a2w-push-field--hidden" style="margin-top:8px;" id="pushLegacyLinkOut">
@@ -7419,6 +7432,18 @@ function syncPushPassLinkLabel() {
     labelEl.value = titleEl.value.trim().slice(0, 40);
 }
 
+// Sul retro del pass: link CTA e codice riscatto insieme confondono, quindi sono mutuamente
+// esclusivi (radio "Niente" / "Link con CTA" / "Codice da riscattare in cassa"). Non svuoto i
+// campi nascosti al cambio modo: restano lì ma buildImmediatePushBody() li ignora se il modo
+// attivo non è il loro — riselezionando lo stesso modo si ritrova quanto scritto prima.
+function syncPushBackMode() {
+    const mode = document.querySelector('input[name="pushBackMode"]:checked')?.value || 'none';
+    const linkWrap = document.getElementById('pushBackLinkFieldsWrap');
+    const couponWrap = document.getElementById('pushBackCouponFieldsWrap');
+    if (linkWrap) linkWrap.hidden = mode !== 'link';
+    if (couponWrap) couponWrap.hidden = mode !== 'coupon';
+}
+
 async function openTemplateModal() {
     if (typeof prepareModalOpen === 'function') prepareModalOpen('templateModal');
     nav('templates');
@@ -8333,7 +8358,10 @@ function buildPushDeliveryMessage(data, intro = 'Invio completato.') {
     let msg = `${intro}\nAPNs: ${apnsSent}/${apnsTotal}`;
     if (data.google && data.google.skipped) msg += `\nGoogle Wallet: non configurato`;
     else msg += `\nGoogle Wallet: ${gwSynced} aggiornati`;
-    if (data.samsung) {
+    // Oscurato come tutto il resto della UI Samsung (a2wHideSamsungUiIfUnconfigured): quando
+    // Samsung non è configurato non ha senso riportarlo nel referto — ricompare da solo il
+    // giorno che SAMSUNG_WALLET_ENABLED + credenziali ci sono davvero.
+    if (data.samsung && a2wWalletOn('samsung')) {
         if (data.samsung.skipped) msg += `\nSamsung Wallet: non configurato o canale non incluso`;
         else msg += `\nSamsung Wallet: update notify ${data.samsung.notified ?? 0}/${data.samsung.attempted ?? 0}`;
     }
@@ -8517,7 +8545,10 @@ function buildImmediatePushBody() {
     if (iwId) body.instant_win_id = iwId;
     const gamId = document.getElementById('pushGamification')?.value;
     if (gamId) body.gamification_id = gamId;
-    const passLinkUrl = (document.getElementById('pushPassLinkUrl')?.value || '').trim();
+    // Link CTA e codice riscatto sono mutuamente esclusivi (radio pushBackMode): si legge e
+    // invia solo quello del modo scelto, anche se l'altro campo ha ancora un valore residuo.
+    const backMode = document.querySelector('input[name="pushBackMode"]:checked')?.value || 'none';
+    const passLinkUrl = backMode === 'link' ? (document.getElementById('pushPassLinkUrl')?.value || '').trim() : '';
     if (updatePass && passLinkUrl) {
         body.include_pass_link = true;
         body.pass_link_url = passLinkUrl;
@@ -8525,10 +8556,12 @@ function buildImmediatePushBody() {
         const expLocal = document.getElementById('pushPassLinkExpires')?.value;
         if (expLocal) body.pass_link_expires_at = new Date(expLocal).toISOString();
     }
-    if (updatePass) {
-        body.coupon_redeemable = !!document.getElementById('pushCouponRedeemable')?.checked;
+    if (updatePass && backMode === 'coupon') {
         const merchantId = document.getElementById('pushCouponMerchant')?.value;
-        if (body.coupon_redeemable && merchantId) body.merchant_id = merchantId;
+        if (merchantId) {
+            body.coupon_redeemable = true;
+            body.merchant_id = merchantId;
+        }
     }
     if (!isHrDashboard() && isLegacyCampaignsUiEnabled()) {
         applyPushLinkedContentToBody(body, document.getElementById('pushLinkedContent')?.value);

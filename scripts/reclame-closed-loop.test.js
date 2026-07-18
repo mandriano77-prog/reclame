@@ -39,7 +39,11 @@ test('holder insights include closed loop metrics', () => {
 });
 
 test('dashboard and server expose cashier UX', () => {
-  assert.match(indexHtml, /pushCouponRedeemable/);
+  // pushCouponRedeemable (il tick "rendi riscattabile") è stato rimosso: link CTA e codice
+  // riscatto confondevano insieme sul retro del pass, quindi ora sono un radio esclusivo
+  // (pushBackMode: none/link/coupon) — scegliere "coupon" + un negozio è già, di per sé,
+  // la scelta di generare il codice. pushCouponMerchant resta: è il negozio del riscatto.
+  assert.match(indexHtml, /name="pushBackMode"/);
   assert.match(indexHtml, /pushCouponMerchant/);
   assert.match(indexHtml, /audienceClosedLoopStats/);
   assert.match(indexHtml, /loadCashierSetup/);

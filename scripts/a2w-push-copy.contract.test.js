@@ -26,9 +26,13 @@ test("le spiegazioni non ripetono quello che l'anteprima mostra", () => {
   assert.match(indexHtml, /Se la campagna collegata ha una sua strip, vince quella\./);
 });
 
-test('niente "Link out (CTA)": è un pulsante sul retro', () => {
+test('niente "Link out (CTA)": link e codice riscatto sono scelte esclusive sul retro', () => {
   assert.doesNotMatch(indexHtml, /Link out \(CTA\)/);
-  assert.match(indexHtml, />Pulsante sul retro</);
-  // il titolo dice già pulsante e retro: la spiegazione tiene solo ciò che aggiunge
+  // Il titolo era "Pulsante sul retro" quando c'era solo il link; ora il blocco offre una
+  // scelta a tre (niente / link / codice riscatto), quindi il titolo riflette la scelta,
+  // non più solo il pulsante — e i due campi sono un radio mutuamente esclusivo.
+  assert.match(indexHtml, />Sul retro del pass</);
+  assert.match(indexHtml, /name="pushBackMode"/);
+  // il titolo dice già "retro": la spiegazione del link tiene solo ciò che aggiunge
   assert.match(indexHtml, /L'indirizzo resta nascosto: il cliente vede solo il testo del link\./);
 });

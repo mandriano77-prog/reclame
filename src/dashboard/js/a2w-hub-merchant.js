@@ -153,26 +153,9 @@
     });
   }
 
-  // Negozio prima, tick dopo: il riscatto in cassa è una domanda su QUEL negozio ("rendi
-  // riscattabile l'offerta di X"), non un interruttore slegato dalla scelta. Mostra il tick
-  // solo quando un negozio è scelto, e nomina il negozio nella frase.
-  function syncPushCouponRedeemableUi() {
-    const sel = document.getElementById('pushCouponMerchant');
-    const wrap = document.getElementById('pushCouponRedeemableWrap');
-    const label = document.getElementById('pushCouponRedeemableLabel');
-    if (!sel || !wrap) return;
-    const opt = sel.options[sel.selectedIndex];
-    const merchantName = (opt && opt.value)
-      ? String(opt.textContent || '').replace(/\s*\[[^\]]*\]\s*$/, '').trim()
-      : '';
-    wrap.hidden = !merchantName;
-    if (label) {
-      label.textContent = merchantName
-        ? `Rendi riscattabile in cassa l'offerta di ${merchantName}`
-        : 'Rendi riscattabile in cassa';
-    }
-  }
-
+  // La visibilità del blocco negozio è decisa dal radio "Sul retro del pass" (vedi
+  // syncPushBackMode() in index.html): qui popoliamo solo la select, nessuna logica di
+  // reveal-on-select — scegliere un negozio qui è già, di per sé, la scelta del modo "Codice".
   async function loadPushMerchants() {
     if (!isA2wShell()) return;
     const sel = document.getElementById('pushCouponMerchant');
@@ -180,7 +163,6 @@
     const bid = brandId();
     if (!bid) {
       sel.innerHTML = '<option value="">— Seleziona brand —</option>';
-      syncPushCouponRedeemableUi();
       return;
     }
     try {
@@ -189,7 +171,7 @@
       });
       const rows = res.ok ? await res.json() : [];
       const current = sel.value;
-      sel.innerHTML = '<option value="">— Nessuno —</option>';
+      sel.innerHTML = '<option value="">— Seleziona negozio —</option>';
       rows.slice().sort(function (a, b) {
         return String(a.name || '').localeCompare(String(b.name || ''), 'it', { sensitivity: 'base' });
       }).forEach(function (m) {
@@ -203,19 +185,6 @@
     } catch (_) {
       sel.innerHTML = '<option value="">— Errore caricamento —</option>';
     }
-
-    // Ascoltatore registrato una sola volta (loadPushMerchants gira ad ogni cambio brand):
-    // ogni NUOVO negozio scelto riparte col tick attivo — è una decisione fresca per quel
-    // negozio, non l'eredità della scelta precedente.
-    if (!sel.dataset.a2wCouponSyncBound) {
-      sel.dataset.a2wCouponSyncBound = '1';
-      sel.addEventListener('change', function () {
-        const checkbox = document.getElementById('pushCouponRedeemable');
-        if (checkbox && sel.value) checkbox.checked = true;
-        syncPushCouponRedeemableUi();
-      });
-    }
-    syncPushCouponRedeemableUi();
   }
 
   window.a2wLoadPushMerchants = loadPushMerchants;
