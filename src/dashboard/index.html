@@ -5310,6 +5310,9 @@ async function loadBrands() {
 
     brandId = nextId || null;
     syncGlobalBrandId();
+    // Stesso motivo di changeBrand(): al boot, se un brand viene ripristinato da sessione/URL,
+    // i pannelli che dipendono dal brand (merchant push, HUB Brand) devono ricaricarsi.
+    document.dispatchEvent(new CustomEvent('brand:changed'));
     if (brandId) {
         const b = brands.find((x) => String(x.id) === String(brandId));
         if (b) persistDashboardProductLine(getBrandProductLine(b));
@@ -5347,6 +5350,10 @@ function changeBrand() {
     const sel = document.getElementById('brandSelector');
     brandId = sel.value || null;
     syncGlobalBrandId();
+    // Vari pannelli (merchant per il riscatto push, HUB Brand) ascoltano 'brand:changed' per
+    // ricaricare la loro select dipendente dal brand. Nessuno lo emetteva: il select restava
+    // bloccato su "— Seleziona brand —" anche dopo aver scelto un brand vero.
+    document.dispatchEvent(new CustomEvent('brand:changed'));
     currentBrandName = brandId ? (sel.options[sel.selectedIndex]?.textContent || '') : '';
     if (brandId) {
         const b = brandsListCache.find((x) => String(x.id) === String(brandId));

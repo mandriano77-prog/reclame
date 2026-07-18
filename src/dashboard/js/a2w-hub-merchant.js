@@ -202,9 +202,13 @@
     document.addEventListener('brand:changed', loadPushMerchants);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
+  // initA2wShell() (a2w-shell.js) aggiunge la classe a2w-shell e SOLO DOPO spara
+  // 'a2w:shell:ready'. Prima si aspettava DOMContentLoaded — ma quel listener (registrato
+  // dal tag <script> di QUESTO file, che precede nel documento il blocco che chiama
+  // initA2wShell()) scattava sempre PRIMA che la shell fosse attiva: isA2wShell() era
+  // sempre falso, boot() usciva subito e l'ascoltatore 'brand:changed' non veniva MAI
+  // registrato — il merchant del push restava vuoto a vita, indipendentemente da chi
+  // sparava l'evento. 'a2w:shell:ready' è il segnale giusto: arriva quando la classe c'è già.
+  document.addEventListener('a2w:shell:ready', boot);
+  if (isA2wShell()) boot(); // shell già attiva (script ri-eseguito dopo l'evento)
 })();
